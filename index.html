@@ -259,15 +259,29 @@
       document.getElementById('kcModal').style.display = 'none';
     };
 
-    // Load bad-words
+    // Load bad-words + add custom blocks
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-      .then(r => r.json()).then(list => badWords = list)
-      .catch(e => { console.error(e); kcAlert('Profanity filter failed to load.'); })
+      .then(r => r.json())
+      .then(list => {
+        badWords = list;
+        // add "diddy" variants
+        badWords.push(
+          'diddy',
+          'diddler',
+          'd1ddy',
+          'd i ddy',
+          'd i d d y'
+        );
+      })
+      .catch(e => {
+        console.error(e);
+        kcAlert('Profanity filter failed to load.');
+      })
       .finally(initApp);
 
     function containsBadWord(s) {
-      return badWords.some(w => new RegExp('\\b'+w+'\\b','i').test(s));
+      return badWords.some(w => new RegExp('\\b' + w + '\\b', 'i').test(s));
     }
 
     function initApp() {
@@ -307,11 +321,11 @@
           if (containsBadWord(user) || containsBadWord(text)) return;
           const d = new Date(time);
           const ts =
-            String(d.getUTCDate()).padStart(2,'0') + '/' +
-            String(d.getUTCMonth()+1).padStart(2,'0') + '/' +
+            String(d.getUTCDate()).padStart(2, '0') + '/' +
+            String(d.getUTCMonth() + 1).padStart(2, '0') + '/' +
             String(d.getUTCFullYear()).slice(-2) + ' ' +
-            String(d.getUTCHours()).padStart(2,'0') + ':' +
-            String(d.getUTCMinutes()).padStart(2,'0') + ' GMT';
+            String(d.getUTCHours()).padStart(2, '0') + ':' +
+            String(d.getUTCMinutes()).padStart(2, '0') + ' GMT';
           const li = document.createElement('li');
           li.innerHTML = `
             <span class="emoji">${emoji}</span>
@@ -329,12 +343,15 @@
       document.getElementById('postBtn').onclick = () => {
         const user = document.getElementById('username').value.trim();
         const text = document.getElementById('message').value.trim();
-        if (!selectedEmoji)          return kcAlert("Please pick an emoji avatar.");
-        if (!user || !text)          return kcAlert("Please enter both name and message.");
+        if (!selectedEmoji) return kcAlert("Please pick an emoji avatar.");
+        if (!user || !text) return kcAlert("Please enter both name and message.");
         if (containsBadWord(user) || containsBadWord(text))
-                                     return kcAlert("Please keep it clean – that word's not allowed.");
+          return kcAlert("Please keep it clean – that word's not allowed.");
+
         db.push({
-          user, text, emoji: selectedEmoji,
+          user,
+          text,
+          emoji: selectedEmoji,
           time: firebase.database.ServerValue.TIMESTAMP
         }).catch(e => {
           console.error(e);
@@ -346,3 +363,4 @@
 
 </body>
 </html>
+
