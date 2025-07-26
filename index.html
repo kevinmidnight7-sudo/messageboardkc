@@ -4,68 +4,107 @@
   <meta charset="UTF-8">
   <title>KC Event Message Board</title>
 
-  <!-- Poppins font & Firebase SDKs -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <!-- Poppins + Firebase SDKs -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
 
   <style>
-    body { font-family:'Poppins',sans-serif; color:#fff; margin:0; padding:0; background:transparent; }
-    #msgBoard { max-width:400px; margin:1em auto; }
-    #msgList { list-style:none; padding:0.5em; max-height:300px; overflow-y:auto;
-               background:rgba(0,0,0,0.4); border-radius:12px; margin:0; }
-    #msgList li { display:flex; align-items:center; padding:0.5em;
-                  border-bottom:1px solid rgba(255,255,255,0.2); color:#fff; }
-    #msgList li:last-child { border-bottom:none; }
-    .avatar { width:32px; height:32px; border-radius:50%; object-fit:cover; margin-right:0.5em; flex-shrink:0; }
-    .message-content { flex:1; }
-    .message-content strong { margin-right:0.3em; }
-    .timestamp { font-size:0.75em; color:rgba(255,255,255,0.7); margin-left:0.5em; }
-
-    /* file picker */
-    #avatar { display:none; }
-    #avatarLabel {
-      display:block; width:100%; padding:0.75em; margin:0.5em 0; box-sizing:border-box;
-      border-radius:8px; background:rgba(255,255,255,0.9); color:#000;
-      text-align:center; cursor:pointer; font-family:'Poppins',sans-serif;
+    body {
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+      margin: 0; padding: 0;
+      background: transparent;
     }
-
-    #username,#message,#postBtn {
-      width:100%; padding:0.75em; margin:0.5em 0; box-sizing:border-box;
+    #msgBoard { max-width:400px; margin:1em auto; }
+    #msgList {
+      list-style:none; padding:0.5em; max-height:300px; overflow-y:auto;
+      background:rgba(0,0,0,0.4); border-radius:12px; margin:0 0 1em;
+    }
+    #msgList li {
+      display:flex; align-items:center; padding:0.5em;
+      border-bottom:1px solid rgba(255,255,255,0.2);
+    }
+    #msgList li:last-child { border-bottom:none; }
+    .emoji {
+      font-size:1.5em; margin:.25em; cursor:pointer;
+      opacity:.7; transition:opacity .2s,transform .1s;
+    }
+    .emoji.selected {
+      opacity:1; transform:scale(1.2);
+    }
+    .message-content { flex:1; color:#fff; }
+    .timestamp {
+      font-size:.75em; color:rgba(255,255,255,0.7); margin-left:.5em;
+    }
+    input, button {
+      width:100%; padding:.75em; margin:.5em 0; box-sizing:border-box;
       border-radius:8px; border:none; font-family:'Poppins',sans-serif;
     }
-    #username,#message { background:rgba(255,255,255,0.9); color:#000; }
-    #postBtn { background:#28a745; color:#fff; font-weight:600; cursor:pointer; }
-    #postBtn:hover { background:#218838; }
-
-    /* modal */
-    #kcModal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%;
-               background:rgba(0,0,0,0.5); align-items:center; justify-content:center; }
-    #kcModalContent {
-      background:#fff; padding:1rem; border-radius:8px; max-width:300px; width:90%; text-align:center;
+    input { background:rgba(255,255,255,0.9); color:#000; }
+    button {
+      background:#28a745; color:#fff; font-weight:600; cursor:pointer;
     }
-    #kcModalContent strong { display:block; margin-bottom:0.5rem; color:#000; }
-    #kcModalContent p { margin:0.5rem 0; color:#000; }
+    button:hover { background:#218838; }
+
+    /* Emoji picker container */
+    #emojiContainer {
+      background:rgba(0,0,0,0.4); border-radius:12px;
+      padding:.5em; margin-bottom:1em; text-align:center;
+    }
+    #emojiContainer p {
+      margin:0 0 .5em;
+      font-size:.9em; color:rgba(255,255,255,0.8);
+    }
+
+    /* KC Event modal */
+    #kcModal {
+      display:none; position:fixed; z-index:999;
+      left:0; top:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5);
+      align-items:center; justify-content:center;
+    }
+    #kcModalContent {
+      background:#fff; padding:1rem; border-radius:8px;
+      max-width:300px; width:90%; text-align:center;
+    }
+    #kcModalContent strong {
+      display:block; margin-bottom:.5rem; color:#000;
+    }
+    #kcModalContent p { margin:.5rem 0; color:#000; }
     #kcClose {
-      margin-top:0.5rem; padding:0.5rem 1rem; border:none; background:#28a745;
-      color:#fff; border-radius:4px; cursor:pointer; font-family:'Poppins',sans-serif;
+      margin-top:.5rem; padding:.5rem 1rem; border:none;
+      background:#28a745; color:#fff; border-radius:4px;
+      cursor:pointer; font-family:'Poppins',sans-serif;
     }
   </style>
 </head>
 <body>
+
   <div id="msgBoard">
     <ul id="msgList">
       <li style="font-style:italic;color:rgba(255,255,255,0.7);">Loading…</li>
     </ul>
-    <input type="text" id="username" placeholder="Your name" maxlength="20"/>
-    <input type="text" id="message"  placeholder="Your message" maxlength="200"/>
-    <label for="avatar" id="avatarLabel">Select a profile picture</label>
-    <input type="file" id="avatar" accept="image/*"/>
-    <button type="button" id="postBtn">Post</button>
+
+    <div id="emojiContainer">
+      <p>Pick an emoji!</p>
+      <span class="emoji" data-emoji="😀">😀</span>
+      <span class="emoji" data-emoji="😎">😎</span>
+      <span class="emoji" data-emoji="😂">😂</span>
+      <span class="emoji" data-emoji="😍">😍</span>
+      <span class="emoji" data-emoji="👍">👍</span>
+      <span class="emoji" data-emoji="🙌">🙌</span>
+    </div>
+
+    <input type="text" id="username" placeholder="Your name" maxlength="20" />
+    <input type="text" id="message" placeholder="Your message" maxlength="200" />
+    <button id="postBtn" type="button">Post</button>
   </div>
 
-  <!-- modal -->
+  <!-- KC Event says modal -->
   <div id="kcModal">
     <div id="kcModalContent">
       <strong>KC Event says</strong>
@@ -75,7 +114,7 @@
   </div>
 
   <script>
-    // custom alert
+    // 1) Modal helper
     function kcAlert(msg) {
       document.getElementById('kcMsg').textContent = msg;
       document.getElementById('kcModal').style.display = 'flex';
@@ -84,38 +123,24 @@
       document.getElementById('kcModal').style.display = 'none';
     };
 
-    // globals
+    // 2) Load full bad-words list from GitHub
     let badWords = [];
-    const msgList   = document.getElementById('msgList');
-    const fileEl    = document.getElementById('avatar');
-    const fileLabel = document.getElementById('avatarLabel');
-
-    // load bad words, then always init
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
       .then(r => r.json())
-      .then(list => {
-        console.log('😈 loaded badWords:', list.length);
-        badWords = list;
-      })
-      .catch(e => {
-        console.error('⚠️ could not load bad-words, proceeding without:', e);
+      .then(list => badWords = list)
+      .catch(err => {
+        console.error('Failed to load bad words:', err);
         kcAlert('Warning: profanity filter failed to load.');
       })
-      .finally(() => {
-        fileEl.addEventListener('change', () => {
-          fileLabel.textContent = fileEl.files[0]?.name || 'Select a profile picture';
-        });
-        initApp();
-      });
+      .finally(initApp);
 
     function containsBadWord(s) {
       return badWords.some(w => new RegExp('\\b'+w+'\\b','i').test(s));
     }
 
     function initApp() {
-      console.log('🚀 initApp');
-      // Firebase init
-      const cfg = {
+      // 3) Firebase init
+      firebase.initializeApp({
         apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
         authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
         databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
@@ -124,24 +149,32 @@
         messagingSenderId: "198711213988",
         appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
         measurementId: "G-4LKP2M3JXE"
-      };
-      firebase.initializeApp(cfg);
-      const db      = firebase.database().ref('messages');
-      const storage = firebase.storage().ref('avatars');
+      });
+      const db = firebase.database().ref('messages');
 
-      // render
+      // 4) Emoji selection
+      let selectedEmoji = null;
+      document.querySelectorAll('.emoji').forEach(el => {
+        el.onclick = () => {
+          document.querySelectorAll('.emoji').forEach(e=>e.classList.remove('selected'));
+          el.classList.add('selected');
+          selectedEmoji = el.dataset.emoji;
+        };
+      });
+
+      // 5) Render messages
+      const msgList = document.getElementById('msgList');
       db.limitToLast(50).on('value', snap => {
-        console.log('🔄 snapshot', snap.val());
         msgList.innerHTML = '';
         if (!snap.exists()) {
           msgList.innerHTML = '<li style="font-style:italic;color:rgba(255,255,255,0.7);">No messages yet.</li>';
           return;
         }
-        snap.forEach(child => {
-          const { user, text, time, avatarUrl } = child.val();
+        snap.forEach(c => {
+          const { user, text, time, emoji } = c.val();
           if (containsBadWord(user) || containsBadWord(text)) return;
           const d = new Date(time);
-          const ts = 
+          const ts =
             String(d.getUTCDate()).padStart(2,'0') + '/' +
             String(d.getUTCMonth()+1).padStart(2,'0') + '/' +
             String(d.getUTCFullYear()).slice(-2) + ' ' +
@@ -149,7 +182,7 @@
             String(d.getUTCMinutes()).padStart(2,'0') + ' GMT';
           const li = document.createElement('li');
           li.innerHTML = `
-            <img src="${avatarUrl}" class="avatar"/>
+            <span class="emoji">${emoji}</span>
             <div class="message-content">
               <strong>${user}:</strong> ${text}
               <span class="timestamp">${ts}</span>
@@ -160,36 +193,27 @@
         msgList.scrollTop = msgList.scrollHeight;
       });
 
-      // post
-      document.getElementById('postBtn').addEventListener('click', () => {
-        console.log('✏️ click Post');
+      // 6) Post handler
+      document.getElementById('postBtn').onclick = () => {
         const user = document.getElementById('username').value.trim();
         const text = document.getElementById('message').value.trim();
-        const file = fileEl.files[0];
-        if (!user || !text)       return kcAlert('Please enter both name and message.');
-        if (!file)                return kcAlert('Please select a profile picture.');
-        if (containsBadWord(user) || containsBadWord(text))
-                                   return kcAlert("Please keep it clean – that word's not allowed.");
-        const newMsgRef = db.push();
-        const avatarRef = storage.child(newMsgRef.key);
-        avatarRef.put(file)
-          .then(() => avatarRef.getDownloadURL())
-          .then(url => newMsgRef.set({
-            user, text,
-            time: firebase.database.ServerValue.TIMESTAMP,
-            avatarUrl: url
-          }))
-          .then(() => {
-            document.getElementById('message').value = '';
-            fileEl.value = '';
-            fileLabel.textContent = 'Select a profile picture';
-          })
-          .catch(err => {
-            console.error('❌ post error', err);
-            kcAlert('Could not post right now – please try again.');
-          });
-      });
+        if (!selectedEmoji)            return kcAlert("Please pick an emoji avatar.");
+        if (!user || !text)            return kcAlert("Please enter both name and message.");
+        if (containsBadWord(user) ||
+            containsBadWord(text))     return kcAlert("Please keep it clean – that word's not allowed.");
+
+        db.push({
+          user,
+          text,
+          emoji: selectedEmoji,
+          time: firebase.database.ServerValue.TIMESTAMP
+        }).catch(e=>{
+          console.error(e);
+          kcAlert("Could not post – try again.");
+        });
+      };
     }
   </script>
+
 </body>
 </html>
