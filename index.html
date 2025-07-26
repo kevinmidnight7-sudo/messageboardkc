@@ -12,7 +12,7 @@
 
   <style>
     html,body{margin:0;padding:0;width:100vw;height:100vh;font-family:'Poppins',sans-serif;color:#fff;background:transparent;display:flex;overflow:hidden}
-    #msgBoard{display:flex;flex:1;gap:1em;padding:1em;box-sizing:border-box}
+    #msgBoard{display:flex;flex:1;gap:2em; /* increased gap */ padding:1em;box-sizing:border-box}
 
     /* AUTH */
     #authContainer{flex:1;background:rgba(0,0,0,0.4);border-radius:12px;padding:1em}
@@ -64,10 +64,12 @@
     .fire{margin-left:.3em}
 
     /* MODAL */
-    #kcModal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center}
+    #kcModal{display:flex; /* show immediately */ position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center}
     #kcModalContent{background:#fff;color:#000;padding:1rem;border-radius:8px;text-align:center;max-width:300px;width:90%}
-    #kcModalContent strong{display:block;margin-bottom:.5rem}
-    #kcModalContent button{margin-top:.5rem;padding:.5em 1em;border:none;border-radius:4px;background:#28a745;color:#fff;cursor:pointer}
+    #kcModalContent h2{margin:0 0 .5em}
+    #kcModalContent p{margin:0}
+    #kcModalContent p em{font-style:italic;display:block;margin-top:.5em;color:#555}
+    #kcModalContent button{margin-top:1em;padding:.5em 1em;border:none;border-radius:4px;background:#28a745;color:#fff;cursor:pointer}
   </style>
 </head>
 <body>
@@ -121,15 +123,15 @@
   <div id="statsContainer">
     <h3>🔥 Most Active</h3>
     <ul id="statsList">
-      <li style="font-style:italic;color:rgba(255,255,255,0.7)">Loading…</li>
+      <li style="font-style:italic;color:rgba(255,255,255,0.7)">No activity yet.</li>
     </ul>
   </div>
 
   <!-- MODAL -->
   <div id="kcModal">
     <div id="kcModalContent">
-      <strong>KC Event says</strong>
-      <p id="kcMsg"></p>
+      <h2>Welcome to the KC Message Board!</h2>
+      <p><em>Please follow the KC server rules here as well.</em></p>
       <button id="kcClose">OK</button>
     </div>
   </div>
@@ -137,11 +139,22 @@
   <script>
   // KC Alert
   function kcAlert(msg){
-    document.getElementById('kcMsg').textContent = msg;
-    document.getElementById('kcModal').style.display = 'flex';
+    // overwrite only the body of the modal
+    const content = document.getElementById('kcModalContent');
+    content.innerHTML = 
+      `<strong>KC Event says</strong>
+       <p>${msg}</p>
+       <button id="kcClose">OK</button>`;
+    document.getElementById('kcModal').style.display='flex';
+    document.getElementById('kcClose').onclick = ()=> {
+      document.getElementById('kcModal').style.display='none';
+    };
   }
-  document.getElementById('kcClose').onclick = ()=>
-    document.getElementById('kcModal').style.display = 'none';
+
+  // close initial
+  document.getElementById('kcClose').onclick = ()=> {
+    document.getElementById('kcModal').style.display='none';
+  };
 
   // Firebase init
   const cfg = {
@@ -158,75 +171,70 @@
   const auth = firebase.auth();
   const db   = firebase.database();
 
-  // Profanity filter
+  // profanity filter
   let badWords = [];
   fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
     .then(r=>r.json())
     .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
-    .catch(e=>{ console.error(e); kcAlert('Profanity list failed.'); });
+    .catch(e=>{console.error(e);kcAlert('Profanity list failed.');});
   function containsBadWord(s){
-    return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(s) );
+    return badWords.some(w=>new RegExp('\\b'+w+'\\b','i').test(s));
   }
 
   // UI refs
-  const regForm   = document.getElementById('registerForm'),
-        logForm   = document.getElementById('loginForm'),
-        logoutBtn = document.getElementById('logoutBtn'),
-        showLogin = document.getElementById('showLogin'),
-        showReg   = document.getElementById('showRegister'),
-        postSec   = document.getElementById('postSection'),
-        msgList   = document.getElementById('msgList'),
-        statsList = document.getElementById('statsList');
+  const regForm=document.getElementById('registerForm'),
+        logForm=document.getElementById('loginForm'),
+        logoutBtn=document.getElementById('logoutBtn'),
+        showLogin=document.getElementById('showLogin'),
+        showReg=document.getElementById('showRegister'),
+        postSec=document.getElementById('postSection'),
+        msgList=document.getElementById('msgList'),
+        statsList=document.getElementById('statsList');
 
-  showLogin.onclick = e=>{ e.preventDefault(); regForm.style.display='none'; logForm.style.display='block'; };
-  showReg .onclick   = e=>{ e.preventDefault(); logForm.style.display='none'; regForm.style.display='block'; };
+  showLogin.onclick=e=>{e.preventDefault();regForm.style.display='none';logForm.style.display='block';};
+  showReg.onclick=e=>{e.preventDefault();logForm.style.display='none';regForm.style.display='block';};
 
-  // Register
-  document.getElementById('registerBtn').onclick = ()=>{
-    const name = document.getElementById('regName').value.trim(),
-          email= document.getElementById('regEmail').value.trim(),
-          pass = document.getElementById('regPass').value;
+  // register/login/logout
+  document.getElementById('registerBtn').onclick=()=>{
+    const name=document.getElementById('regName').value.trim(),
+          email=document.getElementById('regEmail').value.trim(),
+          pass=document.getElementById('regPass').value;
     if(!name||!email||!pass) return kcAlert('Fill all fields.');
     auth.createUserWithEmailAndPassword(email,pass)
-      .then(creds=>creds.user.updateProfile({displayName:name}))
+      .then(c=>c.user.updateProfile({displayName:name}))
       .catch(e=>kcAlert(e.message));
   };
-  // Login
-  document.getElementById('loginBtn').onclick = ()=>{
-    const email= document.getElementById('loginEmail').value.trim(),
-          pass = document.getElementById('loginPass').value;
+  document.getElementById('loginBtn').onclick=()=>{
+    const email=document.getElementById('loginEmail').value.trim(),
+          pass=document.getElementById('loginPass').value;
     if(!email||!pass) return kcAlert('Fill both fields.');
-    auth.signInWithEmailAndPassword(email,pass)
-      .catch(e=>kcAlert(e.message));
+    auth.signInWithEmailAndPassword(email,pass).catch(e=>kcAlert(e.message));
   };
-  // Sign out
-  logoutBtn.onclick = ()=> auth.signOut();
+  logoutBtn.onclick=()=>auth.signOut();
 
-  // Emoji picker
-  let selectedEmoji = null;
+  // emoji picker
+  let selectedEmoji=null;
   function initEmoji(){
     document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
-      el.onclick = ()=>{
+      el.onclick=()=>{
         document.querySelectorAll('#emojiPicker .emoji').forEach(x=>x.classList.remove('selected'));
         el.classList.add('selected');
-        selectedEmoji = el.dataset.emoji;
+        selectedEmoji=el.dataset.emoji;
       };
     });
   }
   initEmoji();
 
-  // Recursive render of messages/replies
-  function renderMessages(snapshot, container, basePath){
-    container.innerHTML = '';
-    const arr = [];
-    snapshot.forEach(c=>{
-      const v = c.val(); v.key = c.key; arr.push(v);
-    });
-    arr.sort((a,b)=>(b.likes||0)-(a.likes||0)||(a.time-a.time));
+  // render messages/replies
+  function renderMessages(snapshot,container,basePath){
+    container.innerHTML='';
+    const arr=[];
+    snapshot.forEach(c=>{const v=c.val();v.key=c.key;arr.push(v);});
+    arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
     if(!arr.length){
-      const li = document.createElement('li');
+      const li=document.createElement('li');
       li.style.fontStyle='italic';
-      li.textContent = 'No messages yet.';
+      li.textContent='No messages yet.';
       container.appendChild(li);
       return;
     }
@@ -238,44 +246,40 @@
                `${String(d.getUTCFullYear()).slice(-2)} `+
                `${String(d.getUTCHours()).padStart(2,'0')}:`+
                `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-      const row = document.createElement('li');
-      row.className = (container===msgList ? 'message':'reply');
-      row.innerHTML = `
+      const row=document.createElement('li');
+      row.className=container===msgList?'message':'reply';
+      row.innerHTML=`
         <span class="emoji">${v.emoji}</span>
-        <div class="content">
-          <strong>${v.user}:</strong> ${v.text}
+        <div class="content"><strong>${v.user}:</strong> ${v.text}
           <span class="timestamp">${ts}</span>
         </div>
         <div class="actions">
           <button class="likeBtn" data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
           <button class="replyBtn" data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
-          ${auth.currentUser && auth.currentUser.displayName===v.user
-            ? `<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>` 
-            : ''}
-        </div>
-      `;
+          ${auth.currentUser&&auth.currentUser.displayName===v.user
+            ?`<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>`:''
+          }
+        </div>`;
       container.appendChild(row);
-      const repliesUL = document.createElement('ul');
-      repliesUL.className = 'replies';
+      const repliesUL=document.createElement('ul');
+      repliesUL.className='replies';
       container.appendChild(repliesUL);
       if(v.replies){
-        const pseudoSnap = { forEach: cb=>{
+        const pseudo={forEach:cb=>{
           Object.entries(v.replies).forEach(([k,val])=>{
-            cb({ key:k, val:()=>val });
+            cb({key:k,val:()=>val});
           });
         }};
-        renderMessages(pseudoSnap, repliesUL, `${basePath}/${v.key}/replies`);
+        renderMessages(pseudo,repliesUL,`${basePath}/${v.key}/replies`);
       }
     });
   }
 
-  // Render stats
+  // render stats
   function renderStats(snap){
     statsList.innerHTML='';
     const arr=[];
-    snap.forEach(c=>{
-      const v=c.val(); v.user=c.key; arr.push(v);
-    });
+    snap.forEach(c=>{const v=c.val();v.user=c.key;arr.push(v);});
     arr.sort((a,b)=>(b.count||0)-(a.count||0));
     if(!arr.length){
       const li=document.createElement('li');
@@ -291,99 +295,70 @@
     });
   }
 
-  // Always listen
-  db.ref('messages').on('value', snap=> renderMessages(snap, msgList, ''));
-  db.ref('stats/activity').on('value', renderStats);
+  // listeners
+  db.ref('messages').on('value',snap=>renderMessages(snap,msgList,''));
+  db.ref('stats/activity').on('value',renderStats);
 
-  // Delegated handlers
-  document.body.addEventListener('click', e=>{
-    const user = auth.currentUser;
-
-    // LIKE
+  document.body.addEventListener('click',e=>{
+    const user=auth.currentUser;
+    // like
     if(e.target.matches('.likeBtn')){
       if(!user) return kcAlert('Log in to like.');
-      const path = e.target.dataset.path;
-      const uid = user.uid;
-      const likedRef = db.ref(`${path}/likedBy/${uid}`);
-      likedRef.transaction(current=>{
-        if(current===null) return true;
+      const path=e.target.dataset.path,uid=user.uid;
+      db.ref(`${path}/likedBy/${uid}`).transaction(cur=>{
+        if(cur===null) return true;
         return;
-      }, (err, committed)=>{
-        if(err) {
-          console.error(err);
-          return kcAlert('Error liking—try again.');
-        }
-        if(committed){
-          db.ref(`${path}/likes`)
-            .transaction(c=>(c||0)+1);
-        } else {
-          kcAlert('You already liked this.');
-        }
+      },(err,comm)=>{
+        if(err){console.error(err);return kcAlert('Error liking.');}
+        if(comm){
+          db.ref(`${path}/likes`).transaction(c=>(c||0)+1);
+        } else kcAlert('You already liked this.');
       });
     }
-
-    // REPLY
+    // reply
     if(e.target.matches('.replyBtn')){
       if(!user) return kcAlert('Log in to reply.');
-      const repliesPath = e.target.dataset.path;
+      const repliesPath=e.target.dataset.path;
       if(document.getElementById('replyForm-'+repliesPath)) return;
-      const wrapper = document.createElement('li');
-      wrapper.className='reply-row';
-      const form = document.createElement('div');
-      form.className='reply-form'; form.id='replyForm-'+repliesPath;
-      form.innerHTML = `
-        <input placeholder="Reply..." maxlength="200"/>
-        <button>Send</button>
-      `;
-      wrapper.appendChild(form);
-      e.target.closest('li').after(wrapper);
-      form.querySelector('button').onclick = ()=>{
-        const txt = form.querySelector('input').value.trim();
+      const wrapper=document.createElement('li');wrapper.className='reply-row';
+      const form=document.createElement('div');form.className='reply-form';form.id='replyForm-'+repliesPath;
+      form.innerHTML=`<input placeholder="Reply..." maxlength="200"/><button>Send</button>`;
+      wrapper.appendChild(form);e.target.closest('li').after(wrapper);
+      form.querySelector('button').onclick=()=>{
+        const txt=form.querySelector('input').value.trim();
         if(!selectedEmoji) return kcAlert('Pick an emoji.');
         if(!txt) return kcAlert('Enter reply.');
         if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
         db.ref(repliesPath).push({
-          user:user.displayName,
-          text:txt,
-          emoji:selectedEmoji,
-          time:firebase.database.ServerValue.TIMESTAMP,
-          likes:0
+          user:user.displayName,text:txt,emoji:selectedEmoji,
+          time:firebase.database.ServerValue.TIMESTAMP,likes:0
         });
       };
     }
-
-    // DELETE
+    // delete
     if(e.target.matches('.deleteBtn')){
-      const path = e.target.dataset.path;
-      if(confirm('Delete this and all replies?')){
-        db.ref(path).remove();
-      }
+      const path=e.target.dataset.path;
+      if(confirm('Delete this and all replies?')) db.ref(path).remove();
     }
   });
 
-  // Post new message
-  document.getElementById('postBtnInner').onclick = ()=>{
-    const user=auth.currentUser,
-          txt = document.getElementById('message').value.trim();
+  // post
+  document.getElementById('postBtnInner').onclick=()=>{
+    const user=auth.currentUser, txt=document.getElementById('message').value.trim();
     if(!user) return kcAlert('Log in to post.');
     if(!selectedEmoji) return kcAlert('Pick an emoji.');
     if(!txt) return kcAlert('Enter a message.');
-    if(containsBadWord(user.displayName)||containsBadWord(txt))
-      return kcAlert('That word’s not allowed.');
-    const mRef = db.ref('messages').push();
+    if(containsBadWord(user.displayName)||containsBadWord(txt)) return kcAlert('That word’s not allowed.');
+    const mRef=db.ref('messages').push();
     mRef.set({
-      user:user.displayName,
-      text:txt,
-      emoji:selectedEmoji,
-      time:firebase.database.ServerValue.TIMESTAMP,
-      likes:0
+      user:user.displayName,text:txt,emoji:selectedEmoji,
+      time:firebase.database.ServerValue.TIMESTAMP,likes:0
     });
-    db.ref(`stats/activity/${user.displayName}/count`)
-      .transaction(c=>(c||0)+1);
+    db.ref(`stats/activity/${user.displayName}/count`).transaction(c=>(c||0)+1);
     document.getElementById('message').value='';
   };
 
-  // Auth state
+  // auth state
   auth.onAuthStateChanged(user=>{
     if(user){
       regForm.style.display=logForm.style.display='none';
