@@ -1,78 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Message Board</title>
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-  <style>
-    body { font-family: sans-serif; background: transparent; }
-    #msgBoard { max-width:400px; margin:1em auto; }
-    #msgList { list-style:none; padding:0; max-height:300px; overflow:auto; border:1px solid #ccc; border-radius:4px; }
-    #msgList li { padding:0.5em; border-bottom:1px solid #eee; }
-    #msgList li:last-child { border-bottom:none; }
-    #username,#message,#postBtn { width:100%; padding:0.5em; margin:0.3em 0; box-sizing:border-box; }
-  </style>
-</head>
-<body>
-  <div id="msgBoard">
-    <h3>Message Board</h3>
-    <ul id="msgList"><li style="font-style:italic;color:#666;">Loading…</li></ul>
-    <input type="text" id="username" placeholder="Your name" maxlength="20" />
-    <input type="text" id="message"  placeholder="Your message" maxlength="200" />
-    <button type="button" id="postBtn">Post</button>
-  </div>
+<!-- load Poppins + Firebase -->
+<link 
+  href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" 
+  rel="stylesheet"
+/>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  <script>
-    // your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "kckillerscompany-ab1ec",
-      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
-      messagingSenderId: "198711213988",
-      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-      measurementId: "G-4LKP2M3JXE"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref('messages');
-    const msgList = document.getElementById('msgList');
-    const userIn  = document.getElementById('username');
-    const msgIn   = document.getElementById('message');
-    const btn     = document.getElementById('postBtn');
-    const badWords = ["fuck","cunt","nigga"];
+<style>
+  body, #msgBoard {
+    font-family: 'Poppins', sans-serif;
+    color: #fff;
+  }
 
-    function containsBadWord(s){
-      return badWords.some(w=>new RegExp("\\b"+w+"\\b","i").test(s));
-    }
+  #msgBoard {
+    max-width: 400px;
+    margin: 1em auto;
+  }
 
-    // load messages
-    db.limitToLast(50).on('value', snap => {
-      msgList.innerHTML = '';
-      if(!snap.exists()){
-        msgList.innerHTML = '<li style="font-style:italic;color:#666;">No messages yet.</li>';
-        return;
-      }
-      snap.forEach(c=>{
-        const {user,text} = c.val();
-        const li = document.createElement('li');
-        li.textContent = `${user}: ${text}`;
-        msgList.appendChild(li);
-      });
-    });
+  #msgList {
+    list-style: none;
+    padding: 0.5em;
+    max-height: 300px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.4);
+    border-radius: 12px;
+  }
 
-    // post new
-    btn.addEventListener('click', ()=>{
-      const user = userIn.value.trim();
-      const text = msgIn.value.trim();
-      if(!user||!text) return;
-      if(containsBadWord(user)||containsBadWord(text)) return alert("Keep it clean!");
-      db.push({user,text,time:firebase.database.ServerValue.TIMESTAMP})
-        .then(()=>msgIn.value='')
-        .catch(e=>{console.error(e); alert("Failed to post.");});
-    });
-  </script>
-</body>
-</html>
+  #msgList li {
+    padding: 0.5em;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+  }
+  #msgList li:last-child {
+    border-bottom: none;
+  }
+
+  #username,
+  #message,
+  #postBtn {
+    width: 100%;
+    padding: 0.75em;
+    margin: 0.5em 0;
+    box-sizing: border-box;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+  }
+
+  #username, #message {
+    background: rgba(255,255,255,0.9);
+    color: #000;
+  }
+
+  #postBtn {
+    background: #28a745;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  #postBtn:hover {
+    background: #218838;
+  }
+</style>
+
+<div id="msgBoard">
+  <h3 style="text-align:center; margin-bottom:0.5em;">Message Board</h3>
+  <ul id="msgList">
+    <li style="font-style:italic;color:rgba(255,255,255,0.7);">
+      Loading…
+    </li>
+  </ul>
+  <input type="text" id="username" placeholder="Your name" maxlength="20" />
+  <input type="text" id="message" placeholder="Your message" maxlength="200" />
+  <button type="button" id="postBtn">Post</button>
+</div>
+
+<script>
+  // --- CONFIG & INIT ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+    authDomain: "kckillerscompany-ab1ec.firebaseapp.com"
+
