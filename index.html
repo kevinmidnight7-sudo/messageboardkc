@@ -13,21 +13,25 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      margin: 0; padding: 0;
+    html, body {
+      height: 100vh;
+      width: 100vw;
+      margin: 0;
+      padding: 0;
       background: transparent;
+      font-family: 'Poppins', sans-serif;
       color: #fff;
-      display: flex; justify-content: center;
+      overflow: hidden;
+      display: flex;
     }
 
     #msgBoard {
       display: flex;
+      flex: 1;
       flex-direction: row;
-      max-width: 800px;
-      width: 100%;
-      margin: 1em;
       gap: 1em;
+      padding: 1em;
+      box-sizing: border-box;
     }
 
     /* Left: logo + inputs */
@@ -35,12 +39,14 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      overflow-y: auto;
     }
 
     /* Logo above picker */
     #logoContainer {
       text-align: center;
       margin-bottom: 1em;
+      flex-shrink: 0;
     }
     #kcLogo {
       max-width: 120px;
@@ -54,29 +60,43 @@
       padding: 0.5em;
       margin-bottom: 1em;
       text-align: center;
+      flex-shrink: 0;
     }
     #emojiContainer p {
       margin: 0 0 0.5em;
-      font-size: 0.9em; color: rgba(255,255,255,0.8);
+      font-size: 0.9em;
+      color: rgba(255,255,255,0.8);
     }
     .emoji {
-      font-size: 1.5em; margin: .25em; cursor: pointer;
-      opacity: .7; transition: opacity .2s, transform .1s;
+      font-size: 1.5em;
+      margin: .25em;
+      cursor: pointer;
+      opacity: .7;
+      transition: opacity .2s, transform .1s;
     }
     .emoji.selected {
-      opacity: 1; transform: scale(1.2);
+      opacity: 1;
+      transform: scale(1.2);
     }
 
     input, button {
-      width: 100%; padding: .75em; margin-bottom: .5em;
-      box-sizing: border-box; border-radius: 8px; border: none;
+      width: 100%;
+      padding: .75em;
+      margin-bottom: .5em;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: none;
       font-family: 'Poppins', sans-serif;
+      flex-shrink: 0;
     }
     input {
-      background: rgba(255,255,255,0.9); color: #000;
+      background: rgba(255,255,255,0.9);
+      color: #000;
     }
     button {
-      background: #28a745; color: #fff; font-weight: 600;
+      background: #28a745;
+      color: #fff;
+      font-weight: 600;
       cursor: pointer;
     }
     button:hover {
@@ -84,15 +104,23 @@
     }
 
     /* Right: message list */
-    #messageContainer { flex: 2; }
+    #messageContainer {
+      flex: 2;
+      overflow-y: auto;
+    }
     #msgList {
-      list-style: none; padding: .5em; max-height: 400px;
-      overflow-y: auto; background: rgba(0,0,0,0.4);
-      border-radius: 12px; margin: 0;
+      list-style: none;
+      padding: .5em;
+      margin: 0;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
     }
     #msgList li {
-      display: flex; align-items: center; padding: .5em;
+      display: flex;
+      align-items: center;
+      padding: .5em;
       border-bottom: 1px solid rgba(255,255,255,0.2);
+      flex-wrap: wrap;
     }
     #msgList li:last-child {
       border-bottom: none;
@@ -104,40 +132,68 @@
       border: 1px solid #fff;
       border-radius: 6px;
       padding: 2px 4px;
-      margin-right: 0.5em;
+      margin-right: .5em;
       font-size: 1.2em;
       opacity: 1;
     }
 
-    .message-content { flex:1; color:#fff; }
+    .message-content {
+      flex: 1;
+      color: #fff;
+      word-break: break-word;
+    }
     .timestamp {
-      font-size:.75em; color:rgba(255,255,255,0.7); margin-left:.5em;
+      font-size: .75em;
+      color: rgba(255,255,255,0.7);
+      margin-left: .5em;
+      white-space: nowrap;
     }
 
     /* KC Event modal */
     #kcModal {
-      display: none; position: fixed; z-index: 999;
-      left:0; top:0; width:100%; height:100%;
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
       background: rgba(0,0,0,0.5);
       align-items: center; justify-content: center;
     }
     #kcModalContent {
-      background: #fff; padding: 1rem; border-radius: 8px;
-      max-width: 300px; width: 90%; text-align: center;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      max-width: 300px; width: 90%;
+      text-align: center;
     }
     #kcModalContent strong {
       display: block; margin-bottom: .5rem; color: #000;
     }
-    #kcModalContent p { margin: .5rem 0; color: #000; }
+    #kcModalContent p {
+      margin: .5rem 0; color: #000;
+    }
     #kcClose {
-      margin-top: .5rem; padding: .5rem 1rem; border: none;
-      background: #28a745; color: #fff; border-radius: 4px;
-      cursor: pointer; font-family: 'Poppins',sans-serif;
+      margin-top: .5rem;
+      padding: .5rem 1rem;
+      border: none;
+      background: #28a745;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
     }
 
     @media(max-width: 700px) {
-      #msgBoard { flex-direction: column; }
-      #messageContainer { order: -1; }
+      #msgBoard {
+        flex-direction: column;
+      }
+      #messageContainer {
+        order: -1;
+        height: 40%;
+      }
+      #inputContainer {
+        height: 60%;
+      }
     }
   </style>
 </head>
