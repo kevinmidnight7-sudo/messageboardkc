@@ -26,8 +26,6 @@
       margin: 1em auto;
     }
 
-    /* Title removed */
-
     #msgList {
       list-style: none;
       padding: 0.5em;
@@ -75,15 +73,20 @@
       background: #218838;
     }
 
+    /* timestamp styling */
+    .timestamp {
+      font-size: 0.75em;
+      color: rgba(255,255,255,0.7);
+      margin-left: 0.5em;
+    }
+
     /* KC Event custom alert modal */
     #kcModal {
       display: none;
       position: fixed;
       z-index: 999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
       background: rgba(0,0,0,0.5);
       align-items: center;
       justify-content: center;
@@ -145,6 +148,7 @@
   </div>
 
   <script>
+    // 1) custom alert
     function kcAlert(msg) {
       document.getElementById('kcMsg').textContent = msg;
       document.getElementById('kcModal').style.display = 'flex';
@@ -153,6 +157,7 @@
       document.getElementById('kcModal').style.display = 'none';
     };
 
+    // 2) Firebase config & init
     const firebaseConfig = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -166,6 +171,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database().ref('messages');
 
+    // 3) profanity filter
     const badWords = [
       "fuck","shit","bitch","bastard","asshole",
       "cunt","dick","piss","prick","slut",
@@ -178,6 +184,7 @@
       );
     }
 
+    // 4) render messages with timestamp
     const msgList = document.getElementById('msgList');
     db.limitToLast(50).on('value', snap => {
       msgList.innerHTML = '';
@@ -186,22 +193,33 @@
         return;
       }
       snap.forEach(child => {
-        const { user, text } = child.val();
+        const { user, text, time } = child.val();
         if (containsBadWord(user) || containsBadWord(text)) return;
+
+        // format timestamp
+        const d = new Date(time);
+        const day     = String(d.getUTCDate()).padStart(2,'0');
+        const month   = String(d.getUTCMonth()+1).padStart(2,'0');
+        const year    = String(d.getUTCFullYear()).slice(-2);
+        const hours   = String(d.getUTCHours()).padStart(2,'0');
+        const minutes = String(d.getUTCMinutes()).padStart(2,'0');
+        const ts      = `${day}/${month}/${year} ${hours}:${minutes} GMT`;
+
         const li = document.createElement('li');
-        li.textContent = `${user}: ${text}`;
+        li.innerHTML = `<strong>${user}:</strong> ${text}<span class="timestamp">${ts}</span>`;
         msgList.appendChild(li);
       });
       msgList.scrollTop = msgList.scrollHeight;
     });
 
+    // 5) post handler
     document.getElementById('postBtn').addEventListener('click', () => {
       const user = document.getElementById('username').value.trim();
       const text = document.getElementById('message').value.trim();
       if (!user || !text) return;
 
       if (containsBadWord(user) || containsBadWord(text)) {
-        return kcAlert("Please keep it clean – that word's not allowed.");
+        return kcAlert("Please keep it clean – that word's not allowed.");
       }
 
       db.push({
@@ -220,6 +238,3 @@
   </script>
 </body>
 </html>
-
-
-
