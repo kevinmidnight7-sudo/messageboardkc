@@ -15,100 +15,183 @@
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      color: #fff;
       margin: 0; padding: 0;
       background: transparent;
+      color: #fff;
+      display: flex;
+      justify-content: center;
     }
-    #msgBoard { max-width:400px; margin:1em auto; }
-    #msgList {
-      list-style:none; padding:0.5em; max-height:300px; overflow-y:auto;
-      background:rgba(0,0,0,0.4); border-radius:12px; margin:0 0 1em;
-    }
-    #msgList li {
-      display:flex; align-items:center; padding:0.5em;
-      border-bottom:1px solid rgba(255,255,255,0.2);
-    }
-    #msgList li:last-child { border-bottom:none; }
-    .emoji {
-      font-size:1.5em; margin:.25em; cursor:pointer;
-      opacity:.7; transition:opacity .2s,transform .1s;
-    }
-    .emoji.selected {
-      opacity:1; transform:scale(1.2);
-    }
-    .message-content { flex:1; color:#fff; }
-    .timestamp {
-      font-size:.75em; color:rgba(255,255,255,0.7); margin-left:.5em;
-    }
-    input, button {
-      width:100%; padding:.75em; margin:.5em 0; box-sizing:border-box;
-      border-radius:8px; border:none; font-family:'Poppins',sans-serif;
-    }
-    input { background:rgba(255,255,255,0.9); color:#000; }
-    button {
-      background:#28a745; color:#fff; font-weight:600; cursor:pointer;
-    }
-    button:hover { background:#218838; }
 
-    /* Emoji picker container */
+    #msgBoard {
+      display: flex;
+      flex-direction: row;
+      max-width: 800px;
+      width: 100%;
+      margin: 1em;
+      gap: 1em;
+    }
+
+    /* Left side: inputs */
+    #inputContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    input, button {
+      width: 100%;
+      padding: 0.75em;
+      margin-bottom: 0.5em;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Poppins', sans-serif;
+    }
+    input {
+      background: rgba(255,255,255,0.9);
+      color: #000;
+    }
+    button {
+      background: #28a745;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #218838;
+    }
+
+    /* Emoji picker */
     #emojiContainer {
-      background:rgba(0,0,0,0.4); border-radius:12px;
-      padding:.5em; margin-bottom:1em; text-align:center;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      padding: 0.5em;
+      margin-bottom: 1em;
+      text-align: center;
     }
     #emojiContainer p {
-      margin:0 0 .5em;
-      font-size:.9em; color:rgba(255,255,255,0.8);
+      margin: 0 0 0.5em;
+      font-size: 0.9em;
+      color: rgba(255,255,255,0.8);
+    }
+    .emoji {
+      font-size: 1.5em;
+      margin: 0.25em;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity .2s, transform .1s;
+    }
+    .emoji.selected {
+      opacity: 1;
+      transform: scale(1.2);
+    }
+
+    /* Right side: messages */
+    #messageContainer {
+      flex: 2;
+    }
+    #msgList {
+      list-style: none;
+      padding: 0.5em;
+      max-height: 400px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      margin: 0;
+    }
+    #msgList li {
+      display: flex;
+      align-items: center;
+      padding: 0.5em;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    #msgList li:last-child {
+      border-bottom: none;
+    }
+    .message-content {
+      flex: 1;
+      color: #fff;
+    }
+    .timestamp {
+      font-size: 0.75em;
+      color: rgba(255,255,255,0.7);
+      margin-left: 0.5em;
     }
 
     /* KC Event modal */
     #kcModal {
-      display:none; position:fixed; z-index:999;
-      left:0; top:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.5);
-      align-items:center; justify-content:center;
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center;
     }
     #kcModalContent {
-      background:#fff; padding:1rem; border-radius:8px;
-      max-width:300px; width:90%; text-align:center;
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      max-width: 300px; width: 90%;
+      text-align: center;
     }
     #kcModalContent strong {
-      display:block; margin-bottom:.5rem; color:#000;
+      display: block; margin-bottom: 0.5rem; color: #000;
     }
-    #kcModalContent p { margin:.5rem 0; color:#000; }
+    #kcModalContent p {
+      margin: 0.5rem 0; color: #000;
+    }
     #kcClose {
-      margin-top:.5rem; padding:.5rem 1rem; border:none;
-      background:#28a745; color:#fff; border-radius:4px;
-      cursor:pointer; font-family:'Poppins',sans-serif;
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #28a745;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    @media(max-width: 700px) {
+      #msgBoard { flex-direction: column; }
+      #messageContainer { order: -1; }
     }
   </style>
 </head>
 <body>
 
   <div id="msgBoard">
-    <ul id="msgList">
-      <li style="font-style:italic;color:rgba(255,255,255,0.7);">Loading…</li>
-    </ul>
+    <!-- Left: inputs -->
+    <div id="inputContainer">
+      <div id="emojiContainer">
+        <p><strong>Pick an emoji!</strong></p>
+        <span class="emoji" data-emoji="😀">😀</span>
+        <span class="emoji" data-emoji="😎">😎</span>
+        <span class="emoji" data-emoji="😂">😂</span>
+        <span class="emoji" data-emoji="😍">😍</span>
+        <span class="emoji" data-emoji="👍">👍</span>
+        <span class="emoji" data-emoji="🙌">🙌</span>
+        <span class="emoji" data-emoji="😉">😉</span>
+        <span class="emoji" data-emoji="😁">😁</span>
+        <span class="emoji" data-emoji="😢">😢</span>
+        <span class="emoji" data-emoji="😮">😮</span>
+        <span class="emoji" data-emoji="😡">😡</span>
+        <span class="emoji" data-emoji="🎉">🎉</span>
+      </div>
 
-    <div id="emojiContainer">
-      <p>Pick an emoji!</p>
-      <span class="emoji" data-emoji="😀">😀</span>
-      <span class="emoji" data-emoji="😎">😎</span>
-      <span class="emoji" data-emoji="😂">😂</span>
-      <span class="emoji" data-emoji="😍">😍</span>
-      <span class="emoji" data-emoji="👍">👍</span>
-      <span class="emoji" data-emoji="🙌">🙌</span>
-      <!-- Additional emojis -->
-      <span class="emoji" data-emoji="😉">😉</span>
-      <span class="emoji" data-emoji="😁">😁</span>
-      <span class="emoji" data-emoji="😢">😢</span>
-      <span class="emoji" data-emoji="😮">😮</span>
-      <span class="emoji" data-emoji="😡">😡</span>
-      <span class="emoji" data-emoji="🎉">🎉</span>
+      <input type="text" id="username" placeholder="Your name" maxlength="20" />
+      <input type="text" id="message" placeholder="Your message" maxlength="200" />
+      <button id="postBtn" type="button">Post</button>
     </div>
 
-    <input type="text" id="username" placeholder="Your name" maxlength="20" />
-    <input type="text" id="message" placeholder="Your message" maxlength="200" />
-    <button id="postBtn" type="button">Post</button>
+    <!-- Right: message list -->
+    <div id="messageContainer">
+      <ul id="msgList">
+        <li style="font-style:italic; color:rgba(255,255,255,0.7);">
+          Loading…
+        </li>
+      </ul>
+    </div>
   </div>
 
   <!-- KC Event says modal -->
@@ -130,15 +213,11 @@
       document.getElementById('kcModal').style.display = 'none';
     };
 
-    // Load full bad-words list
+    // Load bad-words
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-      .then(r => r.json())
-      .then(list => badWords = list)
-      .catch(err => {
-        console.error('Failed to load bad words:', err);
-        kcAlert('Warning: profanity filter failed to load.');
-      })
+      .then(r => r.json()).then(list => badWords = list)
+      .catch(e => { console.error(e); kcAlert('Profanity filter failed to load.'); })
       .finally(initApp);
 
     function containsBadWord(s) {
@@ -202,12 +281,13 @@
 
       // Post handler
       document.getElementById('postBtn').onclick = () => {
-        const user = document.getElementById('username').value.trim();
-        const text = document.getElementById('message').value.trim();
-        if (!selectedEmoji)            return kcAlert("Please pick an emoji avatar.");
-        if (!user || !text)            return kcAlert("Please enter both name and message.");
-        if (containsBadWord(user) || containsBadWord(text))
-                                       return kcAlert("Please keep it clean – that word's not allowed.");
+        const user  = document.getElementById('username').value.trim();
+        const text  = document.getElementById('message').value.trim();
+        if (!selectedEmoji)          return kcAlert("Please pick an emoji avatar.");
+        if (!user || !text)          return kcAlert("Please enter both name and message.");
+        if (containsBadWord(user) ||
+            containsBadWord(text))   return kcAlert("Please keep it clean – that word's not allowed.");
+
         db.push({
           user,
           text,
@@ -223,4 +303,3 @@
 
 </body>
 </html>
-
