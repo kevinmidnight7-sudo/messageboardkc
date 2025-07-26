@@ -97,6 +97,13 @@
       <span class="emoji" data-emoji="😍">😍</span>
       <span class="emoji" data-emoji="👍">👍</span>
       <span class="emoji" data-emoji="🙌">🙌</span>
+      <!-- Additional emojis -->
+      <span class="emoji" data-emoji="😉">😉</span>
+      <span class="emoji" data-emoji="😁">😁</span>
+      <span class="emoji" data-emoji="😢">😢</span>
+      <span class="emoji" data-emoji="😮">😮</span>
+      <span class="emoji" data-emoji="😡">😡</span>
+      <span class="emoji" data-emoji="🎉">🎉</span>
     </div>
 
     <input type="text" id="username" placeholder="Your name" maxlength="20" />
@@ -114,7 +121,7 @@
   </div>
 
   <script>
-    // 1) Modal helper
+    // Modal helper
     function kcAlert(msg) {
       document.getElementById('kcMsg').textContent = msg;
       document.getElementById('kcModal').style.display = 'flex';
@@ -123,7 +130,7 @@
       document.getElementById('kcModal').style.display = 'none';
     };
 
-    // 2) Load full bad-words list from GitHub
+    // Load full bad-words list
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
       .then(r => r.json())
@@ -139,7 +146,7 @@
     }
 
     function initApp() {
-      // 3) Firebase init
+      // Firebase init
       firebase.initializeApp({
         apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
         authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -152,7 +159,7 @@
       });
       const db = firebase.database().ref('messages');
 
-      // 4) Emoji selection
+      // Emoji selection
       let selectedEmoji = null;
       document.querySelectorAll('.emoji').forEach(el => {
         el.onclick = () => {
@@ -162,7 +169,7 @@
         };
       });
 
-      // 5) Render messages
+      // Render messages
       const msgList = document.getElementById('msgList');
       db.limitToLast(50).on('value', snap => {
         msgList.innerHTML = '';
@@ -193,15 +200,14 @@
         msgList.scrollTop = msgList.scrollHeight;
       });
 
-      // 6) Post handler
+      // Post handler
       document.getElementById('postBtn').onclick = () => {
         const user = document.getElementById('username').value.trim();
         const text = document.getElementById('message').value.trim();
         if (!selectedEmoji)            return kcAlert("Please pick an emoji avatar.");
         if (!user || !text)            return kcAlert("Please enter both name and message.");
-        if (containsBadWord(user) ||
-            containsBadWord(text))     return kcAlert("Please keep it clean – that word's not allowed.");
-
+        if (containsBadWord(user) || containsBadWord(text))
+                                       return kcAlert("Please keep it clean – that word's not allowed.");
         db.push({
           user,
           text,
@@ -217,3 +223,4 @@
 
 </body>
 </html>
+
