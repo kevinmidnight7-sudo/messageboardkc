@@ -18,8 +18,7 @@
       margin: 0; padding: 0;
       background: transparent;
       color: #fff;
-      display: flex;
-      justify-content: center;
+      display: flex; justify-content: center;
     }
 
     #msgBoard {
@@ -31,34 +30,21 @@
       gap: 1em;
     }
 
-    /* Left side: inputs */
+    /* Left: logo + inputs */
     #inputContainer {
       flex: 1;
       display: flex;
       flex-direction: column;
     }
 
-    input, button {
-      width: 100%;
-      padding: 0.75em;
-      margin-bottom: 0.5em;
-      box-sizing: border-box;
-      border-radius: 8px;
-      border: none;
-      font-family: 'Poppins', sans-serif;
+    /* Logo above picker */
+    #logoContainer {
+      text-align: center;
+      margin-bottom: 1em;
     }
-    input {
-      background: rgba(255,255,255,0.9);
-      color: #000;
-    }
-    button {
-      background: #28a745;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #218838;
+    #kcLogo {
+      max-width: 120px;
+      height: auto;
     }
 
     /* Emoji picker */
@@ -71,85 +57,82 @@
     }
     #emojiContainer p {
       margin: 0 0 0.5em;
-      font-size: 0.9em;
-      color: rgba(255,255,255,0.8);
+      font-size: 0.9em; color: rgba(255,255,255,0.8);
     }
     .emoji {
-      font-size: 1.5em;
-      margin: 0.25em;
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity .2s, transform .1s;
+      font-size: 1.5em; margin: .25em; cursor: pointer;
+      opacity: .7; transition: opacity .2s, transform .1s;
     }
     .emoji.selected {
-      opacity: 1;
-      transform: scale(1.2);
+      opacity: 1; transform: scale(1.2);
     }
 
-    /* Right side: messages */
-    #messageContainer {
-      flex: 2;
+    input, button {
+      width: 100%; padding: .75em; margin-bottom: .5em;
+      box-sizing: border-box; border-radius: 8px; border: none;
+      font-family: 'Poppins', sans-serif;
     }
+    input {
+      background: rgba(255,255,255,0.9); color: #000;
+    }
+    button {
+      background: #28a745; color: #fff; font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #218838;
+    }
+
+    /* Right: message list */
+    #messageContainer { flex: 2; }
     #msgList {
-      list-style: none;
-      padding: 0.5em;
-      max-height: 400px;
-      overflow-y: auto;
-      background: rgba(0,0,0,0.4);
-      border-radius: 12px;
-      margin: 0;
+      list-style: none; padding: .5em; max-height: 400px;
+      overflow-y: auto; background: rgba(0,0,0,0.4);
+      border-radius: 12px; margin: 0;
     }
     #msgList li {
-      display: flex;
-      align-items: center;
-      padding: 0.5em;
+      display: flex; align-items: center; padding: .5em;
       border-bottom: 1px solid rgba(255,255,255,0.2);
     }
     #msgList li:last-child {
       border-bottom: none;
     }
-    .message-content {
-      flex: 1;
-      color: #fff;
+
+    /* style emojis inside chat logs */
+    #msgList .emoji {
+      display: inline-block;
+      border: 1px solid #fff;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin-right: 0.5em;
+      font-size: 1.2em;
+      opacity: 1;
     }
+
+    .message-content { flex:1; color:#fff; }
     .timestamp {
-      font-size: 0.75em;
-      color: rgba(255,255,255,0.7);
-      margin-left: 0.5em;
+      font-size:.75em; color:rgba(255,255,255,0.7); margin-left:.5em;
     }
 
     /* KC Event modal */
     #kcModal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
+      display: none; position: fixed; z-index: 999;
+      left:0; top:0; width:100%; height:100%;
       background: rgba(0,0,0,0.5);
       align-items: center; justify-content: center;
     }
     #kcModalContent {
-      background: #fff;
-      padding: 1rem;
-      border-radius: 8px;
-      max-width: 300px; width: 90%;
-      text-align: center;
+      background: #fff; padding: 1rem; border-radius: 8px;
+      max-width: 300px; width: 90%; text-align: center;
     }
     #kcModalContent strong {
-      display: block; margin-bottom: 0.5rem; color: #000;
+      display: block; margin-bottom: .5rem; color: #000;
     }
-    #kcModalContent p {
-      margin: 0.5rem 0; color: #000;
-    }
+    #kcModalContent p { margin: .5rem 0; color: #000; }
     #kcClose {
-      margin-top: 0.5rem;
-      padding: 0.5rem 1rem;
-      border: none;
-      background: #28a745;
-      color: #fff;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: 'Poppins', sans-serif;
+      margin-top: .5rem; padding: .5rem 1rem; border: none;
+      background: #28a745; color: #fff; border-radius: 4px;
+      cursor: pointer; font-family: 'Poppins',sans-serif;
     }
 
     @media(max-width: 700px) {
@@ -161,8 +144,17 @@
 <body>
 
   <div id="msgBoard">
-    <!-- Left: inputs -->
+    <!-- Left: logo + inputs -->
     <div id="inputContainer">
+
+      <div id="logoContainer">
+        <img
+          src="https://raw.githubusercontent.com/kevinmidnight7-sudo/messageboardkc/main/kcevents.png"
+          alt="KC Events Logo"
+          id="kcLogo"
+        >
+      </div>
+
       <div id="emojiContainer">
         <p><strong>Pick an emoji!</strong></p>
         <span class="emoji" data-emoji="😀">😀</span>
@@ -187,14 +179,12 @@
     <!-- Right: message list -->
     <div id="messageContainer">
       <ul id="msgList">
-        <li style="font-style:italic; color:rgba(255,255,255,0.7);">
-          Loading…
-        </li>
+        <li style="font-style:italic;color:rgba(255,255,255,0.7);">Loading…</li>
       </ul>
     </div>
   </div>
 
-  <!-- KC Event says modal -->
+  <!-- KC Event modal -->
   <div id="kcModal">
     <div id="kcModalContent">
       <strong>KC Event says</strong>
@@ -242,7 +232,7 @@
       let selectedEmoji = null;
       document.querySelectorAll('.emoji').forEach(el => {
         el.onclick = () => {
-          document.querySelectorAll('.emoji').forEach(e=>e.classList.remove('selected'));
+          document.querySelectorAll('.emoji').forEach(e => e.classList.remove('selected'));
           el.classList.add('selected');
           selectedEmoji = el.dataset.emoji;
         };
@@ -281,19 +271,16 @@
 
       // Post handler
       document.getElementById('postBtn').onclick = () => {
-        const user  = document.getElementById('username').value.trim();
-        const text  = document.getElementById('message').value.trim();
+        const user = document.getElementById('username').value.trim();
+        const text = document.getElementById('message').value.trim();
         if (!selectedEmoji)          return kcAlert("Please pick an emoji avatar.");
         if (!user || !text)          return kcAlert("Please enter both name and message.");
-        if (containsBadWord(user) ||
-            containsBadWord(text))   return kcAlert("Please keep it clean – that word's not allowed.");
-
+        if (containsBadWord(user) || containsBadWord(text))
+                                     return kcAlert("Please keep it clean – that word's not allowed.");
         db.push({
-          user,
-          text,
-          emoji: selectedEmoji,
+          user, text, emoji: selectedEmoji,
           time: firebase.database.ServerValue.TIMESTAMP
-        }).catch(e=>{
+        }).catch(e => {
           console.error(e);
           kcAlert("Could not post – try again.");
         });
@@ -303,3 +290,4 @@
 
 </body>
 </html>
+
