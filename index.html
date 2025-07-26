@@ -2,74 +2,194 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>KC Event Board w/ Nested Replies & Delete</title>
+  <title>KC Event Board w/ Replies & Likes</title>
 
-  <!-- Google Font + Firebase -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <!-- Poppins + Firebase -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+    rel="stylesheet"
+  />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <style>
-    html,body{margin:0;padding:0;width:100vw;height:100vh;font-family:'Poppins',sans-serif;color:#fff;background:transparent;display:flex;overflow:hidden}
-    #msgBoard{display:flex;flex:1;gap:2em; /* increased gap */ padding:1em;box-sizing:border-box}
+    html, body {
+      margin:0; padding:0;
+      width:100vw; height:100vh;
+      font-family:'Poppins',sans-serif;
+      color:#fff; background:transparent;
+      display:flex; overflow:hidden;
+    }
+    #msgBoard {
+      display:flex; flex:1; gap:2em; padding:1em;
+      box-sizing:border-box;
+    }
 
     /* AUTH */
-    #authContainer{flex:1;background:rgba(0,0,0,0.4);border-radius:12px;padding:1em}
-    #authContainer h2{margin:0 0 .5em;font-size:1.2em;text-align:center}
-    #authContainer input, #authContainer button{width:100%;padding:.5em;margin:.5em 0;border:none;border-radius:6px;box-sizing:border-box;font-family:'Poppins',sans-serif}
-    #authContainer button{background:#28a745;color:#fff;font-weight:600;cursor:pointer}
-    #authContainer button:hover{background:#218838}
-    #logoutBtn{background:#dc3545;color:#fff}
-    #logoutBtn:hover{background:#c82333}
+    #authContainer {
+      flex:1; background:rgba(0,0,0,0.4);
+      border-radius:12px; padding:1em;
+    }
+    #authContainer h2 {
+      margin:0 0 .5em; font-size:1.2em; text-align:center;
+    }
+    #authContainer input,
+    #authContainer button {
+      width:100%; padding:.5em; margin:.5em 0;
+      box-sizing:border-box; border:none; border-radius:6px;
+      font-family:'Poppins',sans-serif;
+    }
+    #authContainer button {
+      background:#28a745; color:#fff; cursor:pointer;
+      font-weight:600;
+    }
+    #authContainer button:hover {
+      background:#218838;
+    }
+    #logoutBtn {
+      background:#dc3545; color:#fff;
+    }
+    #logoutBtn:hover {
+      background:#c82333;
+    }
 
-    /* MSG PANEL */
-    #messageContainer{flex:2;overflow-y:auto;background:rgba(0,0,0,0.4);border-radius:12px;padding:.5em;display:flex;flex-direction:column;box-sizing:border-box}
-    #postSection{display:none;margin-bottom:1em}
-    #postSection input, #postSection button{width:100%;padding:.75em;margin:.3em 0;box-sizing:border-box;border:none;border-radius:8px;font-family:'Poppins',sans-serif}
-    #postSection input{background:rgba(255,255,255,0.9);color:#000}
-    #postSection button{background:#28a745;color:#fff;font-weight:600;cursor:pointer}
-    #postSection button:hover{background:#218838}
+    /* MESSAGE PANEL */
+    #messageContainer {
+      flex:2; overflow-y:auto;
+      background:rgba(0,0,0,0.4); border-radius:12px;
+      padding:.5em; box-sizing:border-box;
+      display:flex; flex-direction:column;
+    }
+    #postSection {
+      display:none; margin-bottom:1em;
+    }
+    #postSection input,
+    #postSection button {
+      width:100%; box-sizing:border-box;
+      border:none; border-radius:8px;
+      padding:.75em; margin:.3em 0;
+      font-family:'Poppins',sans-serif;
+    }
+    #postSection input {
+      background:rgba(255,255,255,0.9); color:#000;
+    }
+    #postSection button {
+      background:#28a745; color:#fff;
+      font-weight:600; cursor:pointer;
+    }
+    #postSection button:hover {
+      background:#218838;
+    }
 
     /* EMOJI PICKER */
-    #emojiPicker{background:rgba(255,255,255,0.1);border-radius:8px;padding:.5em;text-align:center}
-    .emoji{font-size:1.5em;margin:.25em;cursor:pointer;opacity:.7;transition:opacity .2s,transform .1s;display:inline-block;border:1px solid #fff;border-radius:6px;padding:2px 4px}
-    .emoji.selected{opacity:1;transform:scale(1.2)}
+    #emojiPicker {
+      background:rgba(255,255,255,0.1);
+      border-radius:8px; padding:.5em; text-align:center;
+    }
+    .emoji {
+      font-size:1.5em; margin:.25em;
+      cursor:pointer; opacity:.7;
+      transition:opacity .2s,transform .1s;
+      display:inline-block; border:1px solid #fff;
+      border-radius:6px; padding:2px 4px;
+    }
+    .emoji.selected {
+      opacity:1; transform:scale(1.2);
+    }
 
     /* MSG LIST & REPLIES */
-    #msgList{list-style:none;margin:0;padding:0;flex:1;overflow-y:auto}
-    .message, .reply{display:flex;align-items:flex-start;gap:.5em;padding:.5em;border-bottom:1px solid rgba(255,255,255,0.2);position:relative}
-    .message:last-child, .reply:last-child{border-bottom:none}
-    .content{flex:1}
-    .content strong{color:#fff}
-    .timestamp{display:block;font-size:.75em;color:rgba(255,255,255,0.7);margin-top:.2em}
-    .actions{display:flex;flex-direction:column;gap:.3em}
-    .likeBtn, .replyBtn, .deleteBtn{background:transparent;color:#fff;border:1px solid #fff;border-radius:6px;padding:2px 6px;cursor:pointer;display:flex;align-items:center;gap:.3em;font-size:.9em}
-    .likeBtn:hover, .replyBtn:hover, .deleteBtn:hover{background:rgba(255,255,255,0.1)}
-    .replies{list-style:none;margin:0;padding:0 0 0 2em}
+    #msgList {
+      list-style:none; margin:0; padding:0;
+      flex:1; overflow-y:auto;
+    }
+    .message, .reply {
+      display:flex; align-items:flex-start;
+      gap:.5em; padding:.5em;
+      border-bottom:1px solid rgba(255,255,255,0.2);
+      position:relative;
+    }
+    .message:last-child,
+    .reply:last-child {
+      border-bottom:none;
+    }
+    .content {
+      flex:1;
+    }
+    .content strong {
+      color:#fff;
+    }
+    .timestamp {
+      display:block; font-size:.75em;
+      color:rgba(255,255,255,0.7);
+      margin-top:.2em;
+    }
+    .actions {
+      display:flex; flex-direction:column; gap:.3em;
+    }
+    .likeBtn,
+    .replyBtn,
+    .deleteBtn {
+      background:transparent; color:#fff;
+      border:1px solid #fff; border-radius:6px;
+      padding:2px 6px; cursor:pointer;
+      display:flex; align-items:center;
+      gap:.3em; font-size:.9em;
+    }
+    .likeBtn:hover,
+    .replyBtn:hover,
+    .deleteBtn:hover {
+      background:rgba(255,255,255,0.1);
+    }
+    .replies {
+      list-style:none; margin:0;
+      padding:0 0 0 2em;
+    }
 
     /* INLINE REPLY FORM */
-    .reply-row{list-style:none;display:flex;justify-content:center;margin:.5em 0}
-    .reply-form{display:flex;gap:.5em}
-    .reply-form input{width:200px;padding:.5em;border:none;border-radius:8px;font-size:.9em}
-    .reply-form button{width:100px;padding:.5em;border:none;border-radius:8px;background:#28a745;color:#fff;font-weight:600;cursor:pointer}
-    .reply-form button:hover{background:#218838}
-
-    /* STATS */
-    #statsContainer{flex:1;background:rgba(0,0,0,0.4);border-radius:12px;padding:1em;box-sizing:border-box}
-    #statsContainer h3{margin:0 0 .5em;text-align:center}
-    #statsList{list-style:none;padding:0;margin:0}
-    #statsList li{display:flex;justify-content:space-between;padding:.4em 0;border-bottom:1px solid rgba(255,255,255,0.2);font-size:.9em}
-    #statsList li:last-child{border-bottom:none}
-    .fire{margin-left:.3em}
+    .reply-row {
+      list-style:none; display:flex;
+      justify-content:center; margin:.5em 0;
+    }
+    .reply-form {
+      display:flex; gap:.5em;
+    }
+    .reply-form input {
+      width:200px; padding:.5em;
+      border:none; border-radius:8px;
+      font-size:.9em;
+    }
+    .reply-form button {
+      width:100px; padding:.5em;
+      border:none; border-radius:8px;
+      background:#28a745; color:#fff;
+      font-weight:600; cursor:pointer;
+    }
+    .reply-form button:hover {
+      background:#218838;
+    }
 
     /* MODAL */
-    #kcModal{display:flex; /* show immediately */ position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center}
-    #kcModalContent{background:#fff;color:#000;padding:1rem;border-radius:8px;text-align:center;max-width:300px;width:90%}
-    #kcModalContent h2{margin:0 0 .5em}
-    #kcModalContent p{margin:0}
-    #kcModalContent p em{font-style:italic;display:block;margin-top:.5em;color:#555}
-    #kcModalContent button{margin-top:1em;padding:.5em 1em;border:none;border-radius:4px;background:#28a745;color:#fff;cursor:pointer}
+    #kcModal {
+      display:none; position:fixed; z-index:999;
+      left:0; top:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5);
+      align-items:center; justify-content:center;
+    }
+    #kcModalContent {
+      background:#fff; color:#000;
+      padding:1rem; border-radius:8px;
+      text-align:center; max-width:300px; width:90%;
+    }
+    #kcModalContent strong {
+      display:block; margin-bottom:.5rem;
+    }
+    #kcModalContent button {
+      margin-top:.5rem; padding:.5em 1em;
+      border:none; border-radius:4px;
+      background:#28a745; color:#fff;
+      cursor:pointer; font-family:'Poppins',sans-serif;
+    }
   </style>
 </head>
 <body>
@@ -82,15 +202,19 @@
       <input id="regEmail" type="email" placeholder="Email"/>
       <input id="regPass" type="password" placeholder="Password"/>
       <button id="registerBtn">Create Account</button>
-      <p style="text-align:center;color:#ccc">or <a href="#" id="showLogin" style="color:#fff">Log In</a></p>
+      <p style="text-align:center;color:#ccc">
+        or <a href="#" id="showLogin" style="color:#fff">Log In</a>
+      </p>
     </div>
-    <div id="loginForm" style="display:none">
+    <div id="loginForm" style="display:none;">
       <input id="loginEmail" type="email" placeholder="Email"/>
       <input id="loginPass" type="password" placeholder="Password"/>
       <button id="loginBtn">Log In</button>
-      <p style="text-align:center;color:#ccc">or <a href="#" id="showRegister" style="color:#fff">Create Account</a></p>
+      <p style="text-align:center;color:#ccc">
+        or <a href="#" id="showRegister" style="color:#fff">Create Account</a>
+      </p>
     </div>
-    <button id="logoutBtn" style="display:none">Sign Out</button>
+    <button id="logoutBtn" style="display:none;">Sign Out</button>
   </div>
 
   <!-- MESSAGES -->
@@ -115,260 +239,257 @@
       <button id="postBtnInner">Send</button>
     </div>
     <ul id="msgList">
-      <li style="font-style:italic;color:rgba(255,255,255,0.7)">Loading…</li>
-    </ul>
-  </div>
-
-  <!-- STATS -->
-  <div id="statsContainer">
-    <h3>🔥 Most Active</h3>
-    <ul id="statsList">
-      <li style="font-style:italic;color:rgba(255,255,255,0.7)">No activity yet.</li>
+      <li style="font-style:italic;color:rgba(255,255,255,0.7)">
+        Loading…
+      </li>
     </ul>
   </div>
 
   <!-- MODAL -->
   <div id="kcModal">
     <div id="kcModalContent">
-      <h2>Welcome to the KC Message Board!</h2>
-      <p><em>Please follow the KC server rules here as well.</em></p>
+      <strong>KC Event says</strong>
+      <p id="kcMsg"></p>
       <button id="kcClose">OK</button>
     </div>
   </div>
 
   <script>
-  // KC Alert
-  function kcAlert(msg){
-    // overwrite only the body of the modal
-    const content = document.getElementById('kcModalContent');
-    content.innerHTML = 
-      `<strong>KC Event says</strong>
-       <p>${msg}</p>
-       <button id="kcClose">OK</button>`;
-    document.getElementById('kcModal').style.display='flex';
+    // KC Alert
+    function kcAlert(msg){
+      document.getElementById('kcMsg').textContent = msg;
+      document.getElementById('kcModal').style.display = 'flex';
+    }
     document.getElementById('kcClose').onclick = ()=> {
-      document.getElementById('kcModal').style.display='none';
+      document.getElementById('kcModal').style.display = 'none';
     };
-  }
 
-  // close initial
-  document.getElementById('kcClose').onclick = ()=> {
-    document.getElementById('kcModal').style.display='none';
-  };
+    // Firebase init
+    const cfg = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+    const db   = firebase.database();
 
-  // Firebase init
-  const cfg = {
-    apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-    authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-    databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "kckillerscompany-ab1ec",
-    storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
-    messagingSenderId: "198711213988",
-    appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-    measurementId: "G-4LKP2M3JXE"
-  };
-  firebase.initializeApp(cfg);
-  const auth = firebase.auth();
-  const db   = firebase.database();
-
-  // profanity filter
-  let badWords = [];
-  fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-    .then(r=>r.json())
-    .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
-    .catch(e=>{console.error(e);kcAlert('Profanity list failed.');});
-  function containsBadWord(s){
-    return badWords.some(w=>new RegExp('\\b'+w+'\\b','i').test(s));
-  }
-
-  // UI refs
-  const regForm=document.getElementById('registerForm'),
-        logForm=document.getElementById('loginForm'),
-        logoutBtn=document.getElementById('logoutBtn'),
-        showLogin=document.getElementById('showLogin'),
-        showReg=document.getElementById('showRegister'),
-        postSec=document.getElementById('postSection'),
-        msgList=document.getElementById('msgList'),
-        statsList=document.getElementById('statsList');
-
-  showLogin.onclick=e=>{e.preventDefault();regForm.style.display='none';logForm.style.display='block';};
-  showReg.onclick=e=>{e.preventDefault();logForm.style.display='none';regForm.style.display='block';};
-
-  // register/login/logout
-  document.getElementById('registerBtn').onclick=()=>{
-    const name=document.getElementById('regName').value.trim(),
-          email=document.getElementById('regEmail').value.trim(),
-          pass=document.getElementById('regPass').value;
-    if(!name||!email||!pass) return kcAlert('Fill all fields.');
-    auth.createUserWithEmailAndPassword(email,pass)
-      .then(c=>c.user.updateProfile({displayName:name}))
-      .catch(e=>kcAlert(e.message));
-  };
-  document.getElementById('loginBtn').onclick=()=>{
-    const email=document.getElementById('loginEmail').value.trim(),
-          pass=document.getElementById('loginPass').value;
-    if(!email||!pass) return kcAlert('Fill both fields.');
-    auth.signInWithEmailAndPassword(email,pass).catch(e=>kcAlert(e.message));
-  };
-  logoutBtn.onclick=()=>auth.signOut();
-
-  // emoji picker
-  let selectedEmoji=null;
-  function initEmoji(){
-    document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
-      el.onclick=()=>{
-        document.querySelectorAll('#emojiPicker .emoji').forEach(x=>x.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedEmoji=el.dataset.emoji;
-      };
-    });
-  }
-  initEmoji();
-
-  // render messages/replies
-  function renderMessages(snapshot,container,basePath){
-    container.innerHTML='';
-    const arr=[];
-    snapshot.forEach(c=>{const v=c.val();v.key=c.key;arr.push(v);});
-    arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
-    if(!arr.length){
-      const li=document.createElement('li');
-      li.style.fontStyle='italic';
-      li.textContent='No messages yet.';
-      container.appendChild(li);
-      return;
+    // Profanity filter
+    let badWords = [];
+    fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
+      .then(r=>r.json())
+      .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
+      .catch(e=>{ console.error(e); kcAlert('Profanity list failed.'); });
+    function containsBadWord(s){
+      return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(s) );
     }
-    arr.forEach(v=>{
-      if(containsBadWord(v.user)||containsBadWord(v.text)) return;
-      const d=new Date(v.time),
-            ts=`${String(d.getUTCDate()).padStart(2,'0')}/`+
-               `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
-               `${String(d.getUTCFullYear()).slice(-2)} `+
-               `${String(d.getUTCHours()).padStart(2,'0')}:`+
-               `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-      const row=document.createElement('li');
-      row.className=container===msgList?'message':'reply';
-      row.innerHTML=`
-        <span class="emoji">${v.emoji}</span>
-        <div class="content"><strong>${v.user}:</strong> ${v.text}
-          <span class="timestamp">${ts}</span>
-        </div>
-        <div class="actions">
-          <button class="likeBtn" data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
-          <button class="replyBtn" data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
-          ${auth.currentUser&&auth.currentUser.displayName===v.user
-            ?`<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>`:''
-          }
-        </div>`;
-      container.appendChild(row);
-      const repliesUL=document.createElement('ul');
-      repliesUL.className='replies';
-      container.appendChild(repliesUL);
-      if(v.replies){
-        const pseudo={forEach:cb=>{
-          Object.entries(v.replies).forEach(([k,val])=>{
-            cb({key:k,val:()=>val});
-          });
-        }};
-        renderMessages(pseudo,repliesUL,`${basePath}/${v.key}/replies`);
-      }
-    });
-  }
 
-  // render stats
-  function renderStats(snap){
-    statsList.innerHTML='';
-    const arr=[];
-    snap.forEach(c=>{const v=c.val();v.user=c.key;arr.push(v);});
-    arr.sort((a,b)=>(b.count||0)-(a.count||0));
-    if(!arr.length){
-      const li=document.createElement('li');
-      li.style.fontStyle='italic';
-      li.textContent='No activity yet.';
-      statsList.appendChild(li);
-      return;
-    }
-    arr.slice(0,5).forEach(v=>{
-      const li=document.createElement('li');
-      li.innerHTML=`<span>${v.user}</span><span>${v.count} <span class="fire">🔥</span></span>`;
-      statsList.appendChild(li);
-    });
-  }
+    // UI refs
+    const regForm   = document.getElementById('registerForm'),
+          logForm   = document.getElementById('loginForm'),
+          logoutBtn = document.getElementById('logoutBtn'),
+          showLogin = document.getElementById('showLogin'),
+          showReg   = document.getElementById('showRegister'),
+          postSec   = document.getElementById('postSection'),
+          msgList   = document.getElementById('msgList');
 
-  // listeners
-  db.ref('messages').on('value',snap=>renderMessages(snap,msgList,''));
-  db.ref('stats/activity').on('value',renderStats);
+    showLogin.onclick = e=>{ e.preventDefault(); regForm.style.display='none'; logForm.style.display='block'; };
+    showReg  .onclick = e=>{ e.preventDefault(); logForm.style.display='none'; regForm.style.display='block'; };
 
-  document.body.addEventListener('click',e=>{
-    const user=auth.currentUser;
-    // like
-    if(e.target.matches('.likeBtn')){
-      if(!user) return kcAlert('Log in to like.');
-      const path=e.target.dataset.path,uid=user.uid;
-      db.ref(`${path}/likedBy/${uid}`).transaction(cur=>{
-        if(cur===null) return true;
-        return;
-      },(err,comm)=>{
-        if(err){console.error(err);return kcAlert('Error liking.');}
-        if(comm){
-          db.ref(`${path}/likes`).transaction(c=>(c||0)+1);
-        } else kcAlert('You already liked this.');
+    // Register
+    document.getElementById('registerBtn').onclick = ()=>{
+      const name = document.getElementById('regName').value.trim(),
+            email= document.getElementById('regEmail').value.trim(),
+            pass = document.getElementById('regPass').value;
+      if(!name||!email||!pass) return kcAlert('Fill all fields.');
+      auth.createUserWithEmailAndPassword(email,pass)
+        .then(creds=> creds.user.updateProfile({displayName:name}) )
+        .catch(e=> kcAlert(e.message));
+    };
+
+    // Login
+    document.getElementById('loginBtn').onclick = ()=>{
+      const email= document.getElementById('loginEmail').value.trim(),
+            pass = document.getElementById('loginPass').value;
+      if(!email||!pass) return kcAlert('Fill both fields.');
+      auth.signInWithEmailAndPassword(email,pass)
+        .catch(e=> kcAlert(e.message));
+    };
+
+    // Sign out
+    logoutBtn.onclick = ()=> auth.signOut();
+
+    // Emoji picker
+    let selectedEmoji = null;
+    function initEmoji(){
+      document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
+        el.onclick = ()=>{
+          document.querySelectorAll('#emojiPicker .emoji').forEach(x=> x.classList.remove('selected'));
+          el.classList.add('selected');
+          selectedEmoji = el.dataset.emoji;
+        };
       });
     }
-    // reply
-    if(e.target.matches('.replyBtn')){
-      if(!user) return kcAlert('Log in to reply.');
-      const repliesPath=e.target.dataset.path;
-      if(document.getElementById('replyForm-'+repliesPath)) return;
-      const wrapper=document.createElement('li');wrapper.className='reply-row';
-      const form=document.createElement('div');form.className='reply-form';form.id='replyForm-'+repliesPath;
-      form.innerHTML=`<input placeholder="Reply..." maxlength="200"/><button>Send</button>`;
-      wrapper.appendChild(form);e.target.closest('li').after(wrapper);
-      form.querySelector('button').onclick=()=>{
-        const txt=form.querySelector('input').value.trim();
-        if(!selectedEmoji) return kcAlert('Pick an emoji.');
-        if(!txt) return kcAlert('Enter reply.');
-        if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
-        db.ref(repliesPath).push({
-          user:user.displayName,text:txt,emoji:selectedEmoji,
-          time:firebase.database.ServerValue.TIMESTAMP,likes:0
+    initEmoji();
+
+    // Render messages/replies
+    function renderMessages(snapshot, container, basePath){
+      container.innerHTML = '';
+      const arr = [];
+      snapshot.forEach(c=>{
+        const v = c.val(); v.key = c.key; arr.push(v);
+      });
+      arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
+      if(!arr.length){
+        const li = document.createElement('li');
+        li.style.fontStyle='italic';
+        li.textContent = 'No messages yet.';
+        container.appendChild(li);
+        return;
+      }
+      arr.forEach(v=>{
+        if(containsBadWord(v.user)||containsBadWord(v.text)) return;
+        const d=new Date(v.time),
+              ts=`${String(d.getUTCDate()).padStart(2,'0')}/`+
+                 `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
+                 `${String(d.getUTCFullYear()).slice(-2)} `+
+                 `${String(d.getUTCHours()).padStart(2,'0')}:`+
+                 `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
+        const row = document.createElement('li');
+        row.className = container===msgList ? 'message' : 'reply';
+        row.innerHTML = `
+          <span class="emoji">${v.emoji}</span>
+          <div class="content">
+            <strong>${v.user}:</strong> ${v.text}
+            <span class="timestamp">${ts}</span>
+          </div>
+          <div class="actions">
+            <button class="likeBtn" data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
+            <button class="replyBtn" data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
+            ${auth.currentUser && auth.currentUser.displayName===v.user
+              ? `<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>` 
+              : ''}
+          </div>
+        `;
+        container.appendChild(row);
+
+        // replies container
+        const repliesUL = document.createElement('ul');
+        repliesUL.className = 'replies';
+        container.appendChild(repliesUL);
+
+        // recurse
+        if(v.replies){
+          const pseudo = { forEach: cb=>{
+            Object.entries(v.replies).forEach(([k,val])=>{
+              cb({ key:k, val:()=>val });
+            });
+          }};
+          renderMessages(pseudo, repliesUL, `${basePath}/${v.key}/replies`);
+        }
+      });
+    }
+
+    // Always listen
+    db.ref('messages').on('value', snap=> renderMessages(snap, msgList, ''));
+
+    // Delegated handlers
+    document.body.addEventListener('click', e=>{
+      const user = auth.currentUser;
+
+      // LIKE
+      if(e.target.matches('.likeBtn')){
+        if(!user) return kcAlert('Log in to like.');
+        const path = e.target.dataset.path;
+        const uid = user.uid;
+        db.ref(`${path}/likedBy/${uid}`).transaction(cur=>{
+          if(cur===null) return true;
+          return;
+        },(err,comm)=>{
+          if(err){ console.error(err); kcAlert('Error liking.'); }
+          else if(comm){
+            db.ref(`${path}/likes`).transaction(c=>(c||0)+1);
+          } else {
+            kcAlert('You already liked this.');
+          }
         });
-      };
-    }
-    // delete
-    if(e.target.matches('.deleteBtn')){
-      const path=e.target.dataset.path;
-      if(confirm('Delete this and all replies?')) db.ref(path).remove();
-    }
-  });
+      }
 
-  // post
-  document.getElementById('postBtnInner').onclick=()=>{
-    const user=auth.currentUser, txt=document.getElementById('message').value.trim();
-    if(!user) return kcAlert('Log in to post.');
-    if(!selectedEmoji) return kcAlert('Pick an emoji.');
-    if(!txt) return kcAlert('Enter a message.');
-    if(containsBadWord(user.displayName)||containsBadWord(txt)) return kcAlert('That word’s not allowed.');
-    const mRef=db.ref('messages').push();
-    mRef.set({
-      user:user.displayName,text:txt,emoji:selectedEmoji,
-      time:firebase.database.ServerValue.TIMESTAMP,likes:0
+      // REPLY
+      if(e.target.matches('.replyBtn')){
+        if(!user) return kcAlert('Log in to reply.');
+        const repliesPath = e.target.dataset.path;
+        if(document.getElementById('replyForm-'+repliesPath)) return;
+        const wrapper = document.createElement('li');
+        wrapper.className = 'reply-row';
+        const form = document.createElement('div');
+        form.className = 'reply-form'; form.id = 'replyForm-'+repliesPath;
+        form.innerHTML = `
+          <input placeholder="Reply..." maxlength="200"/>
+          <button>Send</button>
+        `;
+        wrapper.appendChild(form);
+        e.target.closest('li').after(wrapper);
+        form.querySelector('button').onclick = ()=>{
+          const txt = form.querySelector('input').value.trim();
+          if(!selectedEmoji) return kcAlert('Pick an emoji.');
+          if(!txt) return kcAlert('Enter reply.');
+          if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
+          db.ref(repliesPath).push({
+            user:user.displayName,
+            text:txt,
+            emoji:selectedEmoji,
+            time:firebase.database.ServerValue.TIMESTAMP,
+            likes:0
+          });
+        };
+      }
+
+      // DELETE
+      if(e.target.matches('.deleteBtn')){
+        const path = e.target.dataset.path;
+        if(confirm('Delete this and all its replies?')){
+          db.ref(path).remove();
+        }
+      }
     });
-    db.ref(`stats/activity/${user.displayName}/count`).transaction(c=>(c||0)+1);
-    document.getElementById('message').value='';
-  };
 
-  // auth state
-  auth.onAuthStateChanged(user=>{
-    if(user){
-      regForm.style.display=logForm.style.display='none';
-      logoutBtn.style.display=postSec.style.display='block';
-    } else {
-      regForm.style.display='block';
-      logForm.style.display='none';
-      logoutBtn.style.display=postSec.style.display='none';
-    }
-  });
+    // POST NEW MESSAGE
+    document.getElementById('postBtnInner').onclick = ()=>{
+      const user=auth.currentUser,
+            txt = document.getElementById('message').value.trim();
+      if(!user) return kcAlert('Log in to post.');
+      if(!selectedEmoji) return kcAlert('Pick an emoji.');
+      if(!txt) return kcAlert('Enter a message.');
+      if(containsBadWord(user.displayName)||containsBadWord(txt))
+        return kcAlert('That word’s not allowed.');
+      const mRef = db.ref('messages').push();
+      mRef.set({
+        user:user.displayName,
+        text:txt,
+        emoji:selectedEmoji,
+        time:firebase.database.ServerValue.TIMESTAMP,
+        likes:0
+      });
+      document.getElementById('message').value='';
+    };
+
+    // Auth state
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        regForm.style.display = logForm.style.display = 'none';
+        logoutBtn.style.display = postSec.style.display = 'block';
+      } else {
+        regForm.style.display = 'block';
+        logForm.style.display = 'none';
+        logoutBtn.style.display = postSec.style.display = 'none';
+      }
+    });
   </script>
 </body>
 </html>
