@@ -14,24 +14,17 @@
 
   <style>
     html, body {
-      height: 100vh; width: 100vw;
-      margin: 0; padding: 0;
-      background: transparent;
-      font-family:'Poppins',sans-serif;
-      color:#fff;
-      overflow:hidden;
-      display:flex;
+      height:100vh; width:100vw; margin:0; padding:0;
+      background:transparent; font-family:'Poppins',sans-serif;
+      color:#fff; overflow:hidden; display:flex;
     }
-    #msgBoard {
-      display:flex; flex:1; gap:1em;
-      padding:1em; box-sizing:border-box;
-    }
-    #inputContainer {
-      flex:1; display:flex; flex-direction:column;
-      overflow-y:auto;
-    }
+    #msgBoard { display:flex; flex:1; gap:1em; padding:1em; box-sizing:border-box; }
+
+    /* Left side: logo + inputs */
+    #inputContainer { flex:1; display:flex; flex-direction:column; overflow-y:auto; }
     #logoContainer { text-align:center; margin-bottom:1em; }
     #kcLogo { max-width:120px; height:auto; }
+
     #emojiContainer {
       background:rgba(0,0,0,0.4); border-radius:12px;
       padding:.5em; margin-bottom:1em; text-align:center;
@@ -46,6 +39,7 @@
       border-radius:6px; padding:2px 4px;
     }
     .emoji.selected { opacity:1; transform:scale(1.2); }
+
     input, button {
       width:100%; padding:.75em; margin-bottom:.5em;
       box-sizing:border-box; border-radius:8px; border:none;
@@ -58,6 +52,7 @@
     }
     button:hover { background:#218838; }
 
+    /* Right side: message list */
     #messageContainer { flex:2; overflow-y:auto; }
     #msgList {
       list-style:none; margin:0; padding:.5em;
@@ -70,32 +65,54 @@
       flex-wrap:wrap;
     }
     #msgList li:last-child { border-bottom:none; }
+
     .message-content {
-      flex:1; color:#fff; word-break:break-word; margin-right:1em;
+      flex:1; color:#fff; word-break:break-word;
+      margin-right:1em;
     }
     .timestamp {
       font-size:.75em; color:rgba(255,255,255,0.7);
       white-space:nowrap; margin-right:1em;
     }
-    .likeBtn, .replyBtn, .reply-form button {
+
+    .likeBtn, .replyBtn {
       background:transparent; color:#fff;
       border:1px solid #fff; border-radius:6px;
       padding:2px 6px; cursor:pointer; font-size:1em;
       display:inline-flex; align-items:center; margin-left:.5em;
     }
-    .likeBtn:hover, .replyBtn:hover, .reply-form button:hover {
+    .likeBtn:hover, .replyBtn:hover {
       background:rgba(255,255,255,0.1);
     }
+
+    /* Replies */
     .replies-list {
-      list-style:none; padding-left:2em; margin:0.5em 0 0;
+      list-style:none; padding-left:2em; margin:.5em 0 0;
     }
+
+    /* Wrap each reply form in its own <li> and center it */
+    .reply-row {
+      list-style:none;
+      display:flex; justify-content:center;
+      padding:0; margin:0 .5em .5em;
+    }
+
+    /* The inline reply form itself */
     .reply-form {
-      display:flex; gap:.5em; margin-top:.5em; width:100%;
+      display:flex; gap:.5em;
     }
     .reply-form input {
-      flex:1;
-      padding:.5em; border-radius:6px; border:none;
+      flex:none; width:200px;
+      padding:.5em; border-radius:8px; border:none;
+      font-family:'Poppins',sans-serif; font-size:.9em;
     }
+    .reply-form button {
+      flex:none; width:100px;
+      padding:.5em 1em; border-radius:8px; border:none;
+      background:#28a745; color:#fff;
+      font-weight:600; cursor:pointer; font-size:.9em;
+    }
+    .reply-form button:hover { background:#218838; }
 
     /* KC Event modal */
     #kcModal {
@@ -113,7 +130,7 @@
     }
     #kcModalContent p { margin:.5rem 0; color:#000; }
     #kcClose {
-      margin-top:.5rem; padding:.5rem 1rem; border:none;
+      margin-top:.5rem; padding:.5em 1em; border:none;
       background:#28a745; color:#fff; border-radius:4px;
       cursor:pointer; font-family:'Poppins',sans-serif;
     }
@@ -132,8 +149,10 @@
       <div id="logoContainer">
         <img
           src="https://raw.githubusercontent.com/kevinmidnight7-sudo/messageboardkc/main/kcevents.png"
-          alt="KC Events Logo" id="kcLogo">
+          alt="KC Events Logo"
+          id="kcLogo">
       </div>
+
       <div id="emojiContainer">
         <p><strong>Pick an emoji!</strong></p>
         <span class="emoji" data-emoji="😀">😀</span>
@@ -149,6 +168,7 @@
         <span class="emoji" data-emoji="😡">😡</span>
         <span class="emoji" data-emoji="🎉">🎉</span>
       </div>
+
       <input type="text" id="username" placeholder="Your name" maxlength="20" />
       <input type="text" id="message" placeholder="Your message" maxlength="200" />
       <button id="postBtn" type="button">Post</button>
@@ -156,7 +176,9 @@
 
     <div id="messageContainer">
       <ul id="msgList">
-        <li style="font-style:italic;color:rgba(255,255,255,0.7);">Loading…</li>
+        <li style="font-style:italic;color:rgba(255,255,255,0.7);">
+          Loading…
+        </li>
       </ul>
     </div>
   </div>
@@ -180,13 +202,15 @@
 
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-      .then(r=>r.json())
-      .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
-      .catch(e=>{ console.error(e); kcAlert('Profanity filter failed to load.'); })
+      .then(r => r.json())
+      .then(list => badWords = list.concat([
+        'diddy','diddler','d1ddy','d i ddy','d i d d y'
+      ]))
+      .catch(e => { console.error(e); kcAlert('Profanity filter failed to load.'); })
       .finally(initApp);
 
     function containsBadWord(s) {
-      return badWords.some(w=>new RegExp('\\b'+w+'\\b','i').test(s));
+      return badWords.some(w => new RegExp('\\b'+w+'\\b','i').test(s));
     }
 
     function initApp() {
@@ -202,33 +226,44 @@
       });
       const db = firebase.database().ref('messages');
 
+      // emoji selection
       let selectedEmoji = null;
-      document.querySelectorAll('.emoji').forEach(el=>{
-        el.onclick = ()=>{
-          document.querySelectorAll('.emoji').forEach(e=>e.classList.remove('selected'));
+      document.querySelectorAll('.emoji').forEach(el => {
+        el.onclick = () => {
+          document.querySelectorAll('.emoji').forEach(e => e.classList.remove('selected'));
           el.classList.add('selected');
           selectedEmoji = el.dataset.emoji;
         };
       });
 
-      const msgList = document.getElementById('msgList');
-      db.on('value', snap=>{
+      // render function
+      function render(snap) {
         const msgs = [];
-        snap.forEach(c=>{
-          const v=c.val(); v.key=c.key; msgs.push(v);
+        snap.forEach(c => {
+          const v = c.val(); v.key = c.key; msgs.push(v);
         });
-        msgs.sort((a,b)=>(b.likes||0)-(a.likes||0)||b.time-a.time);
-        msgList.innerHTML='';
+        msgs.sort((a,b) => (b.likes||0)-(a.likes||0) || b.time - a.time);
+
+        const list = document.getElementById('msgList');
+        list.innerHTML = '';
         if (!msgs.length) {
-          msgList.innerHTML='<li style="font-style:italic;color:rgba(255,255,255,0.7);">No messages yet.</li>';
+          list.innerHTML = '<li style="font-style:italic;color:rgba(255,255,255,0.7);">No messages yet.</li>';
           return;
         }
-        msgs.forEach(v=>{
-          if (containsBadWord(v.user)||containsBadWord(v.text)) return;
-          const d=new Date(v.time);
-          const ts = `${String(d.getUTCDate()).padStart(2,'0')}/${String(d.getUTCMonth()+1).padStart(2,'0')}/${String(d.getUTCFullYear()).slice(-2)} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-          const li=document.createElement('li');
-          li.innerHTML=`
+
+        msgs.forEach(v => {
+          if (containsBadWord(v.user) || containsBadWord(v.text)) return;
+
+          const d = new Date(v.time);
+          const ts = String(d.getUTCDate()).padStart(2,'0') + '/' +
+                     String(d.getUTCMonth()+1).padStart(2,'0') + '/' +
+                     String(d.getUTCFullYear()).slice(-2) + ' ' +
+                     String(d.getUTCHours()).padStart(2,'0') + ':' +
+                     String(d.getUTCMinutes()).padStart(2,'0') + ' GMT';
+
+          // message row
+          const li = document.createElement('li');
+          li.innerHTML = `
             <span class="emoji">${v.emoji}</span>
             <div class="message-content">
               <strong>${v.user}:</strong> ${v.text}
@@ -239,88 +274,107 @@
               <button class="replyBtn" data-key="${v.key}">↩️ Reply</button>
             </div>
           `;
-          msgList.appendChild(li);
-          const repliesUL=document.createElement('ul');
-          repliesUL.className='replies-list';
+          list.appendChild(li);
+
+          // replies list
+          const ru = document.createElement('ul');
+          ru.className = 'replies-list';
           if (v.replies) {
-            Object.values(v.replies).forEach(r=>{
-              const rd=new Date(r.time);
-              const rts=`${String(rd.getUTCDate()).padStart(2,'0')}/${String(rd.getUTCMonth()+1).padStart(2,'0')}/${String(rd.getUTCFullYear()).slice(-2)} ${String(rd.getUTCHours()).padStart(2,'0')}:${String(rd.getUTCMinutes()).padStart(2,'0')} GMT`;
-              const rLi=document.createElement('li');
-              rLi.style.display='flex'; rLi.style.alignItems='center';
-              rLi.innerHTML=`
+            Object.values(v.replies).forEach(r => {
+              const rd = new Date(r.time);
+              const rts = String(rd.getUTCDate()).padStart(2,'0') + '/' +
+                          String(rd.getUTCMonth()+1).padStart(2,'0') + '/' +
+                          String(rd.getUTCFullYear()).slice(-2) + ' ' +
+                          String(rd.getUTCHours()).padStart(2,'0') + ':' +
+                          String(rd.getUTCMinutes()).padStart(2,'0') + ' GMT';
+              const rli = document.createElement('li');
+              rli.innerHTML = `
                 <span class="emoji">${r.emoji}</span>
                 <div class="message-content">
                   <strong>${r.user}:</strong> ${r.text}
                   <span class="timestamp">${rts}</span>
                 </div>
               `;
-              repliesUL.appendChild(rLi);
+              ru.appendChild(rli);
             });
           }
-          msgList.appendChild(repliesUL);
+          list.appendChild(ru);
         });
 
-        document.querySelectorAll('.likeBtn').forEach(btn=>{
-          btn.onclick=()=>{
-            const user=document.getElementById('username').value.trim();
-            if(!user) return kcAlert('Enter your name to like.');
-            const k=btn.dataset.key;
-            const ref=db.child(k).child('likedBy').child(user);
-            ref.transaction(ex=>{
-              if(ex===null){
-                db.child(k).child('likes').transaction(c=>(c||0)+1);
-                return true;
-              }
-              return;
-            },(e,comm)=>{ if(!comm) kcAlert('You already liked this.'); });
-          };
-        });
-
-        document.querySelectorAll('.replyBtn').forEach(btn=>{
-          btn.onclick=()=>{
-            const k=btn.dataset.key;
-            if(document.getElementById('replyForm-'+k))return;
-            const form=document.createElement('div');
-            form.className='reply-form'; form.id='replyForm-'+k;
-            form.innerHTML=`
+        // attach reply + like handlers
+        document.querySelectorAll('.replyBtn').forEach(btn => {
+          btn.onclick = () => {
+            const key = btn.dataset.key;
+            if (document.getElementById('replyForm-'+key)) return;
+            const wrapper = document.createElement('li');
+            wrapper.className = 'reply-row';
+            const form = document.createElement('div');
+            form.className = 'reply-form'; form.id = 'replyForm-'+key;
+            form.innerHTML = `
               <input placeholder="Reply..." maxlength="200">
               <button>Send</button>
             `;
-            btn.closest('li').after(form);
-            form.querySelector('button').onclick=()=>{
-              const inp=form.querySelector('input');
-              const txt=inp.value.trim();
-              const user=document.getElementById('username').value.trim();
-              if(!selectedEmoji) return kcAlert('Pick an emoji for your reply.');
-              if(!user||!txt) return kcAlert('Enter both name and reply.');
-              if(containsBadWord(user)||containsBadWord(txt))
-                return kcAlert('That word isn’t allowed.');
-              db.child(k).child('replies').push({
-                user, text:txt, emoji:selectedEmoji,
-                time:firebase.database.ServerValue.TIMESTAMP
-              });
-              form.remove();
+            wrapper.appendChild(form);
+            btn.closest('li').after(wrapper);
+
+            form.querySelector('button').onclick = () => {
+              const txt = form.querySelector('input').value.trim();
+              const user = document.getElementById('username').value.trim();
+              if (!selectedEmoji) return kcAlert('Pick an emoji.');
+              if (!user||!txt) return kcAlert('Enter name & reply.');
+              if (containsBadWord(user)||containsBadWord(txt))
+                return kcAlert('That word’s not allowed.');
+
+              db.child(key).child('replies')
+                .push({
+                  user, text: txt, emoji: selectedEmoji,
+                  time: firebase.database.ServerValue.TIMESTAMP
+                });
             };
           };
         });
-      });
 
-      document.getElementById('postBtn').onclick=()=>{
-        const user=document.getElementById('username').value.trim();
-        const text=document.getElementById('message').value.trim();
-        if(!selectedEmoji) return kcAlert("Pick an emoji avatar.");
-        if(!user||!text) return kcAlert("Enter both name and message.");
-        if(containsBadWord(user)||containsBadWord(text))
+        document.querySelectorAll('.likeBtn').forEach(btn => {
+          btn.onclick = () => {
+            const user = document.getElementById('username').value.trim();
+            if (!user) return kcAlert('Enter your name to like.');
+            const key = btn.dataset.key;
+            const liked = db.child(key).child('likedBy').child(user);
+            liked.transaction(v => {
+              if (v===null) {
+                db.child(key).child('likes').transaction(c => (c||0)+1);
+                return true;
+              }
+              return;
+            }, (e,comm) => {
+              if (!comm) kcAlert('You already liked this.');
+            });
+          };
+        });
+      }
+
+      // hook up realtime listener
+      db.on('value', render);
+      
+      // initial fetch
+      db.once('value', render);
+
+      // post new message
+      document.getElementById('postBtn').onclick = () => {
+        const user = document.getElementById('username').value.trim();
+        const text = document.getElementById('message').value.trim();
+        if (!selectedEmoji) return kcAlert("Pick an emoji avatar.");
+        if (!user||!text) return kcAlert("Enter name & message.");
+        if (containsBadWord(user)||containsBadWord(text))
           return kcAlert("That word’s not allowed.");
+
         db.push({
-          user, text, emoji:selectedEmoji,
-          time:firebase.database.ServerValue.TIMESTAMP,
-          likes:0
-        }).catch(e=>{console.error(e);kcAlert("Couldn't post.");});
+          user, text, emoji: selectedEmoji,
+          time: firebase.database.ServerValue.TIMESTAMP,
+          likes: 0
+        });
       };
     }
   </script>
-
 </body>
 </html>
