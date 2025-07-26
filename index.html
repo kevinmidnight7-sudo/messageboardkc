@@ -79,5 +79,70 @@
   // --- CONFIG & INIT ---
   const firebaseConfig = {
     apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-    authDomain: "kckillerscompany-ab1ec.firebaseapp.com"
+    authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+    databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "kckillerscompany-ab1ec",
+    storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+    messagingSenderId: "198711213988",
+    appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+    measurementId: "G-4LKP2M3JXE"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database().ref('messages');
+
+  // --- PROFANITY FILTER ---
+  const badWords = [
+    "fuck","shit","bitch","bastard","asshole",
+    "cunt","dick","piss","prick","slut",
+    "whore","damn","crap","cock","pussy",
+    "nigger","nigga"
+  ];
+  function containsBadWord(s) {
+    return badWords.some(w =>
+      new RegExp("\\b"+w+"\\b","i").test(s)
+    );
+  }
+
+  // --- RENDER EXISTING MESSAGES ---
+  const msgList = document.getElementById('msgList');
+  db.limitToLast(50).on('value', snap => {
+    msgList.innerHTML = '';
+    if (!snap.exists()) {
+      msgList.innerHTML = '<li style="font-style:italic;color:rgba(255,255,255,0.7);">No messages yet.</li>';
+      return;
+    }
+    snap.forEach(child => {
+      const { user, text } = child.val();
+      // skip rendering swear‐word messages
+      if (containsBadWord(user) || containsBadWord(text)) return;
+      const li = document.createElement('li');
+      li.textContent = `${user}: ${text}`;
+      msgList.appendChild(li);
+    });
+    msgList.scrollTop = msgList.scrollHeight;
+  });
+
+  // --- POST NEW MESSAGE ---
+  document.getElementById('postBtn').addEventListener('click', () => {
+    const user = document.getElementById('username').value.trim();
+    const text = document.getElementById('message').value.trim();
+    if (!user || !text) return;
+
+    if (containsBadWord(user) || containsBadWord(text)) {
+      return alert("Please keep it clean – that word's not allowed.");
+    }
+
+    db.push({
+      user,
+      text,
+      time: firebase.database.ServerValue.TIMESTAMP
+    })
+    .then(() => { document.getElementById('message').value = ''; })
+    .catch(err => {
+      console.error(err);
+      alert("Could not post right now.");
+    });
+  });
+</script>
+
 
