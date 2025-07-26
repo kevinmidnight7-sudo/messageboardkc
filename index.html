@@ -1,148 +1,225 @@
-<!-- load Poppins + Firebase -->
-<link 
-  href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" 
-  rel="stylesheet"
-/>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KC Event Message Board</title>
 
-<style>
-  body, #msgBoard {
-    font-family: 'Poppins', sans-serif;
-    color: #fff;
-  }
+  <!-- Poppins font & Firebase SDKs -->
+  <link 
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" 
+    rel="stylesheet"
+  />
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
-  #msgBoard {
-    max-width: 400px;
-    margin: 1em auto;
-  }
-
-  #msgList {
-    list-style: none;
-    padding: 0.5em;
-    max-height: 300px;
-    overflow-y: auto;
-    background: rgba(0,0,0,0.4);
-    border-radius: 12px;
-  }
-
-  #msgList li {
-    padding: 0.5em;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    color: #fff;
-  }
-  #msgList li:last-child {
-    border-bottom: none;
-  }
-
-  #username,
-  #message,
-  #postBtn {
-    width: 100%;
-    padding: 0.75em;
-    margin: 0.5em 0;
-    box-sizing: border-box;
-    border-radius: 8px;
-    border: none;
-    font-family: 'Poppins', sans-serif;
-  }
-
-  #username, #message {
-    background: rgba(255,255,255,0.9);
-    color: #000;
-  }
-
-  #postBtn {
-    background: #28a745;
-    color: #fff;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  #postBtn:hover {
-    background: #218838;
-  }
-</style>
-
-<div id="msgBoard">
-  <h3 style="text-align:center; margin-bottom:0.5em;">Message Board</h3>
-  <ul id="msgList">
-    <li style="font-style:italic;color:rgba(255,255,255,0.7);">
-      Loading…
-    </li>
-  </ul>
-  <input type="text" id="username" placeholder="Your name" maxlength="20" />
-  <input type="text" id="message" placeholder="Your message" maxlength="200" />
-  <button type="button" id="postBtn">Post</button>
-</div>
-
-<script>
-  // --- CONFIG & INIT ---
-  const firebaseConfig = {
-    apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-    authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-    databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "kckillerscompany-ab1ec",
-    storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
-    messagingSenderId: "198711213988",
-    appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-    measurementId: "G-4LKP2M3JXE"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database().ref('messages');
-
-  // --- PROFANITY FILTER ---
-  const badWords = [
-    "fuck","shit","bitch","bastard","asshole",
-    "cunt","dick","piss","prick","slut",
-    "whore","damn","crap","cock","pussy",
-    "nigger","nigga"
-  ];
-  function containsBadWord(s) {
-    return badWords.some(w =>
-      new RegExp("\\b"+w+"\\b","i").test(s)
-    );
-  }
-
-  // --- RENDER EXISTING MESSAGES ---
-  const msgList = document.getElementById('msgList');
-  db.limitToLast(50).on('value', snap => {
-    msgList.innerHTML = '';
-    if (!snap.exists()) {
-      msgList.innerHTML = '<li style="font-style:italic;color:rgba(255,255,255,0.7);">No messages yet.</li>';
-      return;
-    }
-    snap.forEach(child => {
-      const { user, text } = child.val();
-      // skip rendering swear‐word messages
-      if (containsBadWord(user) || containsBadWord(text)) return;
-      const li = document.createElement('li');
-      li.textContent = `${user}: ${text}`;
-      msgList.appendChild(li);
-    });
-    msgList.scrollTop = msgList.scrollHeight;
-  });
-
-  // --- POST NEW MESSAGE ---
-  document.getElementById('postBtn').addEventListener('click', () => {
-    const user = document.getElementById('username').value.trim();
-    const text = document.getElementById('message').value.trim();
-    if (!user || !text) return;
-
-    if (containsBadWord(user) || containsBadWord(text)) {
-      return alert("Please keep it clean – that word's not allowed.");
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      background: transparent;
     }
 
-    db.push({
-      user,
-      text,
-      time: firebase.database.ServerValue.TIMESTAMP
-    })
-    .then(() => { document.getElementById('message').value = ''; })
-    .catch(err => {
-      console.error(err);
-      alert("Could not post right now.");
+    #msgBoard {
+      max-width: 400px;
+      margin: 1em auto;
+    }
+
+    /* Title removed */
+
+    #msgList {
+      list-style: none;
+      padding: 0.5em;
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(0,0,0,0.4);
+      border-radius: 12px;
+      margin: 0;
+    }
+
+    #msgList li {
+      padding: 0.5em;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    #msgList li:last-child {
+      border-bottom: none;
+    }
+
+    #username,
+    #message,
+    #postBtn {
+      width: 100%;
+      padding: 0.75em;
+      margin: 0.5em 0;
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    #username,
+    #message {
+      background: rgba(255,255,255,0.9);
+      color: #000;
+    }
+
+    #postBtn {
+      background: #28a745;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #postBtn:hover {
+      background: #218838;
+    }
+
+    /* KC Event custom alert modal */
+    #kcModal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      align-items: center;
+      justify-content: center;
+    }
+
+    #kcModalContent {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      max-width: 300px;
+      width: 90%;
+      text-align: center;
+    }
+
+    #kcModalContent strong {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #000;
+    }
+
+    #kcModalContent p {
+      margin: 0.5rem 0;
+      color: #000;
+    }
+
+    #kcClose {
+      margin-top: 0.5rem;
+      padding: 0.5rem 1rem;
+      border: none;
+      background: #28a745;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="msgBoard">
+    <!-- Title removed -->
+    <ul id="msgList">
+      <li style="font-style:italic;color:rgba(255,255,255,0.7);">
+        Loading…
+      </li>
+    </ul>
+    <input type="text" id="username" placeholder="Your name" maxlength="20" />
+    <input type="text" id="message"  placeholder="Your message" maxlength="200" />
+    <button type="button" id="postBtn">Post</button>
+  </div>
+
+  <!-- KC Event custom alert modal -->
+  <div id="kcModal">
+    <div id="kcModalContent">
+      <strong>KC Event says</strong>
+      <p id="kcMsg"></p>
+      <button id="kcClose">OK</button>
+    </div>
+  </div>
+
+  <script>
+    function kcAlert(msg) {
+      document.getElementById('kcMsg').textContent = msg;
+      document.getElementById('kcModal').style.display = 'flex';
+    }
+    document.getElementById('kcClose').onclick = () => {
+      document.getElementById('kcModal').style.display = 'none';
+    };
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('messages');
+
+    const badWords = [
+      "fuck","shit","bitch","bastard","asshole",
+      "cunt","dick","piss","prick","slut",
+      "whore","damn","crap","cock","pussy",
+      "nigger","nigga"
+    ];
+    function containsBadWord(s) {
+      return badWords.some(w =>
+        new RegExp("\\b"+w+"\\b","i").test(s)
+      );
+    }
+
+    const msgList = document.getElementById('msgList');
+    db.limitToLast(50).on('value', snap => {
+      msgList.innerHTML = '';
+      if (!snap.exists()) {
+        msgList.innerHTML = '<li style="font-style:italic;color:rgba(255,255,255,0.7);">No messages yet.</li>';
+        return;
+      }
+      snap.forEach(child => {
+        const { user, text } = child.val();
+        if (containsBadWord(user) || containsBadWord(text)) return;
+        const li = document.createElement('li');
+        li.textContent = `${user}: ${text}`;
+        msgList.appendChild(li);
+      });
+      msgList.scrollTop = msgList.scrollHeight;
     });
-  });
-</script>
+
+    document.getElementById('postBtn').addEventListener('click', () => {
+      const user = document.getElementById('username').value.trim();
+      const text = document.getElementById('message').value.trim();
+      if (!user || !text) return;
+
+      if (containsBadWord(user) || containsBadWord(text)) {
+        return kcAlert("Please keep it clean – that word's not allowed.");
+      }
+
+      db.push({
+        user,
+        text,
+        time: firebase.database.ServerValue.TIMESTAMP
+      })
+      .then(() => {
+        document.getElementById('message').value = '';
+      })
+      .catch(err => {
+        console.error(err);
+        kcAlert("Oops, could not post right now.");
+      });
+    });
+  </script>
+</body>
+</html>
+
 
 
