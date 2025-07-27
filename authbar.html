@@ -8,54 +8,37 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <style>
     html, body {
-      margin: 0; padding: 0;
-      width: 100%; height: 100%;
-      background: transparent;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      margin:0; padding:0;
+      width:100%; height:100%;
+      background:transparent;
+      display:flex; justify-content:center; align-items:center;
     }
     #homeAuth {
-      display: inline-flex;
-      align-items: center;
-      gap: .6rem;                        /* more space between items */
-      font-family: 'Poppins', sans-serif;
-      font-size: .95rem;                 /* slight bump for readability */
-      line-height: 1.2;
-      color: #fff;
-      background: rgba(0,0,0,0.5);
-      padding: .4em 1em;                 /* more breathing room */
-      border-radius: 8px;                /* a touch more rounding */
-      min-height: 36px;                  /* ensures comfortable height */
-      max-width: 280px;
-      width: auto;
+      display:inline-flex; align-items:center;
+      gap:.6rem;
+      font-family:'Poppins',sans-serif;
+      font-size:.85rem;        /* smaller text */
+      line-height:1.2;
+      color:#fff;
+      background:rgba(0,0,0,0.5);
+      padding:.4em 1em;
+      border-radius:8px;
+      min-width:300px;         /* widen slightly */
+      min-height:36px;
     }
-    #homeAuth a {
-      text-decoration: none;
-      font-weight: 600;
-    }
-    /* Log In / Register links in green */
-    #homeAuth .authLink {
-      color: #4ade80;
-    }
-    #homeAuth .authLink:hover {
-      text-decoration: underline;
-    }
-    /* Sign Out link in red, forced and pushed right */
+    #homeAuth a { text-decoration:none; font-weight:600; }
+    #homeAuth .authLink { color:#4ade80; }
+    #homeAuth .authLink:hover { text-decoration:underline; }
     #homeAuth #signOutLink {
-      color: #f87171 !important;
-      margin-left: auto;
+      color:#f87171 !important;
+      margin-left:auto;
     }
-    #homeAuth #signOutLink:hover {
-      text-decoration: underline;
-    }
+    #homeAuth #signOutLink:hover { text-decoration:underline; }
   </style>
 </head>
 <body>
   <div id="homeAuth">Loading…</div>
-
   <script>
-    // Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -67,14 +50,13 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(firebaseConfig);
-
-    const auth = firebase.auth();
-    const container = document.getElementById('homeAuth');
+    const auth = firebase.auth(),
+          container = document.getElementById('homeAuth');
 
     auth.onAuthStateChanged(user => {
       if (user) {
         container.innerHTML = `
-          <span>👋 Welcome, <strong>${user.displayName || user.email}</strong></span>
+          <span>👋 Welcome, <strong>${user.displayName||user.email}</strong></span>
           <a href="#" id="signOutLink">Sign Out</a>
         `;
         document.getElementById('signOutLink')
