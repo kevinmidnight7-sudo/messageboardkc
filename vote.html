@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>KC Events Voting</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body { margin:0; padding:0; font-family:'Poppins',sans-serif; color:#fff; background:transparent; }
+    .panel {
+      background:rgba(0,0,0,0.6);
+      border-radius:12px;
+      padding:1rem;
+      max-width:400px;
+      margin:1rem auto;
+    }
+    h2 { margin-top:0; }
+    label { display:block; margin:.8rem 0 .3rem; font-weight:600; }
+    .hint { font-size:.75rem; color:#ccc; margin-top:-.5rem; }
+    input[type=text], input[type=password] {
+      width:100%; padding:.5rem; border:none; border-radius:6px;
+      margin-top:.3rem; box-sizing:border-box;
+    }
+    .stars {
+      display:flex; gap:.3rem; margin:.5rem 0;
+    }
+    .stars span {
+      font-size:1.5rem; cursor:pointer; color:#555;
+    }
+    .stars .filled { color:#facc15; }
+    button {
+      width:100%; padding:.6rem;
+      background:#22c55e; color:#fff; border:none; border-radius:6px;
+      font-size:1rem; font-weight:600; cursor:pointer;
+      margin-top:1rem;
+    }
+    button:disabled { background:#555; cursor:not-allowed; }
+    #adminSection { margin-top:1.5rem; display:none; }
+    #showAdminBtn {
+      background:rgba(255,255,255,0.1);
+      color:#fff;
+      margin-top:1rem;
+    }
+    table { width:100%; border-collapse:collapse; margin-top:.8rem; }
+    th, td { padding:.4rem; border:1px solid #444; font-size:.85rem; }
+    th { background:rgba(255,255,255,0.1); }
+  </style>
+</head>
+<body>
+  <div class="panel" id="votePanel">
+    <h2>KC Event Voting</h2>
+    <div id="voteForm">
+      <label>Your username</label>
+      <input type="text" id="username" required/>
+      <div class="hint">needs to match the name you played with</div>
+
+      <label>Best offence</label>
+      <input type="text" id="offence" required/>
+      <div class="hint">needs to match the name they played with</div>
+
+      <label>Best defence</label>
+      <input type="text" id="defence" required/>
+      <div class="hint">needs to match the name they played with</div>
+
+      <label>Rate today's event</label>
+      <div class="stars" id="starContainer">
+        <span data-value="1">★</span>
+        <span data-value="2">★</span>
+        <span data-value="3">★</span>
+        <span data-value="4">★</span>
+        <span data-value="5">★</span>
+      </div>
+
+      <button id="submitBtn" disabled>Submit Vote</button>
+    </div>
+
+    <!-- Admin toggle button -->
+    <button id="showAdminBtn">Admin</button>
+
+    <!-- Hidden until Admin clicked -->
+    <div id="adminSection">
+      <label>Enter admin password</label>
+      <input type="password" id="adminPass" placeholder="Password"/>
+      <button id="unlockBtn">Unlock Admin</button>
+      <div id="adminTable"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- Firebase init ---
+    const config = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(config);
+    const auth = firebase.auth(),
+          db   = firebase.database().ref('votes');
+
+    // --- DOM refs ---
+    const form       = document.getElementById('voteForm'),
+          userInput  = document.getElementById('username'),
+          offInput   = document.getElementById('offence'),
+          defInput   = document.getElementById('defence'),
+          stars      = document.getElementById('starContainer').children,
+          submitBtn  = document.getElementById('submitBtn'),
+          showAdmin  = document.getElementById('showAdminBtn'),
+          adminSect  = document.getElementById('adminSection'),
+          adminPass  = document.getElementById('adminPass'),
+          unlockBtn  = document.getElementById('unlockBtn'),
+          adminTable = document.getElementById('adminTable');
+
+    let rating = 0;
+    Array.from(stars).forEach(s => {
+      s.onclick = () => {
+        rating = +s.dataset.value;
+        Array.from(stars).forEach(x => {
+          x.classList.toggle('filled', +x.dataset.value <= rating);
+        });
+        checkForm();
+      };
+    });
+
+    function checkForm(){
+      submitBtn.disabled = !(
+        auth.currentUser &&
+        userInput.value.trim() &&
+        offInput.value.trim() &&
+        defInput.value.trim() &&
+        rating > 0
+      );
+    }
+
+    auth.onAuthStateChanged(u => {
+      if (!u) {
+        form.innerHTML = `
+          <p>Please <a href="#login" target="_top" style="color:#4ade80;">log in</a> first to vote.</p>
+        `;
+      } else {
+        userInput.value = u.displayName || '';
+        checkForm();
+      }
+    });
+
+    [userInput, offInput, defInput].forEach(i => i.oninput = checkForm);
+
+    submitBtn.onclick = () => {
+      submitBtn.disabled = true;
+      db.push({
+        uid: auth.currentUser.uid,
+        username: userInput.value.trim(),
+        bestOffence: offInput.value.trim(),
+        bestDefence: defInput.value.trim(),
+        rating,
+        time: firebase.database.ServerValue.TIMESTAMP
+      })
+      .then(_ => alert('Thanks for voting!'))
+      .catch(e => { console.error(e); alert('Error submitting.'); })
+      .finally(_ => submitBtn.disabled = false);
+    };
+
+    // Admin toggle
+    showAdmin.onclick = () => {
+      adminSect.style.display = adminSect.style.display === 'block' ? 'none' : 'block';
+    };
+
+    // Unlock admin
+    unlockBtn.onclick = () => {
+      if (adminPass.value === 'events2025KC') {
+        db.orderByChild('time').once('value', snap => {
+          const data = snap.val() || {};
+          let html = '<table><tr>'
+                   +'<th>Date</th><th>User</th>'
+                   +'<th>Offence</th><th>Defence</th><th>Rating</th>'
+                   +'</tr>';
+          Object.values(data).forEach(v => {
+            const d = new Date(v.time);
+            html += `<tr>
+              <td>${d.toLocaleString()}</td>
+              <td>${v.username}</td>
+              <td>${v.bestOffence}</td>
+              <td>${v.bestDefence}</td>
+              <td>${v.rating}/5</td>
+            </tr>`;
+          });
+          html += '</table>';
+          adminTable.innerHTML = html;
+        });
+      } else {
+        alert('Incorrect password.');
+      }
+    };
+  </script>
+</body>
+</html>
