@@ -18,14 +18,16 @@
     #homeAuth {
       display: inline-flex;
       align-items: center;
-      gap: .4rem;
+      gap: .6rem;                        /* more space between items */
       font-family: 'Poppins', sans-serif;
-      font-size: .9rem;
+      font-size: .95rem;                 /* slight bump for readability */
+      line-height: 1.2;
       color: #fff;
       background: rgba(0,0,0,0.5);
-      padding: .2em .5em;
-      border-radius: 6px;
-      max-width: 260px;
+      padding: .4em 1em;                 /* more breathing room */
+      border-radius: 8px;                /* a touch more rounding */
+      min-height: 36px;                  /* ensures comfortable height */
+      max-width: 280px;
       width: auto;
     }
     #homeAuth a {
@@ -39,7 +41,7 @@
     #homeAuth .authLink:hover {
       text-decoration: underline;
     }
-    /* Sign Out link in red, forced */
+    /* Sign Out link in red, forced and pushed right */
     #homeAuth #signOutLink {
       color: #f87171 !important;
       margin-left: auto;
