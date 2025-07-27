@@ -487,12 +487,12 @@
           <div class="actions">
             <button class="likeBtn">❤️ ${v.likes||0}</button>
             <button class="replyBtn">↩️ Reply</button>
-            ${auth.currentUser&&auth.currentUser.uid===v.uid
-              ? `<button class="deleteBtn">🗑️</button>` : ''}
+            ${auth.currentUser && auth.currentUser.uid === v.uid
+              ? `<button class="deleteBtn">🗑️ Delete</button>` : ''}
           </div>`;
-        // apply name color/gradient or fallback white
+        // apply name gradient or fallback white
         const uname = li.querySelector('.username'),
-              prof = userProfiles[v.uid]||{};
+              prof  = userProfiles[v.uid] || {};
         if(prof.color){
           uname.style.backgroundImage = prof.color;
           uname.style.webkitBackgroundClip = uname.style.backgroundClip = 'text';
@@ -502,19 +502,21 @@
         }
         container.appendChild(li);
         // reactions
-        const bar = li.querySelector('.reactions'),
+        const bar      = li.querySelector('.reactions'),
               existing = v.reactions || {};
         Object.keys(existing).forEach(emo=>{
           const cnt = Object.keys(existing[emo]||{}).length,
                 btn = document.createElement('div');
-          btn.className = 'reactBtn';
-          btn.dataset.path = li.dataset.path + `/reactions/${emo}`;
+          btn.className     = 'reactBtn';
+          btn.dataset.path  = li.dataset.path + `/reactions/${emo}`;
           btn.dataset.emoji = emo;
-          btn.innerHTML = `${emo}<span>${cnt}</span>`;
+          btn.innerHTML     = `${emo}<span>${cnt}</span>`;
           bar.appendChild(btn);
         });
+        // "Add" button
         const addBtn = document.createElement('div');
-        addBtn.className = 'addBtn'; addBtn.textContent = '➕ Add';
+        addBtn.className = 'addBtn';
+        addBtn.textContent = '➕ Add';
         bar.appendChild(addBtn);
         // replies container
         const repliesUL = document.createElement('ul');
@@ -551,9 +553,9 @@
       // React
       if(e.target.closest('.reactBtn')){
         if(!user) return kcAlert('Log in to react.');
-        const btn = e.target.closest('.reactBtn'),
-              path= btn.dataset.path,
-              uid = user.uid;
+        const btn  = e.target.closest('.reactBtn'),
+              path = btn.dataset.path,
+              uid  = user.uid;
         db.ref(`${path}/${uid}`).transaction(cur=> cur===null ? true : undefined,
           (err,comm)=>{
             if(err) kcAlert('Error reacting.');
@@ -632,12 +634,12 @@
 
       // Username → profile
       if(e.target.closest('.username')){
-        const uid = e.target.closest('.username').dataset.uid,
-              prof= userProfiles[uid]||{};
+        const uid  = e.target.closest('.username').dataset.uid,
+              prof = userProfiles[uid]||{};
         profName.textContent  = prof.displayName||'About Me';
         profAbout.textContent = prof.about||'';
         if(prof.joined){
-          const d=new Date(prof.joined);
+          const d = new Date(prof.joined);
           profJoined.textContent =
             `Joined: ${String(d.getUTCDate()).padStart(2,'0')}/`+
             `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
@@ -669,27 +671,22 @@
       document.getElementById('message').value='';
     };
 
-   // Save profile (and immediately reload so the UI reflects your new about/color)
-document.getElementById('saveProfile').onclick = ()=>{
-  const user  = auth.currentUser;
-  if(!user) return;
-  const about = aboutMe.value.trim();
-  // write to RTDB
-  db.ref(`users/${user.uid}`)
-    .update({ about, color:selectedColor })
-    .then(()=>{
-      // re‑fetch just this user’s profile
-      return db.ref(`users/${user.uid}`).once('value');
-    })
-    .then(snap=>{
-      // update our in‑memory cache
-      userProfiles[user.uid] = snap.val();
-      // re‑draw the message list so name gradients update
-      if(lastSnap) renderMessages(lastSnap, msgList, '');
-      kcAlert('Profile saved!');
-    })
-    .catch(err=> kcAlert('Error saving profile: '+err.message));
-};
+    // Save profile (and immediately re-render)
+    document.getElementById('saveProfile').onclick = ()=>{
+      const user  = auth.currentUser;
+      if(!user) return;
+      const about = aboutMe.value.trim();
+      db.ref(`users/${user.uid}`)
+        .update({ about, color:selectedColor })
+        .then(()=> db.ref(`users/${user.uid}`).once('value'))
+        .then(snap=>{
+          userProfiles[user.uid] = snap.val();
+          if(lastSnap) renderMessages(lastSnap, msgList, '');
+          kcAlert('Profile saved!');
+        })
+        .catch(err=> kcAlert('Error saving profile: '+err.message));
+    };
+
     // Auth state UI
     auth.onAuthStateChanged(user=>{
       if(user){
@@ -705,10 +702,7 @@ document.getElementById('saveProfile').onclick = ()=>{
           selectedColor=p.color||'';
           if(selectedColor){
             document.querySelectorAll('.colorOption')
-              .forEach(d=>{
-                if(d.dataset.color===selectedColor)
-                  d.classList.add('selected');
-              });
+              .forEach(d=>{ if(d.dataset.color===selectedColor) d.classList.add('selected'); });
           }
         });
       } else {
