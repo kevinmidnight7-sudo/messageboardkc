@@ -484,12 +484,15 @@
             <span class="timestamp">${ts}</span>
             <div class="reactions"></div>
           </div>
-          <div class="actions">
-            <button class="likeBtn">❤️ ${v.likes||0}</button>
-            <button class="replyBtn">↩️ Reply</button>
-            ${auth.currentUser&&auth.currentUser.uid===v.uid
-              ? `<button class="deleteBtn">🗑️</button>` : ''}
-          </div>`;
+            <div class="actions">
+     <button class="likeBtn">❤️ ${v.likes||0}</button>
+     <button class="replyBtn">↩️ Reply</button>
+-    ${auth.currentUser&&auth.currentUser.uid===v.uid
+-       ? `<button class="deleteBtn">🗑️</button>` : ''}
++    ${auth.currentUser && auth.currentUser.uid === v.uid
++       ? `<button class="deleteBtn">🗑️ Delete</button>` : ''}
+   </div>
+
         // apply name color/gradient or fallback white
         const uname = li.querySelector('.username'),
               prof = userProfiles[v.uid]||{};
@@ -622,12 +625,16 @@
         return;
       }
 
-      // Delete
-      if(e.target.closest('.deleteBtn')){
-        const path = e.target.closest('li').dataset.path;
-        if(confirm('Delete this message and its replies?'))
-          db.ref(path).remove();
-        return;
+     // DELETE
+  if (e.target.closest('.deleteBtn')) {
+    if (!auth.currentUser) return kcAlert('Log in to delete your own messages.');
+    const path = e.target.closest('li').dataset.path;
+    if (confirm('Delete this message (and all its replies)?')) {
+      db.ref(path)
+        .remove()
+        .catch(err => kcAlert('Error deleting.'));
+    }
+    return;
       }
 
       // Username → profile
