@@ -81,7 +81,7 @@
       border:none; border-radius:4px; cursor:pointer;
     }
 
-    /* Overlay alert */
+    /* Overlay alert / confirm */
     #alertModal {
       display:none;
       position:fixed; top:0; left:0;
@@ -112,7 +112,6 @@
       cursor:pointer;
       font-weight:600;
     }
-    /* Confirmation buttons */
     .confirmButtons {
       display:flex; justify-content:center; gap:1rem;
       margin-top:1rem;
@@ -122,12 +121,8 @@
       border:none; border-radius:4px;
       font-weight:600; cursor:pointer;
     }
-    .confirmButtons .yes {
-      background:#22c55e; color:#fff;
-    }
-    .confirmButtons .no {
-      background:#60a5fa; color:#fff;
-    }
+    .confirmButtons .yes { background:#22c55e; color:#fff }
+    .confirmButtons .no  { background:#60a5fa; color:#fff }
   </style>
 </head>
 <body>
@@ -167,17 +162,17 @@
 
     function kcAlert(msg){
       confirmBtns.style.display = 'none';
-      alertOK.style.display = 'inline-block';
-      alertMsg.textContent = msg;
-      alertModal.style.display = 'flex';
+      alertOK.style.display     = 'inline-block';
+      alertMsg.textContent      = msg;
+      alertModal.style.display  = 'flex';
     }
 
     function kcConfirm(msg){
       return new Promise(resolve=>{
-        alertMsg.textContent = msg;
-        alertOK.style.display = 'none';
+        alertMsg.textContent      = msg;
+        alertOK.style.display     = 'none';
         confirmBtns.style.display = 'flex';
-        alertModal.style.display = 'flex';
+        alertModal.style.display  = 'flex';
 
         confirmBtns.querySelector('.no').onclick = () => {
           alertModal.style.display = 'none';
@@ -220,7 +215,8 @@
     function renderForm(user) {
       voteContainer.innerHTML = `
         <label>Your username</label>
-        <input readonly id="username" value="${user.displayName||user.email||''}"/>
+        <input readonly id="username"
+               value="${user.displayName||user.email||''}"/>
         <div class="hint">needs to match the name you played with</div>
         <label>Best offence</label><input type="text" id="offence"/>
         <div class="hint">needs to match the name they played with</div>
@@ -228,8 +224,10 @@
         <div class="hint">needs to match the name they played with</div>
         <label>Rate today's event</label>
         <div class="stars" id="starContainer">
-          <span data-value="1">★</span><span data-value="2">★</span>
-          <span data-value="3">★</span><span data-value="4">★</span>
+          <span data-value="1">★</span>
+          <span data-value="2">★</span>
+          <span data-value="3">★</span>
+          <span data-value="4">★</span>
           <span data-value="5">★</span>
         </div>
         <button id="submitBtn" disabled>Submit Vote</button>`;
@@ -237,21 +235,29 @@
             defence   = document.getElementById('defence'),
             starCont  = document.getElementById('starContainer').children,
             submitBtn = document.getElementById('submitBtn');
-      let rating=0;
+      let rating = 0;
+
       Array.from(starCont).forEach(s=>{
         s.onclick = ()=>{
           rating = +s.dataset.value;
           Array.from(starCont).forEach(x=>
-            x.classList.toggle('filled', +x.dataset.value<=rating)
+            x.classList.toggle('filled', +x.dataset.value <= rating)
           );
-          submitBtn.disabled = !(offence.value.trim() && defence.value.trim() && rating>0);
+          submitBtn.disabled = !(
+            offence.value.trim() &&
+            defence.value.trim() &&
+            rating>0
+          );
         };
       });
 
-      // prevent double‑voting
-      votesRef.orderByChild('uid').equalTo(user.uid).once('value',snap=>{
+      // prevent double‐voting
+      votesRef.orderByChild('uid')
+              .equalTo(user.uid)
+              .once('value',snap=>{
         if(snap.exists()){
-          voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
+          voteContainer.innerHTML =
+            `<p>You’ve already voted—thank you!</p>`;
         }
       });
 
@@ -263,12 +269,15 @@
           username: user.displayName||user.email,
           bestOffence: offence.value.trim(),
           bestDefence: defence.value.trim(),
-          rating,
+          rating, 
           time: firebase.database.ServerValue.TIMESTAMP
         })
         .then(()=> kcAlert('Thanks for voting!'))
         .catch(e=> kcAlert('Error submitting: '+e.message))
-        .finally(()=> { submitBtn.disabled=false; renderForm(user); });
+        .finally(()=> {
+          submitBtn.disabled = false;
+          renderForm(user);
+        });
       };
     }
 
@@ -276,26 +285,31 @@
     auth.onAuthStateChanged(user=>{
       if(!user){
         voteContainer.innerHTML = `
-          <p>Please <a href="#login" target="_top" style="color:#4ade80;">log in</a> to vote.</p>`;
+          <p>Please <a href="#login" target="_top"
+                       style="color:#4ade80;">
+            log in
+          </a> to vote.</p>`;
       } else {
         renderForm(user);
       }
     });
 
-    // toggle admin
-    showAdmin.onclick = ()=> {
+    // toggle admin panel
+    showAdmin.onclick = ()=>{
       adminSection.style.display =
         adminSection.style.display==='block' ? 'none' : 'block';
     };
 
-    // unlock & show all
-    unlockBtn.onclick = ()=> {
-      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
+    // unlock & list votes
+    unlockBtn.onclick = ()=>{
+      if(adminPass.value!=='events2025KC')
+        return kcAlert('Incorrect password.');
       votesRef.orderByChild('time').once('value',snap=>{
         const all = snap.val()||{};
         let html = `<table>
           <tr><th>Date</th><th>User</th>
-              <th>Offence</th><th>Defence</th><th>Rating</th><th>Delete</th></tr>`;
+              <th>Offence</th><th>Defence</th>
+              <th>Rating</th><th>Delete</th></tr>`;
         Object.entries(all).forEach(([key,v])=>{
           const d=new Date(v.time);
           html += `<tr data-key="${key}">
@@ -315,9 +329,8 @@
     // delete single vote
     adminTable.addEventListener('click', async e=>{
       if(!e.target.matches('.delBtn')) return;
-      const tr = e.target.closest('tr'),
-            key= tr.dataset.key;
-      const ok = await kcConfirm('Delete this vote?');
+      const key = e.target.closest('tr').dataset.key;
+      const ok  = await kcConfirm('Delete this vote?');
       if(!ok) return;
       votesRef.child(key).remove()
         .then(()=> kcAlert('Vote deleted.'))
@@ -326,18 +339,21 @@
 
     // reset all votes
     resetBtn.onclick = async ()=>{
-      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
+      if(adminPass.value!=='events2025KC')
+        return kcAlert('Incorrect password.');
       const ok = await kcConfirm(
         'Reset all votes? This cannot be undone.'
       );
       if(!ok) return;
 
-      // delete each child (admin‑authorized by your rules)
-      const snap = await votesRef.once('value');
-      const tasks = [];
-      snap.forEach(ch => tasks.push(votesRef.child(ch.key).remove()));
+      // remove every child individually
+      const snap  = await votesRef.once('value'),
+            tasks = [];
+      snap.forEach(c=> tasks.push(
+        votesRef.child(c.key).remove()
+      ));
       Promise.all(tasks)
-        .then(()=> {
+        .then(()=>{
           adminTable.innerHTML='';
           kcAlert('All votes have been reset.');
         })
