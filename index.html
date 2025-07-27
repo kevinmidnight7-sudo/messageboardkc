@@ -11,11 +11,10 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <style>
-    /* === Base reset & layout === */
     html,body{margin:0;padding:0;width:100vw;height:100vh;font-family:'Poppins',sans-serif;color:#fff;background:transparent;display:flex;overflow:hidden;}
     #msgBoard{display:flex;flex:1;gap:2em;padding:1em;box-sizing:border-box;}
 
-    /* === LEFT AUTH/PROFILE PANEL === */
+    /* LEFT PANEL */
     #authContainer{flex:1;background:rgba(0,0,0,0.4);border-radius:12px;padding:1em;display:flex;flex-direction:column;}
     #authContainer h2{text-align:center;margin:0 0 .5em;}
     #authContainer input,#authContainer textarea,#authContainer button{width:100%;box-sizing:border-box;margin:.5em 0;padding:.5em;border:none;border-radius:6px;color:#000;font-family:'Poppins',sans-serif;}
@@ -31,7 +30,7 @@
     .colorOption{display:inline-block;width:32px;height:32px;margin:.2em;border:2px solid transparent;border-radius:6px;cursor:pointer;background-size:cover;}
     .colorOption.selected{border-color:#fff;}
 
-    /* === RIGHT MESSAGE PANEL === */
+    /* RIGHT PANEL */
     #messageContainer{flex:2;overflow-y:auto;background:rgba(0,0,0,0.4);border-radius:12px;padding:.5em;display:flex;flex-direction:column;}
     #postSection{display:none;margin-bottom:1em;}
     #postSection input,#postSection button{width:100%;box-sizing:border-box;border:none;border-radius:8px;padding:.75em;margin:.3em 0;}
@@ -39,7 +38,7 @@
     #postSection button{background:#28a745;color:#fff;font-weight:600;cursor:pointer;}
     #postSection button:hover{background:#218838;}
 
-    /* Emoji row */
+    /* Emoji picker */
     #emojiPicker{background:rgba(255,255,255,0.1);border-radius:8px;padding:.5em;text-align:center;}
     .emoji{font-size:1.5em;margin:.25em;cursor:pointer;opacity:.7;transition:opacity .2s,transform .1s;display:inline-block;border:1px solid #fff;border-radius:6px;padding:2px 4px;}
     .emoji.selected{opacity:1;transform:scale(1.2);}
@@ -51,26 +50,26 @@
     .emojiCell{min-width:1.5em;text-align:center;}
     .content{flex:1;}
     .timestamp{display:block;font-size:.75em;color:rgba(255,255,255,0.7);margin-top:.2em;}
-    .username{cursor:pointer;font-weight:600;background-clip: text;-webkit-background-clip: text;color:transparent;}
+    .username{cursor:pointer;font-weight:600;background-clip:text;-webkit-background-clip:text;color:transparent;}
     .actions{display:flex;flex-direction:column;gap:.3em;}
     .likeBtn,.replyBtn,.deleteBtn{background:transparent;color:#fff;border:1px solid #fff;border-radius:6px;padding:2px 6px;cursor:pointer;display:flex;align-items:center;gap:.3em;font-size:.9em;}
     .likeBtn:hover,.replyBtn:hover,.deleteBtn:hover{background:rgba(255,255,255,0.1);}
     .replies{list-style:none;margin:0;padding:0 0 0 2em;}
 
-    /* Inline reply form */
+    /* Inline reply */
     .reply-row{list-style:none;display:flex;justify-content:center;margin:.5em 0;}
     .reply-form{display:flex;gap:.5em;}
     .reply-form input{width:200px;padding:.5em;border:none;border-radius:8px;}
     .reply-form button{width:100px;padding:.5em;border:none;border-radius:8px;background:#28a745;color:#fff;cursor:pointer;font-weight:600;}
     .reply-form button:hover{background:#218838;}
 
-    /* === ALERT MODAL === */
+    /* Alert Modal */
     #alertModal{display:none;position:fixed;z-index:1000;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;}
     #alertContent{background:#fff;color:#000;padding:1rem;border-radius:8px;text-align:center;max-width:300px;width:90%;box-sizing:border-box;}
     #alertContent strong{display:block;margin-bottom:.5rem;}
     #alertContent button{margin-top:.5rem;padding:.5em 1em;border:none;border-radius:4px;background:#28a745;color:#fff;cursor:pointer;font-family:'Poppins',sans-serif;}
 
-    /* === PROFILE OVERLAY === */
+    /* Profile Overlay */
     #profileModal{display:none;position:fixed;z-index:999;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;}
     #profileContent{background:#fff;color:#000;padding:1.5rem;border-radius:8px;text-align:center;max-width:320px;width:90%;box-sizing:border-box;}
     #profileContent h2{margin:0 0 .5em;color:#333;}
@@ -81,7 +80,7 @@
 </head>
 <body>
 
-  <!-- ALERT MODAL -->
+  <!-- ALERT -->
   <div id="alertModal">
     <div id="alertContent">
       <strong>KC Event says</strong>
@@ -93,20 +92,17 @@
   <!-- PROFILE OVERLAY -->
   <div id="profileModal">
     <div id="profileContent">
-      <h2 id="profName">User</h2>
-      <p id="profAbout">About me…</p>
+      <h2 id="profName">About Me</h2>
+      <p id="profAbout">…</p>
       <small id="profJoined"></small>
       <button id="profClose">Close</button>
     </div>
   </div>
 
-  <!-- MAIN BOARD -->
   <div id="msgBoard">
-    <!-- Auth/Profile Column -->
+    <!-- LEFT -->
     <div id="authContainer">
       <h2>KC Events Account</h2>
-
-      <!-- Register -->
       <div id="registerForm">
         <input id="regName" placeholder="Display Name"/>
         <input id="regEmail" type="email" placeholder="Email"/>
@@ -116,8 +112,6 @@
           or <a href="#" id="showLogin" style="color:#fff">Log In</a>
         </p>
       </div>
-
-      <!-- Login -->
       <div id="loginForm" style="display:none;">
         <input id="loginEmail" type="email" placeholder="Email"/>
         <input id="loginPass" type="password" placeholder="Password"/>
@@ -126,8 +120,6 @@
           or <a href="#" id="showRegister" style="color:#fff">Create Account</a>
         </p>
       </div>
-
-      <!-- Signed‑in UI -->
       <button id="logoutBtn" style="display:none;">Sign Out</button>
       <textarea id="aboutMe" placeholder="Your About Me…" style="display:none;"></textarea>
       <div id="colorPicker">
@@ -141,7 +133,7 @@
       <button id="saveProfile" style="display:none;">Save Profile</button>
     </div>
 
-    <!-- Messages Column -->
+    <!-- RIGHT -->
     <div id="messageContainer">
       <div id="postSection">
         <div id="emojiPicker">
@@ -169,7 +161,7 @@
   </div>
 
   <script>
-    // ——— Alert convenience ———
+    // Alert helper
     const alertModal = document.getElementById('alertModal'),
           alertMsg   = document.getElementById('alertMsg'),
           alertOK    = document.getElementById('alertOK');
@@ -179,7 +171,7 @@
     }
     alertOK.onclick = ()=> alertModal.style.display='none';
 
-    // ——— Profile overlay ———
+    // Profile overlay
     const profileModal  = document.getElementById('profileModal'),
           profName      = document.getElementById('profName'),
           profAbout     = document.getElementById('profAbout'),
@@ -187,7 +179,7 @@
           profClose     = document.getElementById('profClose');
     profClose.onclick = ()=> profileModal.style.display='none';
 
-    // ——— Firebase init ———
+    // Firebase init
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -202,214 +194,174 @@
     const auth = firebase.auth(),
           db   = firebase.database();
 
-    // ——— Profanity filter ———
+    // Profanity
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
       .then(r=>r.json())
       .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
       .catch(_=> kcAlert('Failed loading bad‑words list.'));
-    function containsBadWord(str){
-      return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(str));
-    }
+    function containsBadWord(s){ return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(s)); }
 
-    // ——— UI refs ———
-    const regForm     = document.getElementById('registerForm'),
-          logForm     = document.getElementById('loginForm'),
-          logoutBtn   = document.getElementById('logoutBtn'),
-          showLogin   = document.getElementById('showLogin'),
-          showReg     = document.getElementById('showRegister'),
-          saveProfile = document.getElementById('saveProfile'),
-          aboutMe     = document.getElementById('aboutMe'),
-          colorPicker = document.getElementById('colorPicker'),
-          postSec     = document.getElementById('postSection'),
-          msgList     = document.getElementById('msgList');
+    // UI refs
+    const regForm=document.getElementById('registerForm'),
+          logForm=document.getElementById('loginForm'),
+          logoutBtn=document.getElementById('logoutBtn'),
+          showLogin=document.getElementById('showLogin'),
+          showReg=document.getElementById('showRegister'),
+          saveProfile=document.getElementById('saveProfile'),
+          aboutMe=document.getElementById('aboutMe'),
+          colorPicker=document.getElementById('colorPicker'),
+          postSec=document.getElementById('postSection'),
+          msgList=document.getElementById('msgList');
 
-    // Toggle reg/login
-    showLogin.onclick = e=>{ e.preventDefault(); regForm.style.display='none'; logForm.style.display='block'; };
-    showReg.onclick   = e=>{ e.preventDefault(); logForm.style.display='none'; regForm.style.display='block'; };
+    showLogin.onclick = e=>{e.preventDefault();regForm.style.display='none';logForm.style.display='block';};
+    showReg.onclick   = e=>{e.preventDefault();logForm.style.display='none';regForm.style.display='block';};
 
-    // ——— Auth flows ———
-    document.getElementById('registerBtn').onclick = ()=>{
-      const name = document.getElementById('regName').value.trim(),
-            email= document.getElementById('regEmail').value.trim(),
-            pass = document.getElementById('regPass').value;
+    // Register
+    document.getElementById('registerBtn').onclick=()=>{
+      const name=document.getElementById('regName').value.trim(),
+            email=document.getElementById('regEmail').value.trim(),
+            pass=document.getElementById('regPass').value;
       if(!name||!email||!pass) return kcAlert('Please fill all fields.');
-      auth.createUserWithEmailAndPassword(email, pass)
-        .then(({user})=> user.updateProfile({displayName:name}))
-        .then(()=>{
-          // initialize their profile node
-          return db.ref(`users/${auth.currentUser.uid}`).set({
-            displayName: auth.currentUser.displayName,
-            about: '',
-            color: '',        // start blank → black fallback
-            joined: Date.now()
-          });
-        })
-        .catch(e=> kcAlert(e.message));
+      auth.createUserWithEmailAndPassword(email,pass)
+        .then(({user})=>user.updateProfile({displayName:name}))
+        .then(()=>db.ref(`users/${auth.currentUser.uid}`).set({
+          displayName:auth.currentUser.displayName,
+          about:'',
+          color:'',
+          joined:Date.now()
+        }))
+        .catch(e=>kcAlert(e.message));
     };
 
-    document.getElementById('loginBtn').onclick = ()=>{
-      const email= document.getElementById('loginEmail').value.trim(),
-            pass = document.getElementById('loginPass').value;
+    // Login
+    document.getElementById('loginBtn').onclick=()=>{
+      const email=document.getElementById('loginEmail').value.trim(),
+            pass=document.getElementById('loginPass').value;
       if(!email||!pass) return kcAlert('Please fill both fields.');
-      auth.signInWithEmailAndPassword(email, pass).catch(e=> kcAlert(e.message));
+      auth.signInWithEmailAndPassword(email,pass).catch(e=>kcAlert(e.message));
     };
-
     logoutBtn.onclick = ()=> auth.signOut();
 
-    // ——— Emoji picker ———
-    let selectedEmoji = null;
+    // Emoji picker
+    let selectedEmoji=null;
     document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
-      el.onclick = ()=> {
+      el.onclick=()=>{
         document.querySelectorAll('#emojiPicker .emoji').forEach(x=>x.classList.remove('selected'));
         el.classList.add('selected');
-        selectedEmoji = el.dataset.emoji;
+        selectedEmoji=el.dataset.emoji;
       };
     });
 
-    // ——— Color picker ———
-    let selectedColor = '';
+    // Color picker
+    let selectedColor='';
     document.querySelectorAll('.colorOption').forEach(div=>{
-      div.onclick = ()=>{
+      div.onclick=()=>{
         document.querySelectorAll('.colorOption').forEach(d=>d.classList.remove('selected'));
         div.classList.add('selected');
-        selectedColor = div.dataset.color;
+        selectedColor=div.dataset.color;
       };
     });
 
-    // ——— Load all user profiles into memory ———
-    const userProfiles = {}; 
+    // Load profiles
+    const userProfiles={};
     db.ref('users').on('value', snap=>{
-      snap.forEach(c=>{
-        userProfiles[c.key] = c.val();
-      });
-      // whenever profiles update, re-render messages to apply new colors
-      db.ref('messages').once('value').then(s=> renderMessages(s, msgList, ''));
+      snap.forEach(c=> userProfiles[c.key]=c.val());
+      db.ref('messages').once('value').then(s=>renderMessages(s,msgList,''));
     });
 
-    // ——— Render messages & replies ———
-    function renderMessages(snap, container, basePath){
-      container.innerHTML = '';
-      const arr = [];
-      snap.forEach(c=> { 
-        let v = c.val(); v.key = c.key; 
-        arr.push(v);
-      });
-      // sort by likes desc
+    // Render messages/replies
+    function renderMessages(snap,container,basePath){
+      container.innerHTML='';
+      let arr=[];
+      snap.forEach(c=>{let v=c.val();v.key=c.key;arr.push(v);});
       arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
-      if(arr.length===0){
-        let li = document.createElement('li');
-        li.style.fontStyle='italic';
-        li.textContent = 'No messages yet.';
-        return void container.appendChild(li);
+      if(!arr.length){
+        let li=document.createElement('li');
+        li.style.fontStyle='italic';li.textContent='No messages yet.';
+        container.appendChild(li);return;
       }
       arr.forEach(v=>{
-        // profanity gate
-        if(containsBadWord(v.user) || containsBadWord(v.text)) return;
-
-        // timestamp
-        const d = new Date(v.time),
-              ts = `${String(d.getUTCDate()).padStart(2,'0')}/`+
-                   `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
-                   `${String(d.getUTCFullYear()).slice(-2)} `+
-                   `${String(d.getUTCHours()).padStart(2,'0')}:`+
-                   `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-
-        // build row
-        let row = document.createElement('li');
-        row.className = container===msgList ? 'message' : 'reply';
-        row.innerHTML = `
+        if(containsBadWord(v.user)||containsBadWord(v.text)) return;
+        let d=new Date(v.time),
+            ts=`${String(d.getUTCDate()).padStart(2,'0')}/`+
+               `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
+               `${String(d.getUTCFullYear()).slice(-2)} `+
+               `${String(d.getUTCHours()).padStart(2,'0')}:`+
+               `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
+        let row=document.createElement('li');
+        row.className = container===msgList?'message':'reply';
+        row.innerHTML=`
           <div class="emojiCell">${v.emoji}</div>
           <div class="content">
             <span class="username" data-uid="${v.uid}">${v.user}</span>: ${v.text}
             <span class="timestamp">${ts}</span>
           </div>
           <div class="actions">
-            <button class="likeBtn"   data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
-            <button class="replyBtn"  data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
-            ${auth.currentUser&&auth.currentUser.uid===v.uid
-              ? `<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>` 
-              : ''
-            }
-          </div>
-        `;
-
-        // apply name color or black fallback
-        let uname = row.querySelector('.username'),
-            prof = userProfiles[v.uid];
-        if(prof && prof.color) {
-          uname.style.backgroundImage = prof.color;
-          uname.style.webkitBackgroundClip = 'text';
-          uname.style.backgroundClip = 'text';
+            <button class="likeBtn" data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
+            <button class="replyBtn" data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
+            ${auth.currentUser&&auth.currentUser.uid===v.uid?`<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>`:''}
+          </div>`;
+        let uname=row.querySelector('.username'),
+            prof=userProfiles[v.uid]||{};
+        if(prof.color){
+          uname.style.backgroundImage=prof.color;
+          uname.style.webkitBackgroundClip='text';
+          uname.style.backgroundClip='text';
         } else {
-          uname.style.backgroundClip = '';
-          uname.style.webkitBackgroundClip = '';
-          uname.style.color = 'black';
+          uname.style.backgroundClip='';
+          uname.style.webkitBackgroundClip='';
+          uname.style.color='#fff';
         }
-
         container.appendChild(row);
-
-        // replies UL
-        let repliesUL = document.createElement('ul');
-        repliesUL.className = 'replies';
+        let repliesUL=document.createElement('ul');
+        repliesUL.className='replies';
         container.appendChild(repliesUL);
-
         if(v.replies){
-          let pseudo = { forEach: cb => {
-            Object.entries(v.replies).forEach(([k,val])=>{
-              cb({ key:k, val:()=>val });
-            });
-          }};
-          renderMessages(pseudo, repliesUL, `${basePath}/${v.key}/replies`);
+          let pseudo={forEach:cb=>Object.entries(v.replies).forEach(([k,val])=>cb({key:k,val:()=>val}))};
+          renderMessages(pseudo,repliesUL,`${basePath}/${v.key}/replies`);
         }
       });
     }
 
-    // initial render & listen
-    db.ref('messages').on('value', snap=> renderMessages(snap, msgList, ''));
+    db.ref('messages').on('value', snap=>renderMessages(snap,msgList,''));
 
-    // ——— Delegated event handlers ———
-    document.body.addEventListener('click', e=>{
-      const user = auth.currentUser;
+    // Delegated events
+    document.body.addEventListener('click',e=>{
+      const user=auth.currentUser;
 
       // Like
       if(e.target.matches('.likeBtn')){
-        if(!user) return kcAlert('Log in to like.');
-        const path = e.target.dataset.path,
-              uid  = user.uid;
-        db.ref(`${path}/likedBy/${uid}`).transaction(cur=>{
-          return (cur===null ? true : undefined);
-        }, (err,committed)=>{
+        if(!user)return kcAlert('Log in to like.');
+        let path=e.target.dataset.path,uid=user.uid;
+        db.ref(`${path}/likedBy/${uid}`).transaction(cur=>cur===null?true:undefined,(err,comm)=>{
           if(err) kcAlert('Error liking.');
-          else if(committed) db.ref(`${path}/likes`).transaction(c=> (c||0)+1 );
+          else if(comm) db.ref(`${path}/likes`).transaction(c=>(c||0)+1);
           else kcAlert('You already liked this.');
         });
       }
 
       // Reply
       if(e.target.matches('.replyBtn')){
-        if(!user) return kcAlert('Log in to reply.');
-        const repliesPath = e.target.dataset.path;
-        if(document.getElementById('replyForm-'+repliesPath)) return;
-        let wrapper = document.createElement('li');
-        wrapper.className = 'reply-row';
-        let form = document.createElement('div');
-        form.className = 'reply-form'; form.id = 'replyForm-'+repliesPath;
-        form.innerHTML = `<input placeholder="Reply..." maxlength="200"/><button>Send</button>`;
+        if(!user)return kcAlert('Log in to reply.');
+        let repliesPath=e.target.dataset.path;
+        if(document.getElementById('replyForm-'+repliesPath))return;
+        let wrapper=document.createElement('li');
+        wrapper.className='reply-row';
+        let form=document.createElement('div');
+        form.className='reply-form'; form.id='replyForm-'+repliesPath;
+        form.innerHTML=`<input placeholder="Reply..." maxlength="200"/><button>Send</button>`;
         wrapper.appendChild(form);
         e.target.closest('li').after(wrapper);
-
-        form.querySelector('button').onclick = ()=>{
-          let txt = form.querySelector('input').value.trim();
+        form.querySelector('button').onclick=()=>{
+          let txt=form.querySelector('input').value.trim();
           if(!selectedEmoji) return kcAlert('Pick an emoji.');
           if(!txt)           return kcAlert('Enter a reply.');
           if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
           db.ref(repliesPath).push({
-            user: user.displayName,
-            uid:  user.uid,
-            text: txt,
-            emoji: selectedEmoji,
-            time: firebase.database.ServerValue.TIMESTAMP,
+            user:user.displayName,uid:user.uid,
+            text:txt,emoji:selectedEmoji,
+            time:firebase.database.ServerValue.TIMESTAMP,
             likes:0
           });
         };
@@ -417,79 +369,63 @@
 
       // Delete
       if(e.target.matches('.deleteBtn')){
-        const path = e.target.dataset.path;
-        if(confirm('Delete this message and its replies?')) {
-          db.ref(path).remove();
-        }
+        let path=e.target.dataset.path;
+        if(confirm('Delete this message and its replies?')) db.ref(path).remove();
       }
 
-      // Username click → show profile overlay
+      // Username click → profile overlay
       if(e.target.matches('.username')){
-        let uid = e.target.dataset.uid,
-            prof = userProfiles[uid] || {};
-        profName.textContent   = prof.displayName || 'Unknown';
-        profAbout.textContent  = prof.about       || 'No about me set.';
+        let uid=e.target.dataset.uid,
+            prof=userProfiles[uid]||{};
+        profName.textContent  = prof.displayName || 'About Me';
+        profAbout.textContent = prof.about || '';
         if(prof.joined){
-          let d= new Date(prof.joined);
-          profJoined.textContent = 
+          let d=new Date(prof.joined);
+          profJoined.textContent =
             `Joined: ${String(d.getUTCDate()).padStart(2,'0')}/`+
             `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
             `${String(d.getUTCFullYear()).slice(-2)} `+
             `${String(d.getUTCHours()).padStart(2,'0')}:`+
             `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-        } else {
-          profJoined.textContent = '';
-        }
+        } else profJoined.textContent='';
         profileModal.style.display='flex';
       }
     });
 
-    // ——— Post new message ———
-    document.getElementById('postBtnInner').onclick = ()=>{
-      let user = auth.currentUser,
-          txt  = document.getElementById('message').value.trim();
-      if(!user)           return kcAlert('Log in to post.');
-      if(!selectedEmoji)  return kcAlert('Pick an emoji.');
-      if(!txt)            return kcAlert('Enter a message.');
-      if(containsBadWord(user.displayName)||containsBadWord(txt))
-                            return kcAlert('That word’s not allowed.');
-
-      let mRef = db.ref('messages').push();
+    // Post new message
+    document.getElementById('postBtnInner').onclick=()=>{
+      let user=auth.currentUser, txt=document.getElementById('message').value.trim();
+      if(!user) return kcAlert('Log in to post.');
+      if(!selectedEmoji) return kcAlert('Pick an emoji.');
+      if(!txt) return kcAlert('Enter a message.');
+      if(containsBadWord(user.displayName)||containsBadWord(txt)) return kcAlert('That word’s not allowed.');
+      let mRef=db.ref('messages').push();
       mRef.set({
-        user: user.displayName,
-        uid:  user.uid,
-        text: txt,
-        emoji:selectedEmoji,
-        time: firebase.database.ServerValue.TIMESTAMP,
+        user:user.displayName,uid:user.uid,
+        text:txt,emoji:selectedEmoji,
+        time:firebase.database.ServerValue.TIMESTAMP,
         likes:0
       });
       document.getElementById('message').value='';
     };
 
-    // ——— Save profile updates ———
-    saveProfile.onclick = ()=>{
-      let user = auth.currentUser,
-          about= aboutMe.value.trim();
-
+    // Save profile
+    document.getElementById('saveProfile').onclick=()=>{
+      let user=auth.currentUser, about=aboutMe.value.trim();
       if(!user) return;
-      db.ref(`users/${user.uid}`).update({
-        about: about,
-        color: selectedColor
-      });
+      db.ref(`users/${user.uid}`).update({ about:about, color:selectedColor });
       kcAlert('Profile saved!');
     };
 
-    // ——— Auth‐state UI toggling ———
+    // Auth state
     auth.onAuthStateChanged(user=>{
       if(user){
         regForm.style.display=logForm.style.display='none';
         logoutBtn.style.display=postSec.style.display=aboutMe.style.display=colorPicker.style.display=saveProfile.style.display='block';
-        // load own profile
         db.ref(`users/${user.uid}`).once('value').then(s=>{
           let p=s.val()||{};
-          aboutMe.value = p.about || '';
-          selectedColor = p.color || '';
-          // mark gradient selected if exists
+          aboutMe.value=p.about||'';
+          selectedColor=p.color||'';
           if(selectedColor){
             document.querySelectorAll('.colorOption').forEach(d=>{
               if(d.dataset.color===selectedColor) d.classList.add('selected');
