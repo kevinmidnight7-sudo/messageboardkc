@@ -28,17 +28,9 @@
       color:#ccc;
       margin-bottom:.8rem;
     }
-    input[readonly] {
-      width:100%;
-      padding:.5rem;
-      border:none;
-      border-radius:6px;
-      margin-top:.3rem;
-      background:#333;
-      color:#fff;
-      box-sizing:border-box;
-    }
-    input[type=text], input[type=password] {
+    input[readonly],
+    input[type=text],
+    input[type=password] {
       width:100%;
       padding:.5rem;
       border:none;
@@ -46,9 +38,9 @@
       margin-top:.3rem;
       box-sizing:border-box;
     }
+    input[readonly] { background:#333; color:#fff; }
     .stars {
-      display:flex;
-      gap:.3rem;
+      display:flex; gap:.3rem;
       margin:.5rem 0 1rem;
     }
     .stars span {
@@ -58,38 +50,29 @@
     }
     .stars .filled { color:#facc15; }
     button {
-      width:100%;
-      padding:.6rem;
-      background:#22c55e;
-      color:#fff;
-      border:none;
-      border-radius:6px;
-      font-size:1rem;
-      font-weight:600;
-      cursor:pointer;
-      margin-top:.8rem;
+      width:100%; padding:.6rem;
+      background:#22c55e; color:#fff;
+      border:none; border-radius:6px;
+      font-size:1rem; font-weight:600;
+      cursor:pointer; margin-top:.8rem;
     }
     button:disabled {
-      background:#555;
-      cursor:not-allowed;
+      background:#555; cursor:not-allowed;
     }
     #showAdminBtn {
       background:rgba(255,255,255,0.1);
-      margin-top:1rem;
     }
     #adminSection {
-      display:none;
-      margin-top:1rem;
+      display:none; margin-top:1rem;
+    }
+    #resetBtn {
+      background:#ef4444;
     }
     table {
-      width:100%;
-      border-collapse:collapse;
-      margin-top:.8rem;
+      width:100%; border-collapse:collapse; margin-top:.8rem;
     }
     th, td {
-      padding:.4rem;
-      border:1px solid #444;
-      font-size:.85rem;
+      padding:.4rem; border:1px solid #444; font-size:.85rem;
     }
     th { background:rgba(255,255,255,0.1); }
   </style>
@@ -98,7 +81,7 @@
   <div class="panel">
     <h2>KC Event Voting</h2>
 
-    <!-- Voting form container -->
+    <!-- Voting container -->
     <div id="voteContainer">
       <p>Loading…</p>
     </div>
@@ -112,16 +95,17 @@
       <input type="password" id="adminPass"/>
       <button id="unlockBtn">Unlock Admin</button>
       <div id="adminTable"></div>
+      <button id="resetBtn">Reset Votes</button>
     </div>
   </div>
 
   <script>
-    // helper for KC‑style alerts
+    // KC‐style alert
     function kcAlert(msg) {
       alert(`KC Event says\n\n${msg}`);
     }
 
-    // Firebase initialization
+    // Firebase init
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -133,8 +117,8 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth = firebase.auth();
-    const votesRef = firebase.database().ref('votes');
+    const auth = firebase.auth(),
+          votesRef = firebase.database().ref('votes');
 
     // DOM refs
     const voteContainer = document.getElementById('voteContainer'),
@@ -142,11 +126,10 @@
           adminSection   = document.getElementById('adminSection'),
           adminPass      = document.getElementById('adminPass'),
           unlockBtn      = document.getElementById('unlockBtn'),
-          adminTable     = document.getElementById('adminTable');
+          adminTable     = document.getElementById('adminTable'),
+          resetBtn       = document.getElementById('resetBtn');
 
-    let userVoted = false;
-
-    // Build the voting form
+    // render voting form
     function renderForm(user) {
       voteContainer.innerHTML = `
         <label>Your username</label>
@@ -173,24 +156,25 @@
         <button id="submitBtn" disabled>Submit Vote</button>
       `;
 
-      const offence = document.getElementById('offence'),
-            defence = document.getElementById('defence'),
-            starContainer = document.getElementById('starContainer'),
-            submitBtn = document.getElementById('submitBtn');
+      const offence    = document.getElementById('offence'),
+            defence    = document.getElementById('defence'),
+            starCont   = document.getElementById('starContainer').children,
+            submitBtn  = document.getElementById('submitBtn');
       let rating = 0;
 
-      // stars click
-      Array.from(starContainer.children).forEach(s => {
+      // star selection
+      Array.from(starCont).forEach(s => {
         s.onclick = () => {
           rating = +s.dataset.value;
-          Array.from(starContainer.children).forEach(x => {
+          Array.from(starCont).forEach(x => {
             x.classList.toggle('filled', +x.dataset.value <= rating);
           });
           checkReady();
         };
       });
 
-      function checkReady() {
+      // enable when all filled
+      function checkReady(){
         submitBtn.disabled = !(
           offence.value.trim() &&
           defence.value.trim() &&
@@ -199,17 +183,17 @@
       }
       offence.oninput = defence.oninput = checkReady;
 
-      // one‐vote enforcement
-      votesRef.orderByChild('uid')
+      // enforce one vote per user
+      votesRef
+        .orderByChild('uid')
         .equalTo(user.uid)
         .once('value', snap => {
           if (snap.exists()) {
-            userVoted = true;
             voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
           }
         });
 
-      // submit handler
+      // submit
       submitBtn.onclick = () => {
         submitBtn.disabled = true;
         votesRef.push({
@@ -227,13 +211,12 @@
         })
         .finally(() => {
           submitBtn.disabled = false;
-          // re‑check one‐vote
           renderForm(user);
         });
       };
     }
 
-    // auth state observer
+    // react to auth state
     auth.onAuthStateChanged(user => {
       if (!user) {
         voteContainer.innerHTML = `
@@ -244,17 +227,17 @@
       }
     });
 
-    // Admin toggle
+    // toggle admin section
     showAdmin.onclick = () => {
       adminSection.style.display =
         adminSection.style.display === 'block' ? 'none' : 'block';
     };
 
-    // Unlock admin
+    // unlock & show all votes
     unlockBtn.onclick = () => {
       if (adminPass.value === 'events2025KC') {
         votesRef.orderByChild('time').once('value', snap => {
-          const data = snap.val() || {};
+          const data = snap.val()||{};
           let html = `<table>
             <tr><th>Date</th><th>User</th>
                 <th>Offence</th><th>Defence</th><th>Rating</th></tr>`;
@@ -274,6 +257,23 @@
       } else {
         kcAlert('Incorrect password.');
       }
+    };
+
+    // reset votes entirely
+    resetBtn.onclick = () => {
+      if (adminPass.value !== 'events2025KC') {
+        return kcAlert('Incorrect password.');
+      }
+      if (!confirm('Reset all votes? This cannot be undone.')) return;
+      votesRef.remove()
+        .then(() => {
+          adminTable.innerHTML = '';
+          kcAlert('All votes have been reset.');
+        })
+        .catch(e => {
+          console.error(e);
+          kcAlert('Reset failed.');
+        });
     };
   </script>
 </body>
