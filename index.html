@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Event Board w/ Per‑Message Gradients</title>
+  <title>KC Event Board w/ Sort & Reactions</title>
 
   <!-- Poppins + Firebase SDKs -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
@@ -11,141 +11,114 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <style>
-    * { box-sizing: border-box }
+    * { box-sizing: border-box; }
     html, body {
       margin:0; padding:0;
       width:100vw; height:100vh;
       font-family:'Poppins',sans-serif;
-      color:#fff; background:transparent;
+      color:#fff;
+      background:transparent;
       display:flex; overflow:hidden;
     }
-    #msgBoard { display:flex; flex:1; gap:2em; padding:1em }
+    #msgBoard { display:flex; flex:1; gap:2em; padding:1em; }
 
-    /* ─── LEFT PANEL: AUTH ONLY ───────────────────────────────────────────────── */
+    /* LEFT PANEL */
     #authContainer {
-      flex:1; background:rgba(0,0,0,0.4); border-radius:12px;
-      padding:1em; display:flex; flex-direction:column;
+      flex:1;
+      background:rgba(0,0,0,0.4);
+      border-radius:12px;
+      padding:1em;
+      display:flex; flex-direction:column;
     }
-    #authContainer h2 { text-align:center; margin-bottom:.5em }
-    #authContainer input, #authContainer button {
+    #authContainer h2 { text-align:center; margin-bottom:.5em; }
+    #authContainer button,input {
       width:100%; margin:.5em 0; padding:.5em;
-      border:none; border-radius:6px; font-family:'Poppins',sans-serif;
+      border:none; border-radius:6px;
+      font-family:'Poppins',sans-serif;
     }
-    #authContainer input { background:#fff; color:#000 }
-    #authContainer button {
-      background:#28a745; color:#fff; font-weight:600; cursor:pointer;
+    #logoutBtn {
+      background:#dc3545; color:#fff;
+      font-weight:600; cursor:pointer;
     }
-    #authContainer button:hover { background:#218838 }
-    #logoutBtn { display:none; background:#dc3545!important; }
-    #logoutBtn:hover { background:#c82333!important; }
+    #logoutBtn:hover { background:#c82333; }
 
-    /* ─── RIGHT PANEL: BOARD ──────────────────────────────────────────────────── */
-    #messageContainer {
-      flex:2; display:flex; flex-direction:column;
-      background:rgba(0,0,0,0.4); border-radius:12px;
-      padding:.5em; overflow-y:auto;
+    #postSection {
+      margin-top:1em;
+      background:rgba(255,255,255,0.1);
+      padding:1em;
+      border-radius:8px;
+      flex-shrink:0;
     }
-    /* sort */
-    #sortControls { text-align:right; margin-bottom:.5em }
-    #sortControls label { margin-right:.3em; color:#fff; font-size:.9em }
-    #sortSelect {
-      background:rgba(255,255,255,0.1); color:#fff;
-      border:1px solid #fff; border-radius:4px;
-      padding:2px 6px;
-    }
-    /* post box */
-    #postSection { display:none; margin-bottom:1em }
+    #postSection p { margin:0 0 .5em; font-weight:600; text-align:center; }
     #emojiPicker, #gradientPicker {
-      background:rgba(255,255,255,0.1); border-radius:8px;
-      padding:.5em; text-align:center; margin-bottom:.5em;
+      display:flex; justify-content:center; gap:.5em; flex-wrap:wrap; margin-bottom:.75em;
     }
-    #emojiPicker p, #gradientPicker p { margin:0 0 .5em }
     .emoji, .gradient {
-      cursor:pointer; display:inline-block; margin:.25em;
-      transition:.2s; border:1px solid #fff; border-radius:6px;
+      font-size:1.5em; cursor:pointer; opacity:.7;
+      border:1px solid #fff; border-radius:6px;
+      padding:4px; transition:.2s;
     }
-    .emoji { font-size:1.5em; padding:2px 4px; opacity:.7 }
-    .emoji.selected { opacity:1; transform:scale(1.2) }
-    .gradient {
-      width:32px; height:32px; border-radius:6px;
-      background-size:cover; border:2px solid transparent;
-    }
-    .gradient.selected { border-color:#fff }
-    #postSection input, #postSection button {
-      width:100%; padding:.75em; margin:.3em 0;
-      border:none; border-radius:8px;
-    }
+    .emoji.selected, .gradient.selected { opacity:1; transform:scale(1.2); }
     #postSection input {
+      width:100%; padding:.75em; margin:.5em 0;
+      border-radius:8px; border:none;
       background:rgba(255,255,255,0.9); color:#000;
     }
-    #postSection button {
-      background:#28a745; color:#fff; font-weight:600; cursor:pointer;
+    #postSection button#postBtn {
+      background:#28a745; color:#fff; font-weight:600;
+      cursor:pointer; width:100%; padding:.75em;
     }
-    #postSection button:hover { background:#218838 }
+    #postSection button#postBtn:hover { background:#218838; }
 
-    /* messages */
-    #msgList { list-style:none; padding:0; margin:0; flex:1 }
-    .message, .reply {
+    /* RIGHT PANEL */
+    #messageContainer {
+      flex:2;
+      display:flex; flex-direction:column;
+      background:rgba(0,0,0,0.4);
+      border-radius:12px;
+      padding:.5em;
+      overflow-y:auto;
+    }
+    #sortControls { text-align:right; margin-bottom:.5em; }
+    #sortControls label { color:#fff; font-size:.9em; }
+    #sortSelect {
+      background:rgba(255,255,255,0.1);
+      color:#fff; border:1px solid #fff;
+      border-radius:4px; padding:2px 6px;
+    }
+
+    #msgList { list-style:none; padding:0; margin:0; flex:1; }
+    .message {
       display:flex; align-items:flex-start; gap:.5em;
       padding:.5em; border-bottom:1px solid rgba(255,255,255,0.2);
       position:relative;
     }
-    .message:last-child, .reply:last-child { border-bottom:none }
-    .emojiCell { width:1.5em; text-align:center }
-    .content { flex:1 }
-    .timestamp {
-      display:block; font-size:.75em; color:rgba(255,255,255,0.7);
-      margin-top:.2em;
-    }
+    .emojiCell { width:1.5em; text-align:center; }
+    .content { flex:1; }
     .username {
       cursor:pointer; font-weight:600;
-      /* gradient text: via backgroundImage on each username */
-      background-clip:text; -webkit-background-clip:text; color:transparent;
+      background-clip:text; -webkit-background-clip:text;
+      color:transparent;
     }
-    .actions { display:flex; flex-direction:column; gap:.3em }
+    .timestamp {
+      display:block; font-size:.75em;
+      color:rgba(255,255,255,0.7); margin-top:.2em;
+    }
+    .actions {
+      display:flex; flex-direction:column; gap:.3em;
+    }
     .likeBtn, .replyBtn, .deleteBtn {
       background:transparent; color:#fff;
       border:1px solid #fff; border-radius:6px;
       padding:2px 6px; cursor:pointer;
-      display:flex; align-items:center; gap:.3em;
-      font-size:.9em;
+      font-size:.9em; display:flex; align-items:center; gap:.3em;
     }
     .likeBtn:hover, .replyBtn:hover, .deleteBtn:hover {
       background:rgba(255,255,255,0.1);
     }
-    .replies { list-style:none; padding:0; margin:0 0 0 2em }
+    .replies { margin:0 0 0 2em; padding:0; list-style:none; }
 
-    .reactions {
-      display:flex; gap:.3em; margin-top:.3em; flex-wrap:wrap;
-    }
-    .reactBtn {
-      display:flex; align-items:center; gap:.2em; font-size:.9em;
-      background:rgba(255,255,255,0.1); border-radius:4px;
-      padding:2px 4px; cursor:pointer;
-    }
-    .reactBtn:hover { background:rgba(255,255,255,0.2) }
-
-    .addBtn {
-      background:rgba(255,255,255,0.1); color:#fff;
-      border-radius:4px; padding:2px 6px;
-      cursor:pointer; font-size:.9em;
-      display:inline-flex; align-items:center;
-    }
-    .addBtn:hover { background:rgba(255,255,255,0.2) }
-
-    /* reply form */
-    .reply-row { display:flex; justify-content:center; margin:.5em 0 }
-    .reply-form { display:flex; gap:.5em }
-    .reply-form input {
-      width:200px; padding:.5em; border:none; border-radius:8px;
-    }
-    .reply-form button {
-      width:100px; padding:.5em; border:none; border-radius:8px;
-      background:#28a745; color:#fff; cursor:pointer; font-weight:600;
-    }
-    .reply-form button:hover { background:#218838 }
-
-    /* alert modal */
+    /* ALERT MODAL */
     #alertModal {
       display:none; position:fixed; top:0; left:0;
       width:100%; height:100%; background:rgba(0,0,0,0.5);
@@ -153,14 +126,12 @@
     }
     #alertContent {
       background:#fff; color:#000; padding:1rem;
-      border-radius:8px; text-align:center; max-width:300px;
-      width:90%;
+      border-radius:8px; text-align:center; max-width:300px; width:90%;
     }
-    #alertContent strong { display:block; margin-bottom:.5rem }
+    #alertContent strong { display:block; margin-bottom:.5rem; }
     #alertContent button {
       margin-top:.5rem; padding:.5em 1em;
-      background:#28a745; color:#fff; border:none;
-      border-radius:4px; cursor:pointer;
+      background:#28a745; color:#fff; border:none; border-radius:4px; cursor:pointer;
     }
   </style>
 </head>
@@ -176,43 +147,15 @@
   </div>
 
   <div id="msgBoard">
-    <!-- AUTH PANEL -->
+    <!-- LEFT PANEL -->
     <div id="authContainer">
       <h2>KC Events Account</h2>
-      <div id="registerForm">
-        <input id="regName" placeholder="Display Name"/>
-        <input id="regEmail" type="email" placeholder="Email"/>
-        <input id="regPass" type="password" placeholder="Password"/>
-        <button id="registerBtn">Create Account</button>
-        <p style="text-align:center;color:#ccc">
-          or <a href="#" id="showLogin" style="color:#fff">Log In</a>
-        </p>
-      </div>
-      <div id="loginForm" style="display:none;">
-        <input id="loginEmail" type="email" placeholder="Email"/>
-        <input id="loginPass" type="password" placeholder="Password"/>
-        <button id="loginBtn">Log In</button>
-        <p style="text-align:center;color:#ccc">
-          or <a href="#" id="showRegister" style="color:#fff">Create Account</a>
-        </p>
-      </div>
       <button id="logoutBtn">Sign Out</button>
-    </div>
 
-    <!-- MESSAGE PANEL -->
-    <div id="messageContainer">
-      <div id="sortControls">
-        <label for="sortSelect">Sort by:</label>
-        <select id="sortSelect">
-          <option value="recent">Most Recent</option>
-          <option value="liked">Most Liked</option>
-        </select>
-      </div>
-
-      <!-- POST SECTION -->
+      <!-- Post Section -->
       <div id="postSection">
+        <p>Pick an emoji!</p>
         <div id="emojiPicker">
-          <p><strong>Pick an emoji!</strong></p>
           <span class="emoji" data-emoji="😀">😀</span>
           <span class="emoji" data-emoji="😎">😎</span>
           <span class="emoji" data-emoji="😂">😂</span>
@@ -226,24 +169,30 @@
           <span class="emoji" data-emoji="😡">😡</span>
           <span class="emoji" data-emoji="🎉">🎉</span>
         </div>
-        <div id="gradientPicker">
-          <p><strong>Pick a gradient!</strong></p>
-          <span class="gradient" data-color="linear-gradient(45deg,#ff6b6b,#f06595)"
-            style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span>
-          <span class="gradient" data-color="linear-gradient(45deg,#74c0fc,#4dabf7)"
-            style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span>
-          <span class="gradient" data-color="linear-gradient(45deg,#51cf66,#2f9e44)"
-            style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span>
-          <span class="gradient" data-color="linear-gradient(45deg,#f9c74f,#f9844a)"
-            style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span>
-          <span class="gradient" data-color="linear-gradient(45deg,#845ef7,#5c7cfa)"
-            style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span>
-        </div>
-        <input id="message" placeholder="Your message" maxlength="200"/>
-        <button id="postBtnInner">Send</button>
-      </div>
 
-      <!-- LIST -->
+        <p>Pick a gradient!</p>
+        <div id="gradientPicker">
+          <span class="gradient" data-color="linear-gradient(45deg,#ff6b6b,#f06595)" style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span>
+          <span class="gradient" data-color="linear-gradient(45deg,#74c0fc,#4dabf7)" style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span>
+          <span class="gradient" data-color="linear-gradient(45deg,#51cf66,#2f9e44)" style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span>
+          <span class="gradient" data-color="linear-gradient(45deg,#f9c74f,#f9844a)" style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span>
+          <span class="gradient" data-color="linear-gradient(45deg,#845ef7,#5c7cfa)" style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span>
+        </div>
+
+        <input id="message" placeholder="Your message" maxlength="200"/>
+        <button id="postBtn">Send</button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="messageContainer">
+      <div id="sortControls">
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+          <option value="recent">Most Recent</option>
+          <option value="liked">Most Liked</option>
+        </select>
+      </div>
       <ul id="msgList">
         <li style="font-style:italic;color:rgba(255,255,255,0.7)">Loading…</li>
       </ul>
@@ -251,340 +200,194 @@
   </div>
 
   <script>
-  // ─── KC‐style ALERT ──────────────────────────────────────────────
-  const alertModal = document.getElementById('alertModal'),
-        alertMsg   = document.getElementById('alertMsg'),
-        alertOK    = document.getElementById('alertOK');
-  function kcAlert(txt){
-    alertMsg.textContent = txt;
-    alertModal.style.display = 'flex';
-  }
-  alertOK.onclick = ()=> alertModal.style.display='none';
-
-  // ─── FIREBASE INIT ─────────────────────────────────────────────
-  const cfg = {
-    apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-    authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-    databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "kckillerscompany-ab1ec",
-    storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
-    messagingSenderId: "198711213988",
-    appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-    measurementId: "G-4LKP2M3JXE"
-  };
-  firebase.initializeApp(cfg);
-  const auth = firebase.auth(), db = firebase.database();
-
-  // ─── PROFANITY FILTER ────────────────────────────────────────────
-  let badWords = [];
-  fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-    .then(r=>r.json())
-    .then(list=> badWords = list)
-    .catch(_=> kcAlert('Failed loading bad‑words.'));
-  function containsBadWord(s){
-    return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(s));
-  }
-
-  // ─── UI REFS ─────────────────────────────────────────────────────
-  const regForm    = document.getElementById('registerForm'),
-        logForm    = document.getElementById('loginForm'),
-        logoutBtn  = document.getElementById('logoutBtn'),
-        showLogin  = document.getElementById('showLogin'),
-        showReg    = document.getElementById('showRegister'),
-        postSec    = document.getElementById('postSection'),
-        msgList    = document.getElementById('msgList'),
-        sortSelect = document.getElementById('sortSelect');
-
-  showLogin.onclick = e=>{
-    e.preventDefault();
-    regForm.style.display='none';
-    logForm.style.display='block';
-  };
-  showReg.onclick = e=>{
-    e.preventDefault();
-    logForm.style.display='none';
-    regForm.style.display='block';
-  };
-
-  // ─── AUTH FLOWS ─────────────────────────────────────────────────
-  document.getElementById('registerBtn').onclick = ()=>{
-    const name  = document.getElementById('regName').value.trim(),
-          email = document.getElementById('regEmail').value.trim(),
-          pass  = document.getElementById('regPass').value;
-    if(!name||!email||!pass) return kcAlert('Please fill all fields.');
-    auth.createUserWithEmailAndPassword(email,pass)
-      .then(({user})=> user.updateProfile({displayName:name}))
-      .catch(e=> kcAlert(e.message));
-  };
-  document.getElementById('loginBtn').onclick = ()=>{
-    const email = document.getElementById('loginEmail').value.trim(),
-          pass  = document.getElementById('loginPass').value;
-    if(!email||!pass) return kcAlert('Please fill both fields.');
-    auth.signInWithEmailAndPassword(email,pass)
-      .catch(e=> kcAlert(e.message));
-  };
-  logoutBtn.onclick = ()=> auth.signOut();
-
-  // ─── EMOJI PICKER ────────────────────────────────────────────────
-  let selectedEmoji = null;
-  document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
-    el.onclick = ()=>{
-      document.querySelectorAll('#emojiPicker .emoji')
-        .forEach(x=>x.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedEmoji = el.dataset.emoji;
-    };
-  });
-
-  // ─── GRADIENT PICKER ─────────────────────────────────────────────
-  let selectedColor = '';
-  document.querySelectorAll('#gradientPicker .gradient').forEach(el=>{
-    el.onclick = ()=>{
-      document.querySelectorAll('#gradientPicker .gradient')
-        .forEach(x=>x.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedColor = el.dataset.color;
-    };
-  });
-
-  // ─── DATA & LISTENERS ────────────────────────────────────────────
-  const userProfiles = {},
-        reactionEmojis = ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉'];
-  let lastSnap = null, sortMode = 'recent';
-
-  // we still read profiles so we know displayName…
-  db.ref('users').on('value', snap=>{
-    snap.forEach(c=> userProfiles[c.key] = c.val());
-  });
-  db.ref('messages').on('value', snap=>{
-    lastSnap = snap;
-    renderMessages(snap, msgList, '');
-  });
-
-  sortSelect.onchange = ()=>{
-    sortMode = sortSelect.value;
-    if(lastSnap) renderMessages(lastSnap, msgList, '');
-  };
-
-  // ─── RENDER FUNCTION ─────────────────────────────────────────────
-  function renderMessages(snap, container, basePath){
-    container.innerHTML = '';
-    const arr = [];
-    snap.forEach(c=>{ let v=c.val(); v.key=c.key; arr.push(v) });
-    if(sortMode==='liked'){
-      arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
-    } else {
-      arr.sort((a,b)=>b.time - a.time);
+    // ─── Alert helper ───────────────────────────────────────────────
+    const alertModal = document.getElementById('alertModal'),
+          alertMsg   = document.getElementById('alertMsg'),
+          alertOK    = document.getElementById('alertOK');
+    function kcAlert(txt){
+      alertMsg.textContent = txt;
+      alertModal.style.display = 'flex';
     }
-    if(!arr.length){
-      const li = document.createElement('li');
-      li.style.fontStyle='italic';
-      li.textContent='No messages yet.';
-      return container.appendChild(li);
-    }
-    arr.forEach(v=>{
-      if(containsBadWord(v.user)||containsBadWord(v.text)) return;
-      const d = new Date(v.time),
-            ts = `${String(d.getUTCDate()).padStart(2,'0')}/`+
-                 `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
-                 `${String(d.getUTCFullYear()).slice(-2)} `+
-                 `${String(d.getUTCHours()).padStart(2,'0')}:`+
-                 `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
+    alertOK.onclick = ()=> alertModal.style.display='none';
 
-      const li = document.createElement('li');
-      li.className = container===msgList ? 'message' : 'reply';
-      li.dataset.path = `messages${basePath}/${v.key}`;
-      li.innerHTML = `
-        <div class="emojiCell">${v.emoji}</div>
-        <div class="content">
-          <span class="username" data-uid="${v.uid}">${v.user}</span>
-          : ${v.text}
-          <span class="timestamp">${ts}</span>
-          <div class="reactions"></div>
-        </div>
-        <div class="actions">
-          <button class="likeBtn">❤️ ${v.likes||0}</button>
-          <button class="replyBtn">↩️ Reply</button>
-          ${auth.currentUser && auth.currentUser.uid===v.uid
-            ? `<button class="deleteBtn">🗑️ Delete</button>` : ''}
-        </div>`;
-
-      // apply *that post’s* gradient
-      const uname = li.querySelector('.username');
-      if(v.color){
-        uname.style.backgroundImage = v.color;
-        uname.style.webkitBackgroundClip = uname.style.backgroundClip = 'text';
-      } else {
-        uname.style.color = '#fff';
-      }
-
-      container.appendChild(li);
-
-      // reactions…
-      const bar = li.querySelector('.reactions'),
-            existing = v.reactions||{};
-      Object.keys(existing).forEach(emo=>{
-        const cnt = Object.keys(existing[emo]||{}).length,
-              btn = document.createElement('div');
-        btn.className     ='reactBtn';
-        btn.dataset.path  = li.dataset.path + `/reactions/${emo}`;
-        btn.dataset.emoji = emo;
-        btn.innerHTML     = `${emo}<span>${cnt}</span>`;
-        bar.appendChild(btn);
-      });
-      const addBtn = document.createElement('div');
-      addBtn.className = 'addBtn'; addBtn.textContent = '➕ Add';
-      bar.appendChild(addBtn);
-
-      // replies container
-      const repliesUL = document.createElement('ul');
-      repliesUL.className = 'replies';
-      container.appendChild(repliesUL);
-      if(v.replies){
-        const pseudo = { forEach:cb=>
-          Object.entries(v.replies).forEach(([k,val])=>
-            cb({key:k, val:()=>val})
-          )
-        };
-        renderMessages(pseudo, repliesUL, `${basePath}/${v.key}/replies`);
-      }
+    // ─── Firebase init ─────────────────────────────────────────────
+    firebase.initializeApp({
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
     });
-  }
+    const auth = firebase.auth(), db = firebase.database();
 
-  // ─── DELEGATED CLICKS ─────────────────────────────────────────────
-  document.body.addEventListener('click', e=>{
-    const user = auth.currentUser;
+    // ─── UI refs & state ───────────────────────────────────────────
+    const logoutBtn     = document.getElementById('logoutBtn'),
+          postBtn       = document.getElementById('postBtn'),
+          sortSelect    = document.getElementById('sortSelect'),
+          msgList       = document.getElementById('msgList'),
+          emojiEls      = document.querySelectorAll('.emoji'),
+          gradientEls   = document.querySelectorAll('.gradient'),
+          messageInput  = document.getElementById('message');
 
-    // Like
-    if(e.target.closest('.likeBtn')){
-      if(!user) return kcAlert('Log in to like.');
-      const path = e.target.closest('li').dataset.path,
-            uid  = user.uid;
-      db.ref(`${path}/likedBy/${uid}`)
-        .transaction(cur=> cur===null ? true : undefined,
-          (err,comm)=>{
-            if(err) kcAlert('Error liking.');
-            else if(comm) db.ref(`${path}/likes`).transaction(c=> (c||0)+1);
-            else kcAlert('You already liked this.');
-          });
-      return;
-    }
+    let selectedEmoji   = null,
+        selectedColor   = null,
+        lastSnap        = null,
+        sortMode        = 'recent';
 
-    // React
-    if(e.target.closest('.reactBtn')){
-      if(!user) return kcAlert('Log in to react.');
-      const btn  = e.target.closest('.reactBtn'),
-            path = btn.dataset.path,
-            uid  = user.uid;
-      db.ref(`${path}/${uid}`)
-        .transaction(cur=> cur===null ? true : undefined,
-          (err,comm)=>{
-            if(err) kcAlert('Error reacting.');
-            else if(!comm) kcAlert('You already reacted.');
-          });
-      return;
-    }
+    // ─── Auth & logout ─────────────────────────────────────────────
+    logoutBtn.onclick = ()=> auth.signOut();
+    auth.onAuthStateChanged(user=>{
+      if(!user) kcAlert('Please log in to post.');
+    });
 
-    // Add‐reaction picker
-    if(e.target.matches('.addBtn')){
-      const li  = e.target.closest('li'),
-            base= li.dataset.path,
-            bar = li.querySelector('.reactions');
-      if(bar.querySelector('.addPicker')){
-        bar.querySelector('.addPicker').remove(); return;
-      }
-      const existing = Array.from(bar.querySelectorAll('.reactBtn'))
-                        .map(b=>b.dataset.emoji),
-            picker = document.createElement('div');
-      picker.className='addPicker';
-      reactionEmojis.filter(emo=>!existing.includes(emo)).forEach(emo=>{
-        const span = document.createElement('span');
-        span.className='emoji'; span.textContent=emo;
-        span.onclick = ()=>{
-          if(!auth.currentUser) return kcAlert('Log in to react.');
-          db.ref(`${base}/reactions/${emo}/${auth.currentUser.uid}`)
-            .set(true, err=> err && kcAlert('Error adding reaction.'));
-          picker.remove();
-        };
-        picker.appendChild(span);
-      });
-      bar.appendChild(picker);
-      return;
-    }
-
-    // Reply
-    if(e.target.closest('.replyBtn')){
-      if(!user) return kcAlert('Log in to reply.');
-      const li   = e.target.closest('li'),
-            path = li.dataset.path + '/replies';
-      if(document.getElementById('replyForm-'+path)) return;
-      const row = document.createElement('li');
-      row.className='reply-row';
-      const form = document.createElement('div');
-      form.className='reply-form'; form.id='replyForm-'+path;
-      form.innerHTML = `<input placeholder="Reply…" maxlength="200"/>
-                        <button>Send</button>`;
-      row.appendChild(form); li.after(row);
-      form.querySelector('button').onclick = ()=>{
-        const txt = form.querySelector('input').value.trim();
-        if(!selectedEmoji)   return kcAlert('Pick an emoji.');
-        if(!txt)             return kcAlert('Enter a reply.');
-        if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
-        db.ref(path).push({
-          user:user.displayName, uid:user.uid,
-          text:txt, emoji:selectedEmoji,
-          color:selectedColor,   // <— carry over gradient
-          time:firebase.database.ServerValue.TIMESTAMP,
-          likes:0
-        });
+    // ─── Pickers ───────────────────────────────────────────────────
+    emojiEls.forEach(el=>{
+      el.onclick = ()=>{
+        emojiEls.forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedEmoji = el.dataset.emoji;
       };
-      return;
-    }
-
-    // Delete
-    if(e.target.closest('.deleteBtn')){
-      const path = e.target.closest('li').dataset.path;
-      if(confirm('Delete this message and its replies?'))
-        db.ref(path).remove();
-      return;
-    }
-  });
-
-  // ─── POST NEW MESSAGE ─────────────────────────────────────────────
-  document.getElementById('postBtnInner').onclick = ()=>{
-    const user = auth.currentUser,
-          txt  = document.getElementById('message').value.trim();
-    if(!user)           return kcAlert('Log in to post.');
-    if(!selectedEmoji)  return kcAlert('Pick an emoji.');
-    if(!selectedColor)  return kcAlert('Pick a gradient.');
-    if(!txt)            return kcAlert('Enter a message.');
-    if(containsBadWord(user.displayName)||containsBadWord(txt))
-      return kcAlert('That word’s not allowed.');
-
-    const mRef = db.ref('messages').push();
-    mRef.set({
-      user:  user.displayName,
-      uid:   user.uid,
-      text:  txt,
-      emoji: selectedEmoji,
-      color: selectedColor,
-      time:  firebase.database.ServerValue.TIMESTAMP,
-      likes: 0
     });
-    document.getElementById('message').value='';
-  };
+    gradientEls.forEach(el=>{
+      el.onclick = ()=>{
+        gradientEls.forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedColor = el.dataset.color;
+      };
+    });
 
-  // ─── AUTH STATE UI ───────────────────────────────────────────────
-  auth.onAuthStateChanged(user=>{
-    if(user){
-      regForm.style.display=logForm.style.display='none';
-      logoutBtn.style.display=postSec.style.display='block';
-    } else {
-      regForm.style.display='block';
-      logForm.style.display='none';
-      logoutBtn.style.display=postSec.style.display='none';
+    // ─── Post new message ───────────────────────────────────────────
+    postBtn.onclick = ()=>{
+      const user = auth.currentUser;
+      const txt  = messageInput.value.trim();
+      if(!user)              return kcAlert('Log in to post.');
+      if(!selectedEmoji)     return kcAlert('Pick an emoji.');
+      if(!selectedColor)     return kcAlert('Pick a gradient.');
+      if(!txt)               return kcAlert('Enter a message.');
+      const mRef = db.ref('messages').push();
+      mRef.set({
+        user:  user.displayName,
+        uid:   user.uid,
+        text:  txt,
+        emoji: selectedEmoji,
+        color: selectedColor,
+        time:  firebase.database.ServerValue.TIMESTAMP,
+        likes: 0
+      })
+      .then(()=> {
+        messageInput.value = '';
+        emojiEls.forEach(x=>x.classList.remove('selected'));
+        gradientEls.forEach(x=>x.classList.remove('selected'));
+        selectedEmoji = selectedColor = null;
+      })
+      .catch(e=> kcAlert('Error posting: '+e.message));
+    };
+
+    // ─── Listen & render messages ──────────────────────────────────
+    db.ref('messages').on('value', snap=>{
+      lastSnap = snap;
+      renderMessages();
+    });
+    sortSelect.onchange = ()=> {
+      sortMode = sortSelect.value;
+      renderMessages();
+    };
+
+    function renderMessages(){
+      if(!lastSnap) return;
+      msgList.innerHTML = '';
+      const arr = [];
+      lastSnap.forEach(c=> { let v=c.val(); v.key=c.key; arr.push(v); });
+      if(sortMode==='liked') arr.sort((a,b)=>(b.likes||0)-(a.likes||0)); 
+      else arr.sort((a,b)=>b.time - a.time);
+
+      if(!arr.length){
+        return msgList.innerHTML = `<li style="font-style:italic;color:rgba(255,255,255,0.7)">No messages yet.</li>`;
+      }
+
+      arr.forEach(v=>{
+        const d= new Date(v.time),
+              ts=`${d.getUTCDate()}/${d.getUTCMonth()+1}/${String(d.getUTCFullYear()).slice(-2)} `+
+                 `${d.getUTCHours()}:${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
+
+        const li = document.createElement('li');
+        li.className    = 'message';
+        li.dataset.path = `messages/${v.key}`;
+        li.innerHTML    = `
+          <div class="emojiCell">${v.emoji}</div>
+          <div class="content">
+            <span class="username">${v.user}</span>
+            : ${v.text}
+            <span class="timestamp">${ts}</span>
+          </div>
+          <div class="actions">
+            <button class="likeBtn">❤️ ${v.likes||0}</button>
+            <button class="replyBtn">↩️ Reply</button>
+            ${auth.currentUser && auth.currentUser.uid===v.uid
+              ? `<button class="deleteBtn">🗑️ Delete</button>` : ''}
+          </div>`;
+
+        // apply gradient
+        const uname = li.querySelector('.username');
+        if(v.color){
+          uname.style.backgroundImage = v.color;
+          uname.style.webkitBackgroundClip = uname.style.backgroundClip = 'text';
+        } else {
+          uname.style.color = '#fff';
+        }
+
+        msgList.appendChild(li);
+      });
     }
-  });
+
+    // ─── Delegated click handler for like, react, reply, delete ───
+    document.body.addEventListener('click', e=>{
+      const user = auth.currentUser;
+      // Like
+      if(e.target.closest('.likeBtn')){
+        if(!user) return kcAlert('Log in to like.');
+        const path = e.target.closest('li').dataset.path,
+              uid  = user.uid;
+        db.ref(`${path}/likedBy/${uid}`)
+          .transaction(cur=> cur===null ? true : undefined,
+            (err,comm)=>{
+              if(err) kcAlert('Error liking.');
+              else if(comm) db.ref(`${path}/likes`).transaction(c=> (c||0)+1 );
+              else kcAlert('You already liked this.');
+            });
+        return;
+      }
+
+      // Reply
+      if(e.target.closest('.replyBtn')){
+        if(!user) return kcAlert('Log in to reply.');
+        const parentLi = e.target.closest('li'),
+              replyPath = parentLi.dataset.path + '/replies';
+        const replyText = prompt('Your reply:');
+        if(!replyText) return;
+        db.ref(replyPath).push({
+          user:  user.displayName,
+          uid:   user.uid,
+          text:  replyText,
+          emoji: '💬',
+          color: 'linear-gradient(45deg,#74c0fc,#4dabf7)',
+          time:  firebase.database.ServerValue.TIMESTAMP,
+          likes: 0
+        }).catch(_=> kcAlert('Error replying.'));
+        return;
+      }
+
+      // Delete
+      if(e.target.closest('.deleteBtn')){
+        if(!confirm('Delete this message?')) return;
+        const path = e.target.closest('li').dataset.path;
+        db.ref(path).remove().catch(_=> kcAlert('Error deleting.'));
+        return;
+      }
+    });
   </script>
 </body>
 </html>
