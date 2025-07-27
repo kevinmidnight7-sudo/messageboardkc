@@ -669,15 +669,27 @@
       document.getElementById('message').value='';
     };
 
-    // Save profile
-    document.getElementById('saveProfile').onclick = ()=>{
-      const user  = auth.currentUser,
-            about = aboutMe.value.trim();
-      if(!user) return;
-      db.ref(`users/${user.uid}`).update({ about, color:selectedColor });
+   // Save profile (and immediately reload so the UI reflects your new about/color)
+document.getElementById('saveProfile').onclick = ()=>{
+  const user  = auth.currentUser;
+  if(!user) return;
+  const about = aboutMe.value.trim();
+  // write to RTDB
+  db.ref(`users/${user.uid}`)
+    .update({ about, color:selectedColor })
+    .then(()=>{
+      // re‑fetch just this user’s profile
+      return db.ref(`users/${user.uid}`).once('value');
+    })
+    .then(snap=>{
+      // update our in‑memory cache
+      userProfiles[user.uid] = snap.val();
+      // re‑draw the message list so name gradients update
+      if(lastSnap) renderMessages(lastSnap, msgList, '');
       kcAlert('Profile saved!');
-    };
-
+    })
+    .catch(err=> kcAlert('Error saving profile: '+err.message));
+};
     // Auth state UI
     auth.onAuthStateChanged(user=>{
       if(user){
