@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>KC Auth Bar</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <style>
+    html, body { margin:0; padding:0; }
+    #homeAuth {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      font-family: 'Poppins',sans-serif;
+      color: #fff;
+      background: rgba(0,0,0,0.5);
+      padding: .3em .8em;
+      border-radius: 8px;
+      max-width: 280px;
+      width: auto;
+      margin: 0 auto;
+      font-size: .9rem;
+    }
+    #homeAuth a {
+      color: #4ade80;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    #homeAuth a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div id="homeAuth">Loading…</div>
+
+  <script>
+    // 1) Init Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const container = document.getElementById('homeAuth');
+
+    // 2) Swap UI on login change
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        container.innerHTML = `
+          <span>👋 Welcome, <strong>${user.displayName || user.email}</strong></span>
+          <a href="#" id="signOutLink">Sign Out</a>
+        `;
+        document.getElementById('signOutLink')
+                .onclick = e => { e.preventDefault(); auth.signOut(); };
+      } else {
+        container.innerHTML = `
+          <a href="#login">Log In</a>
+          <span>or</span>
+          <a href="#register">Register</a>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
