@@ -18,8 +18,8 @@
       background:rgba(0,0,0,0.6);
       border-radius:12px;
       padding:1rem;
-      max-width:400px;
-      margin:1rem auto;
+      max-width:450px;
+      margin:2rem auto;
     }
     h2 { margin-top:0; }
     label { display:block; margin:1rem 0 .3rem; font-weight:600; }
@@ -73,8 +73,15 @@
     }
     th, td {
       padding:.4rem; border:1px solid #444; font-size:.85rem;
+      text-align:left;
     }
     th { background:rgba(255,255,255,0.1); }
+    .delBtn {
+      background:#dc3545; color:#fff; border:none;
+      padding:.3rem .6rem; border-radius:4px;
+      cursor:pointer;
+    }
+    .delBtn:hover { background:#c82333; }
   </style>
 </head>
 <body>
@@ -117,7 +124,7 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth = firebase.auth(),
+    const auth     = firebase.auth(),
           votesRef = firebase.database().ref('votes');
 
     // DOM refs
@@ -156,19 +163,17 @@
         <button id="submitBtn" disabled>Submit Vote</button>
       `;
 
-      const offence    = document.getElementById('offence'),
-            defence    = document.getElementById('defence'),
-            starCont   = document.getElementById('starContainer').children,
-            submitBtn  = document.getElementById('submitBtn');
+      const offence   = document.getElementById('offence'),
+            defence   = document.getElementById('defence'),
+            stars     = document.querySelectorAll('#starContainer span'),
+            submitBtn = document.getElementById('submitBtn');
       let rating = 0;
 
       // star selection
-      Array.from(starCont).forEach(s => {
-        s.onclick = () => {
+      stars.forEach(s=>{
+        s.onclick = ()=>{
           rating = +s.dataset.value;
-          Array.from(starCont).forEach(x => {
-            x.classList.toggle('filled', +x.dataset.value <= rating);
-          });
+          stars.forEach(x=> x.classList.toggle('filled', +x.dataset.value <= rating));
           checkReady();
         };
       });
@@ -184,19 +189,16 @@
       offence.oninput = defence.oninput = checkReady;
 
       // enforce one vote per user
-      votesRef
-        .orderByChild('uid')
-        .equalTo(user.uid)
-        .once('value', snap => {
-          if (snap.exists()) {
-            voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
-          }
-        });
+      votesRef.child(user.uid).once('value', snap=>{
+        if(snap.exists()){
+          voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
+        }
+      });
 
       // submit
-      submitBtn.onclick = () => {
+      submitBtn.onclick = ()=>{
         submitBtn.disabled = true;
-        votesRef.push({
+        votesRef.child(user.uid).set({
           uid: user.uid,
           username: user.displayName||user.email,
           bestOffence: offence.value.trim(),
@@ -204,21 +206,17 @@
           rating,
           time: firebase.database.ServerValue.TIMESTAMP
         })
-        .then(() => kcAlert('Thanks for voting!'))
-        .catch(e => {
+        .then(()=> kcAlert('Thanks for voting!'))
+        .catch(e=>{
           console.error(e);
           kcAlert('Error submitting.');
-        })
-        .finally(() => {
-          submitBtn.disabled = false;
-          renderForm(user);
         });
       };
     }
 
-    // react to auth state
-    auth.onAuthStateChanged(user => {
-      if (!user) {
+    // auth state
+    auth.onAuthStateChanged(user=>{
+      if(!user){
         voteContainer.innerHTML = `
           <p>Please <a href="#login" target="_top" style="color:#4ade80;">log in</a> to vote.</p>
         `;
@@ -228,52 +226,68 @@
     });
 
     // toggle admin section
-    showAdmin.onclick = () => {
+    showAdmin.onclick = ()=>{
       adminSection.style.display =
-        adminSection.style.display === 'block' ? 'none' : 'block';
+        adminSection.style.display==='block' ? 'none' : 'block';
     };
 
-    // unlock & show all votes
-    unlockBtn.onclick = () => {
-      if (adminPass.value === 'events2025KC') {
-        votesRef.orderByChild('time').once('value', snap => {
-          const data = snap.val()||{};
-          let html = `<table>
-            <tr><th>Date</th><th>User</th>
-                <th>Offence</th><th>Defence</th><th>Rating</th></tr>`;
-          Object.values(data).forEach(v => {
-            const d = new Date(v.time);
-            html += `<tr>
-              <td>${d.toLocaleString()}</td>
-              <td>${v.username}</td>
-              <td>${v.bestOffence}</td>
-              <td>${v.bestDefence}</td>
-              <td>${v.rating}/5</td>
-            </tr>`;
-          });
-          html += `</table>`;
-          adminTable.innerHTML = html;
-        });
-      } else {
-        kcAlert('Incorrect password.');
-      }
-    };
-
-    // reset votes entirely
-    resetBtn.onclick = () => {
-      if (adminPass.value !== 'events2025KC') {
+    // unlock admin & populate table
+    unlockBtn.onclick = ()=>{
+      if(adminPass.value !== 'events2025KC'){
         return kcAlert('Incorrect password.');
       }
-      if (!confirm('Reset all votes? This cannot be undone.')) return;
+      votesRef.orderByChild('time').once('value', snap=>{
+        const data = snap.val()||{};
+        let html = `<table>
+          <tr>
+            <th>Date</th><th>User</th><th>Offence</th>
+            <th>Defence</th><th>Rating</th><th>Delete</th>
+          </tr>`;
+        Object.entries(data).forEach(([uid, vote])=>{
+          const d = new Date(vote.time);
+          html += `<tr>
+            <td>${d.toLocaleString()}</td>
+            <td>${vote.username}</td>
+            <td>${vote.bestOffence}</td>
+            <td>${vote.bestDefence}</td>
+            <td>${vote.rating}/5</td>
+            <td>
+              <button class="delBtn" data-uid="${uid}">Delete</button>
+            </td>
+          </tr>`;
+        });
+        html += `</table>`;
+        adminTable.innerHTML = html;
+
+        // wire up delete buttons
+        adminTable.querySelectorAll('.delBtn').forEach(btn=>{
+          btn.onclick = ()=>{
+            const uid = btn.dataset.uid;
+            if(!confirm('Really delete this vote?')) return;
+            votesRef.child(uid).remove()
+              .then(()=> {
+                // remove row from DOM
+                btn.closest('tr').remove();
+                kcAlert('Vote deleted.');
+              })
+              .catch(e=> kcAlert('Delete failed: '+e.message));
+          };
+        });
+      });
+    };
+
+    // reset all votes
+    resetBtn.onclick = ()=>{
+      if(adminPass.value!=='events2025KC'){
+        return kcAlert('Incorrect password.');
+      }
+      if(!confirm('Reset all votes? This cannot be undone.')) return;
       votesRef.remove()
-        .then(() => {
+        .then(()=>{
           adminTable.innerHTML = '';
           kcAlert('All votes have been reset.');
         })
-        .catch(e => {
-          console.error(e);
-          kcAlert('Reset failed.');
-        });
+        .catch(e=> kcAlert('Reset failed.'));
     };
   </script>
 </body>
