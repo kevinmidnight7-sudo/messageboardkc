@@ -8,26 +8,31 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
+    /* ————————————————————————————————————————————————
+       Layout & Panels
+    ———————————————————————————————————————————————— */
     body {
-      margin:0; padding:0;
+      margin:0; padding:1rem;
       font-family:'Poppins',sans-serif;
       color:#fff;
       background:transparent;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      flex-wrap: wrap;
-      gap: 1rem;
-      padding: 1rem;
+      display:flex;
+      flex-wrap:wrap;
+      gap:1rem;
+      justify-content:center;
     }
     .panel, .leaderboard {
       background:rgba(0,0,0,0.6);
       border-radius:12px;
       padding:1rem;
       width:400px;
-      box-sizing: border-box;
+      box-sizing:border-box;
     }
     h2, .leaderboard h3 { margin-top:0; }
+
+    /* ————————————————————————————————————————————————
+       Common Form Styles
+    ———————————————————————————————————————————————— */
     label { display:block; margin:1rem 0 .3rem; font-weight:600; }
     .hint { font-size:.75rem; color:#ccc; margin-bottom:.8rem; }
     input[readonly], input[type=text], input[type=password] {
@@ -35,9 +40,11 @@
       margin-top:.3rem; box-sizing:border-box;
     }
     input[readonly] { background:#333; color:#fff; }
+
     .stars { display:flex; gap:.3rem; margin:.5rem 0 1rem; }
     .stars span { font-size:1.5rem; cursor:pointer; color:#555; }
     .stars .filled { color:#facc15; }
+
     button {
       width:100%; padding:.6rem; background:#22c55e; color:#fff;
       border:none; border-radius:6px; font-size:1rem; font-weight:600;
@@ -47,6 +54,7 @@
     #showAdminBtn { background:rgba(255,255,255,0.1); }
     #adminSection { display:none; margin-top:1rem; }
     #resetBtn { background:#ef4444; }
+
     table { width:100%; border-collapse:collapse; margin-top:.8rem; }
     th, td {
       padding:.4rem; border:1px solid #444; font-size:.85rem; text-align:left;
@@ -56,7 +64,10 @@
       background:#ef4444; color:#fff; padding:.3rem .6rem;
       border:none; border-radius:4px; cursor:pointer;
     }
-    /* Overlay alert / confirm */
+
+    /* ————————————————————————————————————————————————
+       Overlay Alert / Confirm
+    ———————————————————————————————————————————————— */
     #alertModal {
       display:none; position:fixed; top:0; left:0;
       width:100%; height:100%; background:rgba(0,0,0,0.5);
@@ -83,11 +94,38 @@
     }
     .confirmButtons .yes { background:#22c55e; color:#fff; }
     .confirmButtons .no  { background:#60a5fa; color:#fff; }
-    /* Leaderboard styles */
+
+    /* ————————————————————————————————————————————————
+       Leaderboard Styles
+    ———————————————————————————————————————————————— */
     .leaderboard h3 {
-      font-size:1.1rem; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.2);
-      padding-bottom:.5rem;
+      text-align:center;
+      font-size:1.3rem;
+      margin-bottom:.5rem;
     }
+    .offenseBox, .defenseBox {
+      border:2px solid; border-radius:8px;
+      padding:.75rem; margin-bottom:1rem;
+    }
+    .offenseBox { border-color:#f87171; }
+    .defenseBox{ border-color:#3b82f6; }
+
+    .sectionTitle {
+      display:flex; align-items:center;
+      font-size:1.1rem; margin-bottom:.5rem;
+    }
+    .sectionTitle img.icon {
+      width:24px; height:24px; margin-right:.5rem;
+    }
+    .offenseBox .sectionTitle {
+      color:#f87171;
+      text-shadow:0 0 8px rgba(248,113,113,0.7);
+    }
+    .defenseBox .sectionTitle {
+      color:#3b82f6;
+      text-shadow:0 0 8px rgba(59,130,246,0.7);
+    }
+
     .leaderboard ul { list-style:none; padding:0; margin:0; }
     .leaderboard li {
       display:flex; justify-content:space-between;
@@ -95,6 +133,16 @@
       font-size:.9rem;
     }
     .leaderboard li:last-child { border-bottom:none; }
+
+    /* Top‑3 text gradients */
+    .first-place  .name { background:linear-gradient(45deg,#fbbf24,#f59e0b);
+                         -webkit-background-clip:text;color:transparent; }
+    .second-place .name { background:linear-gradient(45deg,#e5e7eb,#9ca3af);
+                         -webkit-background-clip:text;color:transparent; }
+    .third-place  .name { background:linear-gradient(45deg,#cd7f32,#a6520e);
+                         -webkit-background-clip:text;color:transparent; }
+    .name, .count { display:inline-block; }
+    .count { font-weight:600; }
   </style>
 </head>
 <body>
@@ -129,14 +177,28 @@
   <!-- Leaderboard panel -->
   <div class="leaderboard">
     <h3>Live Scores:</h3>
-    <strong>Best Offense</strong>
-    <ul id="offenseScores"><li>Loading…</li></ul>
-    <strong style="margin-top:1rem; display:block;">Best Defense</strong>
-    <ul id="defenseScores"><li>Loading…</li></ul>
+
+    <div class="offenseBox">
+      <div class="sectionTitle">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png"
+             class="icon" alt="Offense Icon"/>
+        <strong>Best Offense</strong>
+      </div>
+      <ul id="offenseScores"><li>Loading…</li></ul>
+    </div>
+
+    <div class="defenseBox">
+      <div class="sectionTitle">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png"
+             class="icon" alt="Defense Icon"/>
+        <strong>Best Defense</strong>
+      </div>
+      <ul id="defenseScores"><li>Loading…</li></ul>
+    </div>
   </div>
 
   <script>
-    // Overlay logic
+    // Overlay modal logic
     const alertModal = document.getElementById('alertModal'),
           alertMsg   = document.getElementById('alertMsg'),
           alertOK    = document.getElementById('alertOK'),
@@ -154,15 +216,11 @@
         alertOK.style.display     = 'none';
         confirmBtns.style.display = 'flex';
         alertModal.style.display  = 'flex';
-        confirmBtns.querySelector('.no').onclick = ()=>{
-          alertModal.style.display = 'none'; resolve(false);
-        };
-        confirmBtns.querySelector('.yes').onclick = ()=>{
-          alertModal.style.display = 'none'; resolve(true);
-        };
+        confirmBtns.querySelector('.no').onclick  = ()=>{ alertModal.style.display='none'; resolve(false); };
+        confirmBtns.querySelector('.yes').onclick = ()=>{ alertModal.style.display='none'; resolve(true); };
       });
     }
-    alertOK.onclick = ()=> alertModal.style.display = 'none';
+    alertOK.onclick = ()=> alertModal.style.display='none';
 
     // Firebase init
     const cfg = {
@@ -188,59 +246,57 @@
           adminTable     = document.getElementById('adminTable'),
           resetBtn       = document.getElementById('resetBtn');
 
-    // normalize usernames into canonical keys
+    // Canonical mapping
     const canonical = {
-      'w1de': 'wide',
-      'wide': 'wide',
-      'w1deeee': 'wide',
-      'lbg00': 'goo',
-      'lbgoo': 'goo',
-      'goo': 'goo'
+      'w1de': 'wide', 'wide': 'wide', 'w1deeee': 'wide',
+      'lbgoo': 'goo','lbg00':'goo','goo':'goo'
     };
     function normalize(name){
       const key = name.toLowerCase().replace(/[^a-z0-9]/g,'');
       return canonical[key] || key;
     }
 
-    // update the leaderboard lists
+    // Rebuild both leaderboards
     function updateLeaderboard(){
-  votesRef.once('value').then(snap=>{
-    const off = {}, def = {};
-    snap.forEach(ch=>{
-      const v = ch.val();
-      // normalize their actual answers, not the voter’s name
-      const offKey = normalize(v.bestOffence || ''),
-            defKey = normalize(v.bestDefence || '');
-      if(offKey) off[offKey] = (off[offKey]||0) + 1;
-      if(defKey) def[defKey] = (def[defKey]||0) + 1;
-    });
-
-    const sortEntries = obj =>
-      Object.entries(obj).sort((a,b)=> b[1] - a[1]);
-
-    const renderList = (id, data)=>{
+      votesRef.once('value').then(snap=>{
+        const offCounts = {}, defCounts = {};
+        snap.forEach(ch=>{
+          const v = ch.val();
+          const o = normalize(v.bestOffence||''),
+                d = normalize(v.bestDefence||'');
+          if(o) offCounts[o] = (offCounts[o]||0)+1;
+          if(d) defCounts[d] = (defCounts[d]||0)+1;
+        });
+        const sortEntries = o=> Object.entries(o)
+                                    .sort((a,b)=>b[1]-a[1]);
+        renderList('offenseScores', sortEntries(offCounts));
+        renderList('defenseScores', sortEntries(defCounts));
+      });
+    }
+    function renderList(id, entries){
       const ul = document.getElementById(id);
       ul.innerHTML = '';
-      if(!data.length){
+      if(!entries.length){
         ul.innerHTML = '<li>No votes yet.</li>';
-      } else {
-        data.forEach(([name, count])=>{
-          const li = document.createElement('li'),
-                span = document.createElement('span');
-          li.textContent = name;
-          span.textContent = count;
-          li.append(span);
-          ul.append(li);
-        });
+        return;
       }
-    };
+      entries.forEach(([name,count],idx)=>{
+        const li = document.createElement('li'),
+              spanName  = document.createElement('span'),
+              spanCount = document.createElement('span');
+        spanName.className = 'name';
+        spanCount.className= 'count';
+        spanName.textContent  = name;
+        spanCount.textContent = count;
+        li.append(spanName, spanCount);
+        if(idx===0) li.classList.add('first-place');
+        else if(idx===1) li.classList.add('second-place');
+        else if(idx===2) li.classList.add('third-place');
+        ul.append(li);
+      });
+    }
 
-    renderList('offenseScores', sortEntries(off));
-    renderList('defenseScores', sortEntries(def));
-  });
-}
-
-    // render voting form
+    // Voting form
     function renderForm(user){
       voteContainer.innerHTML = `
         <label>Your username</label>
@@ -268,23 +324,18 @@
         s.onclick = ()=>{
           rating = +s.dataset.value;
           Array.from(stars).forEach(x=>
-            x.classList.toggle('filled', +x.dataset.value <= rating)
+            x.classList.toggle('filled', +x.dataset.value<=rating)
           );
-          submit.disabled = !(
-            offence.value.trim() &&
-            defence.value.trim() &&
-            rating>0
-          );
+          submit.disabled = !(offence.value.trim() && defence.value.trim() && rating>0);
         };
       });
-      // prevent double-vote
       votesRef.orderByChild('uid').equalTo(user.uid)
         .once('value',snap=>{
           if(snap.exists()){
             voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
+            return;
           }
         });
-      // submit
       submit.onclick = ()=>{
         submit.disabled = true;
         votesRef.push({
@@ -295,13 +346,19 @@
           rating,
           time: firebase.database.ServerValue.TIMESTAMP
         })
-        .then(()=> { kcAlert('Thanks for voting!'); updateLeaderboard(); })
+        .then(()=>{
+          kcAlert('Thanks for voting!');
+          updateLeaderboard();
+        })
         .catch(e=> kcAlert('Error submitting: '+e.message))
-        .finally(()=> { submit.disabled = false; renderForm(user); });
+        .finally(()=>{
+          submit.disabled=false;
+          renderForm(user);
+        });
       };
     }
 
-    // auth state
+    // Auth listener
     auth.onAuthStateChanged(user=>{
       if(!user){
         voteContainer.innerHTML = `
@@ -313,24 +370,21 @@
       }
     });
 
-    // toggle admin panel
+    // Admin
     showAdmin.onclick = ()=>{
       adminSection.style.display =
-        adminSection.style.display === 'block' ? 'none' : 'block';
+        adminSection.style.display==='block'?'none':'block';
     };
-
-    // show all votes & refresh leaderboard
     unlockBtn.onclick = ()=>{
-      if(adminPass.value !== 'events2025KC') return kcAlert('Incorrect password.');
+      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
       votesRef.orderByChild('time').once('value',snap=>{
-        const all = snap.val()||{};
-        let html = `<table>
-          <tr><th>Date</th><th>User</th>
-              <th>Offence</th><th>Defence</th>
+        const data=snap.val()||{};
+        let html=`<table>
+          <tr><th>Date</th><th>User</th><th>Offence</th><th>Defence</th>
               <th>Rating</th><th>Delete</th></tr>`;
-        Object.entries(all).forEach(([key,v])=>{
-          const d = new Date(v.time);
-          html += `<tr data-key="${key}">
+        Object.entries(data).forEach(([k,v])=>{
+          const d=new Date(v.time);
+          html+=`<tr data-key="${k}">
             <td>${d.toLocaleString()}</td>
             <td>${v.username}</td>
             <td>${v.bestOffence}</td>
@@ -339,41 +393,32 @@
             <td><button class="delBtn">Delete</button></td>
           </tr>`;
         });
-        html += `</table>`;
-        adminTable.innerHTML = html;
+        html+=`</table>`;
+        adminTable.innerHTML=html;
         updateLeaderboard();
       });
     };
-
-    // delete single vote
-    adminTable.addEventListener('click', async e=>{
-      if(!e.target.matches('.delBtn')) return;
-      const key = e.target.closest('tr').dataset.key,
-            ok  = await kcConfirm('Delete this vote?');
-      if(!ok) return;
+    adminTable.addEventListener('click',async e=>{
+      if(!e.target.matches('.delBtn'))return;
+      const key=e.target.closest('tr').dataset.key,
+            ok=await kcConfirm('Delete this vote?');
+      if(!ok)return;
       votesRef.child(key).remove()
-        .then(()=> { kcAlert('Vote deleted.'); updateLeaderboard(); })
-        .catch(err=> kcAlert('Delete failed: '+err.message));
+        .then(()=>{ kcAlert('Vote deleted.'); updateLeaderboard(); })
+        .catch(err=>kcAlert('Delete failed: '+err.message));
     });
-
-    // reset all votes
     resetBtn.onclick = async ()=>{
-      if(adminPass.value !== 'events2025KC') return kcAlert('Incorrect password.');
-      const ok = await kcConfirm('Reset all votes? This cannot be undone.');
-      if(!ok) return;
-      const snap = await votesRef.once('value'),
-            tasks = [];
-      snap.forEach(c=> tasks.push(votesRef.child(c.key).remove()));
+      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
+      const ok=await kcConfirm('Reset all votes? This cannot be undone.');
+      if(!ok)return;
+      const snap=await votesRef.once('value'), tasks=[];
+      snap.forEach(c=>tasks.push(votesRef.child(c.key).remove()));
       Promise.all(tasks)
-        .then(()=>{
-          adminTable.innerHTML = '';
-          kcAlert('All votes have been reset.');
-          updateLeaderboard();
-        })
-        .catch(err=> kcAlert('Reset failed: '+err.message));
+        .then(()=>{ adminTable.innerHTML=''; kcAlert('All votes have been reset.'); updateLeaderboard(); })
+        .catch(err=>kcAlert('Reset failed: '+err.message));
     };
 
-    // initial leaderboard render
+    // initial leaderboard
     updateLeaderboard();
   </script>
 </body>
