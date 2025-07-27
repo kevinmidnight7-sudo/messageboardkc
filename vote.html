@@ -188,7 +188,7 @@
       <div class="sectionTitle">
         <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png"
              class="icon" alt="Offense Icon"/>
-        <strong>Best Offense</strong>
+        <strong>Best Offence</strong>
       </div>
       <ul id="offenseScores"><li>Loading…</li></ul>
     </div>
@@ -196,7 +196,7 @@
       <div class="sectionTitle">
         <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png"
              class="icon" alt="Defense Icon"/>
-        <strong>Best Defense</strong>
+        <strong>Best Defence</strong>
       </div>
       <ul id="defenseScores"><li>Loading…</li></ul>
     </div>
@@ -326,13 +326,13 @@
     // Voting form
     function renderForm(user){
       voteContainer.innerHTML = `
-        <label>Your username</label>
+        <label>Your Username</label>
         <input readonly id="username" value="${user.displayName||user.email||''}"/>
-        <div class="hint">needs to match the name you played with</div>
+        <div class="hint">Needs to match the name you played with.</div>
         <label>Best offence</label><input type="text" id="offence"/>
-        <div class="hint">needs to match the name they played with</div>
+        <div class="hint">Needs to match the name they played with.</div>
         <label>Best defence</label><input type="text" id="defence"/>
-        <div class="hint">needs to match the name they played with</div>
+        <div class="hint">Needs to match the name they played with.</div>
         <label>Rate today's event</label>
         <div class="stars" id="starContainer">
           <span data-value="1">★</span>
