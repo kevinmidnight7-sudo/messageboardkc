@@ -1,270 +1,193 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>KC Event Board w/ Replies & Likes</title>
+  <meta charset="UTF-8"/>
+  <title>KC Event Board w/ Live Profiles & Name Colors</title>
 
   <!-- Poppins + Firebase -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
 
   <style>
-    html, body {
-      margin:0; padding:0;
-      width:100vw; height:100vh;
-      font-family:'Poppins',sans-serif;
-      color:#fff; background:transparent;
-      display:flex; overflow:hidden;
-    }
-    #msgBoard {
-      display:flex; flex:1; gap:2em; padding:1em;
-      box-sizing:border-box;
-    }
+    /* === Base reset & layout === */
+    html,body{margin:0;padding:0;width:100vw;height:100vh;font-family:'Poppins',sans-serif;color:#fff;background:transparent;display:flex;overflow:hidden;}
+    #msgBoard{display:flex;flex:1;gap:2em;padding:1em;box-sizing:border-box;}
 
-    /* AUTH */
-    #authContainer {
-      flex:1; background:rgba(0,0,0,0.4);
-      border-radius:12px; padding:1em;
-    }
-    #authContainer h2 {
-      margin:0 0 .5em; font-size:1.2em; text-align:center;
-    }
-    #authContainer input,
-    #authContainer button {
-      width:100%; padding:.5em; margin:.5em 0;
-      box-sizing:border-box; border:none; border-radius:6px;
-      font-family:'Poppins',sans-serif;
-    }
-    #authContainer button {
-      background:#28a745; color:#fff; cursor:pointer;
-      font-weight:600;
-    }
-    #authContainer button:hover {
-      background:#218838;
-    }
-    #logoutBtn {
-      background:#dc3545; color:#fff;
-    }
-    #logoutBtn:hover {
-      background:#c82333;
-    }
+    /* === LEFT AUTH/PROFILE PANEL === */
+    #authContainer{flex:1;background:rgba(0,0,0,0.4);border-radius:12px;padding:1em;display:flex;flex-direction:column;}
+    #authContainer h2{text-align:center;margin:0 0 .5em;}
+    #authContainer input,#authContainer textarea,#authContainer button{width:100%;box-sizing:border-box;margin:.5em 0;padding:.5em;border:none;border-radius:6px;color:#000;font-family:'Poppins',sans-serif;}
+    #authContainer textarea{resize:vertical;min-height:80px;}
+    #authContainer button{font-weight:600;cursor:pointer;background:#28a745;color:#fff;}
+    #authContainer button:hover{background:#218838;}
+    #logoutBtn{background:#dc3545;color:#fff;}
+    #logoutBtn:hover{background:#c82333;}
 
-    /* MESSAGE PANEL */
-    #messageContainer {
-      flex:2; overflow-y:auto;
-      background:rgba(0,0,0,0.4); border-radius:12px;
-      padding:.5em; box-sizing:border-box;
-      display:flex; flex-direction:column;
-    }
-    #postSection {
-      display:none; margin-bottom:1em;
-    }
-    #postSection input,
-    #postSection button {
-      width:100%; box-sizing:border-box;
-      border:none; border-radius:8px;
-      padding:.75em; margin:.3em 0;
-      font-family:'Poppins',sans-serif;
-    }
-    #postSection input {
-      background:rgba(255,255,255,0.9); color:#000;
-    }
-    #postSection button {
-      background:#28a745; color:#fff;
-      font-weight:600; cursor:pointer;
-    }
-    #postSection button:hover {
-      background:#218838;
-    }
+    /* Color picker */
+    #colorPicker{margin:.5em 0;text-align:center;display:none;}
+    #colorPicker p{margin:0 0 .3em;color:#fff;}
+    .colorOption{display:inline-block;width:32px;height:32px;margin:.2em;border:2px solid transparent;border-radius:6px;cursor:pointer;background-size:cover;}
+    .colorOption.selected{border-color:#fff;}
 
-    /* EMOJI PICKER */
-    #emojiPicker {
-      background:rgba(255,255,255,0.1);
-      border-radius:8px; padding:.5em; text-align:center;
-    }
-    .emoji {
-      font-size:1.5em; margin:.25em;
-      cursor:pointer; opacity:.7;
-      transition:opacity .2s,transform .1s;
-      display:inline-block; border:1px solid #fff;
-      border-radius:6px; padding:2px 4px;
-    }
-    .emoji.selected {
-      opacity:1; transform:scale(1.2);
-    }
+    /* === RIGHT MESSAGE PANEL === */
+    #messageContainer{flex:2;overflow-y:auto;background:rgba(0,0,0,0.4);border-radius:12px;padding:.5em;display:flex;flex-direction:column;}
+    #postSection{display:none;margin-bottom:1em;}
+    #postSection input,#postSection button{width:100%;box-sizing:border-box;border:none;border-radius:8px;padding:.75em;margin:.3em 0;}
+    #postSection input{background:rgba(255,255,255,0.9);color:#000;}
+    #postSection button{background:#28a745;color:#fff;font-weight:600;cursor:pointer;}
+    #postSection button:hover{background:#218838;}
 
-    /* MSG LIST & REPLIES */
-    #msgList {
-      list-style:none; margin:0; padding:0;
-      flex:1; overflow-y:auto;
-    }
-    .message, .reply {
-      display:flex; align-items:flex-start;
-      gap:.5em; padding:.5em;
-      border-bottom:1px solid rgba(255,255,255,0.2);
-      position:relative;
-    }
-    .message:last-child,
-    .reply:last-child {
-      border-bottom:none;
-    }
-    .content {
-      flex:1;
-    }
-    .content strong {
-      color:#fff;
-    }
-    .timestamp {
-      display:block; font-size:.75em;
-      color:rgba(255,255,255,0.7);
-      margin-top:.2em;
-    }
-    .actions {
-      display:flex; flex-direction:column; gap:.3em;
-    }
-    .likeBtn,
-    .replyBtn,
-    .deleteBtn {
-      background:transparent; color:#fff;
-      border:1px solid #fff; border-radius:6px;
-      padding:2px 6px; cursor:pointer;
-      display:flex; align-items:center;
-      gap:.3em; font-size:.9em;
-    }
-    .likeBtn:hover,
-    .replyBtn:hover,
-    .deleteBtn:hover {
-      background:rgba(255,255,255,0.1);
-    }
-    .replies {
-      list-style:none; margin:0;
-      padding:0 0 0 2em;
-    }
+    /* Emoji row */
+    #emojiPicker{background:rgba(255,255,255,0.1);border-radius:8px;padding:.5em;text-align:center;}
+    .emoji{font-size:1.5em;margin:.25em;cursor:pointer;opacity:.7;transition:opacity .2s,transform .1s;display:inline-block;border:1px solid #fff;border-radius:6px;padding:2px 4px;}
+    .emoji.selected{opacity:1;transform:scale(1.2);}
 
-    /* INLINE REPLY FORM */
-    .reply-row {
-      list-style:none; display:flex;
-      justify-content:center; margin:.5em 0;
-    }
-    .reply-form {
-      display:flex; gap:.5em;
-    }
-    .reply-form input {
-      width:200px; padding:.5em;
-      border:none; border-radius:8px;
-      font-size:.9em;
-    }
-    .reply-form button {
-      width:100px; padding:.5em;
-      border:none; border-radius:8px;
-      background:#28a745; color:#fff;
-      font-weight:600; cursor:pointer;
-    }
-    .reply-form button:hover {
-      background:#218838;
-    }
+    /* Message list */
+    #msgList{list-style:none;margin:0;padding:0;flex:1;overflow-y:auto;}
+    .message,.reply{display:flex;align-items:flex-start;gap:.5em;padding:.5em;border-bottom:1px solid rgba(255,255,255,0.2);}
+    .message:last-child,.reply:last-child{border-bottom:none;}
+    .emojiCell{min-width:1.5em;text-align:center;}
+    .content{flex:1;}
+    .timestamp{display:block;font-size:.75em;color:rgba(255,255,255,0.7);margin-top:.2em;}
+    .username{cursor:pointer;font-weight:600;background-clip: text;-webkit-background-clip: text;color:transparent;}
+    .actions{display:flex;flex-direction:column;gap:.3em;}
+    .likeBtn,.replyBtn,.deleteBtn{background:transparent;color:#fff;border:1px solid #fff;border-radius:6px;padding:2px 6px;cursor:pointer;display:flex;align-items:center;gap:.3em;font-size:.9em;}
+    .likeBtn:hover,.replyBtn:hover,.deleteBtn:hover{background:rgba(255,255,255,0.1);}
+    .replies{list-style:none;margin:0;padding:0 0 0 2em;}
 
-    /* MODAL */
-    #kcModal {
-      display:none; position:fixed; z-index:999;
-      left:0; top:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.5);
-      align-items:center; justify-content:center;
-    }
-    #kcModalContent {
-      background:#fff; color:#000;
-      padding:1rem; border-radius:8px;
-      text-align:center; max-width:300px; width:90%;
-    }
-    #kcModalContent strong {
-      display:block; margin-bottom:.5rem;
-    }
-    #kcModalContent button {
-      margin-top:.5rem; padding:.5em 1em;
-      border:none; border-radius:4px;
-      background:#28a745; color:#fff;
-      cursor:pointer; font-family:'Poppins',sans-serif;
-    }
+    /* Inline reply form */
+    .reply-row{list-style:none;display:flex;justify-content:center;margin:.5em 0;}
+    .reply-form{display:flex;gap:.5em;}
+    .reply-form input{width:200px;padding:.5em;border:none;border-radius:8px;}
+    .reply-form button{width:100px;padding:.5em;border:none;border-radius:8px;background:#28a745;color:#fff;cursor:pointer;font-weight:600;}
+    .reply-form button:hover{background:#218838;}
+
+    /* === ALERT MODAL === */
+    #alertModal{display:none;position:fixed;z-index:1000;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;}
+    #alertContent{background:#fff;color:#000;padding:1rem;border-radius:8px;text-align:center;max-width:300px;width:90%;box-sizing:border-box;}
+    #alertContent strong{display:block;margin-bottom:.5rem;}
+    #alertContent button{margin-top:.5rem;padding:.5em 1em;border:none;border-radius:4px;background:#28a745;color:#fff;cursor:pointer;font-family:'Poppins',sans-serif;}
+
+    /* === PROFILE OVERLAY === */
+    #profileModal{display:none;position:fixed;z-index:999;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;}
+    #profileContent{background:#fff;color:#000;padding:1.5rem;border-radius:8px;text-align:center;max-width:320px;width:90%;box-sizing:border-box;}
+    #profileContent h2{margin:0 0 .5em;color:#333;}
+    #profileContent p{margin:0 .5em .5em;color:#444;}
+    #profileContent small{display:block;margin-top:.5em;color:#666;font-style:italic;}
+    #profileContent button{margin-top:1em;padding:.5em 1em;border:none;border-radius:4px;background:#28a745;color:#fff;cursor:pointer;font-family:'Poppins',sans-serif;}
   </style>
 </head>
 <body>
 
-  <!-- AUTH -->
-  <div id="authContainer">
-    <h2>KC Events Account</h2>
-    <div id="registerForm">
-      <input id="regName" placeholder="Display Name"/>
-      <input id="regEmail" type="email" placeholder="Email"/>
-      <input id="regPass" type="password" placeholder="Password"/>
-      <button id="registerBtn">Create Account</button>
-      <p style="text-align:center;color:#ccc">
-        or <a href="#" id="showLogin" style="color:#fff">Log In</a>
-      </p>
-    </div>
-    <div id="loginForm" style="display:none;">
-      <input id="loginEmail" type="email" placeholder="Email"/>
-      <input id="loginPass" type="password" placeholder="Password"/>
-      <button id="loginBtn">Log In</button>
-      <p style="text-align:center;color:#ccc">
-        or <a href="#" id="showRegister" style="color:#fff">Create Account</a>
-      </p>
-    </div>
-    <button id="logoutBtn" style="display:none;">Sign Out</button>
-  </div>
-
-  <!-- MESSAGES -->
-  <div id="messageContainer">
-    <div id="postSection">
-      <div id="emojiPicker">
-        <p><strong>Pick an emoji!</strong></p>
-        <span class="emoji" data-emoji="😀">😀</span>
-        <span class="emoji" data-emoji="😎">😎</span>
-        <span class="emoji" data-emoji="😂">😂</span>
-        <span class="emoji" data-emoji="😍">😍</span>
-        <span class="emoji" data-emoji="👍">👍</span>
-        <span class="emoji" data-emoji="🙌">🙌</span>
-        <span class="emoji" data-emoji="😉">😉</span>
-        <span class="emoji" data-emoji="😁">😁</span>
-        <span class="emoji" data-emoji="😢">😢</span>
-        <span class="emoji" data-emoji="😮">😮</span>
-        <span class="emoji" data-emoji="😡">😡</span>
-        <span class="emoji" data-emoji="🎉">🎉</span>
-      </div>
-      <input id="message" placeholder="Your message" maxlength="200"/>
-      <button id="postBtnInner">Send</button>
-    </div>
-    <ul id="msgList">
-      <li style="font-style:italic;color:rgba(255,255,255,0.7)">
-        Loading…
-      </li>
-    </ul>
-  </div>
-
-  <!-- MODAL -->
-  <div id="kcModal">
-    <div id="kcModalContent">
+  <!-- ALERT MODAL -->
+  <div id="alertModal">
+    <div id="alertContent">
       <strong>KC Event says</strong>
-      <p id="kcMsg"></p>
-      <button id="kcClose">OK</button>
+      <p id="alertMsg"></p>
+      <button id="alertOK">OK</button>
+    </div>
+  </div>
+
+  <!-- PROFILE OVERLAY -->
+  <div id="profileModal">
+    <div id="profileContent">
+      <h2 id="profName">User</h2>
+      <p id="profAbout">About me…</p>
+      <small id="profJoined"></small>
+      <button id="profClose">Close</button>
+    </div>
+  </div>
+
+  <!-- MAIN BOARD -->
+  <div id="msgBoard">
+    <!-- Auth/Profile Column -->
+    <div id="authContainer">
+      <h2>KC Events Account</h2>
+
+      <!-- Register -->
+      <div id="registerForm">
+        <input id="regName" placeholder="Display Name"/>
+        <input id="regEmail" type="email" placeholder="Email"/>
+        <input id="regPass" type="password" placeholder="Password"/>
+        <button id="registerBtn">Create Account</button>
+        <p style="text-align:center;color:#ccc">
+          or <a href="#" id="showLogin" style="color:#fff">Log In</a>
+        </p>
+      </div>
+
+      <!-- Login -->
+      <div id="loginForm" style="display:none;">
+        <input id="loginEmail" type="email" placeholder="Email"/>
+        <input id="loginPass" type="password" placeholder="Password"/>
+        <button id="loginBtn">Log In</button>
+        <p style="text-align:center;color:#ccc">
+          or <a href="#" id="showRegister" style="color:#fff">Create Account</a>
+        </p>
+      </div>
+
+      <!-- Signed‑in UI -->
+      <button id="logoutBtn" style="display:none;">Sign Out</button>
+      <textarea id="aboutMe" placeholder="Your About Me…" style="display:none;"></textarea>
+      <div id="colorPicker">
+        <p><strong>Pick a colour to express yourself!</strong></p>
+        <span class="colorOption" data-color="linear-gradient(45deg,#ff6b6b,#f06595)" style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span>
+        <span class="colorOption" data-color="linear-gradient(45deg,#74c0fc,#4dabf7)" style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span>
+        <span class="colorOption" data-color="linear-gradient(45deg,#51cf66,#2f9e44)" style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span>
+        <span class="colorOption" data-color="linear-gradient(45deg,#f9c74f,#f9844a)" style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span>
+        <span class="colorOption" data-color="linear-gradient(45deg,#845ef7,#5c7cfa)" style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span>
+      </div>
+      <button id="saveProfile" style="display:none;">Save Profile</button>
+    </div>
+
+    <!-- Messages Column -->
+    <div id="messageContainer">
+      <div id="postSection">
+        <div id="emojiPicker">
+          <p><strong>Pick an emoji!</strong></p>
+          <span class="emoji" data-emoji="😀">😀</span>
+          <span class="emoji" data-emoji="😎">😎</span>
+          <span class="emoji" data-emoji="😂">😂</span>
+          <span class="emoji" data-emoji="😍">😍</span>
+          <span class="emoji" data-emoji="👍">👍</span>
+          <span class="emoji" data-emoji="🙌">🙌</span>
+          <span class="emoji" data-emoji="😉">😉</span>
+          <span class="emoji" data-emoji="😁">😁</span>
+          <span class="emoji" data-emoji="😢">😢</span>
+          <span class="emoji" data-emoji="😮">😮</span>
+          <span class="emoji" data-emoji="😡">😡</span>
+          <span class="emoji" data-emoji="🎉">🎉</span>
+        </div>
+        <input id="message" placeholder="Your message" maxlength="200"/>
+        <button id="postBtnInner">Send</button>
+      </div>
+      <ul id="msgList">
+        <li style="font-style:italic;color:rgba(255,255,255,0.7)">Loading…</li>
+      </ul>
     </div>
   </div>
 
   <script>
-    // KC Alert
-    function kcAlert(msg){
-      document.getElementById('kcMsg').textContent = msg;
-      document.getElementById('kcModal').style.display = 'flex';
+    // ——— Alert convenience ———
+    const alertModal = document.getElementById('alertModal'),
+          alertMsg   = document.getElementById('alertMsg'),
+          alertOK    = document.getElementById('alertOK');
+    function kcAlert(txt){
+      alertMsg.textContent = txt;
+      alertModal.style.display = 'flex';
     }
-    document.getElementById('kcClose').onclick = ()=> {
-      document.getElementById('kcModal').style.display = 'none';
-    };
+    alertOK.onclick = ()=> alertModal.style.display='none';
 
-    // Firebase init
+    // ——— Profile overlay ———
+    const profileModal  = document.getElementById('profileModal'),
+          profName      = document.getElementById('profName'),
+          profAbout     = document.getElementById('profAbout'),
+          profJoined    = document.getElementById('profJoined'),
+          profClose     = document.getElementById('profClose');
+    profClose.onclick = ()=> profileModal.style.display='none';
+
+    // ——— Firebase init ———
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -276,116 +199,163 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth = firebase.auth();
-    const db   = firebase.database();
+    const auth = firebase.auth(),
+          db   = firebase.database();
 
-    // Profanity filter
+    // ——— Profanity filter ———
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
       .then(r=>r.json())
       .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
-      .catch(e=>{ console.error(e); kcAlert('Profanity list failed.'); });
-    function containsBadWord(s){
-      return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(s) );
+      .catch(_=> kcAlert('Failed loading bad‑words list.'));
+    function containsBadWord(str){
+      return badWords.some(w=> new RegExp('\\b'+w+'\\b','i').test(str));
     }
 
-    // UI refs
-    const regForm   = document.getElementById('registerForm'),
-          logForm   = document.getElementById('loginForm'),
-          logoutBtn = document.getElementById('logoutBtn'),
-          showLogin = document.getElementById('showLogin'),
-          showReg   = document.getElementById('showRegister'),
-          postSec   = document.getElementById('postSection'),
-          msgList   = document.getElementById('msgList');
+    // ——— UI refs ———
+    const regForm     = document.getElementById('registerForm'),
+          logForm     = document.getElementById('loginForm'),
+          logoutBtn   = document.getElementById('logoutBtn'),
+          showLogin   = document.getElementById('showLogin'),
+          showReg     = document.getElementById('showRegister'),
+          saveProfile = document.getElementById('saveProfile'),
+          aboutMe     = document.getElementById('aboutMe'),
+          colorPicker = document.getElementById('colorPicker'),
+          postSec     = document.getElementById('postSection'),
+          msgList     = document.getElementById('msgList');
 
+    // Toggle reg/login
     showLogin.onclick = e=>{ e.preventDefault(); regForm.style.display='none'; logForm.style.display='block'; };
-    showReg  .onclick = e=>{ e.preventDefault(); logForm.style.display='none'; regForm.style.display='block'; };
+    showReg.onclick   = e=>{ e.preventDefault(); logForm.style.display='none'; regForm.style.display='block'; };
 
-    // Register
+    // ——— Auth flows ———
     document.getElementById('registerBtn').onclick = ()=>{
       const name = document.getElementById('regName').value.trim(),
             email= document.getElementById('regEmail').value.trim(),
             pass = document.getElementById('regPass').value;
-      if(!name||!email||!pass) return kcAlert('Fill all fields.');
-      auth.createUserWithEmailAndPassword(email,pass)
-        .then(creds=> creds.user.updateProfile({displayName:name}) )
+      if(!name||!email||!pass) return kcAlert('Please fill all fields.');
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(({user})=> user.updateProfile({displayName:name}))
+        .then(()=>{
+          // initialize their profile node
+          return db.ref(`users/${auth.currentUser.uid}`).set({
+            displayName: auth.currentUser.displayName,
+            about: '',
+            color: '',        // start blank → black fallback
+            joined: Date.now()
+          });
+        })
         .catch(e=> kcAlert(e.message));
     };
 
-    // Login
     document.getElementById('loginBtn').onclick = ()=>{
       const email= document.getElementById('loginEmail').value.trim(),
             pass = document.getElementById('loginPass').value;
-      if(!email||!pass) return kcAlert('Fill both fields.');
-      auth.signInWithEmailAndPassword(email,pass)
-        .catch(e=> kcAlert(e.message));
+      if(!email||!pass) return kcAlert('Please fill both fields.');
+      auth.signInWithEmailAndPassword(email, pass).catch(e=> kcAlert(e.message));
     };
 
-    // Sign out
     logoutBtn.onclick = ()=> auth.signOut();
 
-    // Emoji picker
+    // ——— Emoji picker ———
     let selectedEmoji = null;
-    function initEmoji(){
-      document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
-        el.onclick = ()=>{
-          document.querySelectorAll('#emojiPicker .emoji').forEach(x=> x.classList.remove('selected'));
-          el.classList.add('selected');
-          selectedEmoji = el.dataset.emoji;
-        };
-      });
-    }
-    initEmoji();
+    document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
+      el.onclick = ()=> {
+        document.querySelectorAll('#emojiPicker .emoji').forEach(x=>x.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedEmoji = el.dataset.emoji;
+      };
+    });
 
-    // Render messages/replies
-    function renderMessages(snapshot, container, basePath){
+    // ——— Color picker ———
+    let selectedColor = '';
+    document.querySelectorAll('.colorOption').forEach(div=>{
+      div.onclick = ()=>{
+        document.querySelectorAll('.colorOption').forEach(d=>d.classList.remove('selected'));
+        div.classList.add('selected');
+        selectedColor = div.dataset.color;
+      };
+    });
+
+    // ——— Load all user profiles into memory ———
+    const userProfiles = {}; 
+    db.ref('users').on('value', snap=>{
+      snap.forEach(c=>{
+        userProfiles[c.key] = c.val();
+      });
+      // whenever profiles update, re-render messages to apply new colors
+      db.ref('messages').once('value').then(s=> renderMessages(s, msgList, ''));
+    });
+
+    // ——— Render messages & replies ———
+    function renderMessages(snap, container, basePath){
       container.innerHTML = '';
       const arr = [];
-      snapshot.forEach(c=>{
-        const v = c.val(); v.key = c.key; arr.push(v);
+      snap.forEach(c=> { 
+        let v = c.val(); v.key = c.key; 
+        arr.push(v);
       });
+      // sort by likes desc
       arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
-      if(!arr.length){
-        const li = document.createElement('li');
+      if(arr.length===0){
+        let li = document.createElement('li');
         li.style.fontStyle='italic';
         li.textContent = 'No messages yet.';
-        container.appendChild(li);
-        return;
+        return void container.appendChild(li);
       }
       arr.forEach(v=>{
-        if(containsBadWord(v.user)||containsBadWord(v.text)) return;
-        const d=new Date(v.time),
-              ts=`${String(d.getUTCDate()).padStart(2,'0')}/`+
-                 `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
-                 `${String(d.getUTCFullYear()).slice(-2)} `+
-                 `${String(d.getUTCHours()).padStart(2,'0')}:`+
-                 `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-        const row = document.createElement('li');
+        // profanity gate
+        if(containsBadWord(v.user) || containsBadWord(v.text)) return;
+
+        // timestamp
+        const d = new Date(v.time),
+              ts = `${String(d.getUTCDate()).padStart(2,'0')}/`+
+                   `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
+                   `${String(d.getUTCFullYear()).slice(-2)} `+
+                   `${String(d.getUTCHours()).padStart(2,'0')}:`+
+                   `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
+
+        // build row
+        let row = document.createElement('li');
         row.className = container===msgList ? 'message' : 'reply';
         row.innerHTML = `
-          <span class="emoji">${v.emoji}</span>
+          <div class="emojiCell">${v.emoji}</div>
           <div class="content">
-            <strong>${v.user}:</strong> ${v.text}
+            <span class="username" data-uid="${v.uid}">${v.user}</span>: ${v.text}
             <span class="timestamp">${ts}</span>
           </div>
           <div class="actions">
-            <button class="likeBtn" data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
-            <button class="replyBtn" data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
-            ${auth.currentUser && auth.currentUser.displayName===v.user
+            <button class="likeBtn"   data-path="messages${basePath}/${v.key}">❤️ ${v.likes||0}</button>
+            <button class="replyBtn"  data-path="messages${basePath}/${v.key}/replies">↩️ Reply</button>
+            ${auth.currentUser&&auth.currentUser.uid===v.uid
               ? `<button class="deleteBtn" data-path="messages${basePath}/${v.key}">🗑️</button>` 
-              : ''}
+              : ''
+            }
           </div>
         `;
+
+        // apply name color or black fallback
+        let uname = row.querySelector('.username'),
+            prof = userProfiles[v.uid];
+        if(prof && prof.color) {
+          uname.style.backgroundImage = prof.color;
+          uname.style.webkitBackgroundClip = 'text';
+          uname.style.backgroundClip = 'text';
+        } else {
+          uname.style.backgroundClip = '';
+          uname.style.webkitBackgroundClip = '';
+          uname.style.color = 'black';
+        }
+
         container.appendChild(row);
 
-        // replies container
-        const repliesUL = document.createElement('ul');
+        // replies UL
+        let repliesUL = document.createElement('ul');
         repliesUL.className = 'replies';
         container.appendChild(repliesUL);
 
-        // recurse
         if(v.replies){
-          const pseudo = { forEach: cb=>{
+          let pseudo = { forEach: cb => {
             Object.entries(v.replies).forEach(([k,val])=>{
               cb({ key:k, val:()=>val });
             });
@@ -395,99 +365,141 @@
       });
     }
 
-    // Always listen
+    // initial render & listen
     db.ref('messages').on('value', snap=> renderMessages(snap, msgList, ''));
 
-    // Delegated handlers
+    // ——— Delegated event handlers ———
     document.body.addEventListener('click', e=>{
       const user = auth.currentUser;
 
-      // LIKE
+      // Like
       if(e.target.matches('.likeBtn')){
         if(!user) return kcAlert('Log in to like.');
-        const path = e.target.dataset.path;
-        const uid = user.uid;
+        const path = e.target.dataset.path,
+              uid  = user.uid;
         db.ref(`${path}/likedBy/${uid}`).transaction(cur=>{
-          if(cur===null) return true;
-          return;
-        },(err,comm)=>{
-          if(err){ console.error(err); kcAlert('Error liking.'); }
-          else if(comm){
-            db.ref(`${path}/likes`).transaction(c=>(c||0)+1);
-          } else {
-            kcAlert('You already liked this.');
-          }
+          return (cur===null ? true : undefined);
+        }, (err,committed)=>{
+          if(err) kcAlert('Error liking.');
+          else if(committed) db.ref(`${path}/likes`).transaction(c=> (c||0)+1 );
+          else kcAlert('You already liked this.');
         });
       }
 
-      // REPLY
+      // Reply
       if(e.target.matches('.replyBtn')){
         if(!user) return kcAlert('Log in to reply.');
         const repliesPath = e.target.dataset.path;
         if(document.getElementById('replyForm-'+repliesPath)) return;
-        const wrapper = document.createElement('li');
+        let wrapper = document.createElement('li');
         wrapper.className = 'reply-row';
-        const form = document.createElement('div');
+        let form = document.createElement('div');
         form.className = 'reply-form'; form.id = 'replyForm-'+repliesPath;
-        form.innerHTML = `
-          <input placeholder="Reply..." maxlength="200"/>
-          <button>Send</button>
-        `;
+        form.innerHTML = `<input placeholder="Reply..." maxlength="200"/><button>Send</button>`;
         wrapper.appendChild(form);
         e.target.closest('li').after(wrapper);
+
         form.querySelector('button').onclick = ()=>{
-          const txt = form.querySelector('input').value.trim();
+          let txt = form.querySelector('input').value.trim();
           if(!selectedEmoji) return kcAlert('Pick an emoji.');
-          if(!txt) return kcAlert('Enter reply.');
+          if(!txt)           return kcAlert('Enter a reply.');
           if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
           db.ref(repliesPath).push({
-            user:user.displayName,
-            text:txt,
-            emoji:selectedEmoji,
-            time:firebase.database.ServerValue.TIMESTAMP,
+            user: user.displayName,
+            uid:  user.uid,
+            text: txt,
+            emoji: selectedEmoji,
+            time: firebase.database.ServerValue.TIMESTAMP,
             likes:0
           });
         };
       }
 
-      // DELETE
+      // Delete
       if(e.target.matches('.deleteBtn')){
         const path = e.target.dataset.path;
-        if(confirm('Delete this and all its replies?')){
+        if(confirm('Delete this message and its replies?')) {
           db.ref(path).remove();
         }
       }
+
+      // Username click → show profile overlay
+      if(e.target.matches('.username')){
+        let uid = e.target.dataset.uid,
+            prof = userProfiles[uid] || {};
+        profName.textContent   = prof.displayName || 'Unknown';
+        profAbout.textContent  = prof.about       || 'No about me set.';
+        if(prof.joined){
+          let d= new Date(prof.joined);
+          profJoined.textContent = 
+            `Joined: ${String(d.getUTCDate()).padStart(2,'0')}/`+
+            `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
+            `${String(d.getUTCFullYear()).slice(-2)} `+
+            `${String(d.getUTCHours()).padStart(2,'0')}:`+
+            `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
+        } else {
+          profJoined.textContent = '';
+        }
+        profileModal.style.display='flex';
+      }
     });
 
-    // POST NEW MESSAGE
+    // ——— Post new message ———
     document.getElementById('postBtnInner').onclick = ()=>{
-      const user=auth.currentUser,
-            txt = document.getElementById('message').value.trim();
-      if(!user) return kcAlert('Log in to post.');
-      if(!selectedEmoji) return kcAlert('Pick an emoji.');
-      if(!txt) return kcAlert('Enter a message.');
+      let user = auth.currentUser,
+          txt  = document.getElementById('message').value.trim();
+      if(!user)           return kcAlert('Log in to post.');
+      if(!selectedEmoji)  return kcAlert('Pick an emoji.');
+      if(!txt)            return kcAlert('Enter a message.');
       if(containsBadWord(user.displayName)||containsBadWord(txt))
-        return kcAlert('That word’s not allowed.');
-      const mRef = db.ref('messages').push();
+                            return kcAlert('That word’s not allowed.');
+
+      let mRef = db.ref('messages').push();
       mRef.set({
-        user:user.displayName,
-        text:txt,
+        user: user.displayName,
+        uid:  user.uid,
+        text: txt,
         emoji:selectedEmoji,
-        time:firebase.database.ServerValue.TIMESTAMP,
+        time: firebase.database.ServerValue.TIMESTAMP,
         likes:0
       });
       document.getElementById('message').value='';
     };
 
-    // Auth state
+    // ——— Save profile updates ———
+    saveProfile.onclick = ()=>{
+      let user = auth.currentUser,
+          about= aboutMe.value.trim();
+
+      if(!user) return;
+      db.ref(`users/${user.uid}`).update({
+        about: about,
+        color: selectedColor
+      });
+      kcAlert('Profile saved!');
+    };
+
+    // ——— Auth‐state UI toggling ———
     auth.onAuthStateChanged(user=>{
       if(user){
-        regForm.style.display = logForm.style.display = 'none';
-        logoutBtn.style.display = postSec.style.display = 'block';
+        regForm.style.display=logForm.style.display='none';
+        logoutBtn.style.display=postSec.style.display=aboutMe.style.display=colorPicker.style.display=saveProfile.style.display='block';
+        // load own profile
+        db.ref(`users/${user.uid}`).once('value').then(s=>{
+          let p=s.val()||{};
+          aboutMe.value = p.about || '';
+          selectedColor = p.color || '';
+          // mark gradient selected if exists
+          if(selectedColor){
+            document.querySelectorAll('.colorOption').forEach(d=>{
+              if(d.dataset.color===selectedColor) d.classList.add('selected');
+            });
+          }
+        });
       } else {
-        regForm.style.display = 'block';
-        logForm.style.display = 'none';
-        logoutBtn.style.display = postSec.style.display = 'none';
+        regForm.style.display='block';
+        logForm.style.display='none';
+        logoutBtn.style.display=postSec.style.display=aboutMe.style.display=colorPicker.style.display=saveProfile.style.display='none';
       }
     });
   </script>
