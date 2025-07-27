@@ -8,9 +8,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    /* ————————————————————————————————————————————————
-       Layout & Panels
-    ———————————————————————————————————————————————— */
     body {
       margin:0; padding:1rem;
       font-family:'Poppins',sans-serif;
@@ -30,9 +27,6 @@
     }
     h2, .leaderboard h3 { margin-top:0; }
 
-    /* ————————————————————————————————————————————————
-       Common Form Styles
-    ———————————————————————————————————————————————— */
     label { display:block; margin:1rem 0 .3rem; font-weight:600; }
     .hint { font-size:.75rem; color:#ccc; margin-bottom:.8rem; }
     input[readonly], input[type=text], input[type=password] {
@@ -65,9 +59,6 @@
       border:none; border-radius:4px; cursor:pointer;
     }
 
-    /* ————————————————————————————————————————————————
-       Overlay Alert / Confirm
-    ———————————————————————————————————————————————— */
     #alertModal {
       display:none; position:fixed; top:0; left:0;
       width:100%; height:100%; background:rgba(0,0,0,0.5);
@@ -95,9 +86,6 @@
     .confirmButtons .yes { background:#22c55e; color:#fff; }
     .confirmButtons .no  { background:#60a5fa; color:#fff; }
 
-    /* ————————————————————————————————————————————————
-       Leaderboard Styles
-    ———————————————————————————————————————————————— */
     .leaderboard h3 {
       text-align:center;
       font-size:1.3rem;
@@ -128,21 +116,40 @@
 
     .leaderboard ul { list-style:none; padding:0; margin:0; }
     .leaderboard li {
-      display:flex; justify-content:space-between;
+      display:flex; justify-content:space-between; align-items: center;
       padding:.4rem 0; border-bottom:1px solid rgba(255,255,255,0.2);
       font-size:.9rem;
     }
     .leaderboard li:last-child { border-bottom:none; }
 
-    /* Top‑3 text gradients */
     .first-place  .name { background:linear-gradient(45deg,#fbbf24,#f59e0b);
-                         -webkit-background-clip:text;color:transparent; }
+                         -webkit-background-clip:text;color:transparent;
+                         font-size:2.1rem; font-weight:700; }
     .second-place .name { background:linear-gradient(45deg,#e5e7eb,#9ca3af);
-                         -webkit-background-clip:text;color:transparent; }
+                         -webkit-background-clip:text;color:transparent;
+                         font-size:1.45rem; font-weight:700; }
     .third-place  .name { background:linear-gradient(45deg,#cd7f32,#a6520e);
-                         -webkit-background-clip:text;color:transparent; }
+                         -webkit-background-clip:text;color:transparent;
+                         font-size:1.13rem; font-weight:700; }
     .name, .count { display:inline-block; }
-    .count { font-weight:600; }
+    .name { transition: font-size 0.3s; }
+    .count { font-weight:600; font-size:1.12rem; margin-left:.7rem; color:#fff;}
+    /* Regular names (4th and below) */
+    .leaderboard li:not(.first-place):not(.second-place):not(.third-place) .name {
+      color:#fff;
+      font-size:1rem;
+      background:none;
+      font-weight:600;
+    }
+
+    /* Rating box below leaderboard */
+    #eventRating {
+      width:400px; margin:0 auto; text-align:center; font-size:1.18rem;
+      background:rgba(0,0,0,0.55); border-radius:12px; padding:.8rem .2rem .7rem .2rem;
+      margin-top:-.3rem;
+      font-weight:600;
+      letter-spacing: 0.02em;
+    }
   </style>
 </head>
 <body>
@@ -177,7 +184,6 @@
   <!-- Leaderboard panel -->
   <div class="leaderboard">
     <h3>Live Scores:</h3>
-
     <div class="offenseBox">
       <div class="sectionTitle">
         <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png"
@@ -186,7 +192,6 @@
       </div>
       <ul id="offenseScores"><li>Loading…</li></ul>
     </div>
-
     <div class="defenseBox">
       <div class="sectionTitle">
         <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png"
@@ -195,6 +200,11 @@
       </div>
       <ul id="defenseScores"><li>Loading…</li></ul>
     </div>
+  </div>
+
+  <!-- Overall Event Rating -->
+  <div id="eventRating">
+    Overall Event Rating: <span id="avgRatingNum">–</span>/5 ⭐
   </div>
 
   <script>
@@ -246,7 +256,7 @@
           adminTable     = document.getElementById('adminTable'),
           resetBtn       = document.getElementById('resetBtn');
 
-    // Canonical mapping
+    // Canonical mapping for normalization
     const canonical = {
       'w1de': 'wide', 'wide': 'wide', 'w1deeee': 'wide',
       'lbgoo': 'goo','lbg00':'goo','goo':'goo'
@@ -293,6 +303,23 @@
         else if(idx===1) li.classList.add('second-place');
         else if(idx===2) li.classList.add('third-place');
         ul.append(li);
+      });
+    }
+
+    // Calculate and display overall event rating
+    function updateAverageRating() {
+      votesRef.once('value').then(snap => {
+        let sum = 0, n = 0;
+        snap.forEach(ch => {
+          const v = ch.val();
+          if (typeof v.rating === 'number' && v.rating > 0) {
+            sum += v.rating;
+            n++;
+          }
+        });
+        const avg = n ? (sum/n) : 0;
+        const avgDisplay = avg ? avg.toFixed(2) : '–';
+        document.getElementById('avgRatingNum').textContent = avgDisplay;
       });
     }
 
@@ -349,6 +376,7 @@
         .then(()=>{
           kcAlert('Thanks for voting!');
           updateLeaderboard();
+          updateAverageRating();
         })
         .catch(e=> kcAlert('Error submitting: '+e.message))
         .finally(()=>{
@@ -396,6 +424,7 @@
         html+=`</table>`;
         adminTable.innerHTML=html;
         updateLeaderboard();
+        updateAverageRating();
       });
     };
     adminTable.addEventListener('click',async e=>{
@@ -404,7 +433,11 @@
             ok=await kcConfirm('Delete this vote?');
       if(!ok)return;
       votesRef.child(key).remove()
-        .then(()=>{ kcAlert('Vote deleted.'); updateLeaderboard(); })
+        .then(()=>{
+          kcAlert('Vote deleted.');
+          updateLeaderboard();
+          updateAverageRating();
+        })
         .catch(err=>kcAlert('Delete failed: '+err.message));
     });
     resetBtn.onclick = async ()=>{
@@ -414,12 +447,18 @@
       const snap=await votesRef.once('value'), tasks=[];
       snap.forEach(c=>tasks.push(votesRef.child(c.key).remove()));
       Promise.all(tasks)
-        .then(()=>{ adminTable.innerHTML=''; kcAlert('All votes have been reset.'); updateLeaderboard(); })
+        .then(()=>{
+          adminTable.innerHTML='';
+          kcAlert('All votes have been reset.');
+          updateLeaderboard();
+          updateAverageRating();
+        })
         .catch(err=>kcAlert('Reset failed: '+err.message));
     };
 
-    // initial leaderboard
+    // Initial render
     updateLeaderboard();
+    updateAverageRating();
   </script>
 </body>
 </html>
