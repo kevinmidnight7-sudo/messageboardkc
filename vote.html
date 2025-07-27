@@ -8,12 +8,26 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    body { margin:0; padding:0; font-family:'Poppins',sans-serif; color:#fff; background:transparent; }
-    .panel {
-      background:rgba(0,0,0,0.6); border-radius:12px;
-      padding:1rem; max-width:400px; margin:1rem auto;
+    body {
+      margin:0; padding:0;
+      font-family:'Poppins',sans-serif;
+      color:#fff;
+      background:transparent;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
     }
-    h2 { margin-top:0; }
+    .panel, .leaderboard {
+      background:rgba(0,0,0,0.6);
+      border-radius:12px;
+      padding:1rem;
+      width:400px;
+      box-sizing: border-box;
+    }
+    h2, .leaderboard h3 { margin-top:0; }
     label { display:block; margin:1rem 0 .3rem; font-weight:600; }
     .hint { font-size:.75rem; color:#ccc; margin-bottom:.8rem; }
     input[readonly], input[type=text], input[type=password] {
@@ -33,10 +47,10 @@
     #showAdminBtn { background:rgba(255,255,255,0.1); }
     #adminSection { display:none; margin-top:1rem; }
     #resetBtn { background:#ef4444; }
-    table {
-      width:100%; border-collapse:collapse; margin-top:.8rem;
+    table { width:100%; border-collapse:collapse; margin-top:.8rem; }
+    th, td {
+      padding:.4rem; border:1px solid #444; font-size:.85rem; text-align:left;
     }
-    th, td { padding:.4rem; border:1px solid #444; font-size:.85rem; text-align:left; }
     th { background:rgba(255,255,255,0.1); }
     .delBtn {
       background:#ef4444; color:#fff; padding:.3rem .6rem;
@@ -49,14 +63,16 @@
       align-items:center; justify-content:center; z-index:9999;
     }
     #alertContent {
-      background:#fff; color:#000; padding:1.5rem; border-radius:8px;
-      max-width:300px; width:90%; text-align:center; font-family:'Poppins',sans-serif;
+      background:#fff; color:#000; padding:1.5rem;
+      border-radius:8px; max-width:300px; width:90%;
+      text-align:center; font-family:'Poppins',sans-serif;
     }
     #alertContent strong { display:block; margin-bottom:.5rem; font-size:1.1rem; }
     #alertContent p { margin:.8rem 0; }
     #alertOK {
-      margin-top:1rem; padding:.5rem 1rem; background:#22c55e; color:#fff;
-      border:none; border-radius:4px; cursor:pointer; font-weight:600;
+      margin-top:1rem; padding:.5rem 1rem; background:#22c55e;
+      color:#fff; border:none; border-radius:4px;
+      cursor:pointer; font-weight:600;
     }
     .confirmButtons {
       display:flex; justify-content:center; gap:1rem; margin-top:1rem;
@@ -67,6 +83,18 @@
     }
     .confirmButtons .yes { background:#22c55e; color:#fff; }
     .confirmButtons .no  { background:#60a5fa; color:#fff; }
+    /* Leaderboard styles */
+    .leaderboard h3 {
+      font-size:1.1rem; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.2);
+      padding-bottom:.5rem;
+    }
+    .leaderboard ul { list-style:none; padding:0; margin:0; }
+    .leaderboard li {
+      display:flex; justify-content:space-between;
+      padding:.4rem 0; border-bottom:1px solid rgba(255,255,255,0.2);
+      font-size:.9rem;
+    }
+    .leaderboard li:last-child { border-bottom:none; }
   </style>
 </head>
 <body>
@@ -84,6 +112,7 @@
     </div>
   </div>
 
+  <!-- Voting panel -->
   <div class="panel">
     <h2>KC Event Voting</h2>
     <div id="voteContainer"><p>Loading…</p></div>
@@ -97,12 +126,21 @@
     </div>
   </div>
 
+  <!-- Leaderboard panel -->
+  <div class="leaderboard">
+    <h3>Live Scores:</h3>
+    <strong>Best Offense</strong>
+    <ul id="offenseScores"><li>Loading…</li></ul>
+    <strong style="margin-top:1rem; display:block;">Best Defense</strong>
+    <ul id="defenseScores"><li>Loading…</li></ul>
+  </div>
+
   <script>
-    // --- Overlay modal logic ---
-    const alertModal  = document.getElementById('alertModal'),
-          alertMsg    = document.getElementById('alertMsg'),
-          alertOK     = document.getElementById('alertOK'),
-          confirmBtns = document.getElementById('confirmBtns');
+    // Overlay logic
+    const alertModal = document.getElementById('alertModal'),
+          alertMsg   = document.getElementById('alertMsg'),
+          alertOK    = document.getElementById('alertOK'),
+          confirmBtns= document.getElementById('confirmBtns');
 
     function kcAlert(msg){
       confirmBtns.style.display = 'none';
@@ -111,18 +149,22 @@
       alertModal.style.display  = 'flex';
     }
     function kcConfirm(msg){
-      return new Promise(res=>{
+      return new Promise(resolve=>{
         alertMsg.textContent      = msg;
         alertOK.style.display     = 'none';
         confirmBtns.style.display = 'flex';
         alertModal.style.display  = 'flex';
-        confirmBtns.querySelector('.no').onclick = () => { alertModal.style.display='none'; res(false); };
-        confirmBtns.querySelector('.yes').onclick= () => { alertModal.style.display='none'; res(true);  };
+        confirmBtns.querySelector('.no').onclick = ()=>{
+          alertModal.style.display = 'none'; resolve(false);
+        };
+        confirmBtns.querySelector('.yes').onclick = ()=>{
+          alertModal.style.display = 'none'; resolve(true);
+        };
       });
     }
-    alertOK.onclick = ()=> alertModal.style.display='none';
+    alertOK.onclick = ()=> alertModal.style.display = 'none';
 
-    // --- Firebase init & refs ---
+    // Firebase init
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -135,16 +177,9 @@
     };
     firebase.initializeApp(cfg);
     const auth     = firebase.auth(),
-          db       = firebase.database(),
-          votesRef = db.ref('votes');
+          votesRef = firebase.database().ref('votes');
 
-    // --- Load all profiles ---
-    const userProfiles = {};
-    db.ref('users').on('value', snap => {
-      snap.forEach(ch => userProfiles[ch.key] = ch.val());
-    });
-
-    // --- DOM refs ---
+    // DOM refs
     const voteContainer = document.getElementById('voteContainer'),
           showAdmin      = document.getElementById('showAdminBtn'),
           adminSection   = document.getElementById('adminSection'),
@@ -153,119 +188,151 @@
           adminTable     = document.getElementById('adminTable'),
           resetBtn       = document.getElementById('resetBtn');
 
-    // --- Render voting form ---
-    function renderForm(user) {
-      // pick the best display name
-      const name = (userProfiles[user.uid] && userProfiles[user.uid].displayName)
-                 || user.displayName
-                 || user.email;
+    // normalize usernames into canonical keys
+    const canonical = {
+      'w1de': 'wide',
+      'wide': 'wide',
+      'w1deeee': 'wide',
+      'lbg00': 'goo',
+      'lbgoo': 'goo',
+      'goo': 'goo'
+    };
+    function normalize(name){
+      const key = name.toLowerCase().replace(/[^a-z0-9]/g,'');
+      return canonical[key] || key;
+    }
+
+    // update the leaderboard lists
+    function updateLeaderboard(){
+  votesRef.once('value').then(snap=>{
+    const off = {}, def = {};
+    snap.forEach(ch=>{
+      const v = ch.val();
+      // normalize their actual answers, not the voter’s name
+      const offKey = normalize(v.bestOffence || ''),
+            defKey = normalize(v.bestDefence || '');
+      if(offKey) off[offKey] = (off[offKey]||0) + 1;
+      if(defKey) def[defKey] = (def[defKey]||0) + 1;
+    });
+
+    const sortEntries = obj =>
+      Object.entries(obj).sort((a,b)=> b[1] - a[1]);
+
+    const renderList = (id, data)=>{
+      const ul = document.getElementById(id);
+      ul.innerHTML = '';
+      if(!data.length){
+        ul.innerHTML = '<li>No votes yet.</li>';
+      } else {
+        data.forEach(([name, count])=>{
+          const li = document.createElement('li'),
+                span = document.createElement('span');
+          li.textContent = name;
+          span.textContent = count;
+          li.append(span);
+          ul.append(li);
+        });
+      }
+    };
+
+    renderList('offenseScores', sortEntries(off));
+    renderList('defenseScores', sortEntries(def));
+  });
+}
+
+    // render voting form
+    function renderForm(user){
       voteContainer.innerHTML = `
         <label>Your username</label>
-        <input readonly id="username" value="${name}"/>
+        <input readonly id="username" value="${user.displayName||user.email||''}"/>
         <div class="hint">needs to match the name you played with</div>
-
         <label>Best offence</label><input type="text" id="offence"/>
         <div class="hint">needs to match the name they played with</div>
-
         <label>Best defence</label><input type="text" id="defence"/>
         <div class="hint">needs to match the name they played with</div>
-
         <label>Rate today's event</label>
         <div class="stars" id="starContainer">
-          <span data-value="1">★</span><span data-value="2">★</span>
-          <span data-value="3">★</span><span data-value="4">★</span>
+          <span data-value="1">★</span>
+          <span data-value="2">★</span>
+          <span data-value="3">★</span>
+          <span data-value="4">★</span>
           <span data-value="5">★</span>
         </div>
-
-        <button id="submitBtn" disabled>Submit Vote</button>
-      `;
-
-      const offence   = document.getElementById('offence'),
-            defence   = document.getElementById('defence'),
-            stars     = document.getElementById('starContainer').children,
-            submitBtn = document.getElementById('submitBtn');
+        <button id="submitBtn" disabled>Submit Vote</button>`;
+      const offence = document.getElementById('offence'),
+            defence = document.getElementById('defence'),
+            stars   = document.getElementById('starContainer').children,
+            submit  = document.getElementById('submitBtn');
       let rating = 0;
-
-      Array.from(stars).forEach(s => {
-        s.onclick = () => {
+      Array.from(stars).forEach(s=>{
+        s.onclick = ()=>{
           rating = +s.dataset.value;
-          Array.from(stars).forEach(x =>
+          Array.from(stars).forEach(x=>
             x.classList.toggle('filled', +x.dataset.value <= rating)
           );
-          submitBtn.disabled = !(
+          submit.disabled = !(
             offence.value.trim() &&
             defence.value.trim() &&
-            rating > 0
+            rating>0
           );
         };
       });
-
-      // prevent double‐voting
-      votesRef.orderByChild('uid')
-              .equalTo(user.uid)
-              .once('value', snap => {
-        if (snap.exists()) {
-          voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
-        }
-      });
-
+      // prevent double-vote
+      votesRef.orderByChild('uid').equalTo(user.uid)
+        .once('value',snap=>{
+          if(snap.exists()){
+            voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
+          }
+        });
       // submit
-      submitBtn.onclick = () => {
-        submitBtn.disabled = true;
+      submit.onclick = ()=>{
+        submit.disabled = true;
         votesRef.push({
           uid: user.uid,
-          username: name,
+          username: user.displayName||user.email,
           bestOffence: offence.value.trim(),
           bestDefence: defence.value.trim(),
           rating,
           time: firebase.database.ServerValue.TIMESTAMP
         })
-        .then(() => kcAlert('Thanks for voting!'))
-        .catch(e  => kcAlert('Error submitting: '+e.message))
-        .finally(()=>{
-          submitBtn.disabled = false;
-          renderForm(user);
-        });
+        .then(()=> { kcAlert('Thanks for voting!'); updateLeaderboard(); })
+        .catch(e=> kcAlert('Error submitting: '+e.message))
+        .finally(()=> { submit.disabled = false; renderForm(user); });
       };
     }
 
-    // --- Auth state listener ---
-    auth.onAuthStateChanged(user => {
-      if (!user) {
+    // auth state
+    auth.onAuthStateChanged(user=>{
+      if(!user){
         voteContainer.innerHTML = `
-          <p>Please
-            <a href="https://kcevents.uk/#chatscroll" target="_top" style="color:#4ade80;">
-              Log In
-            </a>
-            to vote.
-          </p>`;
+          <p>Please <a href="#login" target="_top" style="color:#4ade80;">
+            log in
+          </a> to vote.</p>`;
       } else {
         renderForm(user);
       }
     });
 
-    // --- Admin toggle & functions ---
-    showAdmin.onclick = () => {
+    // toggle admin panel
+    showAdmin.onclick = ()=>{
       adminSection.style.display =
-        adminSection.style.display === 'block'
-          ? 'none'
-          : 'block';
+        adminSection.style.display === 'block' ? 'none' : 'block';
     };
 
-    unlockBtn.onclick = () => {
-      if (adminPass.value !== 'events2025KC') return kcAlert('Incorrect password.');
-      votesRef.orderByChild('time').once('value', snap => {
-        const data = snap.val() || {};
+    // show all votes & refresh leaderboard
+    unlockBtn.onclick = ()=>{
+      if(adminPass.value !== 'events2025KC') return kcAlert('Incorrect password.');
+      votesRef.orderByChild('time').once('value',snap=>{
+        const all = snap.val()||{};
         let html = `<table>
-          <tr><th>Date</th><th>User</th><th>Offence</th>
-              <th>Defence</th><th>Rating</th><th>Delete</th></tr>`;
-        Object.entries(data).forEach(([key, v]) => {
-          const d = new Date(v.time),
-                displayName = (userProfiles[v.uid] && userProfiles[v.uid].displayName)
-                            || v.username;
+          <tr><th>Date</th><th>User</th>
+              <th>Offence</th><th>Defence</th>
+              <th>Rating</th><th>Delete</th></tr>`;
+        Object.entries(all).forEach(([key,v])=>{
+          const d = new Date(v.time);
           html += `<tr data-key="${key}">
             <td>${d.toLocaleString()}</td>
-            <td>${displayName}</td>
+            <td>${v.username}</td>
             <td>${v.bestOffence}</td>
             <td>${v.bestDefence}</td>
             <td>${v.rating}/5</td>
@@ -274,36 +341,40 @@
         });
         html += `</table>`;
         adminTable.innerHTML = html;
+        updateLeaderboard();
       });
     };
 
-    // delete a single vote
-    adminTable.addEventListener('click', async e => {
-      if (!e.target.matches('.delBtn')) return;
+    // delete single vote
+    adminTable.addEventListener('click', async e=>{
+      if(!e.target.matches('.delBtn')) return;
       const key = e.target.closest('tr').dataset.key,
             ok  = await kcConfirm('Delete this vote?');
-      if (!ok) return;
+      if(!ok) return;
       votesRef.child(key).remove()
-        .then(() => kcAlert('Vote deleted.'))
-        .catch(e => kcAlert('Delete failed: '+e.message));
+        .then(()=> { kcAlert('Vote deleted.'); updateLeaderboard(); })
+        .catch(err=> kcAlert('Delete failed: '+err.message));
     });
 
     // reset all votes
-    resetBtn.onclick = async () => {
-      if (adminPass.value !== 'events2025KC')
-        return kcAlert('Incorrect password.');
+    resetBtn.onclick = async ()=>{
+      if(adminPass.value !== 'events2025KC') return kcAlert('Incorrect password.');
       const ok = await kcConfirm('Reset all votes? This cannot be undone.');
-      if (!ok) return;
-      const snap  = await votesRef.once('value'),
+      if(!ok) return;
+      const snap = await votesRef.once('value'),
             tasks = [];
-      snap.forEach(ch => tasks.push(votesRef.child(ch.key).remove()));
+      snap.forEach(c=> tasks.push(votesRef.child(c.key).remove()));
       Promise.all(tasks)
-        .then(() => {
+        .then(()=>{
           adminTable.innerHTML = '';
           kcAlert('All votes have been reset.');
+          updateLeaderboard();
         })
-        .catch(e => kcAlert('Reset failed: '+e.message));
+        .catch(err=> kcAlert('Reset failed: '+err.message));
     };
+
+    // initial leaderboard render
+    updateLeaderboard();
   </script>
 </body>
 </html>
