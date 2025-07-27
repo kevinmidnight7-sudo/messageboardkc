@@ -2,13 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Events Voting</title>
+  <title>KC Event Voting</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    body { margin:0; padding:0; font-family:'Poppins',sans-serif; color:#fff; background:transparent; }
+    body {
+      margin:0; padding:0;
+      font-family:'Poppins',sans-serif;
+      color:#fff;
+      background:transparent;
+    }
     .panel {
       background:rgba(0,0,0,0.6);
       border-radius:12px;
@@ -17,80 +22,107 @@
       margin:1rem auto;
     }
     h2 { margin-top:0; }
-    label { display:block; margin:.8rem 0 .3rem; font-weight:600; }
-    .hint { font-size:.75rem; color:#ccc; margin-top:-.5rem; }
+    label { display:block; margin:1rem 0 .3rem; font-weight:600; }
+    .hint {
+      font-size:.75rem;
+      color:#ccc;
+      margin-bottom:.8rem;
+    }
+    input[readonly] {
+      width:100%;
+      padding:.5rem;
+      border:none;
+      border-radius:6px;
+      margin-top:.3rem;
+      background:#333;
+      color:#fff;
+      box-sizing:border-box;
+    }
     input[type=text], input[type=password] {
-      width:100%; padding:.5rem; border:none; border-radius:6px;
-      margin-top:.3rem; box-sizing:border-box;
+      width:100%;
+      padding:.5rem;
+      border:none;
+      border-radius:6px;
+      margin-top:.3rem;
+      box-sizing:border-box;
     }
     .stars {
-      display:flex; gap:.3rem; margin:.5rem 0;
+      display:flex;
+      gap:.3rem;
+      margin:.5rem 0 1rem;
     }
     .stars span {
-      font-size:1.5rem; cursor:pointer; color:#555;
+      font-size:1.5rem;
+      cursor:pointer;
+      color:#555;
     }
     .stars .filled { color:#facc15; }
     button {
-      width:100%; padding:.6rem;
-      background:#22c55e; color:#fff; border:none; border-radius:6px;
-      font-size:1rem; font-weight:600; cursor:pointer;
-      margin-top:1rem;
+      width:100%;
+      padding:.6rem;
+      background:#22c55e;
+      color:#fff;
+      border:none;
+      border-radius:6px;
+      font-size:1rem;
+      font-weight:600;
+      cursor:pointer;
+      margin-top:.8rem;
     }
-    button:disabled { background:#555; cursor:not-allowed; }
-    #adminSection { margin-top:1.5rem; display:none; }
+    button:disabled {
+      background:#555;
+      cursor:not-allowed;
+    }
     #showAdminBtn {
       background:rgba(255,255,255,0.1);
-      color:#fff;
       margin-top:1rem;
     }
-    table { width:100%; border-collapse:collapse; margin-top:.8rem; }
-    th, td { padding:.4rem; border:1px solid #444; font-size:.85rem; }
+    #adminSection {
+      display:none;
+      margin-top:1rem;
+    }
+    table {
+      width:100%;
+      border-collapse:collapse;
+      margin-top:.8rem;
+    }
+    th, td {
+      padding:.4rem;
+      border:1px solid #444;
+      font-size:.85rem;
+    }
     th { background:rgba(255,255,255,0.1); }
   </style>
 </head>
 <body>
-  <div class="panel" id="votePanel">
+  <div class="panel">
     <h2>KC Event Voting</h2>
-    <div id="voteForm">
-      <label>Your username</label>
-      <input type="text" id="username" required/>
-      <div class="hint">needs to match the name you played with</div>
 
-      <label>Best offence</label>
-      <input type="text" id="offence" required/>
-      <div class="hint">needs to match the name they played with</div>
-
-      <label>Best defence</label>
-      <input type="text" id="defence" required/>
-      <div class="hint">needs to match the name they played with</div>
-
-      <label>Rate today's event</label>
-      <div class="stars" id="starContainer">
-        <span data-value="1">★</span>
-        <span data-value="2">★</span>
-        <span data-value="3">★</span>
-        <span data-value="4">★</span>
-        <span data-value="5">★</span>
-      </div>
-
-      <button id="submitBtn" disabled>Submit Vote</button>
+    <!-- Voting form container -->
+    <div id="voteContainer">
+      <p>Loading…</p>
     </div>
 
-    <!-- Admin toggle button -->
+    <!-- Admin toggle -->
     <button id="showAdminBtn">Admin</button>
 
-    <!-- Hidden until Admin clicked -->
+    <!-- Admin section -->
     <div id="adminSection">
       <label>Enter admin password</label>
-      <input type="password" id="adminPass" placeholder="Password"/>
+      <input type="password" id="adminPass"/>
       <button id="unlockBtn">Unlock Admin</button>
       <div id="adminTable"></div>
     </div>
   </div>
 
   <script>
-    // --- Firebase init ---
-    const config = {
+    // helper for KC‑style alerts
+    function kcAlert(msg) {
+      alert(`KC Event says\n\n${msg}`);
+    }
+
+    // Firebase initialization
+    const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
       databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
@@ -100,86 +132,132 @@
       appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
       measurementId: "G-4LKP2M3JXE"
     };
-    firebase.initializeApp(config);
-    const auth = firebase.auth(),
-          db   = firebase.database().ref('votes');
+    firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+    const votesRef = firebase.database().ref('votes');
 
-    // --- DOM refs ---
-    const form       = document.getElementById('voteForm'),
-          userInput  = document.getElementById('username'),
-          offInput   = document.getElementById('offence'),
-          defInput   = document.getElementById('defence'),
-          stars      = document.getElementById('starContainer').children,
-          submitBtn  = document.getElementById('submitBtn'),
-          showAdmin  = document.getElementById('showAdminBtn'),
-          adminSect  = document.getElementById('adminSection'),
-          adminPass  = document.getElementById('adminPass'),
-          unlockBtn  = document.getElementById('unlockBtn'),
-          adminTable = document.getElementById('adminTable');
+    // DOM refs
+    const voteContainer = document.getElementById('voteContainer'),
+          showAdmin      = document.getElementById('showAdminBtn'),
+          adminSection   = document.getElementById('adminSection'),
+          adminPass      = document.getElementById('adminPass'),
+          unlockBtn      = document.getElementById('unlockBtn'),
+          adminTable     = document.getElementById('adminTable');
 
-    let rating = 0;
-    Array.from(stars).forEach(s => {
-      s.onclick = () => {
-        rating = +s.dataset.value;
-        Array.from(stars).forEach(x => {
-          x.classList.toggle('filled', +x.dataset.value <= rating);
+    let userVoted = false;
+
+    // Build the voting form
+    function renderForm(user) {
+      voteContainer.innerHTML = `
+        <label>Your username</label>
+        <input readonly id="username" value="${user.displayName||user.email||''}"/>
+        <div class="hint">needs to match the name you played with</div>
+
+        <label>Best offence</label>
+        <input type="text" id="offence"/>
+        <div class="hint">needs to match the name they played with</div>
+
+        <label>Best defence</label>
+        <input type="text" id="defence"/>
+        <div class="hint">needs to match the name they played with</div>
+
+        <label>Rate today's event</label>
+        <div class="stars" id="starContainer">
+          <span data-value="1">★</span>
+          <span data-value="2">★</span>
+          <span data-value="3">★</span>
+          <span data-value="4">★</span>
+          <span data-value="5">★</span>
+        </div>
+
+        <button id="submitBtn" disabled>Submit Vote</button>
+      `;
+
+      const offence = document.getElementById('offence'),
+            defence = document.getElementById('defence'),
+            starContainer = document.getElementById('starContainer'),
+            submitBtn = document.getElementById('submitBtn');
+      let rating = 0;
+
+      // stars click
+      Array.from(starContainer.children).forEach(s => {
+        s.onclick = () => {
+          rating = +s.dataset.value;
+          Array.from(starContainer.children).forEach(x => {
+            x.classList.toggle('filled', +x.dataset.value <= rating);
+          });
+          checkReady();
+        };
+      });
+
+      function checkReady() {
+        submitBtn.disabled = !(
+          offence.value.trim() &&
+          defence.value.trim() &&
+          rating > 0
+        );
+      }
+      offence.oninput = defence.oninput = checkReady;
+
+      // one‐vote enforcement
+      votesRef.orderByChild('uid')
+        .equalTo(user.uid)
+        .once('value', snap => {
+          if (snap.exists()) {
+            userVoted = true;
+            voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
+          }
         });
-        checkForm();
-      };
-    });
 
-    function checkForm(){
-      submitBtn.disabled = !(
-        auth.currentUser &&
-        userInput.value.trim() &&
-        offInput.value.trim() &&
-        defInput.value.trim() &&
-        rating > 0
-      );
+      // submit handler
+      submitBtn.onclick = () => {
+        submitBtn.disabled = true;
+        votesRef.push({
+          uid: user.uid,
+          username: user.displayName||user.email,
+          bestOffence: offence.value.trim(),
+          bestDefence: defence.value.trim(),
+          rating,
+          time: firebase.database.ServerValue.TIMESTAMP
+        })
+        .then(() => kcAlert('Thanks for voting!'))
+        .catch(e => {
+          console.error(e);
+          kcAlert('Error submitting.');
+        })
+        .finally(() => {
+          submitBtn.disabled = false;
+          // re‑check one‐vote
+          renderForm(user);
+        });
+      };
     }
 
-    auth.onAuthStateChanged(u => {
-      if (!u) {
-        form.innerHTML = `
-          <p>Please <a href="#login" target="_top" style="color:#4ade80;">log in</a> first to vote.</p>
+    // auth state observer
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        voteContainer.innerHTML = `
+          <p>Please <a href="#login" target="_top" style="color:#4ade80;">log in</a> to vote.</p>
         `;
       } else {
-        userInput.value = u.displayName || '';
-        checkForm();
+        renderForm(user);
       }
     });
 
-    [userInput, offInput, defInput].forEach(i => i.oninput = checkForm);
-
-    submitBtn.onclick = () => {
-      submitBtn.disabled = true;
-      db.push({
-        uid: auth.currentUser.uid,
-        username: userInput.value.trim(),
-        bestOffence: offInput.value.trim(),
-        bestDefence: defInput.value.trim(),
-        rating,
-        time: firebase.database.ServerValue.TIMESTAMP
-      })
-      .then(_ => alert('Thanks for voting!'))
-      .catch(e => { console.error(e); alert('Error submitting.'); })
-      .finally(_ => submitBtn.disabled = false);
-    };
-
     // Admin toggle
     showAdmin.onclick = () => {
-      adminSect.style.display = adminSect.style.display === 'block' ? 'none' : 'block';
+      adminSection.style.display =
+        adminSection.style.display === 'block' ? 'none' : 'block';
     };
 
     // Unlock admin
     unlockBtn.onclick = () => {
       if (adminPass.value === 'events2025KC') {
-        db.orderByChild('time').once('value', snap => {
+        votesRef.orderByChild('time').once('value', snap => {
           const data = snap.val() || {};
-          let html = '<table><tr>'
-                   +'<th>Date</th><th>User</th>'
-                   +'<th>Offence</th><th>Defence</th><th>Rating</th>'
-                   +'</tr>';
+          let html = `<table>
+            <tr><th>Date</th><th>User</th>
+                <th>Offence</th><th>Defence</th><th>Rating</th></tr>`;
           Object.values(data).forEach(v => {
             const d = new Date(v.time);
             html += `<tr>
@@ -190,11 +268,11 @@
               <td>${v.rating}/5</td>
             </tr>`;
           });
-          html += '</table>';
+          html += `</table>`;
           adminTable.innerHTML = html;
         });
       } else {
-        alert('Incorrect password.');
+        kcAlert('Incorrect password.');
       }
     };
   </script>
