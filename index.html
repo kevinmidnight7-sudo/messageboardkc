@@ -2,357 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Event Board w/ Sort & Reactions</title>
-
-  <!-- Poppins + Firebase SDKs -->
+  <title>KC Auth Bar</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
   <style>
-    * { box-sizing: border-box; }
-    html, body {
-      margin:0; padding:0;
-      width:100vw; height:100vh;
-      font-family:'Poppins',sans-serif;
-      color:#fff;
-      background:transparent;
-      display:flex; overflow:hidden;
+    html, body { margin:0; padding:0; background:transparent; }
+    #homeAuth {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font‑family: 'Poppins',sans-serif;
+      font‑size: .9rem;
+      color: #fff;
+      background: rgba(0,0,0,0.5);
+      padding: .3em .6em;
+      border-radius: 8px;
+      max-width: 280px;
+      width: auto;
+      margin: 0 auto;
     }
-    #msgBoard { display:flex; flex:1; gap:2em; padding:1em; }
-
-    /* LEFT PANEL */
-    #authContainer {
-      flex:1;
-      background:rgba(0,0,0,0.4);
-      border-radius:12px;
-      padding:1em;
-      display:flex; flex-direction:column;
+    #homeAuth a {
+      text-decoration: none;
+      font-weight: 600;
     }
-    #authContainer h2 { text-align:center; margin-bottom:.5em; }
-    #authContainer input,
-    #authContainer textarea,
-    #authContainer button {
-      width:100%; margin:.5em 0; padding:.5em;
-      border:none; border-radius:6px;
-      font-family:'Poppins',sans-serif;
+    /* Log In / Register links in green */
+    #homeAuth .authLink {
+      color: #4ade80;
     }
-    #authContainer input,
-    #authContainer textarea {
-      background:#fff; color:#000;
+    #homeAuth .authLink:hover {
+      text-decoration: underline;
     }
-    #authContainer textarea { min-height:80px; resize:vertical; }
-    #authContainer button {
-      background:#28a745; color:#fff; font-weight:600;
-      cursor:pointer;
+    /* Sign Out link in red */
+    #homeAuth #signOutLink {
+      color: #f87171;
+      margin-left: auto;            /* push it to the far right */
     }
-    #authContainer button:hover { background:#218838; }
-
-    /* override logoutBtn to be red */
-    #logoutBtn {
-      background:#dc3545 !important;
-      color:#fff !important;
-      margin-top:.5em;
-    }
-    #logoutBtn:hover {
-      background:#c82333 !important;
-    }
-
-    #saveProfile { display:none; }
-    #logoutBtn { display:none; }
-
-    #colorPicker { display:none; text-align:center; margin:.5em 0; }
-    #colorPicker p { margin-bottom:.3em; }
-    .colorOption {
-      display:inline-block; width:32px; height:32px;
-      margin:.2em; border:2px solid transparent;
-      border-radius:6px; cursor:pointer;
-      background-size:cover;
-    }
-    .colorOption.selected { border-color:#fff; }
-
-    /* RIGHT PANEL */
-    #messageContainer {
-      flex:2;
-      display:flex; flex-direction:column;
-      background:rgba(0,0,0,0.4);
-      border-radius:12px;
-      padding:.5em;
-      overflow-y:auto;
-    }
-    /* Sort control */
-    #sortControls {
-      text-align:right; margin-bottom:.5em;
-    }
-    #sortControls label { margin-right:.3em; color:#fff; font-size:.9em; }
-    #sortSelect {
-      background:rgba(255,255,255,0.1);
-      color:#fff;
-      border:1px solid #fff;
-      border-radius:4px;
-      padding:2px 6px;
-    }
-
-    #postSection { display:none; margin-bottom:1em; }
-    #emojiPicker {
-      background:rgba(255,255,255,0.1);
-      border-radius:8px;
-      padding:.5em;
-      text-align:center;
-    }
-    #emojiPicker p { margin:0 0 .5em; }
-    .emoji {
-      font-size:1.5em; margin:.25em; cursor:pointer;
-      opacity:.7; transition:.2s; display:inline-block;
-      border:1px solid #fff; border-radius:6px;
-      padding:2px 4px;
-    }
-    .emoji.selected { opacity:1; transform:scale(1.2); }
-
-    #postSection input,
-    #postSection button {
-      width:100%; padding:.75em; margin:.3em 0;
-      border:none; border-radius:8px;
-    }
-    #postSection input {
-      background:rgba(255,255,255,0.9); color:#000;
-    }
-    #postSection button {
-      background:#28a745; color:#fff; font-weight:600;
-      cursor:pointer;
-    }
-    #postSection button:hover { background:#218838; }
-
-    #msgList { list-style:none; padding:0; margin:0; flex:1; }
-    .message, .reply {
-      display:flex; align-items:flex-start; gap:.5em;
-      padding:.5em; border-bottom:1px solid rgba(255,255,255,0.2);
-      position:relative;
-    }
-    .message:last-child, .reply:last-child { border-bottom:none; }
-    .emojiCell { width:1.5em; text-align:center; }
-    .content { flex:1; }
-    .timestamp {
-      display:block; font-size:.75em;
-      color:rgba(255,255,255,0.7); margin-top:.2em;
-    }
-    .username {
-      cursor:pointer; font-weight:600;
-      background-clip:text; -webkit-background-clip:text;
-      color:transparent;
-    }
-    .actions {
-      display:flex; flex-direction:column; gap:.3em;
-    }
-    .likeBtn, .replyBtn, .deleteBtn {
-      background:transparent; color:#fff;
-      border:1px solid #fff; border-radius:6px;
-      padding:2px 6px; cursor:pointer;
-      display:flex; align-items:center; gap:.3em;
-      font-size:.9em;
-    }
-    .likeBtn:hover, .replyBtn:hover, .deleteBtn:hover {
-      background:rgba(255,255,255,0.1);
-    }
-    .replies { list-style:none; padding:0; margin:0 0 0 2em; }
-
-    .reactions {
-      display:flex; gap:.3em; margin-top:.3em; flex-wrap:wrap;
-    }
-    .reactBtn {
-      display:flex; align-items:center; gap:.2em; font-size:.9em;
-      background:rgba(255,255,255,0.1); border-radius:4px;
-      padding:2px 4px; cursor:pointer;
-    }
-    .reactBtn:hover { background:rgba(255,255,255,0.2); }
-
-    .addBtn {
-      background:rgba(255,255,255,0.1); color:#fff;
-      border-radius:4px; padding:2px 6px;
-      cursor:pointer; font-size:.9em;
-      display:inline-flex; align-items:center;
-    }
-    .addBtn:hover { background:rgba(255,255,255,0.2); }
-
-    .addPicker {
-      display:flex; gap:.3em; margin-top:.3em; flex-wrap:wrap;
-    }
-    .addPicker .emoji {
-      font-size:1.2em; padding:2px 4px;
-      border:1px solid #fff; border-radius:4px;
-    }
-    .addPicker .emoji:hover {
-      opacity:1; transform:scale(1.2);
-    }
-
-    .reply-row { display:flex; justify-content:center; margin:.5em 0; }
-    .reply-form { display:flex; gap:.5em; }
-    .reply-form input {
-      width:200px; padding:.5em; border:none; border-radius:8px;
-    }
-    .reply-form button {
-      width:100px; padding:.5em; border:none; border-radius:8px;
-      background:#28a745; color:#fff; cursor:pointer; font-weight:600;
-    }
-    .reply-form button:hover { background:#218838; }
-
-    /* Alert modal */
-    #alertModal {
-      display:none; position:fixed; top:0; left:0;
-      width:100%; height:100%; background:rgba(0,0,0,0.5);
-      align-items:center; justify-content:center; z-index:1000;
-    }
-    #alertContent {
-      background:#fff; color:#000; padding:1rem;
-      border-radius:8px; text-align:center; max-width:300px;
-      width:90%;
-    }
-    #alertContent strong { display:block; margin-bottom:.5rem; }
-    #alertContent button {
-      margin-top:.5rem; padding:.5em 1em;
-      background:#28a745; color:#fff; border:none;
-      border-radius:4px; cursor:pointer;
-    }
-
-    /* Profile overlay */
-    #profileModal {
-      display:none; position:fixed; top:0; left:0;
-      width:100%; height:100%; background:rgba(0,0,0,0.8);
-      align-items:center; justify-content:center; z-index:999;
-    }
-    #profileContent {
-      background:#fff; color:#000; padding:1.5rem;
-      border-radius:8px; text-align:center; max-width:320px;
-      width:90%;
-    }
-    #profileContent h2 { margin-bottom:.5em; color:#333; }
-    #profileContent p { margin:.5em 0; color:#444; }
-    #profileContent small {
-      display:block; margin-top:.5em; color:#666; font-style:italic;
-    }
-    #profileContent button {
-      margin-top:1em; padding:.5em 1em;
-      background:#28a745; color:#fff; border:none;
-      border-radius:4px; cursor:pointer;
+    #homeAuth #signOutLink:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-
-  <!-- ALERT -->
-  <div id="alertModal">
-    <div id="alertContent">
-      <strong>KC Event says</strong>
-      <p id="alertMsg"></p>
-      <button id="alertOK">OK</button>
-    </div>
-  </div>
-
-  <!-- PROFILE OVERLAY -->
-  <div id="profileModal">
-    <div id="profileContent">
-      <h2 id="profName">About Me</h2>
-      <p id="profAbout">…</p>
-      <small id="profJoined"></small>
-      <button id="profClose">Close</button>
-    </div>
-  </div>
-
-  <div id="msgBoard">
-    <!-- LEFT PANEL -->
-    <div id="authContainer">
-      <h2>KC Events Account</h2>
-      <div id="registerForm">
-        <input id="regName" placeholder="Display Name"/>
-        <input id="regEmail" type="email" placeholder="Email"/>
-        <input id="regPass" type="password" placeholder="Password"/>
-        <button id="registerBtn">Create Account</button>
-        <p style="text-align:center;color:#ccc">
-          or <a href="#" id="showLogin" style="color:#fff">Log In</a>
-        </p>
-      </div>
-      <div id="loginForm" style="display:none;">
-        <input id="loginEmail" type="email" placeholder="Email"/>
-        <input id="loginPass" type="password" placeholder="Password"/>
-        <button id="loginBtn">Log In</button>
-        <p style="text-align:center;color:#ccc">
-          or <a href="#" id="showRegister" style="color:#fff">Create Account</a>
-        </p>
-      </div>
-      <textarea id="aboutMe" placeholder="Your About Me…" style="display:none;"></textarea>
-      <div id="colorPicker">
-        <p><strong>Pick a colour to express yourself!</strong></p>
-        <span class="colorOption" data-color="linear-gradient(45deg,#ff6b6b,#f06595)"
-          style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span>
-        <span class="colorOption" data-color="linear-gradient(45deg,#74c0fc,#4dabf7)"
-          style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span>
-        <span class="colorOption" data-color="linear-gradient(45deg,#51cf66,#2f9e44)"
-          style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span>
-        <span class="colorOption" data-color="linear-gradient(45deg,#f9c74f,#f9844a)"
-          style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span>
-        <span class="colorOption" data-color="linear-gradient(45deg,#845ef7,#5c7cfa)"
-          style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span>
-      </div>
-      <button id="saveProfile">Save Profile</button>
-      <button id="logoutBtn">Sign Out</button>
-    </div>
-
-    <!-- RIGHT PANEL -->
-    <div id="messageContainer">
-      <div id="sortControls">
-        <label for="sortSelect">Sort by:</label>
-        <select id="sortSelect">
-          <option value="recent">Most Recent</option>
-          <option value="liked">Most Liked</option>
-        </select>
-      </div>
-      <div id="postSection">
-        <div id="emojiPicker">
-          <p><strong>Pick an emoji!</strong></p>
-          <span class="emoji" data-emoji="😀">😀</span>
-          <span class="emoji" data-emoji="😎">😎</span>
-          <span class="emoji" data-emoji="😂">😂</span>
-          <span class="emoji" data-emoji="😍">😍</span>
-          <span class="emoji" data-emoji="👍">👍</span>
-          <span class="emoji" data-emoji="🙌">🙌</span>
-          <span class="emoji" data-emoji="😉">😉</span>
-          <span class="emoji" data-emoji="😁">😁</span>
-          <span class="emoji" data-emoji="😢">😢</span>
-          <span class="emoji" data-emoji="😮">😮</span>
-          <span class="emoji" data-emoji="😡">😡</span>
-          <span class="emoji" data-emoji="🎉">🎉</span>
-        </div>
-        <input id="message" placeholder="Your message" maxlength="200"/>
-        <button id="postBtnInner">Send</button>
-      </div>
-      <ul id="msgList">
-        <li style="font-style:italic;color:rgba(255,255,255,0.7)">Loading…</li>
-      </ul>
-    </div>
-  </div>
+  <div id="homeAuth">Loading…</div>
 
   <script>
-    // Alert
-    const alertModal = document.getElementById('alertModal'),
-          alertMsg   = document.getElementById('alertMsg'),
-          alertOK    = document.getElementById('alertOK');
-    function kcAlert(txt){
-      alertMsg.textContent = txt;
-      alertModal.style.display = 'flex';
-    }
-    alertOK.onclick = ()=> alertModal.style.display='none';
-
-    // Profile modal
-    const profileModal = document.getElementById('profileModal'),
-          profName     = document.getElementById('profName'),
-          profAbout    = document.getElementById('profAbout'),
-          profJoined   = document.getElementById('profJoined'),
-          profClose    = document.getElementById('profClose');
-    profClose.onclick = ()=> profileModal.style.display='none';
-
-    // Firebase init
-    const cfg = {
+    // 1) Initialize Firebase
+    const firebaseConfig = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
       databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
@@ -362,353 +58,28 @@
       appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
       measurementId: "G-4LKP2M3JXE"
     };
-    firebase.initializeApp(cfg);
-    const auth = firebase.auth(), db = firebase.database();
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(),
+          container = document.getElementById('homeAuth');
 
-    // Profanity
-    let badWords = [];
-    fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-      .then(r=>r.json())
-      .then(list=> badWords = list.concat(['diddy','diddler','d1ddy','d i ddy','d i d d y']))
-      .catch(_=> kcAlert('Failed loading bad‑words.'));
-    function containsBadWord(s){ return badWords.some(w=>new RegExp('\\b'+w+'\\b','i').test(s)); }
-
-    // UI refs
-    const regForm    = document.getElementById('registerForm'),
-          logForm    = document.getElementById('loginForm'),
-          logoutBtn  = document.getElementById('logoutBtn'),
-          showLogin  = document.getElementById('showLogin'),
-          showReg    = document.getElementById('showRegister'),
-          saveProfile= document.getElementById('saveProfile'),
-          aboutMe    = document.getElementById('aboutMe'),
-          colorPicker= document.getElementById('colorPicker'),
-          postSec    = document.getElementById('postSection'),
-          msgList    = document.getElementById('msgList'),
-          sortSelect = document.getElementById('sortSelect');
-
-    showLogin.onclick = e=>{ e.preventDefault(); regForm.style.display='none'; logForm.style.display='block'; };
-    showReg.onclick   = e=>{ e.preventDefault(); logForm.style.display='none'; regForm.style.display='block'; };
-
-    // Auth flows
-    document.getElementById('registerBtn').onclick = ()=>{
-      const name  = document.getElementById('regName').value.trim(),
-            email = document.getElementById('regEmail').value.trim(),
-            pass  = document.getElementById('regPass').value;
-      if(!name||!email||!pass) return kcAlert('Please fill all fields.');
-      auth.createUserWithEmailAndPassword(email,pass)
-        .then(({user})=>user.updateProfile({displayName:name}))
-        .then(()=>db.ref(`users/${auth.currentUser.uid}`).set({
-          displayName:auth.currentUser.displayName, about:'', color:'', joined:Date.now()
-        }))
-        .catch(e=>kcAlert(e.message));
-    };
-    document.getElementById('loginBtn').onclick = ()=>{
-      const email = document.getElementById('loginEmail').value.trim(),
-            pass  = document.getElementById('loginPass').value;
-      if(!email||!pass) return kcAlert('Please fill both fields.');
-      auth.signInWithEmailAndPassword(email,pass).catch(e=>kcAlert(e.message));
-    };
-    logoutBtn.onclick = ()=> auth.signOut();
-
-    // Emoji picker
-    let selectedEmoji = null;
-    document.querySelectorAll('#emojiPicker .emoji').forEach(el=>{
-      el.onclick = ()=>{
-        document.querySelectorAll('#emojiPicker .emoji')
-          .forEach(x=>x.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedEmoji = el.dataset.emoji;
-      };
-    });
-
-    // Color picker
-    let selectedColor = '';
-    document.querySelectorAll('.colorOption').forEach(div=>{
-      div.onclick = ()=>{
-        document.querySelectorAll('.colorOption')
-          .forEach(d=>d.classList.remove('selected'));
-        div.classList.add('selected');
-        selectedColor = div.dataset.color;
-      };
-    });
-
-    // Data holders
-    const userProfiles = {}, reactionEmojis = ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉'];
-    let lastSnap = null, sortMode = 'recent';
-
-    db.ref('users').on('value', snap=>{
-      snap.forEach(c=> userProfiles[c.key] = c.val());
-    });
-    db.ref('messages').on('value', snap=>{
-      lastSnap = snap;
-      renderMessages(snap, msgList, '');
-    });
-
-    sortSelect.onchange = ()=>{
-      sortMode = sortSelect.value;
-      if(lastSnap) renderMessages(lastSnap, msgList, '');
-    };
-
-    // Render function
-    function renderMessages(snap, container, basePath){
-      container.innerHTML = '';
-      const arr = [];
-      snap.forEach(c=>{ let v = c.val(); v.key = c.key; arr.push(v); });
-      if(sortMode==='liked'){
-        arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
+    // 2) UI update on auth state
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        container.innerHTML = `
+          <span>👋 Welcome, <strong>${user.displayName||user.email}</strong></span>
+          <a href="#" id="signOutLink">Sign Out</a>
+        `;
+        document.getElementById('signOutLink')
+                .onclick = e => { e.preventDefault(); auth.signOut(); };
       } else {
-        arr.sort((a,b)=>b.time - a.time);
-      }
-      if(!arr.length){
-        const li = document.createElement('li');
-        li.style.fontStyle = 'italic';
-        li.textContent = 'No messages yet.';
-        return container.appendChild(li);
-      }
-      arr.forEach(v=>{
-        if(containsBadWord(v.user)||containsBadWord(v.text)) return;
-        const d = new Date(v.time),
-              ts = `${String(d.getUTCDate()).padStart(2,'0')}/`+
-                   `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
-                   `${String(d.getUTCFullYear()).slice(-2)} `+
-                   `${String(d.getUTCHours()).padStart(2,'0')}:`+
-                   `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-        const li = document.createElement('li');
-        li.className = container===msgList ? 'message' : 'reply';
-        li.dataset.path = `messages${basePath}/${v.key}`;
-        li.innerHTML = `
-          <div class="emojiCell">${v.emoji}</div>
-          <div class="content">
-            <span class="username" data-uid="${v.uid}">${v.user}</span>
-            : ${v.text}
-            <span class="timestamp">${ts}</span>
-            <div class="reactions"></div>
-          </div>
-          <div class="actions">
-            <button class="likeBtn">❤️ ${v.likes||0}</button>
-            <button class="replyBtn">↩️ Reply</button>
-            ${auth.currentUser&&auth.currentUser.uid===v.uid
-              ? `<button class="deleteBtn">🗑️</button>` : ''}
-          </div>`;
-        // apply name color/gradient or fallback white
-        const uname = li.querySelector('.username'),
-              prof = userProfiles[v.uid]||{};
-        if(prof.color){
-          uname.style.backgroundImage = prof.color;
-          uname.style.webkitBackgroundClip = uname.style.backgroundClip = 'text';
-        } else {
-          uname.style.webkitBackgroundClip = uname.style.backgroundClip = '';
-          uname.style.color = '#fff';
-        }
-        container.appendChild(li);
-        // reactions
-        const bar = li.querySelector('.reactions'),
-              existing = v.reactions || {};
-        Object.keys(existing).forEach(emo=>{
-          const cnt = Object.keys(existing[emo]||{}).length,
-                btn = document.createElement('div');
-          btn.className = 'reactBtn';
-          btn.dataset.path = li.dataset.path + `/reactions/${emo}`;
-          btn.dataset.emoji = emo;
-          btn.innerHTML = `${emo}<span>${cnt}</span>`;
-          bar.appendChild(btn);
-        });
-        const addBtn = document.createElement('div');
-        addBtn.className = 'addBtn'; addBtn.textContent = '➕ Add';
-        bar.appendChild(addBtn);
-        // replies container
-        const repliesUL = document.createElement('ul');
-        repliesUL.className = 'replies';
-        container.appendChild(repliesUL);
-        if(v.replies){
-          const pseudo = { forEach: cb =>
-            Object.entries(v.replies)
-              .forEach(([k,val])=> cb({ key:k, val:()=>val }))
-          };
-          renderMessages(pseudo, repliesUL, `${basePath}/${v.key}/replies`);
-        }
-      });
-    }
-
-    // Delegated UI events
-    document.body.addEventListener('click', e=>{
-      const user = auth.currentUser;
-
-      // Like
-      if(e.target.closest('.likeBtn')){
-        if(!user) return kcAlert('Log in to like.');
-        const path = e.target.closest('li').dataset.path,
-              uid  = user.uid;
-        db.ref(`${path}/likedBy/${uid}`).transaction(cur=> cur===null ? true : undefined,
-          (err,comm)=>{
-            if(err) kcAlert('Error liking.');
-            else if(comm) db.ref(`${path}/likes`).transaction(c=> (c||0)+1 );
-            else kcAlert('You already liked this.');
-          });
-        return;
-      }
-
-      // React
-      if(e.target.closest('.reactBtn')){
-        if(!user) return kcAlert('Log in to react.');
-        const btn = e.target.closest('.reactBtn'),
-              path= btn.dataset.path,
-              uid = user.uid;
-        db.ref(`${path}/${uid}`).transaction(cur=> cur===null ? true : undefined,
-          (err,comm)=>{
-            if(err) kcAlert('Error reacting.');
-            else if(!comm) kcAlert('You already reacted.');
-          });
-        return;
-      }
-
-      // Add reaction picker
-      if(e.target.matches('.addBtn')){
-        const li  = e.target.closest('li'),
-              base= li.dataset.path,
-              bar = li.querySelector('.reactions');
-        if(bar.querySelector('.addPicker')){
-          bar.querySelector('.addPicker').remove();
-          return;
-        }
-        const existing = Array.from(bar.querySelectorAll('.reactBtn'))
-                          .map(b=>b.dataset.emoji),
-              picker  = document.createElement('div');
-        picker.className = 'addPicker';
-        reactionEmojis.filter(emo=> !existing.includes(emo))
-          .forEach(emo=>{
-            const span = document.createElement('span');
-            span.className = 'emoji';
-            span.textContent = emo;
-            span.onclick = ()=>{
-              if(!auth.currentUser) return kcAlert('Log in to react.');
-              db.ref(`${base}/reactions/${emo}/${auth.currentUser.uid}`)
-                .set(true, err=>{ if(err) kcAlert('Error adding reaction.'); });
-              picker.remove();
-            };
-            picker.appendChild(span);
-          });
-        bar.appendChild(picker);
-        return;
-      }
-
-      // Reply
-      if(e.target.closest('.replyBtn')){
-        if(!user) return kcAlert('Log in to reply.');
-        const li   = e.target.closest('li'),
-              path = li.dataset.path + '/replies';
-        if(document.getElementById('replyForm-'+path)) return;
-        const row  = document.createElement('li');
-        row.className = 'reply-row';
-        const form = document.createElement('div');
-        form.className = 'reply-form';
-        form.id = 'replyForm-'+path;
-        form.innerHTML = `<input placeholder="Reply..." maxlength="200"/>
-                          <button>Send</button>`;
-        row.appendChild(form);
-        li.after(row);
-        form.querySelector('button').onclick = ()=>{
-          const txt = form.querySelector('input').value.trim();
-          if(!selectedEmoji) return kcAlert('Pick an emoji.');
-          if(!txt) return kcAlert('Enter a reply.');
-          if(containsBadWord(txt)) return kcAlert('That word’s not allowed.');
-          db.ref(path).push({
-            user:user.displayName, uid:user.uid,
-            text:txt, emoji:selectedEmoji,
-            time:firebase.database.ServerValue.TIMESTAMP,
-            likes:0
-          });
-        };
-        return;
-      }
-
-      // Delete
-      if(e.target.closest('.deleteBtn')){
-        const path = e.target.closest('li').dataset.path;
-        if(confirm('Delete this message and its replies?'))
-          db.ref(path).remove();
-        return;
-      }
-
-      // Username → profile
-      if(e.target.closest('.username')){
-        const uid = e.target.closest('.username').dataset.uid,
-              prof= userProfiles[uid]||{};
-        profName.textContent  = prof.displayName||'About Me';
-        profAbout.textContent = prof.about||'';
-        if(prof.joined){
-          const d=new Date(prof.joined);
-          profJoined.textContent =
-            `Joined: ${String(d.getUTCDate()).padStart(2,'0')}/`+
-            `${String(d.getUTCMonth()+1).padStart(2,'0')}/`+
-            `${String(d.getUTCFullYear()).slice(-2)} `+
-            `${String(d.getUTCHours()).padStart(2,'0')}:`+
-            `${String(d.getUTCMinutes()).padStart(2,'0')} GMT`;
-        } else profJoined.textContent='';
-        profileModal.style.display='flex';
-        return;
-      }
-    });
-
-    // Post new message
-    document.getElementById('postBtnInner').onclick = ()=>{
-      const user = auth.currentUser,
-            txt  = document.getElementById('message').value.trim();
-      if(!user) return kcAlert('Log in to post.');
-      if(!selectedEmoji) return kcAlert('Pick an emoji.');
-      if(!txt) return kcAlert('Enter a message.');
-      if(containsBadWord(user.displayName)||containsBadWord(txt))
-        return kcAlert('That word’s not allowed.');
-      const mRef = db.ref('messages').push();
-      mRef.set({
-        user:user.displayName, uid:user.uid,
-        text:txt, emoji:selectedEmoji,
-        time:firebase.database.ServerValue.TIMESTAMP,
-        likes:0
-      });
-      document.getElementById('message').value='';
-    };
-
-    // Save profile
-    document.getElementById('saveProfile').onclick = ()=>{
-      const user  = auth.currentUser,
-            about = aboutMe.value.trim();
-      if(!user) return;
-      db.ref(`users/${user.uid}`).update({ about, color:selectedColor });
-      kcAlert('Profile saved!');
-    };
-
-    // Auth state UI
-    auth.onAuthStateChanged(user=>{
-      if(user){
-        regForm.style.display=logForm.style.display='none';
-        logoutBtn.style.display=
-          postSec.style.display=
-          aboutMe.style.display=
-          colorPicker.style.display=
-          saveProfile.style.display='block';
-        db.ref(`users/${user.uid}`).once('value').then(s=>{
-          const p=s.val()||{};
-          aboutMe.value=p.about||'';
-          selectedColor=p.color||'';
-          if(selectedColor){
-            document.querySelectorAll('.colorOption')
-              .forEach(d=>{
-                if(d.dataset.color===selectedColor)
-                  d.classList.add('selected');
-              });
-          }
-        });
-      } else {
-        regForm.style.display='block';
-        logForm.style.display='none';
-        logoutBtn.style.display=
-          postSec.style.display=
-          aboutMe.style.display=
-          colorPicker.style.display=
-          saveProfile.style.display='none';
+        container.innerHTML = `
+          <a href="#login" class="authLink">Log In</a>
+          <span>or</span>
+          <a href="#register" class="authLink">Register</a>
+        `;
       }
     });
   </script>
 </body>
 </html>
+
