@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>KC Events Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    html,body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(120deg, #171717 70%, #363636 100%);
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .auth-card {
+      background: rgba(0,0,0,0.78);
+      border-radius: 18px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.65);
+      padding: 2.2rem 2rem 2.2rem 2rem;
+      min-width: 350px;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      position: relative;
+    }
+    .logo-img {
+      margin-bottom: 1.1rem;
+      max-width: 90px;
+      max-height: 90px;
+      display: block;
+    }
+    .auth-card h2 {
+      font-size: 2rem;
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+      letter-spacing: -1px;
+      text-align: center;
+    }
+    .auth-card .form-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: .8rem;
+    }
+    .auth-card input {
+      padding: .7rem .9rem;
+      border-radius: 7px;
+      border: none;
+      background: #212121;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: background 0.2s;
+    }
+    .auth-card input:focus {
+      background: #18181b;
+    }
+    .auth-card button {
+      padding: .68rem 0;
+      border: none;
+      border-radius: 7px;
+      background: linear-gradient(90deg,#FF1C1C,#E1AB33);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-top: .35rem;
+      transition: background 0.18s, color 0.18s;
+      box-shadow: 0 1px 8px 0 rgba(255,28,28,0.12);
+    }
+    .auth-card button:hover, .auth-card button:focus {
+      background: #E1AB33 !important;
+      color: #191919 !important;
+    }
+    .signout-btn {
+      background: linear-gradient(90deg,#FF1C1C,#C81D25) !important;
+      color: #fff !important;
+      margin-top: 2.4rem !important;
+      font-size: 1.06rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 7px;
+      padding: .62rem 0;
+      width: 100%;
+      transition: background 0.15s, color 0.15s;
+      box-shadow: 0 2px 10px 0 rgba(255,28,28,0.12);
+    }
+    .signout-btn:hover, .signout-btn:focus {
+      background: #C81D25 !important;
+      color: #fff !important;
+    }
+    .switch-link {
+      color: #E1AB33;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: .96rem;
+      margin-top: .3rem;
+      text-align: center;
+      transition: color 0.18s;
+    }
+    .switch-link:hover { color: #ffe199; }
+    .welcome {
+      font-size: 1.3rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      justify-content: center;
+      margin: 0 0 1.2rem 0;
+      text-align: center;
+    }
+    .user-counter {
+      font-size: 1.09rem;
+      color: #E1AB33;
+      text-align: center;
+      font-weight: 500;
+      margin-bottom: 2rem;
+      margin-top: -.6rem;
+      text-shadow: 0 1px 10px #17171799;
+    }
+    .version {
+      color: #a3e635;
+      font-size: 1.08rem;
+      margin-top: 2.3rem;
+      letter-spacing: .03em;
+      font-weight: 500;
+      text-align: center;
+      opacity: .88;
+    }
+    .error-msg {
+      color: #f87171;
+      text-align: center;
+      font-size: .97rem;
+      margin-bottom: .4rem;
+    }
+    @media (max-width: 600px){
+      .auth-card { min-width: unset; width:97vw; padding:1.4rem .4rem 1.2rem .4rem;}
+      .logo-img { max-width: 66px; max-height: 66px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="auth-card" id="authCard">
+    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="logo-img" alt="KC Events Logo"/>
+    <h2>KC Events Login</h2>
+    <div id="error" class="error-msg"></div>
+    <!-- Register Form -->
+    <div class="form-section" id="registerForm">
+      <input id="regName" placeholder="Display Name"/>
+      <input id="regEmail" type="email" placeholder="Email"/>
+      <input id="regPass" type="password" placeholder="Password"/>
+      <button id="registerBtn">Register</button>
+      <div class="switch-link" id="toLogin">Already have an account? Log In</div>
+    </div>
+    <!-- Login Form -->
+    <div class="form-section" id="loginForm" style="display:none;">
+      <input id="loginEmail" type="email" placeholder="Email"/>
+      <input id="loginPass" type="password" placeholder="Password"/>
+      <button id="loginBtn">Log In</button>
+      <div class="switch-link" id="toRegister">No account? Register</div>
+    </div>
+    <!-- Welcome/Logged In UI -->
+    <div id="loggedInUI" style="display:none; flex-direction:column; align-items:center; width:100%;">
+      <div class="welcome" id="welcomeUser"></div>
+      <div class="user-counter" id="userCounter"></div>
+      <button class="signout-btn" id="signOutBtn">Sign Out</button>
+      <div class="version">KC Events v1</div>
+    </div>
+  </div>
+  <script>
+    // Firebase config
+    const cfg = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // UI refs
+    const registerForm = document.getElementById('registerForm'),
+          loginForm    = document.getElementById('loginForm'),
+          toLogin      = document.getElementById('toLogin'),
+          toRegister   = document.getElementById('toRegister'),
+          registerBtn  = document.getElementById('registerBtn'),
+          loginBtn     = document.getElementById('loginBtn'),
+          errorMsg     = document.getElementById('error'),
+          regName      = document.getElementById('regName'),
+          regEmail     = document.getElementById('regEmail'),
+          regPass      = document.getElementById('regPass'),
+          loginEmail   = document.getElementById('loginEmail'),
+          loginPass    = document.getElementById('loginPass'),
+          loggedInUI   = document.getElementById('loggedInUI'),
+          welcomeUser  = document.getElementById('welcomeUser'),
+          signOutBtn   = document.getElementById('signOutBtn'),
+          userCounter  = document.getElementById('userCounter');
+
+    // Toggle Forms
+    toLogin.onclick = ()=>{ registerForm.style.display='none'; loginForm.style.display='flex'; errorMsg.textContent=''; };
+    toRegister.onclick = ()=>{ loginForm.style.display='none'; registerForm.style.display='flex'; errorMsg.textContent=''; };
+
+    // Register
+    registerBtn.onclick = ()=>{
+      errorMsg.textContent = '';
+      const name=regName.value.trim(),
+            email=regEmail.value.trim(),
+            pass=regPass.value;
+      if(!name||!email||!pass) return errorMsg.textContent="Fill in all fields!";
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(res=>res.user.updateProfile({displayName:name}))
+        .then(()=>{
+          // Save user to DB for counting
+          if (auth.currentUser) {
+            db.ref('users/'+auth.currentUser.uid).set({
+              displayName: name,
+              email: email
+            });
+          }
+        })
+        .catch(e=>errorMsg.textContent = e.message);
+    };
+
+    // Login
+    loginBtn.onclick = ()=>{
+      errorMsg.textContent = '';
+      const email=loginEmail.value.trim(),
+            pass=loginPass.value;
+      if(!email||!pass) return errorMsg.textContent="Enter email and password!";
+      auth.signInWithEmailAndPassword(email, pass)
+        .catch(e=>errorMsg.textContent = e.message);
+    };
+
+    // Sign out
+    signOutBtn.onclick = ()=> auth.signOut();
+
+    // Auth State Changes
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        registerForm.style.display='none';
+        loginForm.style.display='none';
+        loggedInUI.style.display='flex';
+        welcomeUser.innerHTML = `👋 Welcome, <span style="color:#E1AB33">${user.displayName||'User'}</span>`;
+        errorMsg.textContent = '';
+        updateUserCount();
+      } else {
+        loggedInUI.style.display='none';
+        registerForm.style.display='flex';
+        loginForm.style.display='none';
+      }
+    });
+
+    // User Counter
+    function updateUserCount(){
+      db.ref('users').once('value').then(snap=>{
+        const count = snap.numChildren();
+        userCounter.textContent = `There are now ${count} users registered to KC Events!`;
+      });
+    }
+  </script>
+</body>
+</html>
