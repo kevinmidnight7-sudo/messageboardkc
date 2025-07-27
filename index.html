@@ -8,83 +8,140 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
+    html, body { margin:0; padding:0; background:transparent; }
     body {
-      margin:0; padding:1rem;
-      font-family:'Poppins',sans-serif;
-      color:#fff;
-      background:transparent;
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+      padding: 1rem;
     }
-    .container { display:flex; gap:1rem; flex-wrap:wrap; }
+    .container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
     .panel {
-      background:rgba(0,0,0,0.6);
-      border-radius:12px;
-      padding:1rem;
-      flex:1 1 240px;
-      max-width:300px;
-      box-sizing:border-box;
+      background: rgba(0,0,0,0.6);
+      border-radius: 14px;
+      padding: 1rem;
+      box-sizing: border-box;
     }
-    .chat {
-      flex:2 1 400px;
-      max-width:600px;
-      overflow-y:auto;
-      max-height:600px;
+    /* left profile panel */
+    .profile-panel {
+      flex: 1 1 280px;
+      max-width: 320px;
     }
-    h3 { margin-top:0; }
+    /* right chat panel */
+    .chat-panel {
+      flex: 2 1 600px;
+      max-width: 650px;
+      overflow-y: auto;
+      max-height: 700px;
+    }
+    h3 { margin-top:0; font-size: 1.25rem; }
+    h4 { margin: 1rem 0 .5rem; font-size: 1rem; }
     textarea, input[type=text] {
-      width:100%; padding:.5rem;
-      border:none; border-radius:6px;
-      margin-top:.3rem; box-sizing:border-box;
-      resize:none;
+      width: 100%;
+      padding: .6rem;
+      border: none;
+      border-radius: 6px;
+      margin-top: .4rem;
+      box-sizing: border-box;
+      font-size: .95rem;
+      resize: none;
+      background: #fff;
+      color: #000;
     }
-    textarea { height:100px; }
+    textarea { height: 100px; }
     .colors {
-      display:flex; gap:.5rem; margin:1rem 0;
+      display: flex;
+      gap: .6rem;
     }
     .colors div {
-      width:32px; height:32px; border-radius:6px;
-      cursor:pointer;
-      border:2px solid transparent;
+      width: 36px; height: 36px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 2px solid transparent;
     }
-    .colors .sel { border-color:#fff; }
-    #sendBtn, #saveProfile, #signOut {
-      width:100%; padding:.6rem;
-      border:none; border-radius:6px;
-      font-weight:600; cursor:pointer;
-      margin-top:.8rem;
+    .colors .sel { border-color: #fff; }
+    button {
+      display: block;
+      width: 100%;
+      padding: .7rem;
+      margin-top: .8rem;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
     }
-    #sendBtn { background:#22c55e; color:#fff; }
-    #saveProfile { background:#22c55e; color:#fff; }
-    #signOut { background:#ef4444; color:#fff; }
+    #saveProfile { background: #22c55e; color: #fff; }
+    #signOut      { background: #ef4444; color: #fff; }
+    #sendBtn      { background: #22c55e; color: #fff; margin-bottom: 1rem; }
+    /* emoji picker */
+    #emojiPicker button {
+      background: rgba(255,255,255,0.9);
+      border: none;
+      border-radius: 6px;
+      padding: .4rem;
+      font-size: 1.4rem;
+      margin-right: .4rem;
+      cursor: pointer;
+    }
+    #msgInput {
+      margin-bottom: .6rem;
+      background: #fff;
+      color: #000;
+    }
+    /* messages */
     .msg {
-      background:rgba(255,255,255,0.1);
-      border-radius:8px;
-      padding:.6rem;
-      margin-bottom:.5rem;
-      position:relative;
+      background: rgba(255,255,255,0.1);
+      border-left: 4px solid #fff;
+      border-radius: 8px;
+      padding: .6rem;
+      margin-bottom: .8rem;
     }
     .msg .header {
-      display:flex; align-items:center; gap:.6rem;
+      display: flex;
+      align-items: center;
+      gap: .6rem;
     }
     .msg .username { font-weight:600; }
-    .msg .time { font-size:.75rem; color:#ccc; margin-left:auto;}
-    .msg .text { margin:.5rem 0; }
+    .msg .time {
+      margin-left: auto;
+      font-size: .8rem;
+      color: #ccc;
+    }
+    .msg .text {
+      margin: .5rem 0;
+    }
     .msg .actions {
-      display:flex; gap:.5rem; font-size:.9rem;
+      display: flex;
+      gap: .5rem;
+      font-size: .9rem;
     }
     .msg .actions button {
-      background:rgba(255,255,255,0.1); border:none;
-      border-radius:6px; padding:.2rem .5rem;
-      cursor:pointer; color:#fff;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 6px;
+      padding: .3rem .6rem;
+      cursor: pointer;
+      color: #fff;
     }
   </style>
 </head>
 <body>
+
   <div class="container">
 
     <!-- PROFILE PANEL -->
-    <div class="panel">
+    <div class="panel profile-panel">
       <h3>Your KC Events Account:</h3>
       <textarea id="aboutMe" placeholder="Your About Me…"></textarea>
+
       <h4>Pick a colour to express yourself!</h4>
       <div class="colors" id="colorPicker">
         <div data-color="#f87171" style="background:#f87171"></div>
@@ -93,28 +150,30 @@
         <div data-color="#fbbf24" style="background:#fbbf24"></div>
         <div data-color="#a78bfa" style="background:#a78bfa"></div>
       </div>
+
       <button id="saveProfile">Save Profile</button>
       <button id="signOut">Sign Out</button>
     </div>
 
     <!-- CHAT PANEL -->
-    <div class="panel chat">
+    <div class="panel chat-panel">
       <h3>Pick an emoji!</h3>
-      <div id="emojiPicker" style="display:flex;gap:.5rem;flex-wrap:wrap;"></div>
-      <input type="text" id="msgInput" placeholder="Your message"/>
+      <div id="emojiPicker"></div>
+
+      <input type="text" id="msgInput" placeholder="Your message" />
       <button id="sendBtn">Send</button>
+
       <div id="msgs"></div>
     </div>
 
   </div>
 
   <script>
-    // "Notification" modal
     function kcAlert(msg) {
       alert(`Notification\n\n${msg}`);
     }
 
-    // Firebase init
+    // Firebase init (unchanged)
     const firebaseConfig = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -126,8 +185,9 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(),
-          dbMsg = firebase.database().ref('messages'),
+
+    const auth    = firebase.auth(),
+          dbMsg   = firebase.database().ref('messages'),
           dbUsers = firebase.database().ref('users');
 
     // DOM refs
@@ -140,109 +200,101 @@
           sendBtn     = document.getElementById('sendBtn'),
           msgsDiv     = document.getElementById('msgs');
 
-    // emoji list & selection
     const EMOJIS = ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉'];
-    let selectedEmoji = null;
+    let selectedEmoji = null, currentUser=null, profiles={};
 
     // build emoji picker
-    EMOJIS.forEach(e => {
+    EMOJIS.forEach(e=>{
       const btn = document.createElement('button');
       btn.textContent = e;
-      btn.style.fontSize = '1.5rem';
       btn.onclick = () => {
         selectedEmoji = e;
-        Array.from(emojiPicker.children)
-             .forEach(x=>x.style.border='none');
-        btn.style.border='2px solid #fff';
+        emojiPicker.querySelectorAll('button')
+                   .forEach(x=>x.style.border='none');
+        btn.style.border = '2px solid #fff';
       };
       emojiPicker.appendChild(btn);
     });
 
-    let currentUser=null, profiles={};
+    // load profiles
+    function loadProfiles(cb) {
+      dbUsers.once('value',snap=>{
+        profiles = snap.val()||{};
+        cb();
+      });
+    }
 
     // render messages
     function renderMsgs() {
       msgsDiv.innerHTML = '';
-      dbMsg.orderByChild('time')
-           .once('value', snap => {
-        profiles = profiles; // already loaded
-        snap.forEach(ch => {
-          const m = ch.val(), key = ch.key;
-          const prof = profiles[m.uid]||{};
+      dbMsg.orderByChild('time').once('value',snap=>{
+        snap.forEach(ch=>{
+          const m = ch.val(), prof=profiles[m.uid]||{};
           const color = prof.color||'#fff';
           const about = prof.about||'';
 
-          const div = document.createElement('div');
-          div.className='msg';
-          div.style.borderLeft=`4px solid ${color}`;
+          const d = document.createElement('div');
+          d.className='msg';
+          d.style.borderLeft=`4px solid ${color}`;
 
           // header
           const hd = document.createElement('div');
           hd.className='header';
-          hd.innerHTML = `
-            <span class="emoji">${m.emoji||''}</span>
+          hd.innerHTML=`
+            <span>${m.emoji||''}</span>
             <span class="username" style="color:${color}">${m.user}</span>
             <span class="time">
-              ${new Date(m.time).toLocaleString('en-GB',{
+              ${new Date(m.time).toLocaleString('en-GB', {
                 day:'2-digit',month:'2-digit',year:'2-digit',
                 hour:'2-digit',minute:'2-digit'
               })} GMT
-            </span>
-          `;
-          if(about){
-            hd.querySelector('.username').title = about;
-          }
-          div.appendChild(hd);
+            </span>`;
+          if(about) hd.querySelector('.username').title=about;
+          d.appendChild(hd);
 
           // text
           const txt = document.createElement('div');
           txt.className='text';
           txt.textContent = m.text;
-          div.appendChild(txt);
+          d.appendChild(txt);
 
           // actions
           const act = document.createElement('div');
           act.className='actions';
           // like
-          const likeBtn = document.createElement('button');
-          likeBtn.textContent = `❤️ ${m.likesCount||0}`;
-          likeBtn.onclick = () => {
+          const like = document.createElement('button');
+          like.textContent=`❤️ ${m.likesCount||0}`;
+          like.onclick = ()=>{
             if(!currentUser) return kcAlert('Log in first!');
-            const lk = ch.ref.child('likes/'+currentUser.uid);
+            const lk = ch.ref.child(`likes/${currentUser.uid}`);
             lk.once('value',s=>{
               if(s.exists()) return kcAlert('You already liked!');
               lk.set(true).then(()=>{
                 ch.ref.child('likes').once('value',ss=>{
-                  ch.ref.child('likesCount').set(ss.numChildren())
-                    .then(renderMsgs);
+                  ch.ref.child('likesCount')
+                       .set(ss.numChildren())
+                       .then(renderMsgs);
                 });
               });
             });
           };
-          act.appendChild(likeBtn);
-          // reply (placeholder)
-          const repBtn = document.createElement('button');
-          repBtn.textContent='↩️ Reply';
-          repBtn.onclick = ()=>kcAlert('Reply feature still in progress');
-          act.appendChild(repBtn);
+          act.appendChild(like);
+          // reply placeholder
+          const rep = document.createElement('button');
+          rep.textContent='↩️ Reply';
+          rep.onclick = ()=>kcAlert('Reply in progress');
+          act.appendChild(rep);
           // delete if owner
           if(currentUser && m.uid===currentUser.uid){
-            const del = document.createElement('button');
+            const del=document.createElement('button');
             del.textContent='🗑️';
-            del.onclick = ()=> ch.ref.remove().then(renderMsgs);
+            del.onclick=()=>ch.ref.remove().then(renderMsgs);
             act.appendChild(del);
           }
-          div.appendChild(act);
-          msgsDiv.appendChild(div);
-        });
-      });
-    }
+          d.appendChild(act);
 
-    // load all profiles
-    function loadProfiles(cb){
-      dbUsers.once('value',snap=>{
-        profiles = snap.val()||{};
-        cb();
+          msgsDiv.appendChild(d);
+        });
       });
     }
 
@@ -250,16 +302,16 @@
     saveProfile.onclick = ()=>{
       if(!currentUser) return kcAlert('Log in first');
       const about = aboutMe.value.trim();
-      const color = colorPicker.querySelector('.sel')
-                     ?.dataset.color||null;
+      const sel = colorPicker.querySelector('.sel');
+      const color = sel ? sel.dataset.color : null;
       dbUsers.child(currentUser.uid)
              .set({about,color})
              .then(()=>kcAlert('Profile saved'))
              .then(()=>loadProfiles(renderMsgs))
-             .catch(e=>kcAlert('Save failed'));
+             .catch(()=>kcAlert('Save failed'));
     };
 
-    // color pick
+    // color select
     colorPicker.querySelectorAll('div').forEach(div=>{
       div.onclick = ()=>{
         colorPicker.querySelectorAll('div')
@@ -272,7 +324,8 @@
     sendBtn.onclick = ()=>{
       if(!currentUser) return kcAlert('Log in first');
       const text = msgInput.value.trim();
-      if(!selectedEmoji||!text) return kcAlert('Emoji & text required');
+      if(!selectedEmoji||!text)
+        return kcAlert('Emoji & text required');
       dbMsg.push({
         uid: currentUser.uid,
         user: currentUser.displayName||currentUser.email,
@@ -281,23 +334,22 @@
         time: firebase.database.ServerValue.TIMESTAMP
       })
       .then(()=>{ msgInput.value=''; renderMsgs(); })
-      .catch(e=>kcAlert('Send failed'));
+      .catch(()=>kcAlert('Send failed'));
     };
 
-    // auth state observer
+    // auth listener
     auth.onAuthStateChanged(u=>{
-      currentUser=u;
+      currentUser = u;
       if(!u){
         kcAlert('Please log in via the KC Events embed');
       } else {
         // preload profile
         dbUsers.child(u.uid).once('value',s=>{
-          const p = s.val()||{};
-          aboutMe.value = p.about||'';
+          const p=s.val()||{};
+          aboutMe.value=p.about||'';
           if(p.color){
-            const d = colorPicker.querySelector(
-              `[data-color="${p.color}"]`);
-            if(d) d.classList.add('sel');
+            const el = colorPicker.querySelector(`[data-color="${p.color}"]`);
+            if(el) el.classList.add('sel');
           }
         });
         loadProfiles(renderMsgs);
