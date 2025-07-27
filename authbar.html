@@ -17,7 +17,7 @@
     #homeAuth {
       display: inline-flex;
       align-items: center;
-      justify-content: center;      /* center content */
+      justify-content: center;
       gap: .6rem;
       font-family: 'Poppins', sans-serif;
       font-size: .85rem;
@@ -50,8 +50,9 @@
 </head>
 <body>
   <div id="homeAuth">Loading…</div>
+
   <script>
-    // Firebase config
+    // Firebase setup
     const firebaseConfig = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -63,6 +64,7 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(firebaseConfig);
+
     const auth = firebase.auth(),
           container = document.getElementById('homeAuth'),
           chatURL = 'https://kcevents.uk/#chatscroll';
@@ -70,16 +72,16 @@
     auth.onAuthStateChanged(user => {
       if (user) {
         container.innerHTML = `
-          <span>👋 Welcome, <strong>${user.displayName||user.email}</strong></span>
+          <span>👋 Welcome, <strong>${user.displayName || user.email}</strong></span>
           <a href="#" id="signOutLink">Sign Out</a>
         `;
         document.getElementById('signOutLink')
                 .onclick = e => { e.preventDefault(); auth.signOut(); };
       } else {
         container.innerHTML = `
-          <a href="${chatURL}" class="authLink">Log In</a>
+          <a href="${chatURL}" class="authLink" target="_top">Log In</a>
           <span>or</span>
-          <a href="${chatURL}" class="authLink">Register</a>
+          <a href="${chatURL}" class="authLink" target="_top">Register</a>
         `;
       }
     });
