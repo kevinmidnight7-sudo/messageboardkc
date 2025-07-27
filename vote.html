@@ -388,16 +388,15 @@
 
     // Auth listener
     auth.onAuthStateChanged(user=>{
-      if(!user){
-        voteContainer.innerHTML = `
-          <p>Please <a href="#login" target="_top" style="color:#4ade80;">
-            log in
-          </a> to vote.</p>`;
-      } else {
-        renderForm(user);
-      }
-    });
-
+  if(!user){
+    voteContainer.innerHTML = `
+      <p>Please <a href="https://kcevents.uk/#chatscroll" target="_top" style="color:#4ade80;">
+        log in
+      </a> to vote.</p>`;
+  } else {
+    renderForm(user);
+  }
+});
     // Admin
     showAdmin.onclick = ()=>{
       adminSection.style.display =
