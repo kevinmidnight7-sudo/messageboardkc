@@ -9,158 +9,155 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     html,body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  font-family: 'Poppins', sans-serif;
-  color: #fff;
-  min-height: 100vh;
-  min-width: 100vw;
-}
-body {
-  /* Parallax, fixed background */
-  background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') no-repeat center center fixed;
-  background-size: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.auth-card {
-  background: rgba(0,0,0,0.78);
-  border-radius: 18px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.65);
-  padding: 2.2rem 2rem 2.2rem 2rem;
-  min-width: 350px;
-  max-width: 380px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.2rem;
-  position: relative;
-}
-.logo-img {
-  margin-bottom: 1.1rem;
-  max-width: 90px;
-  max-height: 90px;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-.auth-card h2 {
-  font-size: 2rem;
-  margin: 0 0 1rem 0;
-  font-weight: 600;
-  letter-spacing: -1px;
-  text-align: center;
-}
-.auth-card .form-section {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: .8rem;
-}
-.auth-card input {
-  padding: .7rem .9rem;
-  border-radius: 7px;
-  border: none;
-  background: #212121;
-  color: #fff;
-  font-size: 1rem;
-  outline: none;
-  transition: background 0.2s;
-}
-.auth-card input:focus {
-  background: #18181b;
-}
-.auth-card button {
-  padding: .68rem 0;
-  border: none;
-  border-radius: 7px;
-  background: linear-gradient(90deg,#FF1C1C,#E1AB33);
-  color: #fff;
-  font-weight: 700;
-  font-size: 1.1rem;
-  cursor: pointer;
-  margin-top: .35rem;
-  transition: background 0.18s, color 0.18s;
-  box-shadow: 0 1px 8px 0 rgba(255,28,28,0.12);
-}
-.auth-card button:hover, .auth-card button:focus {
-  background: #E1AB33 !important;
-  color: #191919 !important;
-}
-.signout-btn {
-  background: linear-gradient(90deg,#FF1C1C,#C81D25) !important;
-  color: #fff !important;
-  margin-top: 2.4rem !important;
-  font-size: 1.06rem;
-  font-weight: 700;
-  border: none;
-  border-radius: 7px;
-  padding: .62rem 0;
-  width: 100%;
-  transition: background 0.15s, color 0.15s;
-  box-shadow: 0 2px 10px 0 rgba(255,28,28,0.12);
-}
-.signout-btn:hover, .signout-btn:focus {
-  background: #C81D25 !important;
-  color: #fff !important;
-}
-.switch-link {
-  color: #E1AB33;
-  cursor: pointer;
-  text-decoration: underline;
-  font-size: .96rem;
-  margin-top: .3rem;
-  text-align: center;
-  transition: color 0.18s;
-}
-.switch-link:hover { color: #ffe199; }
-.welcome {
-  font-size: 1.3rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  justify-content: center;
-  margin: 0 0 1.2rem 0;
-  text-align: center;
-}
-.user-counter {
-  font-size: 1.09rem;
-  color: #fff;      /* <-- Make this pure white */
-  text-align: center;
-  font-weight: 500;
-  margin-bottom: 2rem;
-  margin-top: -.6rem;
-  text-shadow: 0 1px 10px #17171799;
-}
-.version {
-  /* Gold gradient text! */
-  background: linear-gradient(90deg, #FFD700 0%, #E1AB33 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-fill-color: transparent;
-  font-size: 1.08rem;
-  margin-top: 2.3rem;
-  letter-spacing: .03em;
-  font-weight: 500;
-  text-align: center;
-  opacity: .96;
-}
-
-.error-msg {
-  color: #f87171;
-  text-align: center;
-  font-size: .97rem;
-  margin-bottom: .4rem;
-}
-@media (max-width: 600px){
-  .auth-card { min-width: unset; width:97vw; padding:1.4rem .4rem 1.2rem .4rem;}
-  .logo-img { max-width: 66px; max-height: 66px; }
-}
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      color: #fff;
+      min-height: 100vh;
+      min-width: 100vw;
+    }
+    body {
+      background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .auth-card {
+      background: rgba(0,0,0,0.78);
+      border-radius: 18px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.65);
+      padding: 2.2rem 2rem 2.2rem 2rem;
+      min-width: 350px;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+      position: relative;
+    }
+    .logo-img {
+      margin-bottom: 1.1rem;
+      max-width: 90px;
+      max-height: 90px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .auth-card h2 {
+      font-size: 2rem;
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+      letter-spacing: -1px;
+      text-align: center;
+    }
+    .auth-card .form-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: .8rem;
+    }
+    .auth-card input {
+      padding: .7rem .9rem;
+      border-radius: 7px;
+      border: none;
+      background: #212121;
+      color: #fff;
+      font-size: 1rem;
+      outline: none;
+      transition: background 0.2s;
+    }
+    .auth-card input:focus {
+      background: #18181b;
+    }
+    .auth-card button {
+      padding: .68rem 0;
+      border: none;
+      border-radius: 7px;
+      background: linear-gradient(90deg,#FF1C1C,#E1AB33);
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin-top: .35rem;
+      transition: background 0.18s, color 0.18s;
+      box-shadow: 0 1px 8px 0 rgba(255,28,28,0.12);
+    }
+    .auth-card button:hover, .auth-card button:focus {
+      background: #E1AB33 !important;
+      color: #191919 !important;
+    }
+    .signout-btn {
+      background: linear-gradient(90deg,#FF1C1C,#C81D25) !important;
+      color: #fff !important;
+      margin-top: 2.4rem !important;
+      font-size: 1.06rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 7px;
+      padding: .62rem 0;
+      width: 100%;
+      transition: background 0.15s, color 0.15s;
+      box-shadow: 0 2px 10px 0 rgba(255,28,28,0.12);
+    }
+    .signout-btn:hover, .signout-btn:focus {
+      background: #C81D25 !important;
+      color: #fff !important;
+    }
+    .switch-link {
+      color: #E1AB33;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: .96rem;
+      margin-top: .3rem;
+      text-align: center;
+      transition: color 0.18s;
+    }
+    .switch-link:hover { color: #ffe199; }
+    .welcome {
+      font-size: 1.3rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      justify-content: center;
+      margin: 0 0 1.2rem 0;
+      text-align: center;
+    }
+    .user-counter {
+      font-size: 1.09rem;
+      color: #fff;
+      text-align: center;
+      font-weight: 500;
+      margin-bottom: 2rem;
+      margin-top: -.6rem;
+      text-shadow: 0 1px 10px #17171799;
+    }
+    .version {
+      background: linear-gradient(90deg, #FFD700 0%, #E1AB33 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+      font-size: 1.08rem;
+      margin-top: 2.3rem;
+      letter-spacing: .03em;
+      font-weight: 500;
+      text-align: center;
+      opacity: .96;
+    }
+    .error-msg {
+      color: #f87171;
+      text-align: center;
+      font-size: .97rem;
+      margin-bottom: .4rem;
+    }
+    @media (max-width: 600px){
+      .auth-card { min-width: unset; width:97vw; padding:1.4rem .4rem 1.2rem .4rem;}
+      .logo-img { max-width: 66px; max-height: 66px; }
+    }
   </style>
 </head>
 <body>
@@ -191,6 +188,7 @@ body {
       <div class="version">KC Events V1</div>
     </div>
   </div>
+
   <script>
     // Firebase config
     const cfg = {
@@ -206,6 +204,29 @@ body {
     firebase.initializeApp(cfg);
     const auth = firebase.auth();
     const db = firebase.database();
+
+    // Email verification settings
+    const actionCodeSettings = {
+      url: window.location.origin + '/?mode=verifyEmail',
+      handleCodeInApp: true
+    };
+
+    // Handle verification link on load
+    window.addEventListener('load', () => {
+      const params = new URLSearchParams(window.location.search),
+            mode = params.get('mode'),
+            oobCode = params.get('oobCode');
+      if (mode === 'verifyEmail' && oobCode) {
+        auth.applyActionCode(oobCode)
+          .then(() => {
+            document.getElementById('error').style.color = '#4ade80';
+            document.getElementById('error').textContent = 'Email verified! You can now log in.';
+          })
+          .catch(err => {
+            document.getElementById('error').textContent = 'Verification error: ' + err.message;
+          });
+      }
+    });
 
     // UI refs
     const registerForm = document.getElementById('registerForm'),
@@ -226,64 +247,96 @@ body {
           userCounter  = document.getElementById('userCounter');
 
     // Toggle Forms
-    toLogin.onclick = ()=>{ registerForm.style.display='none'; loginForm.style.display='flex'; errorMsg.textContent=''; };
-    toRegister.onclick = ()=>{ loginForm.style.display='none'; registerForm.style.display='flex'; errorMsg.textContent=''; };
-
-    // Register
-    registerBtn.onclick = ()=>{
+    toLogin.onclick = () => {
+      registerForm.style.display = 'none';
+      loginForm.style.display = 'flex';
       errorMsg.textContent = '';
-      const name=regName.value.trim(),
-            email=regEmail.value.trim(),
-            pass=regPass.value;
-      if(!name||!email||!pass) return errorMsg.textContent="Fill in all fields!";
-      auth.createUserWithEmailAndPassword(email, pass)
-        .then(res=>res.user.updateProfile({displayName:name}))
-        .then(()=>{
-          // Save user to DB for counting
-          if (auth.currentUser) {
-            db.ref('users/'+auth.currentUser.uid).set({
-              displayName: name,
-              email: email
-            });
-          }
-        })
-        .catch(e=>errorMsg.textContent = e.message);
+      errorMsg.style.color = '#f87171';
+    };
+    toRegister.onclick = () => {
+      loginForm.style.display = 'none';
+      registerForm.style.display = 'flex';
+      errorMsg.textContent = '';
+      errorMsg.style.color = '#f87171';
     };
 
-    // Login
-    loginBtn.onclick = ()=>{
+    // Register (with email verification)
+    registerBtn.onclick = () => {
       errorMsg.textContent = '';
-      const email=loginEmail.value.trim(),
-            pass=loginPass.value;
-      if(!email||!pass) return errorMsg.textContent="Enter email and password!";
+      errorMsg.style.color = '#f87171';
+      const name = regName.value.trim(),
+            email = regEmail.value.trim(),
+            pass = regPass.value;
+      if (!name || !email || !pass) {
+        errorMsg.textContent = "Fill in all fields!";
+        return;
+      }
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(res => res.user.updateProfile({ displayName: name }).then(() => res.user))
+        .then(user => {
+          return db.ref('users/' + user.uid).set({
+            displayName: name,
+            email: email
+          }).then(() => user);
+        })
+        .then(user => user.sendEmailVerification(actionCodeSettings))
+        .then(() => {
+          errorMsg.style.color = '#4ade80';
+          errorMsg.textContent = 'Verification email sent! Check your inbox.';
+        })
+        .catch(e => {
+          errorMsg.style.color = '#f87171';
+          errorMsg.textContent = e.message;
+        });
+    };
+
+    // Login (block unverified)
+    loginBtn.onclick = () => {
+      errorMsg.textContent = '';
+      errorMsg.style.color = '#f87171';
+      const email = loginEmail.value.trim(),
+            pass = loginPass.value;
+      if (!email || !pass) {
+        errorMsg.textContent = "Enter email and password!";
+        return;
+      }
       auth.signInWithEmailAndPassword(email, pass)
-        .catch(e=>errorMsg.textContent = e.message);
+        .then(res => {
+          if (!res.user.emailVerified) {
+            return auth.signOut().then(() => {
+              throw new Error('Please verify your email before logging in.');
+            });
+          }
+          // otherwise, UI will update in onAuthStateChanged
+        })
+        .catch(e => {
+          errorMsg.textContent = e.message;
+        });
     };
 
     // Sign out
-    signOutBtn.onclick = ()=> auth.signOut();
+    signOutBtn.onclick = () => auth.signOut();
 
     // Auth State Changes
-    auth.onAuthStateChanged(user=>{
-      if(user){
-        registerForm.style.display='none';
-        loginForm.style.display='none';
-        loggedInUI.style.display='flex';
-        welcomeUser.innerHTML = `👋 Welcome, <span style="color:#E1AB33">${user.displayName||'User'}</span>`;
+    auth.onAuthStateChanged(user => {
+      if (user && user.emailVerified) {
+        registerForm.style.display = 'none';
+        loginForm.style.display = 'none';
+        loggedInUI.style.display = 'flex';
         errorMsg.textContent = '';
+        welcomeUser.innerHTML = `👋 Welcome, <span style="color:#E1AB33">${user.displayName||'User'}</span>`;
         updateUserCount();
       } else {
-        loggedInUI.style.display='none';
-        registerForm.style.display='flex';
-        loginForm.style.display='none';
+        loggedInUI.style.display = 'none';
+        registerForm.style.display = 'flex';
+        loginForm.style.display = 'none';
       }
     });
 
     // User Counter
     function updateUserCount(){
       db.ref('users').once('value').then(snap=>{
-        const count = snap.numChildren();
-        userCounter.textContent = `There are now ${count} users registered to KC Events!`;
+        userCounter.textContent = `There are now ${snap.numChildren()} users registered to KC Events!`;
       });
     }
   </script>
