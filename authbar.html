@@ -29,6 +29,7 @@
     }
     #homeAuth a {
       text-decoration:none; font-weight:600;
+      transition: color .16s;
     }
     .authLink { color:#4ade80; }
     .authLink:hover { text-decoration:underline; }
@@ -36,6 +37,26 @@
       color:#f87171 !important; margin-left:auto;
     }
     #signOutLink:hover { text-decoration:underline; }
+    .user-name-link {
+      cursor:pointer;
+      background: none;
+      color: #E1AB33;
+      font-weight:600;
+      border: none;
+      outline: none;
+      transition: background .16s, color .16s, -webkit-text-fill-color .16s;
+      padding: 0 3px;
+      border-radius: 4px;
+    }
+    .user-name-link:hover {
+      background: linear-gradient(90deg, #38bdf8 0%, #a7f3d0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+      color: #38bdf8;
+      text-shadow: 0 1px 5px #38bdf86e;
+    }
   </style>
 </head>
 <body>
@@ -68,16 +89,21 @@
     // --- Render auth bar ---
     auth.onAuthStateChanged(user => {
       if (user) {
-        // prefer stored displayName
         const name = (userProfiles[user.uid] && userProfiles[user.uid].displayName)
                     || user.displayName
                     || user.email;
         container.innerHTML = `
-          <span>👋 Welcome, <strong>${name}</strong></span>
+          <span>👋 Welcome, 
+            <span class="user-name-link" id="userNameLink" title="View Profile">${name}</span>
+          </span>
           <a href="#" id="signOutLink">Sign Out</a>
         `;
         document.getElementById('signOutLink')
                 .onclick = e => { e.preventDefault(); auth.signOut(); };
+        // Click on name opens the profile page
+        document.getElementById('userNameLink').onclick = () => {
+          window.location.href = chatURL;
+        };
       } else {
         container.innerHTML = `
           <a href="${chatURL}" class="authLink" target="_top">Log In</a>
