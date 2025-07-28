@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>KC Events Account Action</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f0f0f0; }
+    #container { max-width: 400px; margin: auto; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    h1 { font-size: 1.2rem; margin-bottom: 1rem; }
+    .hidden { display: none; }
+    input, button { width: 100%; padding: .6rem; margin: .5rem 0; }
+    .message { margin: .5rem 0; color: #333; }
+    .error { color: #c00; }
+    .success { color: #080; }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <h1>Account Action</h1>
+    <div id="status" class="message">Processing…</div>
+
+    <div id="pwForm" class="hidden">
+      <p>Enter a new password:</p>
+      <input type="password" id="newPassword" placeholder="New password">
+      <button id="pwSubmit">Reset Password</button>
+      <div id="pwError" class="message error"></div>
+    </div>
+  </div>
+
+  <script>
+    // 1) Initialize Firebase
+    const cfg = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+
+    // 2) Parse params
+    const params = new URLSearchParams(window.location.search),
+          mode    = params.get('mode'),
+          oobCode = params.get('oobCode'),
+          statusEl = document.getElementById('status'),
+          pwForm   = document.getElementById('pwForm'),
+          pwInput  = document.getElementById('newPassword'),
+          pwSubmit = document.getElementById('pwSubmit'),
+          pwError  = document.getElementById('pwError');
+
+    if (!mode || !oobCode) {
+      statusEl.textContent = 'Invalid action link.';
+      statusEl.classList.add('error');
+      throw new Error('Missing mode or oobCode');
+    }
+
+    // 3) Handle each mode
+    if (mode === 'verifyEmail') {
+      auth.applyActionCode(oobCode)
+        .then(() => {
+          statusEl.textContent = 'Email successfully verified!';
+          statusEl.classList.add('success');
+          // redirect after a moment
+          setTimeout(() =>
+            window.location.href = 'https://kcevents.com/#loginpage'
+          , 1500);
+        })
+        .catch(err => {
+          statusEl.textContent = 'Error verifying email: ' + err.message;
+          statusEl.classList.add('error');
+        });
+
+    } else if (mode === 'resetPassword') {
+      // show form
+      statusEl.textContent = 'Please choose a new password.';
+      pwForm.classList.remove('hidden');
+
+      pwSubmit.onclick = () => {
+        const newPassword = pwInput.value.trim();
+        if (newPassword.length < 6) {
+          pwError.textContent = 'Password must be 6+ chars.';
+          return;
+        }
+        auth.confirmPasswordReset(oobCode, newPassword)
+          .then(() => {
+            statusEl.textContent = 'Password has been reset!';
+            statusEl.classList.add('success');
+            pwForm.classList.add('hidden');
+            setTimeout(() =>
+              window.location.href = 'https://kcevents.com/#loginpage'
+            , 1500);
+          })
+          .catch(err => {
+            pwError.textContent = err.message;
+          });
+      };
+
+    } else {
+      statusEl.textContent = `Unsupported mode: ${mode}`;
+      statusEl.classList.add('error');
+    }
+  </script>
+</body>
+</html>
