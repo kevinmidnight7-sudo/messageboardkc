@@ -4,164 +4,288 @@
   <meta charset="UTF-8"/>
   <title>KC Events Login</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      min-height: 100vh;
-      min-width: 100vw;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') no-repeat center center fixed;
-      background-size: cover;
-      font-family: 'Poppins', sans-serif;
-    }
+    html,body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  color: #fff;
+  min-height: 100vh;
+  min-width: 100vw;
+}
+body {
+  /* Parallax, fixed background */
+  background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') no-repeat center center fixed;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  background: rgba(0,0,0,0.78);
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.65);
+  padding: 2.2rem 2rem 2.2rem 2rem;
+  min-width: 350px;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  position: relative;
+}
+.logo-img {
+  margin-bottom: 1.1rem;
+  max-width: 90px;
+  max-height: 90px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.auth-card h2 {
+  font-size: 2rem;
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  letter-spacing: -1px;
+  text-align: center;
+}
+.auth-card .form-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+}
+.auth-card input {
+  padding: .7rem .9rem;
+  border-radius: 7px;
+  border: none;
+  background: #212121;
+  color: #fff;
+  font-size: 1rem;
+  outline: none;
+  transition: background 0.2s;
+}
+.auth-card input:focus {
+  background: #18181b;
+}
+.auth-card button {
+  padding: .68rem 0;
+  border: none;
+  border-radius: 7px;
+  background: linear-gradient(90deg,#FF1C1C,#E1AB33);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  margin-top: .35rem;
+  transition: background 0.18s, color 0.18s;
+  box-shadow: 0 1px 8px 0 rgba(255,28,28,0.12);
+}
+.auth-card button:hover, .auth-card button:focus {
+  background: #E1AB33 !important;
+  color: #191919 !important;
+}
+.signout-btn {
+  background: linear-gradient(90deg,#FF1C1C,#C81D25) !important;
+  color: #fff !important;
+  margin-top: 2.4rem !important;
+  font-size: 1.06rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 7px;
+  padding: .62rem 0;
+  width: 100%;
+  transition: background 0.15s, color 0.15s;
+  box-shadow: 0 2px 10px 0 rgba(255,28,28,0.12);
+}
+.signout-btn:hover, .signout-btn:focus {
+  background: #C81D25 !important;
+  color: #fff !important;
+}
+.switch-link {
+  color: #E1AB33;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: .96rem;
+  margin-top: .3rem;
+  text-align: center;
+  transition: color 0.18s;
+}
+.switch-link:hover { color: #ffe199; }
+.welcome {
+  font-size: 1.3rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  justify-content: center;
+  margin: 0 0 1.2rem 0;
+  text-align: center;
+}
+.user-counter {
+  font-size: 1.09rem;
+  color: #fff;      /* <-- Make this pure white */
+  text-align: center;
+  font-weight: 500;
+  margin-bottom: 2rem;
+  margin-top: -.6rem;
+  text-shadow: 0 1px 10px #17171799;
+}
+.version {
+  /* Gold gradient text! */
+  background: linear-gradient(90deg, #FFD700 0%, #E1AB33 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  font-size: 1.08rem;
+  margin-top: 2.3rem;
+  letter-spacing: .03em;
+  font-weight: 500;
+  text-align: center;
+  opacity: .96;
+}
 
-    .container {
-      background: rgba(0,0,0,0.68);
-      border-radius: 18px;
-      padding: 2.5rem 2.5rem 2rem 2.5rem;
-      box-shadow: 0 6px 30px rgba(0,0,0,0.40);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-width: 370px;
-      max-width: 94vw;
-    }
-
-    .logo {
-      width: 92px;
-      height: auto;
-      display: block;
-      margin: 0 auto 1.2rem auto;
-      /* For image smoothing, optional: */
-      image-rendering: auto;
-    }
-
-    h1 {
-      text-align: center;
-      margin-top: 0;
-      margin-bottom: 1.5rem;
-      font-size: 2.35rem;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      color: #ffff;
-    }
-
-    .welcome-row {
-      color: #fff;
-
-      font-size: 1.3rem;
-      font-weight: 600;
-      margin-bottom: .7rem;
-      text-align: center;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: .4rem;
-    }
-
-    .welcome-row .emoji {
-      font-size: 1.4em;
-      vertical-align: middle;
-    }
-    .username {
-      color: #E1AB33;
-      margin-left: .3rem;
-      margin-right: .3rem;
-      font-weight: 600;
-      font-size: 1.1em;
-      letter-spacing: 0.03em;
-    }
-    .sub-text {
-      color: #fff;
-      font-size: 1.1rem;
-      font-weight: 400;
-      text-align: center;
-      margin-bottom: 1.4rem;
-    }
-
-    .signout-btn {
-      width: 100%;
-      font-size: 1.15rem;
-      font-weight: 600;
-      background: linear-gradient(90deg, #FF1C1C 50%, #E1AB33 100%);
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      padding: 1rem 0;
-      margin: 1.3rem 0 2.3rem 0;
-      cursor: pointer;
-      box-shadow: 0 2px 16px rgba(225,171,51,0.08);
-      transition: background .17s, color .16s;
-      letter-spacing: 0.02em;
-    }
-    .signout-btn:hover {
-      background: #E1AB33;
-      color: #000;
-    }
-
-    .version {
-      color: #7fff50;
-      font-size: 1.15rem;
-      margin-top: 2.5rem;
-      text-align: center;
-      letter-spacing: 0.02em;
-      font-weight: 500;
-      width: 100%;
-    }
-
-    /* Responsive */
-    @media (max-width: 500px) {
-      .container {
-        padding: 1.1rem;
-        min-width: 0;
-      }
-      .signout-btn {
-        padding: 0.8rem 0;
-        font-size: 1rem;
-      }
-      .version {
-        font-size: 1rem;
-      }
-    }
+.error-msg {
+  color: #f87171;
+  text-align: center;
+  font-size: .97rem;
+  margin-bottom: .4rem;
+}
+@media (max-width: 600px){
+  .auth-card { min-width: unset; width:97vw; padding:1.4rem .4rem 1.2rem .4rem;}
+  .logo-img { max-width: 66px; max-height: 66px; }
+}
   </style>
 </head>
 <body>
-  <div class="container">
-    <img class="logo" src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" alt="KC Events Logo">
-    <h1>KC Events Login</h1>
-    <div class="welcome-row">
-      <span class="emoji">👋</span>
-      <span>Welcome, <span class="username">Kevin // Universal</span></span>
+  <div class="auth-card" id="authCard">
+    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="logo-img" alt="KC Events Logo"/>
+    <h2>KC Events Login</h2>
+    <div id="error" class="error-msg"></div>
+    <!-- Register Form -->
+    <div class="form-section" id="registerForm">
+      <input id="regName" placeholder="Display Name"/>
+      <input id="regEmail" type="email" placeholder="Email"/>
+      <input id="regPass" type="password" placeholder="Password"/>
+      <button id="registerBtn">Register</button>
+      <div class="switch-link" id="toLogin">Already have an account? Log In</div>
     </div>
-    <div class="sub-text" id="userCountText">
-      There are now <span id="userCount">11</span> users registered to KC Events!
+    <!-- Login Form -->
+    <div class="form-section" id="loginForm" style="display:none;">
+      <input id="loginEmail" type="email" placeholder="Email"/>
+      <input id="loginPass" type="password" placeholder="Password"/>
+      <button id="loginBtn">Log In</button>
+      <div class="switch-link" id="toRegister">No account? Register</div>
     </div>
-    <button class="signout-btn" id="signOutBtn">Sign Out</button>
-    <div class="version">KC Events v1</div>
+    <!-- Welcome/Logged In UI -->
+    <div id="loggedInUI" style="display:none; flex-direction:column; align-items:center; width:100%;">
+      <div class="welcome" id="welcomeUser"></div>
+      <div class="user-counter" id="userCounter"></div>
+      <button class="signout-btn" id="signOutBtn">Sign Out</button>
+      <div class="version">KC Events V1</div>
+    </div>
   </div>
   <script>
-    // Example: update username dynamically
-    // document.querySelector('.username').textContent = actualUserDisplayNameFromAuth;
+    // Firebase config
+    const cfg = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+    const db = firebase.database();
 
-    // Example: sign out (replace with your auth logic)
-    document.getElementById('signOutBtn').onclick = function() {
-      // firebase.auth().signOut()...
-      alert("Sign Out clicked! Replace this with your logic.");
+    // UI refs
+    const registerForm = document.getElementById('registerForm'),
+          loginForm    = document.getElementById('loginForm'),
+          toLogin      = document.getElementById('toLogin'),
+          toRegister   = document.getElementById('toRegister'),
+          registerBtn  = document.getElementById('registerBtn'),
+          loginBtn     = document.getElementById('loginBtn'),
+          errorMsg     = document.getElementById('error'),
+          regName      = document.getElementById('regName'),
+          regEmail     = document.getElementById('regEmail'),
+          regPass      = document.getElementById('regPass'),
+          loginEmail   = document.getElementById('loginEmail'),
+          loginPass    = document.getElementById('loginPass'),
+          loggedInUI   = document.getElementById('loggedInUI'),
+          welcomeUser  = document.getElementById('welcomeUser'),
+          signOutBtn   = document.getElementById('signOutBtn'),
+          userCounter  = document.getElementById('userCounter');
+
+    // Toggle Forms
+    toLogin.onclick = ()=>{ registerForm.style.display='none'; loginForm.style.display='flex'; errorMsg.textContent=''; };
+    toRegister.onclick = ()=>{ loginForm.style.display='none'; registerForm.style.display='flex'; errorMsg.textContent=''; };
+
+    // Register
+    registerBtn.onclick = ()=>{
+      errorMsg.textContent = '';
+      const name=regName.value.trim(),
+            email=regEmail.value.trim(),
+            pass=regPass.value;
+      if(!name||!email||!pass) return errorMsg.textContent="Fill in all fields!";
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(res=>res.user.updateProfile({displayName:name}))
+        .then(()=>{
+          // Save user to DB for counting
+          if (auth.currentUser) {
+            db.ref('users/'+auth.currentUser.uid).set({
+              displayName: name,
+              email: email
+            });
+          }
+        })
+        .catch(e=>errorMsg.textContent = e.message);
     };
 
-    // Example: update user count dynamically
-    // document.getElementById('userCount').textContent = actualUserCountFromDB;
+    // Login
+    loginBtn.onclick = ()=>{
+      errorMsg.textContent = '';
+      const email=loginEmail.value.trim(),
+            pass=loginPass.value;
+      if(!email||!pass) return errorMsg.textContent="Enter email and password!";
+      auth.signInWithEmailAndPassword(email, pass)
+        .catch(e=>errorMsg.textContent = e.message);
+    };
 
-    // You may need to insert your firebase logic for live data
+    // Sign out
+    signOutBtn.onclick = ()=> auth.signOut();
+
+    // Auth State Changes
+    auth.onAuthStateChanged(user=>{
+      if(user){
+        registerForm.style.display='none';
+        loginForm.style.display='none';
+        loggedInUI.style.display='flex';
+        welcomeUser.innerHTML = `👋 Welcome, <span style="color:#E1AB33">${user.displayName||'User'}</span>`;
+        errorMsg.textContent = '';
+        updateUserCount();
+      } else {
+        loggedInUI.style.display='none';
+        registerForm.style.display='flex';
+        loginForm.style.display='none';
+      }
+    });
+
+    // User Counter
+    function updateUserCount(){
+      db.ref('users').once('value').then(snap=>{
+        const count = snap.numChildren();
+        userCounter.textContent = `There are now ${count} users registered to KC Events!`;
+      });
+    }
   </script>
 </body>
 </html>
-
