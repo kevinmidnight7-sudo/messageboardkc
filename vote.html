@@ -8,72 +8,94 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    body { margin:0; padding:1rem; font-family:'Poppins',sans-serif; color:#fff; background:transparent;
-           display:flex; flex-wrap:wrap; gap:1rem; justify-content:center; }
-    .panel, .leaderboard { background:rgba(0,0,0,0.6); border-radius:12px; padding:1rem;
-                           width:400px; box-sizing:border-box; }
+    body {
+      margin:0; padding:1rem;
+      font-family:'Poppins',sans-serif;
+      color:#fff; background:transparent;
+      display:flex; flex-wrap:wrap; gap:1rem;
+      justify-content:center;
+    }
+    .panel, .leaderboard {
+      background:rgba(0,0,0,0.6);
+      border-radius:12px; padding:1rem;
+      width:400px; box-sizing:border-box;
+    }
     h2, .leaderboard h3 { margin-top:0; }
     label { display:block; margin:1rem 0 .3rem; font-weight:600; }
     .hint { font-size:.75rem; color:#ccc; margin-bottom:.8rem; }
     input[readonly], input[type=password], select {
-      width:100%; padding:.5rem; border:none; border-radius:6px; margin-top:.3rem;
+      width:100%; padding:.5rem; border:none;
+      border-radius:6px; margin-top:.3rem;
       box-sizing:border-box; background:#333; color:#fff;
     }
     select {
       appearance:none;
       background-image:
         url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E");
-      background-repeat:no-repeat; background-position:right .5rem center;
-      background-size:.65rem;
+      background-repeat:no-repeat;
+      background-position: right .5rem center;
+      background-size: .65rem;
     }
     .stars { display:flex; gap:.3rem; margin:.5rem 0 1rem; }
     .stars span { font-size:1.5rem; cursor:pointer; color:#555; }
     .stars .filled { color:#facc15; }
     button {
-      width:100%; padding:.6rem; background:#22c55e; color:#fff; border:none;
-      border-radius:6px; font-size:1rem; font-weight:600; cursor:pointer;
-      margin-top:.8rem;
+      width:100%; padding:.6rem;
+      background:#22c55e; color:#fff;
+      border:none; border-radius:6px;
+      font-size:1rem; font-weight:600;
+      cursor:pointer; margin-top:.8rem;
     }
     button:disabled { background:#555; cursor:not-allowed; }
     #showAdminBtn { background:rgba(255,255,255,0.1); }
-    #resetBtn      { background:#ef4444; }
-    #adminSection  { display:none; margin-top:1rem; }
+    #resetBtn { background:#ef4444; }
+    #adminSection { display:none; margin-top:1rem; }
     #adminControls { margin:1rem 0; }
-    table {
-      width:100%; border-collapse:collapse; margin-top:.8rem;
+    /* ------------ Sidebar styles (new) ------------ */
+    .sidebar {
+      position: fixed; top:0; right:0; height:100%; width:280px;
+      background:rgba(0,0,0,0.95);
+      transform:translateX(100%); transition:transform .3s;
+      display:flex; flex-direction:column; padding:1.5rem; gap:1rem;
+      z-index:1000;
     }
-    th, td {
-      padding:.4rem; border:1px solid #444; font-size:.85rem; text-align:left;
+    .sidebar.open { transform:translateX(0); }
+    .sidebar h3 {
+      margin:0; color:#fff; text-align:center; font-size:1.2rem;
     }
-    th { background:rgba(255,255,255,0.1); }
-    .delBtn {
-      background:#ef4444; color:#fff; padding:.3rem .6rem;
-      border:none; border-radius:4px; cursor:pointer;
+    .sidebar input {
+      width:100%; padding:.5rem; border-radius:6px;
+      border:none; background:#333; color:#fff;
     }
-    #alertModal {
-      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.5); align-items:center; justify-content:center;
-      z-index:9999;
-    }
-    #alertContent {
-      background:#fff; color:#000; padding:1.5rem; border-radius:8px;
-      max-width:300px; width:90%; text-align:center; font-family:'Poppins',sans-serif;
-    }
-    #alertContent strong { display:block; margin-bottom:.5rem; font-size:1.1rem; }
-    #alertContent p { margin:.8rem 0; }
-    #alertOK {
-      margin-top:1rem; padding:.5rem 1rem; background:#22c55e; color:#fff;
-      border:none; border-radius:4px; cursor:pointer; font-weight:600;
-    }
-    .confirmButtons {
-      display:flex; justify-content:center; gap:1rem; margin-top:1rem;
-    }
-    .confirmButtons button {
-      padding:.5rem 1rem; border:none; border-radius:4px; font-weight:600;
+    .sidebar button {
+      width:100%; padding:.6rem; border:none;
+      border-radius:6px; font-size:1rem; font-weight:600;
       cursor:pointer;
     }
-    .confirmButtons .yes { background:#22c55e; color:#fff; }
-    .confirmButtons .no  { background:#60a5fa; color:#fff; }
+    /* make table scrollable */
+    #adminTableContainer {
+      flex: 1; max-height: 60vh; overflow: auto;
+      border: 1px solid #444; border-radius: 6px;
+    }
+    #adminTableContainer table {
+      width:100%; border-collapse:collapse;
+    }
+    #adminTableContainer th, #adminTableContainer td {
+      padding:.4rem; border:1px solid #444;
+      font-size:.85rem; text-align:left;
+    }
+    #adminTableContainer th {
+      background:rgba(255,255,255,0.1);
+    }
+    /* leaderboard and vote styles below unchanged */
+    table { width:100%; border-collapse:collapse; margin-top:.8rem; }
+    th, td { padding:.4rem; border:1px solid #444; font-size:.85rem; text-align:left; }
+    th { background:rgba(255,255,255,0.1); }
+    .delBtn {
+      background:#ef4444; color:#fff;
+      padding:.3rem .6rem; border:none; border-radius:4px;
+      cursor:pointer;
+    }
     .leaderboard h3 { text-align:center; font-size:1.3rem; margin-bottom:.5rem; }
     .offenseBox, .defenseBox {
       border:2px solid; border-radius:8px; padding:.75rem; margin-bottom:1rem;
@@ -81,9 +103,7 @@
     .offenseBox { border-color:#f87171; }
     .defenseBox { border-color:#3b82f6; }
     .sectionTitle { display:flex; align-items:center; font-size:1.1rem; margin-bottom:.5rem; }
-    .sectionTitle img.icon {
-      width:24px; height:24px; margin-right:.5rem;
-    }
+    .sectionTitle img.icon { width:24px; height:24px; margin-right:.5rem; }
     .offenseBox .sectionTitle {
       color:#f87171; text-shadow:0 0 8px rgba(248,113,113,0.7);
     }
@@ -92,8 +112,9 @@
     }
     .leaderboard ul { list-style:none; padding:0; margin:0; }
     .leaderboard li {
-      display:flex; justify-content:space-between; align-items:center;
-      padding:.4rem 0; border-bottom:1px solid rgba(255,255,255,0.2);
+      display:flex; justify-content:space-between;
+      align-items:center; padding:.4rem 0;
+      border-bottom:1px solid rgba(255,255,255,0.2);
       font-size:.9rem;
     }
     .leaderboard li:last-child { border-bottom:none; }
@@ -113,7 +134,9 @@
       font-size:1.13rem; font-weight:700;
     }
     .name, .count { display:inline-block; }
-    .name { transition:font-size 0.3s; }
+    .name {
+      transition: font-size 0.3s;
+    }
     .count {
       font-weight:600; font-size:1.12rem; margin-left:.7rem; color:#fff;
     }
@@ -121,23 +144,48 @@
       color:#fff; font-size:1rem; background:none; font-weight:600;
     }
     #leaderboardContainer { position:relative; }
-    #leaderboardContent  { display:block; }
-    #leaderboardOffMessage {
-      display:none; text-align:center; padding:2rem 1rem;
-    }
+    #leaderboardContent { display:block; }
+    #leaderboardOffMessage { display:none; text-align:center; padding:2rem 1rem; }
     .offMessage {
       color:#fff; text-shadow:0 0 10px rgba(255,255,255,0.8);
       font-size:1.5rem; font-weight:600;
     }
     .offSubtitle {
-      color:#fff; font-style:italic; margin-top:.5rem; font-size:1rem;
+      color:#fff; font-style:italic; margin-top:0.5rem; font-size:1rem;
     }
     #eventRating {
-      width:400px; margin:0 auto; text-align:center; font-size:1.18rem;
-      background:rgba(0,0,0,0.55); border-radius:12px;
-      padding:.8rem .2rem .7rem .2rem; margin-top:-.3rem;
-      font-weight:600; letter-spacing:0.02em;
+      width:400px; margin:0 auto; text-align:center;
+      font-size:1.18rem; background:rgba(0,0,0,0.55);
+      border-radius:12px; padding:.8rem .2rem .7rem .2rem;
+      margin-top:-.3rem; font-weight:600; letter-spacing:0.02em;
     }
+    /* alert/modal */
+    #alertModal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.5); align-items:center; justify-content:center;
+      z-index:9999;
+    }
+    #alertContent {
+      background:#fff; color:#000; padding:1.5rem; border-radius:8px;
+      max-width:300px; width:90%; text-align:center;
+      font-family:'Poppins',sans-serif;
+    }
+    #alertContent strong { display:block; margin-bottom:.5rem; font-size:1.1rem; }
+    #alertContent p { margin:.8rem 0; }
+    #alertOK {
+      margin-top:1rem; padding:.5rem 1rem;
+      background:#22c55e; color:#fff; border:none; border-radius:4px;
+      cursor:pointer; font-weight:600;
+    }
+    .confirmButtons {
+      display:flex; justify-content:center; gap:1rem; margin-top:1rem;
+    }
+    .confirmButtons button {
+      padding:.5rem 1rem; border:none; border-radius:4px;
+      font-weight:600; cursor:pointer;
+    }
+    .confirmButtons .yes { background:#22c55e; color:#fff; }
+    .confirmButtons .no  { background:#60a5fa; color:#fff; }
   </style>
 </head>
 <body>
@@ -160,36 +208,33 @@
     <h2>KC Event Voting</h2>
     <div id="voteContainer"><p>Loading…</p></div>
     <button id="showAdminBtn">Admin</button>
-    <div id="adminSection">
-      <label>Enter admin password</label>
-      <input type="password" id="adminPass"/>
-      <button id="unlockBtn">Unlock Admin</button>
-      <div id="adminControls"></div>
-      <div id="adminTableContainer" style="display:flex; flex-direction:column;">
-        <!-- this wrapper is now scrollable -->
-        <div id="adminTable" style="flex:1; overflow:auto; max-height:40vh;"></div>
-      </div>
-      <button id="resetBtn">Reset Votes</button>
-    </div>
   </div>
 
-  <!-- Leaderboard panel -->
+  <!-- Admin Sidebar -->
+  <div id="adminSidebar" class="sidebar">
+    <h3>Admin Portal</h3>
+    <input type="password" id="adminPass" placeholder="Admin Password"/>
+    <button id="unlockBtn">Unlock Admin</button>
+    <div id="adminControls"></div>
+    <div id="adminTableContainer"><table id="adminTable"></table></div>
+    <button id="resetBtn">Reset Votes</button>
+  </div>
+
+  <!-- Leaderboard panel (always visible) -->
   <div class="leaderboard">
     <h3>Live Scores:</h3>
     <div id="leaderboardContainer">
       <div id="leaderboardContent">
         <div class="offenseBox">
           <div class="sectionTitle">
-            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png"
-                 class="icon" alt="Offense Icon"/>
+            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" class="icon" alt="Offense Icon"/>
             <strong>Best Offence</strong>
           </div>
           <ul id="offenseScores"><li>Loading…</li></ul>
         </div>
         <div class="defenseBox">
           <div class="sectionTitle">
-            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png"
-                 class="icon" alt="Defense Icon"/>
+            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" class="icon" alt="Defense Icon"/>
             <strong>Best Defence</strong>
           </div>
           <ul id="defenseScores"><li>Loading…</li></ul>
@@ -198,7 +243,7 @@
       <div id="leaderboardOffMessage">
         <div class="offMessage">The Live Leaderboard is currently offline.</div>
         <div class="offSubtitle">
-          You can still vote! It will reactivate when the host decides.
+          You can still vote! The leaderboard will be reactivated when the host decides.
         </div>
       </div>
     </div>
@@ -210,7 +255,7 @@
   </div>
 
   <script>
-    // ---- KC‑style modal helpers ----
+    // Modal helpers
     const alertModal  = document.getElementById('alertModal'),
           alertMsg    = document.getElementById('alertMsg'),
           alertOK     = document.getElementById('alertOK'),
@@ -222,24 +267,28 @@
       alertModal.style.display  = 'flex';
     }
     function kcConfirm(msg){
-      return new Promise(res=>{
+      return new Promise(resolve=>{
         alertMsg.textContent      = msg;
         alertOK.style.display     = 'none';
         confirmBtns.style.display = 'flex';
         alertModal.style.display  = 'flex';
-        confirmBtns.querySelector('.no').onclick  = ()=>{ alertModal.style.display='none'; res(false); };
-        confirmBtns.querySelector('.yes').onclick = ()=>{ alertModal.style.display='none'; res(true); };
+        confirmBtns.querySelector('.no').onclick = ()=>{
+          alertModal.style.display='none'; resolve(false);
+        };
+        confirmBtns.querySelector('.yes').onclick = ()=>{
+          alertModal.style.display='none'; resolve(true);
+        };
       });
     }
     alertOK.onclick = ()=> alertModal.style.display='none';
 
-    // ---- Firebase init ----
+    // Firebase init
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
       databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "kckillerscompany-ab1ec",
-      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      storageBucket: "kckillerscompany-ab1ec.firebasedatabase.app",
       messagingSenderId: "198711213988",
       appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
       measurementId: "G-4LKP2M3JXE"
@@ -250,190 +299,214 @@
           configRef = firebase.database().ref('config/liveLeaderboardEnabled'),
           usersRef  = firebase.database().ref('users');
 
-    // DOM refs
-    const voteContainer    = document.getElementById('voteContainer'),
-          showAdminBtn     = document.getElementById('showAdminBtn'),
-          adminSection     = document.getElementById('adminSection'),
-          adminPass        = document.getElementById('adminPass'),
-          unlockBtn        = document.getElementById('unlockBtn'),
-          adminControls    = document.getElementById('adminControls'),
-          adminTable       = document.getElementById('adminTable'),
-          resetBtn         = document.getElementById('resetBtn');
+    // Sidebar toggle
+    const showAdminBtn = document.getElementById('showAdminBtn'),
+          adminSidebar = document.getElementById('adminSidebar');
+    showAdminBtn.onclick = ()=>{
+      adminSidebar.classList.toggle('open');
+    };
+    document.addEventListener('click', e=>{
+      if (!adminSidebar.contains(e.target) && e.target!==showAdminBtn)
+        adminSidebar.classList.remove('open');
+    });
 
-    // normalize helper for leaderboard
-    const canonical = { w1de:'wide', wide:'wide', w1deeee:'wide',
-                        lbgoo:'goo', lbg00:'goo', goo:'goo' };
-    function normalize(name){
-      let k = name.toLowerCase().replace(/[^a-z0-9]/g,'');
-      return canonical[k]||k;
-    }
-
-    // ---- render leaderboard ----
+    // Leaderboard functions
     function updateLeaderboard(){
       votesRef.once('value').then(snap=>{
-        const off={}, def={};
-        snap.forEach(c=>{
-          const v=c.val(),
-                o=normalize(v.bestOffence||''),
-                d=normalize(v.bestDefence||'');
-          if(o) off[o]=(off[o]||0)+1;
-          if(d) def[d]=(def[d]||0)+1;
+        const offCounts={}, defCounts={};
+        snap.forEach(ch=>{
+          const v = ch.val(),
+                o = v.bestOffence||'',
+                d = v.bestDefence||'';
+          if(o) offCounts[o]=(offCounts[o]||0)+1;
+          if(d) defCounts[d]=(defCounts[d]||0)+1;
         });
-        renderList('offenseScores', Object.entries(off).sort((a,b)=>b[1]-a[1]));
-        renderList('defenseScores',Object.entries(def).sort((a,b)=>b[1]-a[1]));
+        renderList('offenseScores', Object.entries(offCounts).sort((a,b)=>b[1]-a[1]));
+        renderList('defenseScores', Object.entries(defCounts).sort((a,b)=>b[1]-a[1]));
       });
     }
-    function renderList(id, items){
-      const ul=document.getElementById(id);
-      ul.innerHTML='';
-      if(!items.length){ ul.innerHTML='<li>No votes yet.</li>'; return; }
-      items.forEach(([n,c],i)=>{
-        const li=document.createElement('li'),
-              nm=document.createElement('span'),
-              ct=document.createElement('span');
-        nm.className='name'; ct.className='count';
-        nm.textContent=n; ct.textContent=c;
-        li.append(nm,ct);
-        if(i===0) li.classList.add('first-place');
-        else if(i===1) li.classList.add('second-place');
-        else if(i===2) li.classList.add('third-place');
+    function renderList(id, entries){
+      const ul = document.getElementById(id);
+      ul.innerHTML = '';
+      if(!entries.length){
+        ul.innerHTML = '<li>No votes yet.</li>';
+        return;
+      }
+      entries.forEach(([name,count],idx)=>{
+        const li = document.createElement('li'),
+              spanName  = document.createElement('span'),
+              spanCount = document.createElement('span');
+        spanName.className  = 'name';
+        spanCount.className = 'count';
+        spanName.textContent  = name;
+        spanCount.textContent = count;
+        li.append(spanName, spanCount);
+        if(idx===0) li.classList.add('first-place');
+        else if(idx===1) li.classList.add('second-place');
+        else if(idx===2) li.classList.add('third-place');
         ul.append(li);
       });
     }
+    configRef.on('value', snap=>{
+      const enabled = snap.val()!==false;
+      document.getElementById('leaderboardContent').style.display = enabled?'block':'none';
+      document.getElementById('leaderboardOffMessage').style.display = enabled?'none':'block';
+      if(enabled) updateLeaderboard();
+    });
+    updateLeaderboard();
 
-    // ---- average rating ----
-    function updateAverageRating(){
-      votesRef.once('value').then(snap=>{
-        let sum=0,n=0;
-        snap.forEach(c=>{
-          const r=c.val().rating;
-          if(typeof r==='number' && r>0){ sum+=r; n++; }
+    // Admin portal
+    const adminPass     = document.getElementById('adminPass'),
+          unlockBtn     = document.getElementById('unlockBtn'),
+          adminControls = document.getElementById('adminControls'),
+          adminTable    = document.getElementById('adminTable'),
+          resetBtn      = document.getElementById('resetBtn');
+    let toggleCheckbox, saveBtn;
+    unlockBtn.onclick = ()=>{
+      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
+      kcAlert('Admin unlocked');
+      if(!toggleCheckbox){
+        const lbl = document.createElement('label');
+        lbl.innerHTML = '<input type="checkbox" id="toggleLeaderboard"/> Enable Live Leaderboard';
+        adminControls.appendChild(lbl);
+        toggleCheckbox = document.getElementById('toggleLeaderboard');
+        configRef.once('value').then(snap=>{
+          toggleCheckbox.checked = snap.val()!==false;
         });
-        document.getElementById('avgRatingNum').textContent = n
-          ? (sum/n).toFixed(2) : '–';
-      });
-    }
-
-    // ---- render voting form ----
-    function renderForm(user, optsHtml){
-      voteContainer.innerHTML = `
-        <label>Your Username</label>
-        <input readonly id="username" value="${user.displayName||user.email}"/>
-        <div class="hint">Pick the name you played under.</div>
-
-        <label>Best offence</label>
-        <select id="offence">${optsHtml}</select>
-        <div class="hint">Choose from verified players.</div>
-
-        <label>Best defence</label>
-        <select id="defence">${optsHtml}</select>
-        <div class="hint">Choose from verified players.</div>
-
-        <label>Rate today’s event</label>
-        <div class="stars" id="starContainer">
-          <span data-value="1">★</span><span data-value="2">★</span>
-          <span data-value="3">★</span><span data-value="4">★</span>
-          <span data-value="5">★</span>
-        </div>
-        <button id="submitBtn" disabled>Submit Vote</button>`;
-      const off = document.getElementById('offence'),
-            def = document.getElementById('defence'),
-            stars = Array.from(document.getElementById('starContainer').children),
-            btn   = document.getElementById('submitBtn');
-      let rating=0;
-      function updateBtn(){ btn.disabled = !(off.value && def.value && rating>0); }
-      stars.forEach(s=>{
-        s.onclick = ()=>{
-          rating = +s.dataset.value;
-          stars.forEach(x=> x.classList.toggle('filled', +x.dataset.value<=rating));
-          updateBtn();
+        saveBtn = document.createElement('button');
+        saveBtn.textContent = 'Save Leaderboard Setting';
+        saveBtn.onclick = ()=>{
+          configRef.set(toggleCheckbox.checked)
+            .then(()=> kcAlert('Setting saved'))
+            .catch(e=> kcAlert('Save failed: '+e.message));
         };
-      });
-      off.onchange = updateBtn;
-      def.onchange = updateBtn;
-
-      // block double voting
-      votesRef.orderByChild('uid').equalTo(user.uid)
-        .once('value').then(s=> {
-          if (s.exists()) {
-            voteContainer.innerHTML=`<p>You’ve already voted—thank you!</p>`;
-          }
+        adminControls.appendChild(saveBtn);
+      }
+      // load votes into scrollable table
+      votesRef.orderByChild('time').once('value').then(snap=>{
+        let html = `<tr><th>Date</th><th>User</th><th>Offence</th><th>Defence</th><th>Rating</th><th>Delete</th></tr>`;
+        snap.forEach(c=>{
+          const v = c.val(), d = new Date(v.time).toLocaleString();
+          html += `<tr data-key="${c.key}">
+            <td>${d}</td>
+            <td>${v.username}</td>
+            <td>${v.bestOffence}</td>
+            <td>${v.bestDefence}</td>
+            <td>${v.rating}/5</td>
+            <td><button class="delBtn">Delete</button></td>
+          </tr>`;
         });
-
-      btn.onclick = ()=>{
-        btn.disabled=true;
-        votesRef.push({
-          uid:user.uid,
-          username:user.displayName||user.email,
-          bestOffence: off.value,
-          bestDefence: def.value,
-          rating,
-          time: firebase.database.ServerValue.TIMESTAMP
-        })
-        .then(()=>{ kcAlert('Thanks for voting!'); updateLeaderboard(); updateAverageRating(); })
-        .catch(e=> kcAlert('Submit error: '+e.message))
-        .finally(()=> renderForm(user, optsHtml));
-      };
-    }
-
-    // ---- auth listener and verified gating ----
-    auth.onAuthStateChanged(user=>{
-      if(!user) {
-        voteContainer.innerHTML =
-          `<p>Please <a href="https://kcevents.uk/#loginpage" style="color:#4ade80">log in</a> to vote.</p>`;
-        return;
-      }
-
-      // keep DB in sync, including emailVerified flag
-      usersRef.child(user.uid).update({
-        displayName: user.displayName||null,
-        email:       user.email||null,
-        joined:      firebase.database.ServerValue.TIMESTAMP,
-        emailVerified: user.emailVerified
+        adminTable.innerHTML = html;
       });
-
-      if(!user.emailVerified) {
-        kcAlert('Please verify your email first');
-        voteContainer.innerHTML = `
-          <p>Your email isn’t verified.</p>
-          <button id="resendVerification">Resend verification</button>
-        `;
-        document.getElementById('resendVerification')
-          .onclick = () => user.sendEmailVerification()
-                       .then(()=> kcAlert('Verification email sent'))
-                       .catch(e=> kcAlert(e.message));
-        return;
+    };
+    // Delete vote
+    document.getElementById('adminTableContainer').addEventListener('click', async e=>{
+      if(!e.target.matches('.delBtn')) return;
+      const key = e.target.closest('tr').dataset.key;
+      if(await kcConfirm('Delete this vote?'))
+        votesRef.child(key).remove()
+          .then(()=>{ kcAlert('Vote deleted'); updateLeaderboard(); })
+          .catch(err=> kcAlert('Delete failed: '+err.message));
+    });
+    resetBtn.onclick = async ()=>{
+      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
+      if(await kcConfirm('Reset all votes? This cannot be undone.')){
+        const snap = await votesRef.once('value'), tasks=[];
+        snap.forEach(c=> tasks.push(votesRef.child(c.key).remove()));
+        Promise.all(tasks)
+          .then(()=>{ kcAlert('All votes reset'); updateLeaderboard(); })
+          .catch(err=> kcAlert('Reset failed: '+err.message));
       }
+    };
 
-      // only verified users reach here
-      usersRef.once('value').then(snap=>{
+    // Voting form: only for VERIFIED users
+    function renderForm(user) {
+      // build options only for verified
+      usersRef.orderByChild('email').once('value').then(snap=>{
         let opts = '<option value="" disabled selected>– Select a player –</option>';
         snap.forEach(ch=>{
           const u = ch.val();
-          if(u.emailVerified) {
-            const name = (u.displayName||u.email).replace(/"/g,'&quot;');
-            opts += `<option value="${name}">${name}</option>`;
+          if (u.emailVerified) {
+            const esc = (u.displayName||u.email).replace(/"/g,'&quot;');
+            opts += `<option value="${esc}">${esc}</option>`;
           }
         });
-        renderForm(user, opts);
+        voteContainer.innerHTML = `
+          <label>Your Username</label>
+          <input readonly id="username" value="${user.displayName||user.email}"/>
+          <div class="hint">Pick the name you played under.</div>
+          <label>Best offence</label>
+          <select id="offence">${opts}</select>
+          <div class="hint">Choose from registered players.</div>
+          <label>Best defence</label>
+          <select id="defence">${opts}</select>
+          <div class="hint">Choose from registered players.</div>
+          <label>Rate today's event</label>
+          <div class="stars" id="starContainer">
+            <span data-value="1">★</span><span data-value="2">★</span>
+            <span data-value="3">★</span><span data-value="4">★</span>
+            <span data-value="5">★</span>
+          </div>
+          <button id="submitBtn" disabled>Submit Vote</button>`;
+        // star and submit logic...
+        let rating=0;
+        const stars = document.getElementById('starContainer').children,
+              submit= document.getElementById('submitBtn'),
+              offence= document.getElementById('offence'),
+              defence= document.getElementById('defence');
+        function updateSubmit(){ submit.disabled = !(offence.value&&defence.value&&rating>0); }
+        Array.from(stars).forEach(s=>{
+          s.onclick=()=>{
+            rating=+s.dataset.value;
+            Array.from(stars).forEach(x=>x.classList.toggle('filled',+x.dataset.value<=rating));
+            updateSubmit();
+          };
+        });
+        offence.onchange=updateSubmit; defence.onchange=updateSubmit;
+        votesRef.orderByChild('uid').equalTo(user.uid).once('value',snap=>{
+          if(snap.exists()){
+            voteContainer.innerHTML=`<p>You’ve already voted—thank you!</p>`;
+          }
+        });
+        submit.onclick=()=>{
+          votesRef.push({
+            uid:user.uid, username:user.displayName||user.email,
+            bestOffence:offence.value, bestDefence:defence.value,
+            rating, time:firebase.database.ServerValue.TIMESTAMP
+          })
+          .then(()=>{ kcAlert('Thanks for voting!'); updateLeaderboard(); })
+          .catch(e=>kcAlert('Error: '+e.message))
+          .finally(()=>renderForm(user));
+        };
       });
+    }
+
+    // Auth listener
+    const voteContainer = document.getElementById('voteContainer');
+    auth.onAuthStateChanged(user=>{
+      if (!user) {
+        voteContainer.innerHTML = `
+          <p>Please <a href="https://kcevents.uk/#loginpage" style="color:#4ade80">log in</a> to vote.</p>`;
+      } else if (!user.emailVerified) {
+        kcAlert('Please verify your email before voting.');
+        voteContainer.innerHTML = `<p>Verify your email to vote.</p>`;
+      } else {
+        renderForm(user);
+      }
+      updateAverageRating();
     });
 
-    // ---- leaderboard & rating initial load & sidebar unchanged ----
-    showAdminBtn.onclick = ()=> {
-      adminSection.style.display =
-        adminSection.style.display==='block' ? 'none' : 'block';
-    };
-    unlockBtn.onclick = ()=>{
-      if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
-      if(!adminControls.childElementCount) {
-        // … same admin controls + scrollable #adminTableContainer …
-      }
-      // … rest unchanged …
-    };
-
-    updateLeaderboard();
-    updateAverageRating();
+    // Average rating
+    function updateAverageRating(){
+      votesRef.once('value').then(snap=>{
+        let sum=0,n=0;
+        snap.forEach(ch=>{
+          const v=ch.val();
+          if(typeof v.rating==='number'&&v.rating>0){ sum+=v.rating; n++; }
+        });
+        document.getElementById('avgRatingNum').textContent = n ? (sum/n).toFixed(2) : '–';
+      });
+    }
   </script>
 </body>
 </html>
