@@ -13,8 +13,8 @@
     h2, .leaderboard h3 { margin-top:0; }
     label { display:block; margin:1rem 0 .3rem; font-weight:600; }
     .hint { font-size:.75rem; color:#ccc; margin-bottom:.8rem; }
-    input[readonly], input[type=text], input[type=password] { width:100%; padding:.5rem; border:none; border-radius:6px; margin-top:.3rem; box-sizing:border-box; }
-    input[readonly] { background:#333; color:#fff; }
+    input[readonly], input[type=password], select { width:100%; padding:.5rem; border:none; border-radius:6px; margin-top:.3rem; box-sizing:border-box; background:#333; color:#fff; }
+    select { appearance:none; background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='7' viewBox='0 0 10 7' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23fff' stroke-width='2'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position: right .5rem center; background-size: .65rem; }
     .stars { display:flex; gap:.3rem; margin:.5rem 0 1rem; }
     .stars span { font-size:1.5rem; cursor:pointer; color:#555; }
     .stars .filled { color:#facc15; }
@@ -126,12 +126,11 @@
   </div>
 
   <script>
-    // Alert / Confirm modal logic
+    // Modal helpers
     const alertModal = document.getElementById('alertModal'),
           alertMsg   = document.getElementById('alertMsg'),
           alertOK    = document.getElementById('alertOK'),
           confirmBtns= document.getElementById('confirmBtns');
-
     function kcAlert(msg){
       confirmBtns.style.display = 'none';
       alertOK.style.display     = 'inline-block';
@@ -162,9 +161,10 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth     = firebase.auth(),
-          votesRef = firebase.database().ref('votes'),
-          configRef= firebase.database().ref('config/liveLeaderboardEnabled');
+    const auth      = firebase.auth(),
+          votesRef  = firebase.database().ref('votes'),
+          configRef = firebase.database().ref('config/liveLeaderboardEnabled'),
+          usersRef  = firebase.database().ref('users');
 
     // DOM refs
     const voteContainer = document.getElementById('voteContainer'),
@@ -176,14 +176,14 @@
           adminTable    = document.getElementById('adminTable'),
           resetBtn      = document.getElementById('resetBtn');
 
-    // Canonical mapping for normalization
+    // Normalize helper
     const canonical = { 'w1de':'wide','wide':'wide','w1deeee':'wide','lbgoo':'goo','lbg00':'goo','goo':'goo' };
     function normalize(name){
       const key = name.toLowerCase().replace(/[^a-z0-9]/g,'');
       return canonical[key] || key;
     }
 
-    // Render leaderboard
+    // Leaderboard rendering
     function updateLeaderboard(){
       votesRef.once('value').then(snap=>{
         const offCounts={}, defCounts={};
@@ -217,7 +217,7 @@
       });
     }
 
-    // Overall rating
+    // Average rating
     function updateAverageRating(){
       votesRef.once('value').then(snap=>{
         let sum=0,n=0;
@@ -232,16 +232,21 @@
       });
     }
 
-    // Voting form
-    function renderForm(user){
+    // Render voting form (with passed-in options)
+    function renderForm(user, userOptionsHtml){
       voteContainer.innerHTML = `
         <label>Your Username</label>
         <input readonly id="username" value="${user.displayName||user.email||''}"/>
-        <div class="hint">Needs to match the name you played with.</div>
-        <label>Best offence</label><input type="text" id="offence"/>
-        <div class="hint">Needs to match the name they played with.</div>
-        <label>Best defence</label><input type="text" id="defence"/>
-        <div class="hint">Needs to match the name they played with.</div>
+        <div class="hint">Pick the name you played under.</div>
+
+        <label>Best offence</label>
+        <select id="offence">${userOptionsHtml}</select>
+        <div class="hint">Choose from registered players.</div>
+
+        <label>Best defence</label>
+        <select id="defence">${userOptionsHtml}</select>
+        <div class="hint">Choose from registered players.</div>
+
         <label>Rate today's event</label>
         <div class="stars" id="starContainer">
           <span data-value="1">★</span>
@@ -251,31 +256,44 @@
           <span data-value="5">★</span>
         </div>
         <button id="submitBtn" disabled>Submit Vote</button>`;
+
       const offence = document.getElementById('offence'),
             defence = document.getElementById('defence'),
             stars   = document.getElementById('starContainer').children,
             submit  = document.getElementById('submitBtn');
       let rating = 0;
+
+      function updateSubmitEnabled(){
+        submit.disabled = !(offence.value && defence.value && rating>0);
+      }
+
       Array.from(stars).forEach(s=>{
         s.onclick = ()=>{
           rating = +s.dataset.value;
-          Array.from(stars).forEach(x=>x.classList.toggle('filled', +x.dataset.value<=rating));
-          submit.disabled = !(offence.value.trim()&&defence.value.trim()&&rating>0);
+          Array.from(stars).forEach(x=>
+            x.classList.toggle('filled', +x.dataset.value<=rating)
+          );
+          updateSubmitEnabled();
         };
       });
+      offence.onchange = updateSubmitEnabled;
+      defence.onchange = updateSubmitEnabled;
+
       votesRef.orderByChild('uid').equalTo(user.uid).once('value',snap=>{
         if(snap.exists()){
           voteContainer.innerHTML = `<p>You’ve already voted—thank you!</p>`;
         }
       });
+
       submit.onclick = ()=>{
         submit.disabled=true;
         votesRef.push({
           uid: user.uid,
           username: user.displayName||user.email,
-          bestOffence: offence.value.trim(),
-          bestDefence: defence.value.trim(),
-          rating, time: firebase.database.ServerValue.TIMESTAMP
+          bestOffence: offence.value,
+          bestDefence: defence.value,
+          rating,
+          time: firebase.database.ServerValue.TIMESTAMP
         })
         .then(()=>{
           kcAlert('Thanks for voting!');
@@ -283,38 +301,52 @@
         })
         .catch(e=>kcAlert('Error submitting: '+e.message))
         .finally(()=>{
-          submit.disabled=false;
-          renderForm(user);
+          renderForm(user, userOptionsHtml);
         });
       };
     }
 
-    // Auth listener
+    // Auth listener: write to /users, fetch users, then render form
     auth.onAuthStateChanged(user=>{
       if(!user){
-        voteContainer.innerHTML = `<p>Please <a href="https://kcevents.uk/#loginpage" target="_top" style="color:#4ade80;">log in</a> to vote.</p>`;
-      } else renderForm(user);
+        voteContainer.innerHTML =
+          `<p>Please <a href="https://kcevents.uk/#loginpage" target="_top" style="color:#4ade80;">log in</a> to vote.</p>`;
+        return;
+      }
+
+      // ensure user is in /users
+      usersRef.child(user.uid).update({
+        displayName: user.displayName||null,
+        email:       user.email||null,
+        joined:      firebase.database.ServerValue.TIMESTAMP
+      });
+
+      // now fetch full users list, build options, then render form
+      usersRef.once('value').then(snap=>{
+        let opts = '<option value="" disabled selected>– Select a player –</option>';
+        snap.forEach(child=>{
+          const u    = child.val();
+          const name = u.displayName || u.email || '(unknown)';
+          const esc  = name.replace(/"/g,'&quot;');
+          opts += `<option value="${esc}">${esc}</option>`;
+        });
+        renderForm(user, opts);
+      });
     });
 
-    // Admin toggle + Save
+    // Admin / leaderboard toggle (unchanged)
     let toggleCheckbox, saveBtn;
     showAdminBtn.onclick = ()=> {
       adminSection.style.display = adminSection.style.display==='block'?'none':'block';
     };
     unlockBtn.onclick = ()=>{
       if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
-
       if(!toggleCheckbox){
-        // Build controls
         const lbl = document.createElement('label');
         lbl.innerHTML = '<input type="checkbox" id="toggleLeaderboard"/> Enable Live Leaderboard';
         adminControls.appendChild(lbl);
         toggleCheckbox = document.getElementById('toggleLeaderboard');
-
-        configRef.once('value').then(snap=>{
-          toggleCheckbox.checked = snap.val()!==false;
-        });
-
+        configRef.once('value').then(snap=> toggleCheckbox.checked = snap.val()!==false );
         saveBtn = document.createElement('button');
         saveBtn.textContent = 'Save Leaderboard Setting';
         saveBtn.style.marginTop = '0.5rem';
@@ -325,8 +357,6 @@
             .catch(e=> kcAlert('Save failed: '+e.message));
         };
       }
-
-      // Render admin table
       votesRef.orderByChild('time').once('value').then(snap=>{
         const data = snap.val()||{};
         let html = `<table>
@@ -343,21 +373,14 @@
         updateLeaderboard(); updateAverageRating();
       });
     };
-
-    // Delete single vote
     adminTable.addEventListener('click', async e=>{
       if(!e.target.matches('.delBtn')) return;
       const key = e.target.closest('tr').dataset.key;
       if(!await kcConfirm('Delete this vote?')) return;
       votesRef.child(key).remove()
-        .then(()=>{
-          kcAlert('Vote deleted.');
-          updateLeaderboard(); updateAverageRating();
-        })
+        .then(()=>{ kcAlert('Vote deleted.'); updateLeaderboard(); updateAverageRating(); })
         .catch(err=> kcAlert('Delete failed: '+err.message));
     });
-
-    // Reset all
     resetBtn.onclick = async ()=>{
       if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
       if(!await kcConfirm('Reset all votes? This cannot be undone.')) return;
@@ -372,15 +395,13 @@
         .catch(err=> kcAlert('Reset failed: '+err.message));
     };
 
-    // React to live toggle for everyone
+    // React to live toggle and initial data
     configRef.on('value', snap=>{
       const enabled = snap.val()!==false;
       document.getElementById('leaderboardContent').style.display = enabled?'block':'none';
       document.getElementById('leaderboardOffMessage').style.display = enabled?'none':'block';
       if(enabled) updateLeaderboard();
     });
-
-    // Initial render
     updateLeaderboard();
     updateAverageRating();
   </script>
