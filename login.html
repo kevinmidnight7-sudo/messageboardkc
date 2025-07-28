@@ -9,202 +9,116 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     html,body {
-      height: 100%;
-      width: 100%;
-      margin: 0;
-      padding: 0;
-      font-family: 'Poppins', sans-serif;
-      color: #fff;
-      min-height: 100vh;
-      min-width: 100vw;
+      height: 100%; width: 100%; margin: 0; padding: 0;
+      font-family: 'Poppins', sans-serif; color: #fff;
+      min-height: 100vh; min-width: 100vw;
     }
     body {
-      /* Parallax, fixed background */
       background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') no-repeat center center fixed;
       background-size: cover;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
     }
     .auth-card {
-      background: rgba(0,0,0,0.78);
-      border-radius: 18px;
+      background: rgba(0,0,0,0.78); border-radius: 18px;
       box-shadow: 0 8px 40px rgba(0,0,0,0.65);
-      padding: 2.2rem 2rem 2.2rem 2rem;
-      min-width: 350px;
-      max-width: 380px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.2rem;
-      position: relative;
+      padding: 2.2rem 2rem; min-width: 350px; max-width: 380px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 1.2rem; position: relative;
     }
-    .logo-img {
-      margin-bottom: 1.1rem;
-      max-width: 90px;
-      max-height: 90px;
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-    }
+    .logo-img { margin-bottom: 1.1rem; max-width: 90px; }
     .auth-card h2 {
-      font-size: 2rem;
-      margin: 0 0 1rem 0;
-      font-weight: 600;
-      letter-spacing: -1px;
-      text-align: center;
+      font-size: 2rem; margin: 0 0 1rem; font-weight: 600;
+      letter-spacing: -1px; text-align: center;
     }
-    .auth-card .form-section {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: .8rem;
-    }
+    .form-section { width: 100%; display: flex; flex-direction: column; gap: .8rem; }
     .auth-card input {
-      padding: .7rem .9rem;
-      border-radius: 7px;
-      border: none;
-      background: #212121;
-      color: #fff;
-      font-size: 1rem;
-      outline: none;
+      padding: .7rem .9rem; border-radius: 7px; border: none;
+      background: #212121; color: #fff; font-size: 1rem; outline: none;
       transition: background 0.2s;
     }
-    .auth-card input:focus {
-      background: #18181b;
-    }
+    .auth-card input:focus { background: #18181b; }
     .auth-card button {
-      padding: .68rem 0;
-      border: none;
-      border-radius: 7px;
+      padding: .68rem 0; border: none; border-radius: 7px;
       background: linear-gradient(90deg,#FF1C1C,#E1AB33);
-      color: #fff;
-      font-weight: 700;
-      font-size: 1.1rem;
-      cursor: pointer;
-      margin-top: .35rem;
-      transition: background 0.18s, color 0.18s;
-      box-shadow: 0 1px 8px 0 rgba(255,28,28,0.12);
+      color: #fff; font-weight: 700; font-size: 1.1rem; cursor: pointer;
+      margin-top: .35rem; transition: background 0.18s,color 0.18s;
+      box-shadow: 0 1px 8px rgba(255,28,28,0.12);
     }
     .auth-card button:hover, .auth-card button:focus {
-      background: #E1AB33 !important;
-      color: #191919 !important;
+      background: #E1AB33 !important; color: #191919 !important;
     }
     .signout-btn {
       background: linear-gradient(90deg,#FF1C1C,#C81D25) !important;
-      color: #fff !important;
-      margin-top: 2.4rem !important;
-      font-size: 1.06rem;
-      font-weight: 700;
-      border: none;
-      border-radius: 7px;
-      padding: .62rem 0;
-      width: 100%;
-      transition: background 0.15s, color 0.15s;
-      box-shadow: 0 2px 10px 0 rgba(255,28,28,0.12);
-    }
-    .signout-btn:hover, .signout-btn:focus {
-      background: #C81D25 !important;
-      color: #fff !important;
+      margin-top: 1rem !important; width: 100%; padding: .62rem 0;
     }
     .action-btn {
-      background: #444;
-      margin-top: .5rem;
-      width: 100%;
-      padding: .6rem;
-      border: none;
-      border-radius: 7px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 1rem;
+      background: #444; margin-top: .5rem; width: 100%;
+      padding: .6rem; border: none; border-radius: 7px;
+      color: #fff; cursor: pointer; font-size: 1rem;
     }
     .action-btn:hover { background: #555; }
     .switch-link {
-      color: #E1AB33;
-      cursor: pointer;
-      text-decoration: underline;
-      font-size: .96rem;
-      margin-top: .3rem;
-      text-align: center;
-      transition: color 0.18s;
+      color: #E1AB33; cursor: pointer; text-decoration: underline;
+      font-size: .96rem; text-align: center; transition: color .18s;
     }
     .switch-link:hover { color: #ffe199; }
     .welcome {
-      font-size: 1.3rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: .5rem;
-      justify-content: center;
-      margin: 0 0 1.2rem 0;
-      text-align: center;
+      font-size: 1.3rem; font-weight: 600; display: flex;
+      align-items: center; gap: .5rem; justify-content: center;
+      margin: 0 0 1rem; text-align: center;
     }
     .user-counter {
-      font-size: 1.09rem;
-      color: #fff;
-      text-align: center;
-      font-weight: 500;
-      margin-bottom: 2rem;
-      margin-top: -.6rem;
-      text-shadow: 0 1px 10px #17171799;
+      font-size: 1.09rem; text-align: center; font-weight: 500;
+      margin-bottom: 1.5rem; text-shadow: 0 1px 10px #17171799;
     }
     .version {
-      background: linear-gradient(90deg, #FFD700 0%, #E1AB33 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-fill-color: transparent;
-      font-size: 1.08rem;
-      margin-top: 2.3rem;
-      letter-spacing: .03em;
-      font-weight: 500;
-      text-align: center;
-      opacity: .96;
+      background: linear-gradient(90deg,#FFD700,#E1AB33);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      font-size: 1.08rem; margin-top: 1rem; opacity: .96;
     }
     .error-msg {
-      color: #f87171;
-      text-align: center;
-      font-size: .97rem;
+      color: #f87171; text-align: center; font-size: .97rem;
       margin-bottom: .4rem;
     }
-    @media (max-width: 600px){
-      .auth-card { min-width: unset; width:97vw; padding:1.4rem .4rem 1.2rem .4rem;}
-      .logo-img { max-width: 66px; max-height: 66px; }
+    @media (max-width:600px){
+      .auth-card { width:97vw; padding:1.4rem .4rem; }
+      .logo-img { max-width:66px; }
     }
   </style>
 </head>
 <body>
-  <div class="auth-card" id="authCard">
+  <div class="auth-card">
     <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="logo-img" alt="KC Events Logo"/>
     <h2>KC Events Login</h2>
     <div id="error" class="error-msg"></div>
-    <!-- Register Form -->
+
     <div class="form-section" id="registerForm">
       <input id="regName" placeholder="Display Name"/>
       <input id="regEmail" type="email" placeholder="Email"/>
       <input id="regPass" type="password" placeholder="Password"/>
       <button id="registerBtn">Register</button>
-      <div class="switch-link" id="toLogin">Already have an account? Log In</div>
+      <div class="switch-link" id="toLogin">Already have an account? Log In</div>
     </div>
-    <!-- Login Form -->
+
     <div class="form-section" id="loginForm" style="display:none;">
       <input id="loginEmail" type="email" placeholder="Email"/>
       <input id="loginPass" type="password" placeholder="Password"/>
-      <button id="loginBtn">Log In</button>
+      <button id="loginBtn">Log In</button>
       <div class="switch-link" id="toRegister">No account? Register</div>
     </div>
-    <!-- Welcome/Logged In UI -->
-    <div id="loggedInUI" style="display:none; flex-direction:column; align-items:center; width:100%;">
+
+    <div id="loggedInUI" style="display:none; width:100%; flex-direction:column; align-items:center;">
       <div class="welcome" id="welcomeUser"></div>
       <div class="user-counter" id="userCounter"></div>
-      <button class="signout-btn" id="signOutBtn">Sign Out</button>
+      <button class="signout-btn" id="signOutBtn">Sign Out</button>
       <button class="action-btn" id="resetPassBtn">Reset Password</button>
       <button class="action-btn" id="deleteAcctBtn">Delete Account</button>
       <div class="version">KC Events V1</div>
     </div>
   </div>
+
   <script>
-    // Firebase config
+    // Firebase init
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -216,137 +130,108 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth = firebase.auth();
-    const db = firebase.database();
+    const auth = firebase.auth(), db = firebase.database();
 
-    // Email verification settings
+    // actionCodeSettings
     const actionCodeSettings = {
       url: window.location.origin + '/?mode=verifyEmail',
       handleCodeInApp: true
     };
 
-    // Handle verify link on load
-    window.addEventListener('load', () => {
-      const params = new URLSearchParams(window.location.search),
-            mode = params.get('mode'),
-            oobCode = params.get('oobCode');
-      if (mode === 'verifyEmail' && oobCode) {
-        auth.applyActionCode(oobCode)
-          .then(() => {
-            document.getElementById('error').style.color = '#4ade80';
-            document.getElementById('error').textContent = 'Email verified! You can now log in.';
-          })
-          .catch(err => {
-            document.getElementById('error').textContent = 'Verification error: ' + err.message;
-          });
-      }
-    });
-
     // UI refs
-    const registerForm  = document.getElementById('registerForm'),
-          loginForm     = document.getElementById('loginForm'),
-          toLogin       = document.getElementById('toLogin'),
-          toRegister    = document.getElementById('toRegister'),
+    const errorMsg      = document.getElementById('error'),
           registerBtn   = document.getElementById('registerBtn'),
           loginBtn      = document.getElementById('loginBtn'),
-          errorMsg      = document.getElementById('error'),
+          toLogin       = document.getElementById('toLogin'),
+          toRegister    = document.getElementById('toRegister'),
+          signOutBtn    = document.getElementById('signOutBtn'),
+          resetPassBtn  = document.getElementById('resetPassBtn'),
+          deleteAcctBtn = document.getElementById('deleteAcctBtn'),
           regName       = document.getElementById('regName'),
           regEmail      = document.getElementById('regEmail'),
           regPass       = document.getElementById('regPass'),
           loginEmail    = document.getElementById('loginEmail'),
           loginPass     = document.getElementById('loginPass'),
+          registerForm  = document.getElementById('registerForm'),
+          loginForm     = document.getElementById('loginForm'),
           loggedInUI    = document.getElementById('loggedInUI'),
           welcomeUser   = document.getElementById('welcomeUser'),
-          signOutBtn    = document.getElementById('signOutBtn'),
-          resetPassBtn  = document.getElementById('resetPassBtn'),
-          deleteAcctBtn = document.getElementById('deleteAcctBtn'),
           userCounter   = document.getElementById('userCounter');
 
-    // Toggle forms
-    toLogin.onclick    = ()=>{ registerForm.style.display='none'; loginForm.style.display='flex'; errorMsg.textContent=''; };
-    toRegister.onclick = ()=>{ loginForm.style.display='none'; registerForm.style.display='flex'; errorMsg.textContent=''; };
+    // kcAlert helper
+    function kcAlert(txt) {
+      errorMsg.style.color = '#f87171';
+      errorMsg.textContent = txt;
+    }
 
-    // Register (with email verification)
+    // toggle forms
+    toLogin.onclick    = ()=>{ registerForm.style.display='none'; loginForm.style.display='flex';  errorMsg.textContent=''; };
+    toRegister.onclick = ()=>{ loginForm.style.display='none';  registerForm.style.display='flex'; errorMsg.textContent=''; };
+
+    // register with resend‑verification logic
     registerBtn.onclick = () => {
-  const name  = regName.value.trim(),
-        email = regEmail.value.trim(),
-        pass  = regPass.value;
+      const name  = regName.value.trim(),
+            email = regEmail.value.trim(),
+            pass  = regPass.value;
+      if (!name || !email || !pass) return kcAlert('Fill all fields.');
+      auth.createUserWithEmailAndPassword(email, pass)
+        .then(uCred =>
+          uCred.user.updateProfile({ displayName: name }).then(()=>uCred.user)
+        )
+        .then(user =>
+          db.ref(`users/${user.uid}`)
+            .set({ displayName: name, email })
+            .then(()=>user)
+        )
+        .then(user =>
+          user.sendEmailVerification(actionCodeSettings)
+        )
+        .then(()=> kcAlert('Verification email sent! Check your inbox.'))
+        .catch(err => {
+          if (err.code === 'auth/email-already-in-use') {
+            auth.fetchSignInMethodsForEmail(email)
+              .then(methods => {
+                if (methods.includes('password')) {
+                  return auth.signInWithEmailAndPassword(email, pass)
+                    .then(uCred => {
+                      if (!uCred.user.emailVerified) {
+                        return uCred.user.sendEmailVerification(actionCodeSettings)
+                          .then(()=>kcAlert('Account exists but not verified. Verification resent.'));
+                      }
+                      throw new Error('Email already registered & verified. Please log in.');
+                    })
+                    .then(()=>auth.signOut());
+                }
+                throw new Error('Email already in use.');
+              })
+              .catch(e=>kcAlert(e.message));
+          } else {
+            kcAlert(err.message);
+          }
+        });
+    };
 
-  if (!name || !email || !pass) {
-    return kcAlert('Fill all fields.');
-  }
-
-  auth.createUserWithEmailAndPassword(email, pass)
-    // if creation succeeds, set displayName, save to DB & send verification
-    .then(uCred =>
-      uCred.user.updateProfile({ displayName: name }).then(() => uCred.user)
-    )
-    .then(user =>
-      db.ref(`users/${user.uid}`)
-        .set({ displayName: name, email })
-        .then(() => user)
-    )
-    .then(user =>
-      user.sendEmailVerification(actionCodeSettings)
-    )
-    .then(() => {
-      kcAlert('Verification email sent! Check your inbox.');
-    })
-    .catch(err => {
-      if (err.code === 'auth/email-already-in-use') {
-        // The email exists—see if it’s just unverified
-        auth.fetchSignInMethodsForEmail(email)
-          .then(methods => {
-            if (methods.includes('password')) {
-              // Try signing in to resend verification
-              return auth.signInWithEmailAndPassword(email, pass)
-                .then(uCred => {
-                  if (!uCred.user.emailVerified) {
-                    return uCred.user.sendEmailVerification(actionCodeSettings)
-                      .then(() => {
-                        kcAlert('Account exists but not verified. Verification email resent.');
-                      });
-                  } else {
-                    // Already verified
-                    throw new Error('Email is already registered and verified. Please log in.');
-                  }
-                })
-                .then(() => auth.signOut());
-            } else {
-              // Registered via another provider (Google, etc.)
-              throw new Error('Email is already in use.');
-            }
-          })
-          .catch(innerErr => kcAlert(innerErr.message));
-      } else {
-        // Some other error
-        kcAlert(err.message);
-      }
-    });
-};
-
-
-    // Login (block unverified)
-    loginBtn.onclick = ()=>{
-      errorMsg.textContent=''; errorMsg.style.color='#f87171';
-      const email=loginEmail.value.trim(), pass=loginPass.value;
-      if(!email||!pass){ errorMsg.textContent="Enter email and password!"; return; }
+    // login (block unverified)
+    loginBtn.onclick = () => {
+      const email = loginEmail.value.trim(),
+            pass  = loginPass.value;
+      if (!email || !pass) return kcAlert('Enter email and password!');
       auth.signInWithEmailAndPassword(email, pass)
-        .then(res=>{
-          if(!res.user.emailVerified){
+        .then(res => {
+          if (!res.user.emailVerified) {
             return auth.signOut().then(()=>{ throw new Error('Please verify your email before logging in.'); });
           }
         })
-        .catch(e=> errorMsg.textContent=e.message);
+        .catch(e => kcAlert(e.message));
     };
 
-    // Sign out
-    signOutBtn.onclick = ()=> auth.signOut();
+    // sign out
+    signOutBtn.onclick = () => auth.signOut();
 
-    // Reset Password
-    resetPassBtn.onclick = ()=>{
+    // reset password
+    resetPassBtn.onclick = () => {
       const user = auth.currentUser;
-      if(!user) return;
+      if (!user) return;
       auth.sendPasswordResetEmail(user.email, {
         url: window.location.origin + '/?mode=resetPassword',
         handleCodeInApp: true
@@ -355,31 +240,31 @@
       .catch(e=> alert('Error: '+e.message));
     };
 
-    // Delete Account
-    deleteAcctBtn.onclick = ()=>{
-      if(!confirm('Are you sure you want to delete your account?')) return;
+    // delete account
+    deleteAcctBtn.onclick = () => {
+      if (!confirm('Delete account?')) return;
       const user = auth.currentUser;
       user.delete()
         .then(()=> alert('Account deleted.'))
         .catch(err=>{
-          if(err.code==='auth/requires-recent-login'){
-            alert('Please sign out and sign in again to delete your account.');
+          if (err.code==='auth/requires-recent-login') {
+            alert('Please sign out and sign in again before deleting.');
           } else {
             alert('Error: '+err.message);
           }
         });
     };
 
-    // Auth state changes
-    auth.onAuthStateChanged(user=>{
-      if(user && user.emailVerified){
+    // auth state changes
+    auth.onAuthStateChanged(user => {
+      if (user && user.emailVerified) {
         registerForm.style.display='none';
         loginForm.style.display='none';
         loggedInUI.style.display='flex';
         errorMsg.textContent='';
-        welcomeUser.innerHTML=`👋 Welcome, <span style="color:#E1AB33">${user.displayName||'User'}</span>`;
+        welcomeUser.innerHTML = `👋 Welcome, <span style="color:#E1AB33">${user.displayName||'User'}</span>`;
         db.ref('users').once('value').then(snap=>{
-          userCounter.textContent=`There are now ${snap.numChildren()} users registered to KC Events!`;
+          userCounter.textContent = `There are now ${snap.numChildren()} users registered to KC Events!`;
         });
       } else {
         loggedInUI.style.display='none';
