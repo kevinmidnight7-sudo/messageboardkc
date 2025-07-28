@@ -333,27 +333,64 @@
     // =====================
     // REGISTER (w/ email verification)
     // =====================
-    registerBtn.onclick = ()=>{
-      const n=regName.value.trim(), e=regEmail.value.trim(), p=regPass.value;
-      if(!n||!e||!p) return kcAlert('Fill all fields.');
-      auth.createUserWithEmailAndPassword(e,p)
-        .then(uCred =>
-          uCred.user.updateProfile({displayName:n}).then(()=>uCred.user)
-        )
-        .then(user =>
-          msgs.root.child(`users/${user.uid}`)
-            .set({ displayName:n })
-            .then(()=> user)
-        )
-        .then(user =>
-          user.sendEmailVerification(actionCodeSettings)
-        )
-        .then(() => {
-          kcAlert('Verification email sent! Check your inbox before logging in.');
-        })
-        .catch(err => kcAlert(err.message));
-    };
+registerBtn.onclick = () => {
+  const name  = regName.value.trim(),
+        email = regEmail.value.trim(),
+        pass  = regPass.value;
 
+  if (!name || !email || !pass) {
+    return kcAlert('Fill all fields.');
+  }
+
+  auth.createUserWithEmailAndPassword(email, pass)
+    // if creation succeeds, set displayName, save to DB & send verification
+    .then(uCred =>
+      uCred.user.updateProfile({ displayName: name }).then(() => uCred.user)
+    )
+    .then(user =>
+      db.ref(`users/${user.uid}`)
+        .set({ displayName: name, email })
+        .then(() => user)
+    )
+    .then(user =>
+      user.sendEmailVerification(actionCodeSettings)
+    )
+    .then(() => {
+      kcAlert('Verification email sent! Check your inbox.');
+    })
+    .catch(err => {
+      if (err.code === 'auth/email-already-in-use') {
+        // The email exists—see if it’s just unverified
+        auth.fetchSignInMethodsForEmail(email)
+          .then(methods => {
+            if (methods.includes('password')) {
+              // Try signing in to resend verification
+              return auth.signInWithEmailAndPassword(email, pass)
+                .then(uCred => {
+                  if (!uCred.user.emailVerified) {
+                    return uCred.user.sendEmailVerification(actionCodeSettings)
+                      .then(() => {
+                        kcAlert('Account exists but not verified. Verification email resent.');
+                      });
+                  } else {
+                    // Already verified
+                    throw new Error('Email is already registered and verified. Please log in.');
+                  }
+                })
+                .then(() => auth.signOut());
+            } else {
+              // Registered via another provider (Google, etc.)
+              throw new Error('Email is already in use.');
+            }
+          })
+          .catch(innerErr => kcAlert(innerErr.message));
+      } else {
+        // Some other error
+        kcAlert(err.message);
+      }
+    });
+};
+    
     // =====================
     // LOGIN (block unverified)
     // =====================
