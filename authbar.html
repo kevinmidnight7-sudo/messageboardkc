@@ -100,9 +100,9 @@
         `;
         document.getElementById('signOutLink')
                 .onclick = e => { e.preventDefault(); auth.signOut(); };
-        // Click on name opens the profile page
+        // Click on name opens profile page in a new tab
         document.getElementById('userNameLink').onclick = () => {
-          window.location.href = chatURL;
+          window.open(chatURL, "_blank");
         };
       } else {
         container.innerHTML = `
