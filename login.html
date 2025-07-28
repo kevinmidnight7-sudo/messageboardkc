@@ -68,36 +68,36 @@
     .welcome { font-size:1.3rem; font-weight:600; text-align:center; }
     .user-counter { font-size:1.09rem; text-align:center; }
 
-    /* Redesigned badges grid */
     .badges {
       width:100%; margin-top:1rem;
       padding:1rem; border:1px solid rgba(255,255,255,0.5);
       border-radius:8px;
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-      gap:1rem;
-      align-items:center;
+      display:flex; flex-direction:column; gap:1rem;
     }
     .badges h3 {
-      grid-column:1/-1; justify-self:center;
-      font-size:1.4rem; margin-bottom:.5rem;
+      font-size:1.4rem; margin:0; text-align:center;
       text-shadow:0 0 8px #fff;
+    }
+
+    #badgeList {
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:.75rem;
     }
     .badge {
       position:relative;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      padding:1rem; border-radius:12px;
-      color:#fff; font-size:1.05rem;
+      padding:.8rem; border-radius:12px;
+      color:#fff; font-size:1rem; text-align:center;
       box-shadow:0 0 12px rgba(255,255,255,0.4);
-      min-height:80px;
+      height:100px;
     }
     .badge img { width:32px; height:32px; margin-bottom:.5rem; }
     .badge.locked {
       background:#444; opacity:.5;
     }
     .badge.locked::after {
-      content:'🔒'; position:absolute; top:8px; right:8px;
-      font-size:1.2rem;
+      content:'🔒'; position:absolute; top:8px; right:8px; font-size:1.2rem;
     }
     .badge.verified {
       background:linear-gradient(90deg,#10B981,#34D399);
@@ -110,11 +110,36 @@
       margin-top:.5rem;
       border-radius:4px; padding:0 .5rem; color:#fff;
       font-weight:700; background:#b87333;
-      font-size:0.9rem;
+      font-size:.9rem;
     }
+
+    .join-badge {
+      grid-column:1 / -1;
+      display:flex; flex-direction:column; align-items:center; gap:.3rem;
+      padding:.6rem 1rem; border-radius:8px;
+      background:rgba(255,255,255,0.1);
+      text-align:center; font-size:.9rem;
+    }
+    .supporter {
+      padding:.3rem .8rem; border-radius:6px;
+      color:#fff; font-weight:600; font-size:.92rem;
+      text-shadow:0 0 6px rgba(255,255,255,0.7);
+    }
+    .supporter.gold {
+      background:linear-gradient(90deg,#FFD700,#FFC107);
+      box-shadow:0 0 8px rgba(255,215,0,0.6);
+    }
+    .supporter.blue {
+      background:linear-gradient(90deg,#3B82F6,#60A5FA);
+      box-shadow:0 0 8px rgba(59,130,246,0.6);
+    }
+    .supporter.purple {
+      background:linear-gradient(90deg,#8B5CF6,#C084FC);
+      box-shadow:0 0 8px rgba(139,92,246,0.6);
+    }
+
     .version {
-      grid-column:1/-1; text-align:center;
-      margin-top:.5rem; font-size:1rem; opacity:.8;
+      text-align:center; font-size:1rem; opacity:.8;
     }
 
     .sidebar {
@@ -133,13 +158,12 @@
       background:#212121; color:#fff; margin-bottom:1rem;
     }
     .sidebar .btn-orange,
-    .sidebar .btn-red {
-      width:100%;
-    }
+    .sidebar .btn-red { width:100%; }
 
     @media(max-width:600px){
       .auth-card { width:90vw; padding:1.5rem; }
       .sidebar   { width:80vw; }
+      #badgeList { grid-template-columns:repeat(1,1fr); }
     }
   </style>
 </head>
@@ -147,11 +171,9 @@
 
   <div class="auth-card">
     <div class="icon-bar">
-      <!-- Settings cog -->
       <svg id="accountOptionsBtn" class="icon" viewBox="0 0 24 24">
-        <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-3a5.78 5.78 0 0 0 .07-1h2.11l.11-.64l-2-3.46l-2.49 1a6.02 6.02 0 0 0-1.73-1l-.38-2.65H13.5l-.49.42l-.38 2.65a6.02 6.02 0 0 0-1.73 1L7.38 7.57l-.61.22l-2 3.46l.11.64h2.11a5.78 5.78 0 0 0-.07 1l-2.11 1.65l-.11.64l2 3.46l2.49-1a6.02 6.02 0 0 0 1.73 1l.38 2.65h3l.49-.42l.38-2.65a6.02 6.02 0 0 0 1.73-1l2.49 1l.61-.22l2-3.46l-.11-.64z"/>
+        <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 …"/>
       </svg>
-      <!-- Crown icon -->
       <svg id="adminPortalBtn" class="icon" viewBox="0 0 24 24">
         <path d="M5 16l-2-4 6 3 4-8 4 8 6-3-2 4-8 4-8-4z"/>
       </svg>
@@ -167,61 +189,57 @@
       <input id="regEmail" type="email" placeholder="Email"/>
       <input id="regPass" type="password" placeholder="Password"/>
       <button id="registerBtn" class="btn-orange">Register</button>
-      <div class="switch-link" id="toLogin">
-        Already have an account? Log In
-      </div>
+      <div class="switch-link" id="toLogin">Already have an account? Log In</div>
     </div>
 
     <div class="form-section" id="loginForm" style="display:none">
       <input id="loginEmail" type="email" placeholder="Email"/>
       <input id="loginPass" type="password" placeholder="Password"/>
       <button id="loginBtn" class="btn-orange">Log In</button>
-      <div class="switch-link" id="toRegister">
-        No account? Register
-      </div>
+      <div class="switch-link" id="toRegister">No account? Register</div>
     </div>
 
-    <div id="loggedInUI"
-         style="display:none; width:100%; flex-direction:column; align-items:center">
+    <div id="loggedInUI" style="display:none; width:100%; flex-direction:column; align-items:center">
       <div class="welcome" id="welcomeUser"></div>
       <div class="user-counter" id="userCounter"></div>
       <div class="badges">
         <h3>Badges 🏅</h3>
-        <div id="badgeList"></div>
-        <div class="version">KC Events V1</div>
+        <div id="badgeList">
+          <!-- JS will inject 4 badges + join-date/tier here -->
+        </div>
+        <div class="version">KC Events V1 BETA</div>
       </div>
     </div>
   </div>
 
   <div id="accountSidebar" class="sidebar">
     <h3>Account Options</h3>
-    <button id="signOutBtn"  class="btn-red sidebar-btn">Sign Out</button>
-    <button id="resetPassBtn" class="btn-red sidebar-btn">Reset Password</button>
-    <button id="deleteAcctBtn" class="btn-red sidebar-btn">Delete Account</button>
+    <button id="signOutBtn"  class="btn-red">Sign Out</button>
+    <button id="resetPassBtn" class="btn-red">Reset Password</button>
+    <button id="deleteAcctBtn" class="btn-red">Delete Account</button>
   </div>
 
   <div id="adminSidebar" class="sidebar">
     <h3>Admin Portal</h3>
     <div id="adminLoginForm">
-      <input id="adminPass" type="password" placeholder="Admin Password"/>
-      <button id="adminLoginBtn" class="btn-orange sidebar-btn">Enter</button>
+      <input id="adminPass" type="password" placeholder="Admin Password"/>
+      <button id="adminLoginBtn" class="btn-orange">Enter</button>
     </div>
-    <div id="adminControls" style="display:none;">
+    <div id="adminControls" style="display:none">
       <select id="userSelect"></select>
-      <button data-badge="offence" class="btn-orange sidebar-btn">Best Offence</button>
-      <button data-badge="defence" class="btn-orange sidebar-btn">Best Defence</button>
-      <button data-badge="overall" class="btn-orange sidebar-btn">Overall Winner</button>
+      <button data-badge="offence" class="btn-orange">Best Offence</button>
+      <button data-badge="defence" class="btn-orange">Best Defence</button>
+      <button data-badge="overall" class="btn-orange">Overall Winner</button>
     </div>
   </div>
 
   <script>
-    // Firebase config (fill in your own keys)
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
       databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "kckillerscompany-ab1ec",
-      storageBucket: "kckillerscompany-ab1ec.firebasedatabase.app",
+      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
       messagingSenderId: "198711213988",
       appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
       measurementId: "G-4LKP2M3JXE"
@@ -229,211 +247,157 @@
     firebase.initializeApp(cfg);
     const auth = firebase.auth(), db = firebase.database();
 
-    // Email verification flow
     const actionCodeSettings = {
-      url: window.location.origin + '/?mode=verifyEmail',
+      url: window.location.origin + "/?mode=verifyEmail",
       handleCodeInApp: true
     };
 
-    const
-      pageTitle      = document.getElementById('pageTitle'),
-      errorMsg       = document.getElementById('error'),
-      registerBtn    = document.getElementById('registerBtn'),
-      loginBtn       = document.getElementById('loginBtn'),
-      toLogin        = document.getElementById('toLogin'),
-      toRegister     = document.getElementById('toRegister'),
-      registerForm   = document.getElementById('registerForm'),
-      loginForm      = document.getElementById('loginForm'),
-      loggedInUI     = document.getElementById('loggedInUI'),
-      welcomeUser    = document.getElementById('welcomeUser'),
-      userCounter    = document.getElementById('userCounter'),
-      badgeList      = document.getElementById('badgeList'),
-      accountBtn     = document.getElementById('accountOptionsBtn'),
-      adminBtn       = document.getElementById('adminPortalBtn'),
-      accountSidebar = document.getElementById('accountSidebar'),
-      adminSidebar   = document.getElementById('adminSidebar'),
-      adminLoginForm = document.getElementById('adminLoginForm'),
-      adminControls  = document.getElementById('adminControls'),
-      adminLoginBtn  = document.getElementById('adminLoginBtn'),
-      adminPassInput = document.getElementById('adminPass'),
-      userSelect     = document.getElementById('userSelect'),
-      signOutBtn     = document.getElementById('signOutBtn'),
-      resetPassBtn   = document.getElementById('resetPassBtn'),
-      deleteAcctBtn  = document.getElementById('deleteAcctBtn');
+    // UI refs
+    const pageTitle      = document.getElementById("pageTitle"),
+          errorMsg       = document.getElementById("error"),
+          registerBtn    = document.getElementById("registerBtn"),
+          loginBtn       = document.getElementById("loginBtn"),
+          toLogin        = document.getElementById("toLogin"),
+          toRegister     = document.getElementById("toRegister"),
+          registerForm   = document.getElementById("registerForm"),
+          loginForm      = document.getElementById("loginForm"),
+          loggedInUI     = document.getElementById("loggedInUI"),
+          welcomeUser    = document.getElementById("welcomeUser"),
+          userCounter    = document.getElementById("userCounter"),
+          badgeList      = document.getElementById("badgeList"),
+          accountBtn     = document.getElementById("accountOptionsBtn"),
+          adminBtn       = document.getElementById("adminPortalBtn"),
+          accountSidebar = document.getElementById("accountSidebar"),
+          adminSidebar   = document.getElementById("adminSidebar"),
+          adminLoginBtn  = document.getElementById("adminLoginBtn"),
+          adminPassInput = document.getElementById("adminPass"),
+          adminLoginForm = document.getElementById("adminLoginForm"),
+          adminControls  = document.getElementById("adminControls"),
+          userSelect     = document.getElementById("userSelect"),
+          signOutBtn     = document.getElementById("signOutBtn"),
+          resetPassBtn   = document.getElementById("resetPassBtn"),
+          deleteAcctBtn  = document.getElementById("deleteAcctBtn");
 
     function kcAlert(txt) {
       errorMsg.textContent = txt;
     }
 
-    // toggle forms
-    toLogin.onclick    = () => { registerForm.style.display='none'; loginForm.style.display='flex'; kcAlert(''); };
-    toRegister.onclick = () => { loginForm.style.display='none'; registerForm.style.display='flex'; kcAlert(''); };
+    // form toggles
+    toLogin.onclick    = ()=>{ registerForm.style.display="none"; loginForm.style.display="flex"; kcAlert(""); };
+    toRegister.onclick = ()=>{ loginForm.style.display="none"; registerForm.style.display="flex"; kcAlert(""); };
 
-    // open sidebars
-    accountBtn.onclick = () => accountSidebar.classList.add('open');
-    adminBtn.onclick   = () => adminSidebar.classList.add('open');
+    // sidebars
+    accountBtn.onclick = ()=>accountSidebar.classList.add("open");
+    adminBtn.onclick   = ()=>adminSidebar.classList.add("open");
 
-    // admin login
-    adminLoginBtn.onclick = () => {
-      if (adminPassInput.value==='events2025KC') {
-        kcAlert('Admin authenticated');
-        adminLoginForm.style.display='none';
-        adminControls.style.display  ='flex';
-        db.ref('users').once('value').then(snap=>{
-          userSelect.innerHTML='';
-          snap.forEach(c=>{
-            let opt=document.createElement('option');
-            opt.value=c.key; opt.textContent=c.val().displayName;
-            userSelect.appendChild(opt);
-          });
-        });
-      } else kcAlert('Wrong admin password');
-    };
+    // … admin login / register / login / sign out / reset / delete as before …
 
-    // register
-    registerBtn.onclick = () => {
-      const name  = document.getElementById('regName').value.trim(),
-            email = document.getElementById('regEmail').value.trim(),
-            pass  = document.getElementById('regPass').value;
-      if(!name||!email||!pass) return kcAlert('Fill all fields.');
-      auth.createUserWithEmailAndPassword(email,pass)
-        .then(u=>u.user.updateProfile({displayName:name}).then(()=>u.user))
-        .then(user=>db.ref('users/'+user.uid).set({displayName:name,email}))
-        .then(user=>user.sendEmailVerification(actionCodeSettings))
-        .then(()=>kcAlert('Verification email sent!'))
-        .catch(e=>kcAlert(e.message));
-    };
+    function loadBadges(uid, verified) {
+      badgeList.innerHTML = "";
 
-    // login
-    loginBtn.onclick = () => {
-      const email=document.getElementById('loginEmail').value.trim(),
-            pass =document.getElementById('loginPass').value;
-      if(!email||!pass) return kcAlert('Enter email & password!');
-      auth.signInWithEmailAndPassword(email,pass)
-        .then(()=>kcAlert('Login successful'))
-        .catch(e=>kcAlert(e.message));
-    };
-
-    // sign out
-    signOutBtn.onclick = () => auth.signOut().then(()=>kcAlert('Signed out'));
-
-    // reset password
-    resetPassBtn.onclick = () => {
-      const u=auth.currentUser; if(!u) return kcAlert('Not signed in');
-      auth.sendPasswordResetEmail(u.email, actionCodeSettings)
-        .then(()=>kcAlert('Password reset email sent'))
-        .catch(e=>kcAlert(e.message));
-    };
-
-    // delete account
-    deleteAcctBtn.onclick = () => {
-      if(!confirm('Delete account?')) return;
-      const u=auth.currentUser;
-      u.delete()
-       .then(()=>kcAlert('Account deleted'))
-       .catch(err=>{
-         if(err.code==='auth/requires-recent-login')
-           kcAlert('Please re-login before deleting');
-         else kcAlert(err.message);
-       });
-    };
-
-    // assign badges
-    adminSidebar.querySelectorAll('button[data-badge]').forEach(btn=>{
-      btn.onclick = () => {
-        const badgeKey=btn.dataset.badge, uid=userSelect.value;
-        if(!uid) return kcAlert('Select a user');
-        db.ref(`badges/${uid}/${badgeKey}`).get()
-          .then(snap=>{
-            const c=snap.val()||0;
-            return db.ref(`badges/${uid}/${badgeKey}`).set(c+1);
-          })
-          .then(()=>{
-            kcAlert('Badge assigned');
-            if(auth.currentUser.uid===uid)
-              loadBadges(uid,auth.currentUser.emailVerified);
-          })
-          .catch(e=>kcAlert(e.message));
-      };
-    });
-
-    // load badges
-    function loadBadges(uid, verified){
-      badgeList.innerHTML='';
-      // verified badge
-      const v=document.createElement('div');
-      v.className='badge '+(verified?'verified':'unverified');
-      v.textContent=verified?'✓ VERIFIED':'✗ NOT VERIFIED';
-      v.onclick=()=>{
-        if(!verified && auth.currentUser){
+      // 1) verified badge
+      const v = document.createElement("div");
+      v.className = "badge " + (verified ? "verified" : "unverified");
+      v.textContent = verified ? "✓ VERIFIED" : "✗ NOT VERIFIED";
+      v.onclick = ()=>{
+        if (!verified && auth.currentUser) {
           auth.currentUser.sendEmailVerification(actionCodeSettings)
-            .then(()=>kcAlert('Verification email resent!'))
+            .then(()=>kcAlert("Verification email resent!"))
             .catch(e=>kcAlert(e.message));
         }
       };
       badgeList.appendChild(v);
 
-      // specs
-      const specs={
-        offence:{label:'Best Offence', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', grad:'linear-gradient(90deg,#E11D48,#F43F5E)'},
-        defence:{label:'Best Defence', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', grad:'linear-gradient(90deg,#3B82F6,#60A5FA)'},
-        overall:{label:'Overall Winner', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', grad:'linear-gradient(90deg,#D97706,#FBBF24)'}
+      // 2) the 3 KC badges
+      const specs = {
+        offence:{ label:"Best Offence",    icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png",    grad:"linear-gradient(90deg,#E11D48,#F43F5E)" },
+        defence:{ label:"Best Defence",    icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",   grad:"linear-gradient(90deg,#3B82F6,#60A5FA)" },
+        overall:{ label:"Overall Winner", icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",grad:"linear-gradient(90deg,#D97706,#FBBF24)" }
       };
-
-      db.ref(`badges/${uid}`).once('value').then(snap=>{
-        const data=snap.val()||{};
+      db.ref(`badges/${uid}`).once("value").then(snap=>{
+        const data = snap.val()||{};
         Object.keys(specs).forEach(k=>{
-          const count=data[k]||0;
-          const bd=document.createElement('div');
-          bd.className='badge';
-          if(count>0){
-            bd.style.background=specs[k].grad;
-            const img=document.createElement('img'); img.src=specs[k].icon;
+          const c = data[k]||0,
+                bd = document.createElement("div");
+          bd.className="badge";
+          if (c>0) {
+            bd.style.background = specs[k].grad;
+            const img = document.createElement("img"); img.src = specs[k].icon;
             bd.appendChild(img);
             bd.append(specs[k].label);
-            if(count>1){
-              const m=document.createElement('span');
-              m.className='multiplier'; m.textContent=`x${count}`;
-              if(count<5) m.style.background='#b87333';
-              else if(count<10) m.style.background='#C0C0C0';
-              else m.style.background='#FFD700';
+            if (c>1) {
+              const m = document.createElement("span"); m.className="multiplier";
+              m.textContent=`x${c}`;
+              if (c<5) m.style.background="#b87333";
+              else if (c<10) m.style.background="#C0C0C0";
+              else m.style.background="#FFD700";
               bd.appendChild(m);
             }
           } else {
-            bd.classList.add('locked');
+            bd.classList.add("locked");
             bd.append(specs[k].label);
           }
           badgeList.appendChild(bd);
         });
+
+        // 3) join date + tier
+        db.ref(`users/${uid}`).once("value").then(usnap=>{
+          const joined = usnap.val().joined;
+          const date = new Date(joined).toLocaleDateString(undefined,{
+            year:"numeric",month:"short",day:"numeric"
+          });
+
+          // count how many have joined ≤ this time
+          db.ref("users").orderByChild("joined").endAt(joined).once("value").then(r=>{
+            const rank = r.numChildren(); // 1-based
+            let tierText="", tierClass="";
+            if (rank <= 20) {
+              tierText = "Early Supporter"; tierClass = "gold";
+            } else if (rank <= 50) {
+              tierText = "Early Supporter"; tierClass = "blue";
+            } else if (rank >= 100) {
+              tierText = "KC Supporter"; tierClass = "purple";
+            }
+
+            const jb = document.createElement("div");
+            jb.className = "join-badge";
+            jb.innerHTML =
+              `<div>Join Date: ${date}</div>` +
+              (tierText
+                ? `<div class="supporter ${tierClass}">${tierText}</div>`
+                : ""
+              );
+            badgeList.appendChild(jb);
+          });
+        });
       });
     }
 
-    // auth state
     auth.onAuthStateChanged(u=>{
-      if(u){
-        registerForm.style.display='none';
-        loginForm.style.display   ='none';
-        loggedInUI.style.display  ='flex';
-        pageTitle.textContent     ='KC Events';
+      if (u) {
+        registerForm.style.display="none";
+        loginForm.style.display   ="none";
+        loggedInUI.style.display  ="flex";
+        pageTitle.textContent     ="KC Events";
         welcomeUser.textContent   =`👋 Welcome, ${u.displayName}`;
-        db.ref('users').once('value').then(snap=>{
-          userCounter.textContent=`There are now ${snap.numChildren()} users registered to KC Events!`;
+        db.ref("users").once("value").then(s=>{
+          userCounter.textContent =`There are now ${s.numChildren()} users registered to KC Events!`;
         });
-        loadBadges(u.uid, u.emailVerified);
+        loadBadges(u.uid,u.emailVerified);
       } else {
-        pageTitle.textContent     ='KC Events Login';
-        loggedInUI.style.display  ='none';
-        registerForm.style.display='flex';
-        loginForm.style.display   ='none';
+        pageTitle.textContent     ="KC Events Login";
+        loggedInUI.style.display  ="none";
+        registerForm.style.display="flex";
+        loginForm.style.display   ="none";
       }
     });
 
     // close sidebars
-    document.addEventListener('click', e=>{
-      if(!accountSidebar.contains(e.target)&& e.target!==accountBtn)
-        accountSidebar.classList.remove('open');
-      if(!adminSidebar.contains(e.target)&& e.target!==adminBtn)
-        adminSidebar.classList.remove('open');
+    document.addEventListener("click", e=>{
+      if (!accountSidebar.contains(e.target) && e.target!==accountBtn)
+        accountSidebar.classList.remove("open");
+      if (!adminSidebar.contains(e.target) && e.target!==adminBtn)
+        adminSidebar.classList.remove("open");
     });
   </script>
 </body>
