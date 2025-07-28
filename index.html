@@ -272,6 +272,26 @@
           db   = firebase.database(),
           msgs = db.ref('messages');
 
+    // ========================
+    // EMAIL VERIFICATION SETUP
+    // ========================
+    const actionCodeSettings = {
+      url: window.location.origin + '/?mode=verifyEmail',
+      handleCodeInApp: true
+    };
+
+    // on-load: handle the verify-email link
+    window.addEventListener('load', () => {
+      const p = new URLSearchParams(window.location.search),
+            mode   = p.get('mode'),
+            oobCode= p.get('oobCode');
+      if (mode==='verifyEmail' && oobCode) {
+        auth.applyActionCode(oobCode)
+          .then(() => kcAlert('Email verified! You can now log in.'))
+          .catch(err => kcAlert('Verification error: ' + err.message));
+      }
+    });
+
     // profanity
     let badWords = [];
     fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
@@ -310,22 +330,46 @@
     showLogin.onclick = e=>{ e.preventDefault(); registerForm.style.display='none'; loginForm.style.display='block'; }
     showRegister.onclick = e=>{ e.preventDefault(); loginForm.style.display='none'; registerForm.style.display='block'; }
 
-    // register
+    // =====================
+    // REGISTER (w/ email verification)
+    // =====================
     registerBtn.onclick = ()=>{
       const n=regName.value.trim(), e=regEmail.value.trim(), p=regPass.value;
       if(!n||!e||!p) return kcAlert('Fill all fields.');
       auth.createUserWithEmailAndPassword(e,p)
-          .then(u=> u.user.updateProfile({displayName:n}) )
-          .then(()=> msgs.root.child(`users/${auth.currentUser.uid}`)
-                          .set({ displayName:n }) )
-          .catch(e=>kcAlert(e.message));
+        .then(uCred =>
+          uCred.user.updateProfile({displayName:n}).then(()=>uCred.user)
+        )
+        .then(user =>
+          msgs.root.child(`users/${user.uid}`)
+            .set({ displayName:n })
+            .then(()=> user)
+        )
+        .then(user =>
+          user.sendEmailVerification(actionCodeSettings)
+        )
+        .then(() => {
+          kcAlert('Verification email sent! Check your inbox before logging in.');
+        })
+        .catch(err => kcAlert(err.message));
     };
 
-    // login
+    // =====================
+    // LOGIN (block unverified)
+    // =====================
     loginBtn.onclick = ()=>{
       const e=loginEmail.value.trim(), p=loginPass.value;
       if(!e||!p) return kcAlert('Fill both fields.');
-      auth.signInWithEmailAndPassword(e,p).catch(e=>kcAlert(e.message));
+      auth.signInWithEmailAndPassword(e,p)
+        .then(uCred => {
+          if (!uCred.user.emailVerified) {
+            return auth.signOut().then(()=>{
+              throw new Error('Please verify your email before logging in.');
+            });
+          }
+          // otherwise proceed…
+        })
+        .catch(err => kcAlert(err.message));
     };
 
     // logout
@@ -356,6 +400,7 @@
     function validatePost(){
       postBtn.disabled = !(
         auth.currentUser &&
+        auth.currentUser.emailVerified &&
         selectedEmoji &&
         selectedGradient &&
         messageInput.value.trim()
@@ -379,7 +424,7 @@
       if(!arr.length){
         const li=document.createElement('li');
         li.style.fontStyle='italic'; li.style.opacity='.7';
-        li.textContent='No messages yet.';
+        li.textContent='No messages yet.'; 
         return msgList.appendChild(li);
       }
 
@@ -392,7 +437,6 @@
                  `${d.getUTCHours().toString().padStart(2,'0')}:`+
                  `${d.getUTCMinutes().toString().padStart(2,'0')} GMT`;
 
-        // build LI
         const li=document.createElement('li');
         li.className='message';
         li.dataset.path=`messages/${v.key}`;
@@ -415,7 +459,6 @@
           </div>
         `;
 
-        // gradient or white
         let nm=li.querySelector('.username');
         if(v.gradient){
           nm.style.backgroundImage=v.gradient;
@@ -427,7 +470,6 @@
 
         msgList.appendChild(li);
 
-        // reactions
         let bar=li.querySelector('.reactions'),
             existing=v.reactions||{};
         Object.keys(existing).forEach(emo=>{
@@ -443,17 +485,14 @@
         add.className='addBtn'; add.textContent='➕ Add';
         bar.appendChild(add);
 
-        // render nested replies
         if(v.replies){
           let replUL=li.querySelector('.replies');
           replUL.style.display='none';
           recurseReplies(v.replies,replUL,`messages/${v.key}`);
         }
-
       });
     }
 
-    // recursive replies
     function recurseReplies(obj, ul, base){
       Object.entries(obj).forEach(([k,rv])=>{
         if(containsBadWord(rv.user)||containsBadWord(rv.text)) return;
@@ -492,11 +531,9 @@
       });
     }
 
-    // UI delegation
     document.body.addEventListener('click', e=>{
       let u=auth.currentUser;
 
-      // toggleReplies
       if(e.target.matches('.toggleReplies')){
         let btn=e.target,
             UL=btn.parentNode.querySelector('.replies');
@@ -506,9 +543,8 @@
         return;
       }
 
-      // like
       if(e.target.closest('.likeBtn')){
-        if(!u) return kcAlert('Log in to like.');
+        if(!u || !u.emailVerified) return kcAlert('Log in and verify to like.');
         let p=e.target.closest('li').dataset.path;
         db.ref(`${p}/likedBy/${u.uid}`)
           .transaction(cur=>cur===null?true:undefined,
@@ -520,9 +556,8 @@
         return;
       }
 
-      // react
       if(e.target.closest('.reactBtn')){
-        if(!u) return kcAlert('Log in to react.');
+        if(!u || !u.emailVerified) return kcAlert('Log in and verify to react.');
         let btn=e.target.closest('.reactBtn'),
             p=btn.dataset.path;
         db.ref(p+`/${u.uid}`)
@@ -531,9 +566,8 @@
         return;
       }
 
-      // add reaction
       if(e.target.matches('.addBtn')){
-        if(!u) return kcAlert('Log in to react.');
+        if(!u || !u.emailVerified) return kcAlert('Log in and verify to react.');
         let li=e.target.closest('li'),
             p=li.dataset.path,
             bar=li.querySelector('.reactions'),
@@ -556,9 +590,8 @@
         return;
       }
 
-      // reply (opens inline form)
       if(e.target.closest('.replyBtn')){
-        if(!u) return kcAlert('Log in to reply.');
+        if(!u || !u.emailVerified) return kcAlert('Log in and verify to reply.');
         let li=e.target.closest('li'),
             p=li.dataset.path+'/replies';
         if(li.nextElementSibling?.classList.contains('reply-row')) return;
@@ -582,7 +615,6 @@
         return;
       }
 
-      // delete own
       if(e.target.closest('.deleteBtn')){
         let p=e.target.closest('li').dataset.path;
         if(confirm('Delete this message and its replies?'))
@@ -591,10 +623,9 @@
       }
     });
 
-    // post new message
     postBtn.onclick = ()=>{
       let u=auth.currentUser, txt=messageInput.value.trim();
-      if(!u) return kcAlert('Log in to post.');
+      if(!u || !u.emailVerified) return kcAlert('Log in and verify to post.');
       if(!selectedEmoji) return kcAlert('Pick an emoji.');
       if(!selectedGradient) return kcAlert('Pick a gradient.');
       if(!txt) return kcAlert('Enter a message.');
@@ -611,17 +642,14 @@
       messageInput.value=''; validatePost();
     };
 
-    // listen for new messages
     msgs.on('value',snap=>{
       lastSnap=snap; render();
     });
 
-    // sorting
     sortSelect.onchange = ()=>{
       sortMode=sortSelect.value; render();
     };
 
-    // auth state UI
     auth.onAuthStateChanged(u=>{
       if(u){
         registerForm.style.display='none';
