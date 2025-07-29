@@ -9,216 +9,438 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     html, body {
-      height:100%; margin:0; padding:0;
-      font-family:'Poppins',sans-serif; color:#fff;
-      background:url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
-      display:flex; align-items:center; justify-content:center;
+      height: 100%; margin: 0; padding: 0;
+      font-family: 'Poppins', sans-serif; color: #222;
+      background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
+      display: flex; align-items: flex-start; justify-content: center;
+      min-height: 100vh;
     }
-    .auth-card {
-      background:rgba(0,0,0,0.78);
-      border-radius:18px;
-      box-shadow:0 8px 40px rgba(0,0,0,0.65);
-      padding:2.5rem 2rem;
-      width:100%; max-width:380px;
-      display:flex; flex-direction:column; align-items:center; gap:1rem;
-      box-sizing:border-box;
-      transition:max-width .3s;
+    #main-wrapper {
+      width: 100vw; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center;
     }
-    .logo-img { max-width:90px; }
-    h2 { font-size:2rem; margin:0; text-align:center; }
-    .error-msg { min-height:1.2em; color:#f87171; text-align:center; }
+    .kc-logo {
+      width: 70px; margin: 32px auto 0 auto; display: block;
+    }
+    .kc-title {
+      font-size: 2.3rem; font-weight: 700;
+      text-align: center; margin: 0 0 32px 0;
+      color: #fff; letter-spacing: .02em;
+      text-shadow: 0 2px 16px #2227, 0 1px 2px #8885;
+    }
+    .flex-row {
+      display: flex; gap: 2.5vw; align-items: flex-start; justify-content: center;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: linear-gradient(135deg, #fff 65%, #e9ecf4 100%);
+      border-radius: 32px;
+      box-shadow: 0 6px 40px #0001;
+      padding: 36px 36px 30px 36px;
+      min-width: 350px; max-width: 390px;
+      min-height: 520px;
+      display: flex; flex-direction: column;
+      position: relative;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 960px) {
+      .flex-row { flex-direction: column; align-items: center; gap: 32px;}
+      .card { max-width: 96vw; min-width: 0; width: 100%; }
+    }
+    /* Profile Card */
+    .profile-title {
+      font-size: 1.3rem; font-weight: 600; margin: 0 0 16px 0;
+    }
+    .profile-welcome {
+      font-size: 1.08rem; font-weight: 600;
+      margin-bottom: 0.9rem;
+      color: #17a589;
+      display: flex; align-items: center; gap: .38em;
+      word-break: break-word;
+    }
+    .profile-counter {
+      color: #669; font-size: 1rem; margin-bottom: 1.3rem;
+    }
+    .profile-icon-bar {
+      display: flex; gap: 22px; margin-top: 16px;
+      justify-content: center;
+    }
+    .profile-icon-btn {
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 2px 10px #3332;
+      border: none;
+      width: 55px; height: 55px; font-size: 2rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: box-shadow .18s, transform .15s;
+      margin: 0 2px;
+      outline: none;
+    }
+    .profile-icon-btn:active, .profile-icon-btn:focus {
+      box-shadow: 0 2px 14px #0055ffaa;
+      transform: scale(0.96);
+    }
 
-    /* LOGGED-OUT FORMS */
-    #authForms { width:100%; display:flex; flex-direction:column; gap:1rem; }
-    .form-section { display:flex; flex-direction:column; gap:.8rem; }
-    .form-section input {
-      padding:.7rem .9rem; border:none; border-radius:7px;
-      background:#212121; color:#fff; font-size:1rem; outline:none;
-      transition:background .2s;
+    /* Badges Card */
+    .badges-header {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #e6b300;
+      margin: 0 0 8px 0;
+      text-align: center;
+      text-shadow: 0 2px 20px #fff5, 0 1px 2px #fb0a;
     }
-    .form-section input:focus { background:#18181b; }
-    .btn-orange, .btn-red {
-      padding:.68rem; border:none; border-radius:7px;
-      font-size:1.1rem; font-weight:700; cursor:pointer;
-      color:#fff; transition:background .2s;
+    .badges-sub {
+      font-style: italic; color: #536082; margin-bottom: 26px;
+      text-align: center; font-size: 1.1rem;
     }
-    .btn-orange { background:linear-gradient(90deg,#FF1C1C,#E1AB33); }
-    .btn-orange:hover { background:#E1AB33; }
-    .btn-red { background:linear-gradient(90deg,#FF1C1C,#C81D25); }
-    .btn-red:hover { background:#E11D48; }
-    .switch-link {
-      text-align:center; color:#3B82F6; cursor:pointer; text-decoration:underline;
-      font-size:.96rem;
+    .badges-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; margin-bottom: 26px;
     }
-
-    /* LOGGED-IN TWO-COLUMN */
-    #loggedInUI {
-      display:none; width:100%; max-width:720px;
-      box-sizing:border-box;
-      flex-direction:row; align-items:stretch; gap:1rem;
+    .badge-item {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 22px;
+      height: 112px; background: #f4f4f4;
+      box-shadow: 0 2px 10px #ccd2ee33;
+      cursor: pointer;
+      position: relative;
+      transition: box-shadow .18s, transform .13s;
+      border: none;
+      font-size: 1.03rem;
     }
-    #loggedInUI.show { display:flex !important; }
-
-    .top-container {
-      flex:1; max-width:48%;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:space-between;
-      padding:1rem 0; border-bottom:1px solid rgba(255,255,255,0.2);
+    .badge-item.locked {
+      filter: grayscale(0.8) brightness(1.05);
+      background: #e5e6ea;
+      color: #aaa;
+      cursor: pointer;
+      opacity: 0.80;
     }
-    .welcome { font-size:1.3rem; font-weight:600; text-align:center; }
-    .user-counter { font-size:1.09rem; text-align:center; }
-    .icon-bar { display:flex; gap:.5rem; }
-    .icon-btn {
-      font-size:1.5rem; cursor:pointer; opacity:.8;
-      transition:opacity .2s; user-select:none;
+    .badge-item .lock-icon {
+      position: absolute; top: 12px; right: 18px;
+      font-size: 1.4rem; color: #999;
+      opacity: 0.9;
+      pointer-events: none;
     }
-    .icon-btn:hover { opacity:1; }
-
-    .badges-container {
-      flex:1; max-width:48%;
-      display:flex; flex-direction:column; gap:1rem;
+    .badge-item .badge-mult {
+      position: absolute; top: 12px; right: 18px;
+      background: #fff; color: #333;
+      border-radius: 1.2em; min-width: 2em; min-height: 1.8em;
+      font-weight: 700; font-size: 1.1em; box-shadow: 0 1px 8px #9992;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 0.55em; z-index: 10;
+      border: 2px solid #fff;
     }
-    .badges {
-      width:100%; padding:1rem; border:1px solid rgba(255,255,255,0.5);
-      border-radius:8px; display:flex; flex-direction:column; gap:1rem;
+    .badge-item img {
+      width: 36px; height: 36px; margin-bottom: 5px;
     }
-    .badges h3 {
-      text-align:center; margin:0; font-size:1.4rem; text-shadow:0 0 8px #fff;
+    .badge-item .badge-label {
+      font-weight: 600; font-size: 1.07rem; letter-spacing: .01em;
+      margin-top: 2px;
+      text-align: center;
     }
-    #badgeList {
-      display:grid; grid-template-columns:repeat(2,1fr); gap:.75rem;
+    .badge-item.verified:hover, .badge-item.verified:focus {
+      box-shadow: 0 0 16px 0 #11df95cc, 0 6px 18px #17a58944;
+      transform: translateY(-3px) scale(1.045);
     }
-    .badge {
-      height:100px; border-radius:12px; padding:.8rem;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      color:#fff; text-align:center; box-shadow:0 0 12px rgba(255,255,255,0.4);
-      position:relative;
+    .badge-item.locked:hover, .badge-item.locked:focus {
+      box-shadow: 0 0 12px 0 #aaa8, 0 1px 6px #aaa4;
+      transform: none;
     }
-    .badge img { width:32px; height:32px; margin-bottom:.5rem; }
-    .badge.locked { background:#444; opacity:.5; }
-    .badge.locked::after {
-      content:'🔒'; position:absolute; top:8px; right:8px; font-size:1.2rem;
+    .badge-item.offence:hover, .badge-item.offence:focus {
+      box-shadow: 0 0 18px 0 #ef4744cc, 0 4px 14px #f44a4a44;
+      transform: translateY(-3px) scale(1.045);
     }
-    .badge.verified { background:linear-gradient(90deg,#10B981,#34D399); cursor:pointer; }
-    .badge.unverified { background:#6B7280; cursor:pointer; }
-    .multiplier {
-      margin-top:.5rem; padding:0 .5rem; border-radius:4px;
-      font-weight:700; font-size:.9rem; color:#fff; background:#b87333;
+    .badge-item.defence:hover, .badge-item.defence:focus {
+      box-shadow: 0 0 18px 0 #4489f6cc, 0 4px 14px #569cff44;
+      transform: translateY(-3px) scale(1.045);
     }
+    .badge-item.overall:hover, .badge-item.overall:focus {
+      box-shadow: 0 0 18px 0 #e8be31cc, 0 4px 14px #ffe18444;
+      transform: translateY(-3px) scale(1.045);
+    }
+    /* Join badge */
     .join-badge {
-      grid-column:1/-1; text-align:center;
-      padding:.6rem 1rem; border-radius:8px; background:rgba(255,255,255,0.1);
+      margin: 16px auto 0 auto; padding: 10px 0 0 0;
+      text-align: center; font-size: 1rem; color: #544;
     }
     .supporter {
-      margin-top:.3rem; padding:.3rem .8rem; border-radius:6px;
-      font-weight:600; font-size:.92rem; color:#fff; text-shadow:0 0 6px rgba(255,255,255,0.7);
+      margin-top: .6rem; padding: .45rem 1.1rem; border-radius: 10px;
+      font-weight: 600; font-size: .98rem; color: #fff;
+      box-shadow: 0 2px 14px #ebaf008f;
+      background: linear-gradient(90deg,#FFD700,#FFC107 95%);
+      border: none;
+      display: inline-block;
     }
-    .supporter.gold   { background:linear-gradient(90deg,#FFD700,#FFC107); }
-    .supporter.blue   { background:linear-gradient(90deg,#3B82F6,#60A5FA); }
-    .supporter.purple { background:linear-gradient(90deg,#8B5CF6,#C084FC); }
-    .version { text-align:center; opacity:.8; }
+    .version {
+      margin-top: 18px; color: #b7c3d0; text-align: center; font-size: 1.03em;
+    }
+    /* KC Alert */
+    .kc-alert {
+      position: fixed; top: 32px; left: 50%; transform: translateX(-50%);
+      background: #fff; color: #232f38; font-weight: 600; font-size: 1.13rem;
+      padding: 13px 32px; border-radius: 15px; box-shadow: 0 2px 20px #2263;
+      z-index: 2000; min-width: 160px; max-width: 96vw;
+      opacity: 1; transition: opacity .16s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .kc-alert.hide { opacity: 0; pointer-events: none; }
 
-    /* Sidebar */
+
+    /* Account/Admin Sidebars */
     .sidebar {
-      position:fixed; top:0; right:0; height:100%; width:260px;
-      background:rgba(0,0,0,0.95); transform:translateX(100%);
-      transition:transform .3s; display:flex; flex-direction:column; gap:1rem;
-      padding:1.5rem; box-sizing:border-box; z-index:1000;
+      position: fixed; top: 0; right: 0; height: 100%; width: 340px; max-width: 94vw;
+      background: linear-gradient(135deg, #fff 65%, #e7eaf3 100%);
+      box-shadow: -4px 0 24px #0003;
+      transform: translateX(110%);
+      transition: transform .28s cubic-bezier(.72,0,.26,1.03);
+      z-index: 2100;
+      padding: 32px 18px 24px 30px; box-sizing: border-box;
+      display: flex; flex-direction: column; gap: 16px;
     }
-    .sidebar.open { transform:translateX(0); }
-    .sidebar h3 { margin:0; text-align:center; font-size:1.2rem; }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar h2 { font-size: 1.25rem; font-weight: 700; margin: 0 0 12px 0;}
+    .sidebar label { display: block; font-size: 1.07rem; margin: 0 0 4px 2px;}
     .sidebar input, .sidebar select {
-      width:100%; padding:.5rem; border:none; border-radius:6px;
-      background:#212121; color:#fff; margin-bottom:1rem;
+      width: 100%; margin: 0 0 12px 0;
+      font-size: 1.05rem; border-radius: 8px; border: 1px solid #dde3ee;
+      background: #f5f7fc; padding: 8px 10px;
+      transition: border .16s; outline: none;
+      color: #253047;
     }
-    .sidebar .btn-orange { background:linear-gradient(90deg,#FF1C1C,#E1AB33); }
-    .sidebar .btn-red    { background:linear-gradient(90deg,#FF1C1C,#C81D25); }
-    @media(max-width:600px){
-      .auth-card { max-width:90vw; padding:1.5rem; }
-      #loggedInUI { flex-direction:column !important; max-width:90vw; }
-      .top-container, .badges-container {
-        max-width:100%; border-bottom:none; padding:.5rem 0;
-      }
-      #badgeList { grid-template-columns:1fr; }
+    .sidebar input:focus { border: 1.5px solid #3899ff; }
+    .sidebar .sidebar-btn, .sidebar .sidebar-btn-red {
+      font-size: 1.12rem; font-weight: 600;
+      border: none; border-radius: 8px;
+      padding: 10px 0; margin-bottom: 8px;
+      background: linear-gradient(90deg, #13ce7c 0%, #44b0ef 100%);
+      color: #fff; cursor: pointer; transition: box-shadow .13s, background .13s;
+      box-shadow: 0 2px 10px #6db8fb22;
+      width: 100%;
+      letter-spacing: .01em;
     }
+    .sidebar .sidebar-btn:hover, .sidebar .sidebar-btn:focus {
+      background: linear-gradient(90deg, #08d763 0%, #4183f8 100%);
+      box-shadow: 0 3px 16px #338be955;
+      color: #fff;
+    }
+    .sidebar .sidebar-btn-red {
+      background: #f44336;
+      box-shadow: 0 3px 16px #e54e4e55;
+      color: #fff;
+      margin-top: 6px;
+    }
+    .sidebar .sidebar-btn-red:hover { background: #d32f2f; }
+    .sidebar .close-btn {
+      position: absolute; right: 26px; top: 22px;
+      font-size: 1.09rem; background: #f44336;
+      color: #fff; border-radius: 9px; padding: 7px 26px; font-weight: 600;
+      border: none; cursor: pointer;
+      box-shadow: 0 2px 10px #dc535555;
+      transition: background .13s;
+    }
+    .sidebar .close-btn:hover { background: #d32f2f; }
+    .sidebar .delete-warning {
+      color: #e53935; font-weight: 600; text-align: center; margin: 16px 0 8px 0;
+      font-size: 1.1rem;
+    }
+    /* Admin User List */
+    .admin-users-list {
+      background: #f6f7fb;
+      border-radius: 9px; box-shadow: 0 1px 8px #dde3ee88;
+      margin: 0 0 16px 0; padding: 6px 2px 6px 12px; max-height: 240px; overflow-y: auto;
+      font-size: .99rem;
+      font-family: inherit;
+    }
+    .admin-users-list ul {
+      margin: 0; padding: 0; list-style: none;
+    }
+    .admin-users-list li {
+      padding: 6px 0 7px 0; border-bottom: 1px solid #eee;
+      font-size: 1.02em; display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .admin-badge-list {
+      display: flex; gap: 7px;
+    }
+    .admin-badge-count {
+      background: #eee; color: #234;
+      font-weight: 700; font-size: 1em;
+      border-radius: 9px; padding: 2px 8px 2px 7px;
+      margin-left: 3px;
+      box-shadow: 0 1px 3px #2222;
+    }
+    /* Auth forms */
+    #authForms {
+      display: flex; flex-direction: column; gap: 1.3rem; align-items: center;
+      margin-top: 18px;
+      min-width: 320px;
+    }
+    .form-section { display: flex; flex-direction: column; gap: .85rem; }
+    .form-section input {
+      padding: .75rem .9rem; border: none; border-radius: 7px;
+      background: #f6f7fc; color: #222; font-size: 1.04rem; outline: none;
+      transition: background .18s;
+      border: 1.2px solid #e6ebf2;
+    }
+    .form-section input:focus { background: #ebeff6; border-color: #53c4fa;}
+    .form-section .form-btn {
+      padding: .68rem; border: none; border-radius: 7px;
+      font-size: 1.08rem; font-weight: 700; cursor: pointer;
+      color: #fff; transition: background .18s;
+      background: linear-gradient(90deg,#1ee57c,#50b2fa);
+    }
+    .form-section .form-btn:hover { background: linear-gradient(90deg,#19df7e,#30a9f8);}
+    .switch-link {
+      text-align: center; color: #318be9; cursor: pointer; text-decoration: underline;
+      font-size: .97rem;
+    }
+    /* Confirmation Dialog */
+    .confirm-overlay {
+      position: fixed; z-index: 5000;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: #2d415080;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .confirm-box {
+      background: #fff; color: #1c2228; font-size: 1.14rem;
+      padding: 28px 42px 18px 42px; border-radius: 18px; box-shadow: 0 3px 26px #2336;
+      text-align: center;
+      min-width: 290px;
+    }
+    .confirm-box .confirm-btn {
+      font-size: 1.09rem; font-weight: 600; border: none;
+      padding: 10px 26px; border-radius: 8px;
+      margin: 10px 8px 0 8px; cursor: pointer;
+      background: linear-gradient(90deg,#1ee57c,#50b2fa); color: #fff;
+      transition: background .14s;
+    }
+    .confirm-box .confirm-btn:hover { background: linear-gradient(90deg,#19df7e,#30a9f8);}
+    .confirm-box .confirm-btn.cancel {
+      background: #eee; color: #234; box-shadow: none;
+    }
+    /* Hide scrollbar on small screens for user list */
+    @media(max-width:700px){
+      .card { padding: 16px 2vw; min-width: unset;}
+      .sidebar { width: 99vw; max-width: 99vw; left: 0; border-radius: 0;}
+      .admin-users-list {max-height:140px;}
+    }
+       .supporter.early {
+  background: linear-gradient(90deg, #FFD700, #FFC107 95%);
+  color: #fff;
+  box-shadow: 0 2px 18px #FFD70088, 0 4px 24px #FFC10766;
+}
+
+.supporter.supporter {
+  background: linear-gradient(90deg, #51caff, #376fff 95%);
+  color: #fff;
+  box-shadow: 0 2px 18px #51caff88, 0 4px 24px #376fff66;
+}
+
+.supporter.newgen {
+  background: linear-gradient(90deg, #38d98a, #62f2a7 95%);
+  color: #fff;
+  box-shadow: 0 2px 18px #38d98a88, 0 4px 24px #62f2a766;
+}
+
   </style>
 </head>
 <body>
-  <div class="auth-card">
-    <!-- logo + dynamic title -->
-    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="logo-img" alt="Logo"/>
-    <h2 id="pageTitle">KC Events Login</h2>
-    <div id="error" class="error-msg"></div>
-
-    <!-- logged-out -->
-    <div id="authForms">
-      <div class="form-section" id="registerForm">
-        <input id="regName" placeholder="Display Name"/>
-        <input id="regEmail" type="email" placeholder="Email"/>
-        <input id="regPass" type="password" placeholder="Password"/>
-        <button id="registerBtn" class="btn-orange">Register</button>
-        <div class="switch-link" id="toLogin">Already have an account? Log In</div>
-      </div>
-      <div class="form-section" id="loginForm" style="display:none">
-        <input id="loginEmail" type="email" placeholder="Email"/>
-        <input id="loginPass" type="password" placeholder="Password"/>
-        <button id="loginBtn" class="btn-orange">Log In</button>
-        <div class="switch-link" id="toRegister">No account? Register</div>
-      </div>
-    </div>
-
-    <!-- logged-in -->
-    <div id="loggedInUI">
-      <!-- left panel -->
-      <div class="top-container">
-        <h2>Profile:</h2>
-        <div class="welcome" id="welcomeUser"></div>
-        <div class="user-counter" id="userCounter"></div>
-        <div class="icon-bar">
-          <div id="accountOptionsBtn" class="icon-btn">⚙️</div>
-          <div id="adminPortalBtn"    class="icon-btn">🛠️</div>
+  <div id="main-wrapper">
+    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-logo" alt="KC Events Logo"/>
+    <div class="kc-title">KC Events</div>
+    <div class="flex-row" id="mainContent">
+      <!-- PROFILE / LOGGED OUT CARD -->
+      <div class="card" id="profileCard">
+        <!-- LOGGED OUT -->
+        <div id="authForms">
+          <div class="form-section" id="registerForm">
+            <input id="regName" placeholder="Display Name"/>
+            <input id="regEmail" type="email" placeholder="Email"/>
+            <input id="regPass" type="password" placeholder="Password"/>
+            <button id="registerBtn" class="form-btn">Register</button>
+            <div class="switch-link" id="toLogin">Already have an account? Log In</div>
+          </div>
+          <div class="form-section" id="loginForm" style="display:none">
+            <input id="loginEmail" type="email" placeholder="Email"/>
+            <input id="loginPass" type="password" placeholder="Password"/>
+            <button id="loginBtn" class="form-btn">Log In</button>
+            <div class="switch-link" id="toRegister">No account? Register</div>
+          </div>
+        </div>
+        <!-- LOGGED IN -->
+        <div id="profileUI" style="display:none">
+          <div class="profile-title">Profile:</div>
+          <div class="profile-welcome" id="welcomeUser"></div>
+          <div class="profile-counter" id="userCounter"></div>
+          <div class="profile-icon-bar">
+            <button id="accountOptionsBtn" class="profile-icon-btn" title="Account Options">⚙️</button>
+            <button id="adminPortalBtn" class="profile-icon-btn" title="Admin Portal">🛠️</button>
+          </div>
         </div>
       </div>
-      <!-- right panel -->
-      <div class="badges-container">
-        <div class="badges">
-          <h3>Badges 🏅</h3>
-          <div id="badgeList"></div>
-          <div class="version">KC Events V1</div>
-        </div>
+      <!-- BADGES CARD -->
+      <div class="card" id="badgesCard" style="min-width:320px;">
+        <div class="badges-header">Badges <span style="font-size:1.08em;">🏅</span></div>
+        <div class="badges-sub">Your Progress</div>
+        <div class="badges-grid" id="badgeList"></div>
+        <div class="join-badge" id="joinBadge"></div>
+        <div class="version">KC Events V1</div>
       </div>
     </div>
   </div>
-
-  <!-- sidebars -->
+  <!-- KC Alert -->
+  <div id="kcAlert" class="kc-alert" style="display:none"></div>
+  <!-- Sidebars (Account / Admin) -->
   <div id="accountSidebar" class="sidebar">
-    <h3>Account Options</h3>
-    <button id="signOutBtn" class="btn-red">Sign Out</button>
-    <button id="resetPassBtn" class="btn-red">Reset Password</button>
-    <button id="deleteAcctBtn" class="btn-red">Delete Account</button>
+    <button class="close-btn" id="closeAccountSidebar">Close</button>
+    <h2>Account Options</h2>
+    <button id="signOutBtn" class="sidebar-btn">Sign Out</button>
+    <button id="resetPassBtn" class="sidebar-btn">Reset Password</button>
+    <button id="deleteAcctBtn" class="sidebar-btn-red">Delete Account</button>
   </div>
   <div id="adminSidebar" class="sidebar">
-    <h3>Admin Portal</h3>
-    <div id="adminLoginForm">
-      <input id="adminPass" type="password" placeholder="Admin Password"/>
-      <button id="adminLoginBtn" class="btn-orange">Enter</button>
+    <button class="close-btn" id="closeAdminSidebar">Close</button>
+    <h2>Admin Portal</h2>
+    <div id="adminAuthSection">
+      <label>Admin Password</label>
+      <input id="adminPass" type="password" placeholder="Password"/>
+      <button id="adminLoginBtn" class="sidebar-btn">Enter</button>
     </div>
-    <div id="adminControls" style="display:none">
+    <div id="adminContent" style="display:none">
+      <label>Edit Badges For User:</label>
       <select id="userSelect"></select>
-      <button data-badge="offence" class="btn-orange">Best Offence</button>
-      <button data-badge="defence" class="btn-orange">Best Defence</button>
-      <button data-badge="overall" class="btn-orange">Overall Winner</button>
+      <div style="display:flex; gap:7px; margin-bottom:8px;">
+        <button data-badge="offence" class="sidebar-btn" id="addOffence">+ Offence</button>
+        <button data-badge="defence" class="sidebar-btn" id="addDefence">+ Defence</button>
+        <button data-badge="overall" class="sidebar-btn" id="addOverall">+ Overall</button>
+      </div>
+      <div style="display:flex; gap:7px; margin-bottom:12px;">
+        <button data-badge="offence" class="sidebar-btn-red" id="remOffence">- Offence</button>
+        <button data-badge="defence" class="sidebar-btn-red" id="remDefence">- Defence</button>
+        <button data-badge="overall" class="sidebar-btn-red" id="remOverall">- Overall</button>
+      </div>
+      <button id="saveAdmin" class="sidebar-btn">Save Changes</button>
+      <label style="margin-top:16px;">All Users & Badges:</label>
+      <div class="admin-users-list" id="adminUsersList"><ul></ul></div>
     </div>
   </div>
-
+  <!-- Delete Confirm Dialog -->
+  <div id="confirmOverlay" class="confirm-overlay" style="display:none;">
+    <div class="confirm-box">
+      <div id="confirmMsg">Are you sure you want to delete your account?</div>
+      <button class="confirm-btn" id="confirmYesBtn">Yes</button>
+      <button class="confirm-btn cancel" id="confirmNoBtn">No</button>
+    </div>
+  </div>
   <script>
-    // Firebase setup (your original config)
+    // ========== FIREBASE INIT ==========
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
       databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "kckillerscompany-ab1ec",
-      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      storageBucket: "kckillerscompany-ab1ec.appspot.com",
       messagingSenderId: "198711213988",
       appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
       measurementId: "G-4LKP2M3JXE"
@@ -230,10 +452,9 @@
       handleCodeInApp: true
     };
 
-    // UI refs
-    const pageTitle    = document.getElementById("pageTitle"),
-          errorMsg     = document.getElementById("error"),
-          authForms    = document.getElementById("authForms"),
+    // ========== UI REFS ==========
+    // Forms
+    const authForms    = document.getElementById("authForms"),
           registerForm = document.getElementById("registerForm"),
           loginForm    = document.getElementById("loginForm"),
           regName      = document.getElementById("regName"),
@@ -244,39 +465,80 @@
           loginPass    = document.getElementById("loginPass"),
           loginBtn     = document.getElementById("loginBtn"),
           toLogin      = document.getElementById("toLogin"),
-          toRegister   = document.getElementById("toRegister"),
-          loggedInUI   = document.getElementById("loggedInUI"),
+          toRegister   = document.getElementById("toRegister");
+    // Logged in/out
+    const profileUI    = document.getElementById("profileUI"),
           welcomeUser  = document.getElementById("welcomeUser"),
           userCounter  = document.getElementById("userCounter"),
           badgeList    = document.getElementById("badgeList"),
-          accountBtn   = document.getElementById("accountOptionsBtn"),
+          joinBadge    = document.getElementById("joinBadge"),
+          badgesCard   = document.getElementById("badgesCard"),
+          mainContent  = document.getElementById("mainContent"),
+          profileCard  = document.getElementById("profileCard");
+    // Icons/Menus
+    const accountBtn   = document.getElementById("accountOptionsBtn"),
           adminBtn     = document.getElementById("adminPortalBtn"),
           accountSidebar = document.getElementById("accountSidebar"),
           adminSidebar   = document.getElementById("adminSidebar"),
+          closeAccountSidebar = document.getElementById("closeAccountSidebar"),
+          closeAdminSidebar   = document.getElementById("closeAdminSidebar"),
           signOutBtn   = document.getElementById("signOutBtn"),
           resetPassBtn = document.getElementById("resetPassBtn"),
           deleteAcctBtn= document.getElementById("deleteAcctBtn"),
-          adminLoginBtn= document.getElementById("adminLoginBtn"),
-          adminPassInput= document.getElementById("adminPass"),
-          adminLoginForm= document.getElementById("adminLoginForm"),
-          adminControls = document.getElementById("adminControls"),
-          userSelect    = document.getElementById("userSelect");
+          confirmOverlay = document.getElementById("confirmOverlay"),
+          confirmYesBtn  = document.getElementById("confirmYesBtn"),
+          confirmNoBtn   = document.getElementById("confirmNoBtn"),
+          kcAlertDiv   = document.getElementById("kcAlert");
+    // Admin panel
+    const adminPassInput = document.getElementById("adminPass"),
+          adminLoginBtn  = document.getElementById("adminLoginBtn"),
+          adminAuthSection = document.getElementById("adminAuthSection"),
+          adminContent     = document.getElementById("adminContent"),
+          userSelect      = document.getElementById("userSelect"),
+          addOffence      = document.getElementById("addOffence"),
+          addDefence      = document.getElementById("addDefence"),
+          addOverall      = document.getElementById("addOverall"),
+          remOffence      = document.getElementById("remOffence"),
+          remDefence      = document.getElementById("remDefence"),
+          remOverall      = document.getElementById("remOverall"),
+          saveAdmin       = document.getElementById("saveAdmin"),
+          adminUsersList  = document.getElementById("adminUsersList");
 
-    function kcAlert(txt){ errorMsg.textContent = txt; }
+    // ========== KC ALERT SYSTEM ==========
+    let alertTimeout;
+    function kcAlert(txt, timeout=2350) {
+      kcAlertDiv.textContent = txt;
+      kcAlertDiv.style.display = "flex";
+      kcAlertDiv.classList.remove("hide");
+      if(alertTimeout) clearTimeout(alertTimeout);
+      alertTimeout = setTimeout(()=>{ kcAlertDiv.classList.add("hide"); }, timeout);
+    }
 
-    // Toggle forms
-    toLogin .onclick = ()=>{ registerForm.style.display="none"; loginForm.style.display="flex"; kcAlert(""); };
-    toRegister.onclick = ()=>{ loginForm.style.display="none"; registerForm.style.display="flex"; kcAlert(""); };
+    // ========== SIDEBAR CONTROLS ==========
+    // Account menu
+    accountBtn.onclick = () => { accountSidebar.classList.add("open"); };
+    closeAccountSidebar.onclick = () => { accountSidebar.classList.remove("open"); };
+    // Admin menu
+    adminBtn.onclick = () => { adminSidebar.classList.add("open"); };
+    closeAdminSidebar.onclick = () => { adminSidebar.classList.remove("open"); };
 
-    // Sidebars
-    accountBtn.onclick = ()=> accountSidebar.classList.add("open");
-    adminBtn.onclick   = ()=> adminSidebar.classList.add("open");
-    document.addEventListener("click", e=>{
-      if(!accountSidebar.contains(e.target)&&e.target!==accountBtn) accountSidebar.classList.remove("open");
-      if(!adminSidebar.contains(e.target)&&e.target!==adminBtn)   adminSidebar.classList.remove("open");
+    // Clicking outside closes menus
+    document.addEventListener("mousedown", e=>{
+      if(!accountSidebar.contains(e.target) && e.target!==accountBtn) accountSidebar.classList.remove("open");
+      if(!adminSidebar.contains(e.target) && e.target!==adminBtn) adminSidebar.classList.remove("open");
     });
 
-    // Register
+    // ========== REGISTER/LOGIN TOGGLE ==========
+    toLogin.onclick = ()=>{
+      registerForm.style.display="none"; loginForm.style.display="flex";
+      kcAlertDiv.style.display = "none";
+    };
+    toRegister.onclick = ()=>{
+      loginForm.style.display="none"; registerForm.style.display="flex";
+      kcAlertDiv.style.display = "none";
+    };
+
+    // ========== AUTH LOGIC ==========
     registerBtn.onclick = ()=>{
       const name=regName.value.trim(), email=regEmail.value.trim(), pass=regPass.value;
       if(!name||!email||!pass) return kcAlert("Fill all fields.");
@@ -287,8 +549,6 @@
         .then(()=>kcAlert("Verification email sent!"))
         .catch(e=>kcAlert(e.message));
     };
-
-    // Login
     loginBtn.onclick = ()=>{
       const email=loginEmail.value.trim(), pass=loginPass.value;
       if(!email||!pass) return kcAlert("Enter email and password!");
@@ -302,7 +562,7 @@
         .catch(e=>kcAlert(e.message));
     };
 
-    // Account actions
+    // ========== ACCOUNT ACTIONS ==========
     signOutBtn.onclick = ()=>auth.signOut().then(()=>kcAlert("Signed out"));
     resetPassBtn.onclick = ()=>{
       const u=auth.currentUser; if(!u) return kcAlert("Not signed in");
@@ -311,99 +571,234 @@
         .catch(e=>kcAlert(e.message));
     };
     deleteAcctBtn.onclick = ()=>{
-      const u=auth.currentUser; if(!u) return;
-      if(!confirm("Delete account?")) return;
-      u.delete()
-       .then(()=>kcAlert("Account deleted"))
-       .catch(err=>{
-         if(err.code==="auth/requires-recent-login")
-           kcAlert("Please sign out and back in before deleting.");
-         else kcAlert(err.message);
-       });
+      document.getElementById("confirmMsg").textContent = "Are you sure you want to delete your account?";
+      confirmOverlay.style.display = "flex";
+      confirmYesBtn.onclick = ()=>{
+        const u=auth.currentUser; if(!u) return;
+        u.delete()
+         .then(()=>{
+           confirmOverlay.style.display = "none";
+           kcAlert("Account deleted");
+         })
+         .catch(err=>{
+           confirmOverlay.style.display = "none";
+           if(err.code==="auth/requires-recent-login")
+             kcAlert("Please sign out and back in before deleting.");
+           else kcAlert(err.message);
+         });
+      };
+      confirmNoBtn.onclick = ()=>{
+        confirmOverlay.style.display = "none";
+      };
     };
 
-    // Admin
+    // ========== ADMIN PORTAL ==========
+    let adminAuthenticated = false;
     adminLoginBtn.onclick = ()=>{
       if(adminPassInput.value==="events2025KC"){
+        adminAuthenticated = true;
+        adminAuthSection.style.display="none";
+        adminContent.style.display="block";
         kcAlert("Admin authenticated");
-        adminLoginForm.style.display="none";
-        adminControls.style.display="flex";
-        db.ref("users").once("value").then(snap=>{
-          userSelect.innerHTML="";
-          snap.forEach(c=>{ let o=document.createElement("option"); o.value=c.key; o.textContent=c.val().displayName; userSelect.appendChild(o); });
-        });
-      } else kcAlert("Wrong admin password");
+        loadAllUsersToAdmin();
+        refreshUserSelect();
+      } else {
+        kcAlert("Wrong admin password");
+      }
     };
-    adminControls.querySelectorAll("button[data-badge]").forEach(btn=>{
-      btn.onclick=()=>{
-        const badgeKey=btn.dataset.badge, uid=userSelect.value;
-        if(!uid) return kcAlert("Select a user");
-        db.ref(`badges/${uid}/${badgeKey}`).get().then(snap=>{
-          return db.ref(`badges/${uid}/${badgeKey}`).set((snap.val()||0)+1);
-        }).then(()=>{
-          kcAlert("Badge assigned");
-          if(auth.currentUser.uid===uid) loadBadges(uid,auth.currentUser.emailVerified);
-        }).catch(e=>kcAlert(e.message));
-      };
-    });
-
-    // Load badges/join
-    function loadBadges(uid, verified){
-      badgeList.innerHTML="";
-      let vb=document.createElement("div");
-      vb.className="badge "+(verified?"verified":"unverified");
-      vb.textContent=verified?"✓ VERIFIED":"✗ NOT VERIFIED";
-      vb.onclick=()=>{ if(!verified) auth.currentUser.sendEmailVerification(actionCodeSettings).then(()=>kcAlert("Verification email resent!")); };
-      badgeList.appendChild(vb);
-      const specs={
-        offence:{label:"Best Offence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png",grad:"linear-gradient(90deg,#E11D48,#F43F5E)"},
-        defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",grad:"linear-gradient(90deg,#3B82F6,#60A5FA)"},
-        overall:{label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",grad:"linear-gradient(90deg,#D97706,#FBBF24)"}
-      };
-      db.ref(`badges/${uid}`).once("value").then(snap=>{
-        Object.entries(specs).forEach(([k,s])=>{
-          const cnt=(snap.val()||{})[k]||0, bd=document.createElement("div");
-          bd.className="badge";
-          if(cnt>0){
-            bd.style.background=s.grad;
-            let img=document.createElement("img"); img.src=s.icon; bd.appendChild(img);
-            bd.append(s.label);
-            if(cnt>1){ let m=document.createElement("span"); m.className="multiplier"; m.textContent="x"+cnt; bd.appendChild(m); }
-          } else { bd.classList.add("locked"); bd.append(s.label); }
-          badgeList.appendChild(bd);
-        });
-        db.ref(`users/${uid}`).once("value").then(uSnap=>{
-          const date=new Date(uSnap.val().joined).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"});
-          db.ref("users").orderByChild("joined").endAt(uSnap.val().joined).once("value")
-            .then(r=>{ let rank=r.numChildren(), txt="",cls="";
-              if(rank<=50){txt="Early Supporter";cls=rank<=20?"gold":"blue";}
-              else if(rank>=100){txt="KC Verified";cls="purple";}
-              let jb=document.createElement("div"); jb.className="join-badge";
-              jb.innerHTML=`<div>Join Date: ${date}</div>${txt?`<div class="supporter ${cls}">${txt}</div>`:""}`;
-              badgeList.appendChild(jb);
-            });
+    // Only allow admin actions if authenticated
+    function ensureAdmin() { return adminAuthenticated; }
+    // User selection dropdown
+    function refreshUserSelect() {
+      db.ref("users").once("value").then(snap=>{
+        userSelect.innerHTML="";
+        snap.forEach(c=>{
+          let o=document.createElement("option");
+          o.value=c.key; o.textContent=c.val().displayName;
+          userSelect.appendChild(o);
         });
       });
     }
+    // Load all users & badges to admin list
+    function loadAllUsersToAdmin(){
+      db.ref("users").once("value").then(usersSnap=>{
+        db.ref("badges").once("value").then(badgesSnap=>{
+          let html="<ul>";
+          usersSnap.forEach(u=>{
+            let b=badgesSnap.child(u.key).val()||{};
+            html+=`<li><b>${u.val().displayName}</b> 
+              <span class="admin-badge-list">
+                <span>🏆 <span class="admin-badge-count">${b.overall||0}</span></span>
+                <span>🔥 <span class="admin-badge-count">${b.offence||0}</span></span>
+                <span>🛡️ <span class="admin-badge-count">${b.defence||0}</span></span>
+              </span></li>`;
+          });
+          html+="</ul>";
+          adminUsersList.innerHTML=html;
+        });
+      });
+    }
+    // Add/remove badges on selected user (requires save)
+    let badgeChanges = {offence:0, defence:0, overall:0};
+    userSelect.onchange = ()=>{ badgeChanges={offence:0,defence:0,overall:0}; };
+    addOffence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.offence=(badgeChanges.offence||0)+1; kcAlert("+1 Best Offence staged (Save to apply)");};
+    addDefence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.defence=(badgeChanges.defence||0)+1; kcAlert("+1 Best Defence staged (Save to apply)");};
+    addOverall.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.overall=(badgeChanges.overall||0)+1; kcAlert("+1 Overall Winner staged (Save to apply)");};
+    remOffence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.offence=(badgeChanges.offence||0)-1; kcAlert("-1 Best Offence staged (Save to apply)");};
+    remDefence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.defence=(badgeChanges.defence||0)-1; kcAlert("-1 Best Defence staged (Save to apply)");};
+    remOverall.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.overall=(badgeChanges.overall||0)-1; kcAlert("-1 Overall Winner staged (Save to apply)");};
+    saveAdmin.onclick = ()=>{
+      if(!ensureAdmin())return;
+      const uid = userSelect.value;
+      db.ref("badges/"+uid).get().then(snap=>{
+        let current = snap.val()||{};
+        let upd = {};
+        ['offence','defence','overall'].forEach(k=>{
+          upd[k] = Math.max(0, (current[k]||0)+(badgeChanges[k]||0));
+        });
+        db.ref("badges/"+uid).set(upd).then(()=>{
+          badgeChanges={offence:0,defence:0,overall:0};
+          kcAlert("Badges updated");
+          loadAllUsersToAdmin();
+          // If it's current user, reload their badge view instantly!
+          if(auth.currentUser && auth.currentUser.uid===uid)
+            loadBadges(uid,auth.currentUser.emailVerified);
+        });
+      });
+    };
 
-    // Auth state
-    auth.onAuthStateChanged(u=>{
-      if(u){
-        authForms.style.display="none";
-        loggedInUI.classList.add("show");
-        document.querySelector(".auth-card").style.maxWidth="720px";
-        pageTitle.textContent="KC Events";
-        welcomeUser.textContent=`👋 Welcome, ${u.displayName}`;
-        db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
-        loadBadges(u.uid,u.emailVerified);
+    // ========== BADGES LOGIC ==========
+function loadBadges(uid, verified) {
+  badgeList.innerHTML = "";
+  joinBadge.innerHTML = "";
+
+  // VERIFIED BADGE
+  let verifiedBox = document.createElement("div");
+  verifiedBox.className = "badge-item verified";
+  verifiedBox.tabIndex = 0;
+
+  if (verified) {
+    // Show tick, green gradient, green glow on hover
+    verifiedBox.innerHTML = `
+      <span style="font-size:2.2em; color:#fff; margin-bottom:3px;">✔️</span>
+      <span class="badge-label">VERIFIED</span>`;
+    verifiedBox.style.background = "linear-gradient(90deg, #10b981 70%, #22e67b 120%)";
+    verifiedBox.onmouseover = () => {
+      verifiedBox.style.boxShadow = "0 0 18px 0 #18e178cc, 0 4px 14px #18e17844";
+      verifiedBox.style.transform = "translateY(-3px) scale(1.045)";
+    };
+    verifiedBox.onmouseleave = () => {
+      verifiedBox.style.boxShadow = "";
+      verifiedBox.style.transform = "";
+    };
+  } else {
+    // Show cross, gray gradient, gray glow on hover, click to resend
+    verifiedBox.classList.add("locked");
+    verifiedBox.innerHTML = `
+      <span style="font-size:2.2em; color:#aaa; margin-bottom:3px;">❌</span>
+      <span class="badge-label">Not Verified</span>
+      <span class="lock-icon">🔒</span>`;
+    verifiedBox.style.background = "linear-gradient(90deg, #cfd8dc 65%, #eceff1 120%)";
+    verifiedBox.onmouseover = () => {
+      verifiedBox.style.boxShadow = "0 0 12px 0 #bbb8, 0 1px 6px #aaa4";
+    };
+    verifiedBox.onmouseleave = () => {
+      verifiedBox.style.boxShadow = "";
+    };
+    verifiedBox.onclick = () => {
+  auth.currentUser.sendEmailVerification(actionCodeSettings)
+    .then(() => kcAlert("Verification email resent!"))
+    .catch(e => kcAlert(e.message));
+};
+  }
+  badgeList.appendChild(verifiedBox);
+
+  // BADGE SPECS (with gradients for unlocked state)
+  const badgeSpecs = {
+    offence:  {label:"Best Offence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png",cls:"offence",grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)"},
+    defence:  {label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)"},
+    overall:  {label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)"}
+  };
+
+  db.ref(`badges/${uid}`).once("value").then(snap => {
+    Object.entries(badgeSpecs).forEach(([k, s]) => {
+      let cnt = (snap.val() || {})[k] || 0;
+      let el = document.createElement("div");
+      el.className = "badge-item " + s.cls + (cnt ? "" : " locked");
+      el.tabIndex = 0;
+      el.innerHTML = `<img src="${s.icon}" alt="${s.label}"/>
+        <span class="badge-label">${s.label}</span>`;
+      if (cnt) {
+        el.innerHTML += `<span class="badge-mult">x${cnt}</span>`;
+        el.style.background = s.grad;
+        // Glow and lift on hover
+        let glow = "#eee";
+        if (k === "offence") glow = "#ef4744cc";
+        if (k === "defence") glow = "#4489f6cc";
+        if (k === "overall") glow = "#e8be31cc";
+        el.onmouseover = () => {
+          el.style.boxShadow = `0 0 18px 0 ${glow}, 0 4px 14px ${glow}77`;
+          el.style.transform = "translateY(-3px) scale(1.045)";
+        };
+        el.onmouseleave = () => {
+          el.style.boxShadow = "";
+          el.style.transform = "";
+        };
       } else {
-        authForms.style.display="flex";
-        loggedInUI.classList.remove("show");
-        document.querySelector(".auth-card").style.maxWidth="380px";
-        pageTitle.textContent="KC Events Login";
+        el.innerHTML += `<span class="lock-icon">🔒</span>`;
+        el.onmouseover = () => el.style.boxShadow = "0 0 12px 0 #aaa8, 0 1px 6px #aaa4";
+        el.onmouseleave = () => el.style.boxShadow = "";
       }
+      badgeList.appendChild(el);
     });
+
+    // Join badge/supporter
+    db.ref(`users/${uid}`).once("value").then(uSnap => {
+      let joinRaw = uSnap.val()?.joined;
+      let joinDate = joinRaw ? new Date(joinRaw) : null;
+      let dateStr = joinDate ? joinDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "Unknown";
+      db.ref("users").orderByChild("joined").endAt(joinRaw).once("value")
+        .then(r => {
+          let rank = r.numChildren(), txt = "", cls = "";
+if (rank <= 20) {
+  txt = "Early Supporter";
+  cls = "early";
+} else if (rank <= 50) {
+  txt = "Supporter";
+  cls = "supporter";
+} else {
+  txt = "New Generation";
+  cls = "newgen";
+}
+joinBadge.innerHTML =
+  `<div>Join Date: ${dateStr}</div>` +
+  (txt ? `<div class="supporter ${cls}">${txt}</div>` : "");
+        });
+    });
+  });
+}
+
+
+    // ========== AUTH STATE ==========
+    auth.onAuthStateChanged(u=>{
+    if(u){
+      authForms.style.display="none";
+      profileUI.style.display="block";
+      badgesCard.style.display="flex";
+      document.querySelector(".kc-title").textContent="KC Events";
+      welcomeUser.innerHTML = `👋 <span style="color:#1992d4;">Welcome, ${u.displayName||u.email}</span>`;
+      db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
+      loadBadges(u.uid, u.emailVerified);
+    } else {
+      authForms.style.display="flex";
+      profileUI.style.display="none";
+      badgeList.innerHTML="";
+      joinBadge.innerHTML="";
+      badgesCard.style.display="none"; // HIDE BADGES CARD IF LOGGED OUT!
+      document.querySelector(".kc-title").textContent="KC Events";
+    }
+  });
+</script>
   </script>
 </body>
 </html>
-
