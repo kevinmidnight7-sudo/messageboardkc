@@ -82,11 +82,12 @@ body {
 }
 #emojiPicker .emoji-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr); /* Was 4, now 5 */
   gap: .50rem .60rem;
   justify-items: center;
   margin-top: 0.2em;
 }
+
 #emojiPicker .emoji {
   font-size: 1.85rem;
   width: 46px; height: 46px;
@@ -508,12 +509,16 @@ body {
 </head>
 <body>
 <div id="alertModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:1000;">
-    <div id="alertContent" style="background:#fff; color:#233046; padding:1.5rem 1rem 1.2rem 1rem; border-radius:18px; text-align:center; box-shadow: 0 3px 34px #c9defb65; max-width: 320px; width:90%; font-size: 1.13em;">
-      <strong>Notification</strong>
-      <p id="alertMsg"></p>
-      <button id="alertOK">OK</button>
+  <div id="alertContent" style="background:#fff; color:#233046; padding:1.5rem 1rem 1.2rem 1rem; border-radius:18px; text-align:center; box-shadow: 0 3px 34px #c9defb65; max-width: 320px; width:90%; font-size: 1.13em;">
+    <strong>Notification</strong>
+    <p id="alertMsg"></p>
+    <div id="alertBtnRow" style="margin-top:.9rem; display:flex; gap:1.2em; justify-content:center;">
+      <button id="alertCancel" style="display:none;background:#e7faff; color:#16a34a; border:2px solid #16a34a; border-radius:10px; padding:.7rem 1.7rem; font-size:1.07em;">Cancel</button>
+      <button id="alertOK" style="background: linear-gradient(90deg,#1ee57c,#50b2fa); color:#fff; border-radius:10px; padding:.7rem 1.7rem; font-size:1.07em; border:none; font-weight:700;">OK</button>
     </div>
   </div>
+</div>
+
   <div id="msgBoard">
     <!-- LEFT PANEL -->
     <div id="authContainer">
@@ -541,19 +546,27 @@ body {
         <div id="emojiPicker">
           <p>Pick an emoji!</p>
           <div class="emoji-grid">
-            <span class="emoji" data-emoji="😀">😀</span>
-            <span class="emoji" data-emoji="😎">😎</span>
-            <span class="emoji" data-emoji="😂">😂</span>
-            <span class="emoji" data-emoji="😍">😍</span>
-            <span class="emoji" data-emoji="👍">👍</span>
-            <span class="emoji" data-emoji="🙌">🙌</span>
-            <span class="emoji" data-emoji="😉">😉</span>
-            <span class="emoji" data-emoji="😁">😁</span>
-            <span class="emoji" data-emoji="😢">😢</span>
-            <span class="emoji" data-emoji="😮">😮</span>
-            <span class="emoji" data-emoji="😡">😡</span>
-            <span class="emoji" data-emoji="🎉">🎉</span>
-          </div>
+  <span class="emoji" data-emoji="😀">😀</span>
+  <span class="emoji" data-emoji="😎">😎</span>
+  <span class="emoji" data-emoji="😂">😂</span>
+  <span class="emoji" data-emoji="😍">😍</span>
+  <span class="emoji" data-emoji="👍">👍</span>
+  <span class="emoji" data-emoji="🙌">🙌</span>
+  <span class="emoji" data-emoji="😉">😉</span>
+  <span class="emoji" data-emoji="😁">😁</span>
+  <span class="emoji" data-emoji="😢">😢</span>
+  <span class="emoji" data-emoji="😮">😮</span>
+  <span class="emoji" data-emoji="😡">😡</span>
+  <span class="emoji" data-emoji="🎉">🎉</span>
+  <span class="emoji" data-emoji="🤣">🤣</span>
+  <span class="emoji" data-emoji="😭">😭</span>
+  <span class="emoji" data-emoji="🥹">🥹</span>
+  <span class="emoji" data-emoji="🥰">🥰</span>
+  <span class="emoji" data-emoji="👀">👀</span>
+  <span class="emoji" data-emoji="🫶">🫶</span>
+  <span class="emoji" data-emoji="🔥">🔥</span>
+  <span class="emoji" data-emoji="🙏">🙏</span>
+</div>
         </div>
       </div>
       <!-- gradient picker card -->
@@ -601,11 +614,38 @@ body {
     const alertModal = document.getElementById('alertModal'),
           alertMsg   = document.getElementById('alertMsg'),
           alertOK    = document.getElementById('alertOK');
-    function kcAlert(txt){
-      alertMsg.textContent = txt;
-      alertModal.style.display = 'flex';
-    }
+   function kcAlert(txt){
+  alertMsg.textContent = txt;
+  alertModal.style.display = 'flex';
+  document.getElementById('alertCancel').style.display = 'none'; // Hide cancel for alerts
+  document.getElementById('alertOK').textContent = 'OK';
+
+  // Remove previous event listeners
+  let okBtn = document.getElementById('alertOK');
+  okBtn.onclick = function() {
+    alertModal.style.display = 'none';
+  };
+}
+
     alertOK.onclick = ()=> alertModal.style.display='none';
+function kcConfirm(msg, callback) {
+  alertMsg.textContent = msg;
+  alertModal.style.display = 'flex';
+  document.getElementById('alertCancel').style.display = 'inline-block'; // Show Cancel
+  document.getElementById('alertOK').textContent = 'OK';
+  // Remove old event listeners
+  let okBtn = document.getElementById('alertOK');
+  let cancelBtn = document.getElementById('alertCancel');
+  okBtn.onclick = function() {
+    alertModal.style.display = 'none';
+    callback(true); // user confirmed
+  };
+  cancelBtn.onclick = function() {
+    alertModal.style.display = 'none';
+    callback(false); // user cancelled
+  };
+}
+
 
     // Firebase init
     const cfg = {
@@ -962,9 +1002,9 @@ registerBtn.onclick = () => {
             exist=Array.from(bar.querySelectorAll('.reactBtn')).map(x=>x.dataset.emo),
             picker=document.createElement('div');
         picker.className='addPicker';
-        ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉']
-          .filter(emo=>!exist.includes(emo))
-          .forEach(emo=>{
+        ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉','🤣','😭','🥹','🥰','👀','🫶','🔥','🙏']
+  .filter(emo=>!exist.includes(emo))
+  .forEach(emo=>{
             let s=document.createElement('span');
             s.className='emoji'; s.textContent=emo;
             s.onclick=()=>{
@@ -1004,11 +1044,13 @@ registerBtn.onclick = () => {
       }
 
       if(e.target.closest('.deleteBtn')){
-        let p=e.target.closest('li').dataset.path;
-        if(confirm('Delete this message and its replies?'))
-          db.ref(p).remove();
-        return;
-      }
+  let p=e.target.closest('li').dataset.path;
+  kcConfirm('Delete this message and its replies?', function(confirmed){
+    if(confirmed) db.ref(p).remove();
+  });
+  return;
+}
+
     });
 
     postBtn.onclick = ()=>{
