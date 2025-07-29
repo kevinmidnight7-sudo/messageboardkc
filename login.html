@@ -760,10 +760,10 @@ function loadBadges(uid, verified) {
       db.ref("users").orderByChild("joined").endAt(joinRaw).once("value")
         .then(r => {
           let rank = r.numChildren(), txt = "", cls = "";
-if (rank <= 20) {
+if (rank <= 30) {
   txt = "Early Supporter";
   cls = "early";
-} else if (rank <= 50) {
+} else if (rank <= 60) {
   txt = "Supporter";
   cls = "supporter";
 } else {
