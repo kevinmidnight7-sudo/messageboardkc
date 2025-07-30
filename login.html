@@ -8,341 +8,310 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
+  /* ─────────────── Updated Button Styles ─────────────── */
+.sidebar .sidebar-btn {
+  font-size: 1.12rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  width: 100%;
+  background: linear-gradient(90deg, #1ee57c 0%, #50b2fa 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: background .18s, box-shadow .18s;
+}
+.sidebar .sidebar-btn:hover {
+  background: linear-gradient(90deg, #19df7e 0%, #30a9f8 100%);
+}
+
+.sidebar .sidebar-btn-red {
+  font-size: 1.12rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 6px;
+  width: 100%;
+  background: linear-gradient(90deg, #f44336 0%, #e53935 100%);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: background .18s, box-shadow .18s;
+}
+.sidebar .sidebar-btn-red:hover {
+  background: linear-gradient(90deg, #e53935 0%, #d32f2f 100%);
+}
+
+
+/* ────────── Profile Info (Join Date + Version) ────────── */
+.profile-info {
+  text-align: center;
+  margin: 12px 0;
+}
+.join-badge {
+  margin-bottom: 6px;
+  font-size: 1rem;
+  color: #544;
+}
+.version {
+  font-size: .85rem;
+  color: #b7c3d0;
+}
+
+
+/* ─────────── Sidebar Header Alignment ─────────── */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+    /* ────── Global & Layout ────── */
     html, body {
-      height: 100%; margin: 0; padding: 0;
-      font-family: 'Poppins', sans-serif; color: #222;
-      background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
-      display: flex; align-items: flex-start; justify-content: center;
-      min-height: 100vh;
+      height:100%; margin:0; padding:0;
+      font-family:'Poppins',sans-serif; color:#222;
+      background:url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
+      display:flex; align-items:flex-start; justify-content:center;
+      min-height:100vh;
     }
     #main-wrapper {
-      width: 100vw; min-height: 100vh;
-      display: flex; flex-direction: column; align-items: center;
+      width:100vw; min-height:100vh;
+      display:flex; flex-direction:column; align-items:center;
     }
     .kc-logo {
-      width: 70px; margin: 32px auto 0 auto; display: block;
+      width:70px; margin:32px auto 0; display:block;
     }
     .kc-title {
-      font-size: 2.3rem; font-weight: 700;
-      text-align: center; margin: 0 0 32px 0;
-      color: #fff; letter-spacing: .02em;
-      text-shadow: 0 2px 16px #2227, 0 1px 2px #8885;
+      font-size:2.3rem; font-weight:700; text-align:center;
+      margin:0 0 32px; color:#fff; letter-spacing:.02em;
+      text-shadow:0 2px 16px #2227,0 1px 2px #8885;
     }
     .flex-row {
-      display: flex; gap: 2.5vw; align-items: flex-start; justify-content: center;
-      margin-bottom: 32px;
+      display:flex; gap:2.5vw; align-items:flex-start; justify-content:center;
+      margin-bottom:32px;
     }
     .card {
-      background: linear-gradient(135deg, #fff 65%, #e9ecf4 100%);
-      border-radius: 32px;
-      box-shadow: 0 6px 40px #0001;
-      padding: 36px 36px 30px 36px;
-      min-width: 350px; max-width: 390px;
-      min-height: 520px;
-      display: flex; flex-direction: column;
-      position: relative;
-      margin-bottom: 32px;
+      background:linear-gradient(135deg,#fff 65%,#e9ecf4 100%);
+      border-radius:32px; box-shadow:0 6px 40px #0001;
+      padding:36px; min-width:350px; max-width:390px; min-height:520px;
+      display:flex; flex-direction:column; position:relative; margin-bottom:32px;
     }
-    @media (max-width: 960px) {
-      .flex-row { flex-direction: column; align-items: center; gap: 32px;}
-      .card { max-width: 96vw; min-width: 0; width: 100%; }
-    }
-    /* Profile Card */
-    .profile-title {
-      font-size: 1.3rem; font-weight: 600; margin: 0 0 16px 0;
-    }
-    .profile-welcome {
-      font-size: 1.08rem; font-weight: 600;
-      margin-bottom: 0.9rem;
-      color: #17a589;
-      display: flex; align-items: center; gap: .38em;
-      word-break: break-word;
-    }
-    .profile-counter {
-      color: #669; font-size: 1rem; margin-bottom: 1.3rem;
-    }
-    .profile-icon-bar {
-      display: flex; gap: 22px; margin-top: 16px;
-      justify-content: center;
-    }
-    .profile-icon-btn {
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 2px 10px #3332;
-      border: none;
-      width: 55px; height: 55px; font-size: 2rem;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; transition: box-shadow .18s, transform .15s;
-      margin: 0 2px;
-      outline: none;
-    }
-    .profile-icon-btn:active, .profile-icon-btn:focus {
-      box-shadow: 0 2px 14px #0055ffaa;
-      transform: scale(0.96);
+    @media(max-width:960px){
+      .flex-row{flex-direction:column;align-items:center;gap:32px;}
+      .card{width:100%;max-width:96vw;min-width:0;}
     }
 
-    /* Badges Card */
-    .badges-header {
-      font-size: 1.55rem;
-      font-weight: 700;
-      color: #e6b300;
-      margin: 0 0 8px 0;
-      text-align: center;
-      text-shadow: 0 2px 20px #fff5, 0 1px 2px #fb0a;
+    /* ────── Profile Card ────── */
+    .profile-title{font-size:1.3rem;font-weight:600;margin:0 0 16px;}
+    .profile-welcome{
+      font-size:1.08rem;font-weight:600;color:#17a589;
+      display:flex;align-items:center;gap:.38em;margin-bottom:.9rem;
+      word-break:break-word;
     }
-    .badges-sub {
-      font-style: italic; color: #536082; margin-bottom: 26px;
-      text-align: center; font-size: 1.1rem;
+    .profile-counter{color:#669;font-size:1rem;margin-bottom:1.3rem;}
+    .profile-icon-bar{display:flex;gap:16px;margin-top:16px;justify-content:center;}
+    .profile-icon-btn{
+      background:#fff;border-radius:50%;box-shadow:0 2px 10px #3332;
+      border:none;width:55px;height:55px;font-size:2rem;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;transition:box-shadow .18s,transform .15s;
+      outline:none;
     }
-    .badges-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 24px; margin-bottom: 26px;
+    .profile-icon-btn:active,
+    .profile-icon-btn:focus{box-shadow:0 2px 14px #0055ffaa;transform:scale(.96);}
+    #avatarImg{
+      display:none;width:64px;height:64px;
+      border-radius:50%;margin:0 auto 12px auto;
+      box-shadow:0 2px 10px #3332;
     }
-    .badge-item {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      border-radius: 22px;
-      height: 112px; background: #f4f4f4;
-      box-shadow: 0 2px 10px #ccd2ee33;
-      cursor: pointer;
-      position: relative;
-      transition: box-shadow .18s, transform .13s;
-      border: none;
-      font-size: 1.03rem;
-    }
-    .badge-item.locked {
-      filter: grayscale(0.8) brightness(1.05);
-      background: #e5e6ea;
-      color: #aaa;
-      cursor: pointer;
-      opacity: 0.80;
-    }
-    .badge-item .lock-icon {
-      position: absolute; top: 12px; right: 18px;
-      font-size: 1.4rem; color: #999;
-      opacity: 0.9;
-      pointer-events: none;
-    }
-    .badge-item .badge-mult {
-      position: absolute; top: 12px; right: 18px;
-      background: #fff; color: #333;
-      border-radius: 1.2em; min-width: 2em; min-height: 1.8em;
-      font-weight: 700; font-size: 1.1em; box-shadow: 0 1px 8px #9992;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 0.55em; z-index: 10;
-      border: 2px solid #fff;
-    }
-    .badge-item img {
-      width: 36px; height: 36px; margin-bottom: 5px;
-    }
-    .badge-item .badge-label {
-      font-weight: 600; font-size: 1.07rem; letter-spacing: .01em;
-      margin-top: 2px;
-      text-align: center;
-    }
-    .badge-item.verified:hover, .badge-item.verified:focus {
-      box-shadow: 0 0 16px 0 #11df95cc, 0 6px 18px #17a58944;
-      transform: translateY(-3px) scale(1.045);
-    }
-    .badge-item.locked:hover, .badge-item.locked:focus {
-      box-shadow: 0 0 12px 0 #aaa8, 0 1px 6px #aaa4;
-      transform: none;
-    }
-    .badge-item.offence:hover, .badge-item.offence:focus {
-      box-shadow: 0 0 18px 0 #ef4744cc, 0 4px 14px #f44a4a44;
-      transform: translateY(-3px) scale(1.045);
-    }
-    .badge-item.defence:hover, .badge-item.defence:focus {
-      box-shadow: 0 0 18px 0 #4489f6cc, 0 4px 14px #569cff44;
-      transform: translateY(-3px) scale(1.045);
-    }
-    .badge-item.overall:hover, .badge-item.overall:focus {
-      box-shadow: 0 0 18px 0 #e8be31cc, 0 4px 14px #ffe18444;
-      transform: translateY(-3px) scale(1.045);
-    }
-    /* Join badge */
-    .join-badge {
-      margin: 16px auto 0 auto; padding: 10px 0 0 0;
-      text-align: center; font-size: 1rem; color: #544;
-    }
-    .supporter {
-      margin-top: .6rem; padding: .45rem 1.1rem; border-radius: 10px;
-      font-weight: 600; font-size: .98rem; color: #fff;
-      box-shadow: 0 2px 14px #ebaf008f;
-      background: linear-gradient(90deg,#FFD700,#FFC107 95%);
-      border: none;
-      display: inline-block;
-    }
-    .version {
-      margin-top: 18px; color: #b7c3d0; text-align: center; font-size: 1.03em;
-    }
-    /* KC Alert */
-    .kc-alert {
-      position: fixed; top: 32px; left: 50%; transform: translateX(-50%);
-      background: #fff; color: #232f38; font-weight: 600; font-size: 1.13rem;
-      padding: 13px 32px; border-radius: 15px; box-shadow: 0 2px 20px #2263;
-      z-index: 2000; min-width: 160px; max-width: 96vw;
-      opacity: 1; transition: opacity .16s;
-      display: flex; align-items: center; gap: 10px;
-    }
-    .kc-alert.hide { opacity: 0; pointer-events: none; }
 
+    /* ────── Badges Card ────── */
+    .badges-header{
+      font-size:1.55rem;font-weight:700;color:#e6b300;
+      margin:0 0 8px;text-align:center;
+      text-shadow:0 2px 20px #fff5,0 1px 2px #fb0a;
+    }
+    .badges-sub{
+      font-style:italic;color:#536082;margin-bottom:26px;
+      text-align:center;font-size:1.1rem;
+    }
+    .badges-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:26px;
+    }
+    .badge-item{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      border-radius:22px;height:112px;background:#f4f4f4;
+      box-shadow:0 2px 10px #ccd2ee33;cursor:pointer;
+      position:relative;transition:box-shadow .18s,transform .13s;
+      border:none;font-size:1.03rem;
+    }
+    .badge-item.locked{
+      filter:grayscale(.8) brightness(1.05);background:#e5e6ea;color:#aaa;opacity:.8;
+    }
+    .badge-item .lock-icon{
+      position:absolute;top:12px;right:18px;
+      font-size:1.4rem;color:#999;opacity:.9;
+    }
+    .badge-item .badge-mult{
+      position:absolute;top:12px;right:18px;
+      background:#fff;color:#333;border-radius:1.2em;
+      min-width:2em;min-height:1.8em;font-weight:700;font-size:1.1em;
+      box-shadow:0 1px 8px #9992;display:flex;align-items:center;justify-content:center;
+      padding:0 .55em;z-index:10;border:2px solid #fff;
+    }
+    .badge-item img{width:36px;height:36px;margin-bottom:5px;}
+    .badge-item .badge-label{
+      font-weight:600;font-size:1.07rem;letter-spacing:.01em;
+      margin-top:2px;text-align:center;
+    }
+    /* (hover states omitted for brevity) */
 
-    /* Account/Admin Sidebars */
-    .sidebar {
-      position: fixed; top: 0; right: 0; height: 100%; width: 340px; max-width: 94vw;
-      background: linear-gradient(135deg, #fff 65%, #e7eaf3 100%);
-      box-shadow: -4px 0 24px #0003;
-      transform: translateX(110%);
-      transition: transform .28s cubic-bezier(.72,0,.26,1.03);
-      z-index: 2100;
-      padding: 32px 18px 24px 30px; box-sizing: border-box;
-      display: flex; flex-direction: column; gap: 16px;
+    /* ────── Avatar Modal ────── */
+    #avatarModal{
+      position:fixed;top:0;left:0;width:100vw;height:100vh;
+      background:rgba(0,0,0,.5);
+      display:flex;align-items:center;justify-content:center;
+      opacity:0;pointer-events:none;transition:opacity .2s;
     }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar h2 { font-size: 1.25rem; font-weight: 700; margin: 0 0 12px 0;}
-    .sidebar label { display: block; font-size: 1.07rem; margin: 0 0 4px 2px;}
-    .sidebar input, .sidebar select {
-      width: 100%; margin: 0 0 12px 0;
-      font-size: 1.05rem; border-radius: 8px; border: 1px solid #dde3ee;
-      background: #f5f7fc; padding: 8px 10px;
-      transition: border .16s; outline: none;
-      color: #253047;
+    #avatarModal.open{opacity:1;pointer-events:auto;}
+    .avatar-content{
+      background:#fff;border-radius:20px;padding:24px;
+      max-width:90vw;max-height:90vh;overflow-y:auto;
+      position:relative;box-shadow:0 4px 20px rgba(0,0,0,.3);
     }
-    .sidebar input:focus { border: 1.5px solid #3899ff; }
-    .sidebar .sidebar-btn, .sidebar .sidebar-btn-red {
-      font-size: 1.12rem; font-weight: 600;
-      border: none; border-radius: 8px;
-      padding: 10px 0; margin-bottom: 8px;
-      background: linear-gradient(90deg, #13ce7c 0%, #44b0ef 100%);
-      color: #fff; cursor: pointer; transition: box-shadow .13s, background .13s;
-      box-shadow: 0 2px 10px #6db8fb22;
-      width: 100%;
-      letter-spacing: .01em;
+    .avatar-content .close-btn{
+      position:absolute;top:12px;right:12px;
+      background:#f44336;color:#fff;border:none;
+      padding:6px 12px;border-radius:8px;cursor:pointer;
     }
-    .sidebar .sidebar-btn:hover, .sidebar .sidebar-btn:focus {
-      background: linear-gradient(90deg, #08d763 0%, #4183f8 100%);
-      box-shadow: 0 3px 16px #338be955;
-      color: #fff;
+    .avatar-grid{
+      display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
+      gap:16px;margin-top:16px;
     }
-    .sidebar .sidebar-btn-red {
-      background: #f44336;
-      box-shadow: 0 3px 16px #e54e4e55;
-      color: #fff;
-      margin-top: 6px;
+    .avatar-grid img{
+      width:80px;height:80px;border-radius:50%;
+      cursor:pointer;border:2px solid transparent;transition:border .2s;
     }
-    .sidebar .sidebar-btn-red:hover { background: #d32f2f; }
-    .sidebar .close-btn {
-      position: absolute; right: 26px; top: 22px;
-      font-size: 1.09rem; background: #f44336;
-      color: #fff; border-radius: 9px; padding: 7px 26px; font-weight: 600;
-      border: none; cursor: pointer;
-      box-shadow: 0 2px 10px #dc535555;
-      transition: background .13s;
-    }
-    .sidebar .close-btn:hover { background: #d32f2f; }
-    .sidebar .delete-warning {
-      color: #e53935; font-weight: 600; text-align: center; margin: 16px 0 8px 0;
-      font-size: 1.1rem;
-    }
-    /* Admin User List */
-    .admin-users-list {
-      background: #f6f7fb;
-      border-radius: 9px; box-shadow: 0 1px 8px #dde3ee88;
-      margin: 0 0 16px 0; padding: 6px 2px 6px 12px; max-height: 240px; overflow-y: auto;
-      font-size: .99rem;
-      font-family: inherit;
-    }
-    .admin-users-list ul {
-      margin: 0; padding: 0; list-style: none;
-    }
-    .admin-users-list li {
-      padding: 6px 0 7px 0; border-bottom: 1px solid #eee;
-      font-size: 1.02em; display: flex; align-items: center; justify-content: space-between;
-      gap: 12px;
-    }
-    .admin-badge-list {
-      display: flex; gap: 7px;
-    }
-    .admin-badge-count {
-      background: #eee; color: #234;
-      font-weight: 700; font-size: 1em;
-      border-radius: 9px; padding: 2px 8px 2px 7px;
-      margin-left: 3px;
-      box-shadow: 0 1px 3px #2222;
-    }
-    /* Auth forms */
-    #authForms {
-      display: flex; flex-direction: column; gap: 1.3rem; align-items: center;
-      margin-top: 18px;
-      min-width: 320px;
-    }
-    .form-section { display: flex; flex-direction: column; gap: .85rem; }
-    .form-section input {
-      padding: .75rem .9rem; border: none; border-radius: 7px;
-      background: #f6f7fc; color: #222; font-size: 1.04rem; outline: none;
-      transition: background .18s;
-      border: 1.2px solid #e6ebf2;
-    }
-    .form-section input:focus { background: #ebeff6; border-color: #53c4fa;}
-    .form-section .form-btn {
-      padding: .68rem; border: none; border-radius: 7px;
-      font-size: 1.08rem; font-weight: 700; cursor: pointer;
-      color: #fff; transition: background .18s;
-      background: linear-gradient(90deg,#1ee57c,#50b2fa);
-    }
-    .form-section .form-btn:hover { background: linear-gradient(90deg,#19df7e,#30a9f8);}
-    .switch-link {
-      text-align: center; color: #318be9; cursor: pointer; text-decoration: underline;
-      font-size: .97rem;
-    }
-    /* Confirmation Dialog */
-    .confirm-overlay {
-      position: fixed; z-index: 5000;
-      left: 0; top: 0; width: 100vw; height: 100vh;
-      background: #2d415080;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .confirm-box {
-      background: #fff; color: #1c2228; font-size: 1.14rem;
-      padding: 28px 42px 18px 42px; border-radius: 18px; box-shadow: 0 3px 26px #2336;
-      text-align: center;
-      min-width: 290px;
-    }
-    .confirm-box .confirm-btn {
-      font-size: 1.09rem; font-weight: 600; border: none;
-      padding: 10px 26px; border-radius: 8px;
-      margin: 10px 8px 0 8px; cursor: pointer;
-      background: linear-gradient(90deg,#1ee57c,#50b2fa); color: #fff;
-      transition: background .14s;
-    }
-    .confirm-box .confirm-btn:hover { background: linear-gradient(90deg,#19df7e,#30a9f8);}
-    .confirm-box .confirm-btn.cancel {
-      background: #eee; color: #234; box-shadow: none;
-    }
-    /* Hide scrollbar on small screens for user list */
-    @media(max-width:700px){
-      .card { padding: 16px 2vw; min-width: unset;}
-      .sidebar { width: 99vw; max-width: 99vw; left: 0; border-radius: 0;}
-      .admin-users-list {max-height:140px;}
-    }
-       .supporter.early {
-  background: linear-gradient(90deg, #FFD700, #FFC107 95%);
-  color: #fff;
-  box-shadow: 0 2px 18px #FFD70088, 0 4px 24px #FFC10766;
-}
+    .avatar-grid img:hover{border-color:#318be9;}
 
-.supporter.supporter {
-  background: linear-gradient(90deg, #51caff, #376fff 95%);
-  color: #fff;
-  box-shadow: 0 2px 18px #51caff88, 0 4px 24px #376fff66;
-}
+    /* ────── KC Alert ────── */
+    .kc-alert{
+      position:fixed;top:32px;left:50%;transform:translateX(-50%);
+      background:#fff;color:#232f38;font-weight:600;font-size:1.13rem;
+      padding:13px 32px;border-radius:15px;box-shadow:0 2px 20px #2263;
+      z-index:2000;min-width:160px;max-width:96vw;
+      opacity:1;transition:opacity .16s;display:flex;align-items:center;gap:10px;
+    }
+    .kc-alert.hide{opacity:0;pointer-events:none;}
 
-.supporter.newgen {
-  background: linear-gradient(90deg, #38d98a, #62f2a7 95%);
-  color: #fff;
-  box-shadow: 0 2px 18px #38d98a88, 0 4px 24px #62f2a766;
-}
+    /* ────── Sidebars ────── */
+    .sidebar{
+      position:fixed;top:0;right:0;height:100%;width:340px;max-width:94vw;
+      background:linear-gradient(135deg,#fff 65%,#e7eaf3 100%);
+      box-shadow:-4px 0 24px #0003;transform:translateX(110%);
+      transition:transform .28s cubic-bezier(.72,0,.26,1.03);
+      z-index:2100;padding:32px 18px 24px 30px;box-sizing:border-box;
+      display:flex;flex-direction:column;gap:16px;
+    }
+    .sidebar.open{transform:translateX(0);}
+    .sidebar h2{font-size:1.25rem;font-weight:700;margin:0 0 12px;}
+    .sidebar label{display:block;font-size:1.07rem;margin:0 0 4px 2px;}
+    .sidebar input,.sidebar select{
+      width:100%;margin:0 0 12px;font-size:1.05rem;
+      border-radius:8px;border:1px solid #dde3ee;background:#f5f7fc;
+      padding:8px 10px;outline:none;transition:border .16s;color:#253047;
+    }
+    .sidebar input:focus{border:1.5px solid #3899ff;}
+    .sidebar .sidebar-btn{
+      font-size:1.12rem;font-weight:600;border:none;border-radius:8px;
+      padding:10px 0;margin-bottom:8px;width:100%;
+      background:linear-gradient(90deg,#13ce7c 0%,#44b0ef 100%);
+      color:#fff;cursor:pointer;transition:background .13s,box-shadow .13s;
+      box-shadow:0 2px 10px #6db8fb22;
+    }
+    .sidebar .sidebar-btn:hover,.sidebar .sidebar-btn:focus{
+      background:linear-gradient(90deg,#08d763 0%,#4183f8 100%);
+      box-shadow:0 3px 16px #338be955;
+    }
+    .sidebar .sidebar-btn-red{
+      background:#f44336;box-shadow:0 3px 16px #e54e4e55;color:#fff;margin-top:6px;
+    }
+    .sidebar .sidebar-btn-red:hover{background:#d32f2f;}
+    .sidebar .close-btn{
+      position:absolute;top:22px;right:26px;
+      background:#f44336;color:#fff;border:none;
+      padding:7px 26px;border-radius:9px;font-weight:600;
+      cursor:pointer;box-shadow:0 2px 10px #dc535555;
+      transition:background .13s;
+    }
+    .sidebar .close-btn:hover{background:#d32f2f;}
+    .sidebar .delete-warning{
+      color:#e53935;font-weight:600;text-align:center;margin:16px 0 8px;
+      font-size:1.1rem;
+    }
 
+    .admin-users-list{
+      background:#f6f7fb;border-radius:9px;box-shadow:0 1px 8px #dde3ee88;
+      margin:0 0 16px;padding:6px 2px 6px 12px;max-height:240px;overflow-y:auto;
+      font-size:.99rem;
+    }
+    .admin-users-list ul{margin:0;padding:0;list-style:none;}
+    .admin-users-list li{
+      padding:6px 0;border-bottom:1px solid #eee;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+    }
+    .admin-badge-list{display:flex;gap:7px;}
+    .admin-badge-count{
+      background:#eee;color:#234;font-weight:700;font-size:1em;
+      border-radius:9px;padding:2px 8px;margin-left:3px;
+      box-shadow:0 1px 3px #2222;
+    }
+
+    /* ────── Forms & Confirm ────── */
+    #authForms{display:flex;flex-direction:column;gap:1.3rem;align-items:center;min-width:320px;margin-top:18px;}
+    .form-section{display:flex;flex-direction:column;gap:.85rem;}
+    .form-section input{
+      padding:.75rem .9rem;border:none;border-radius:7px;
+      background:#f6f7fc;color:#222;font-size:1.04rem;
+      outline:none;transition:background .18s;border:1.2px solid #e6ebf2;
+    }
+    .form-section input:focus{background:#ebeff6;border-color:#53c4fa;}
+    .form-section .form-btn{
+      padding:.68rem;border:none;border-radius:7px;
+      font-size:1.08rem;font-weight:700;color:#fff;
+      cursor:pointer;transition:background .18s;
+      background:linear-gradient(90deg,#1ee57c,#50b2fa);
+    }
+    .form-section .form-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}
+    .switch-link{font-size:.97rem;color:#318be9;cursor:pointer;text-decoration:underline;text-align:center;}
+
+    .confirm-overlay{
+      position:fixed;top:0;left:0;width:100vw;height:100vh;
+      background:rgba(45,65,80,.5);display:flex;align-items:center;justify-content:center;
+      z-index:5000;
+    }
+    .confirm-box{
+      background:#fff;color:#1c2228;font-size:1.14rem;
+      padding:28px 42px 18px;border-radius:18px;box-shadow:0 3px 26px #2336;
+      text-align:center;min-width:290px;
+    }
+    .confirm-box .confirm-btn{
+      margin:10px 8px 0;border:none;padding:10px 26px;border-radius:8px;
+      font-size:1.09rem;font-weight:600;cursor:pointer;
+      background:linear-gradient(90deg,#1ee57c,#50b2fa);color:#fff;
+      transition:background .14s;
+    }
+    .confirm-box .confirm-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}
+    .confirm-box .confirm-btn.cancel{background:#eee;color:#234;box-shadow:none;}
   </style>
 </head>
 <body>
@@ -350,7 +319,7 @@
     <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-logo" alt="KC Events Logo"/>
     <div class="kc-title">KC Events</div>
     <div class="flex-row" id="mainContent">
-      <!-- PROFILE / LOGGED OUT CARD -->
+      <!-- PROFILE CARD -->
       <div class="card" id="profileCard">
         <!-- LOGGED OUT -->
         <div id="authForms">
@@ -370,61 +339,97 @@
         </div>
         <!-- LOGGED IN -->
         <div id="profileUI" style="display:none">
+          <img id="avatarImg" src="" alt="Your Avatar"/>
           <div class="profile-title">Profile:</div>
           <div class="profile-welcome" id="welcomeUser"></div>
           <div class="profile-counter" id="userCounter"></div>
+          <div class="profile-info">
+            <div id="joinBadge" class="join-badge"></div>
+            <div class="version">KC Events V1</div>
+          </div>
           <div class="profile-icon-bar">
+            <button id="avatarBtn" class="profile-icon-btn" title="Choose Avatar">🖼️</button>
             <button id="accountOptionsBtn" class="profile-icon-btn" title="Account Options">⚙️</button>
             <button id="adminPortalBtn" class="profile-icon-btn" title="Admin Portal">🛠️</button>
           </div>
         </div>
       </div>
+
       <!-- BADGES CARD -->
       <div class="card" id="badgesCard" style="min-width:320px;">
         <div class="badges-header">Badges <span style="font-size:1.08em;">🏅</span></div>
         <div class="badges-sub">Your Progress</div>
         <div class="badges-grid" id="badgeList"></div>
-        <div class="join-badge" id="joinBadge"></div>
-        <div class="version">KC Events V1</div>
       </div>
     </div>
   </div>
+
+  <!-- Avatar Picker Modal -->
+  <div id="avatarModal">
+    <div class="avatar-content">
+      <button class="close-btn" id="closeAvatarModal">Close</button>
+      <h3>Select Your Avatar</h3>
+      <div class="avatar-grid" id="avatarGrid">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png"  alt="Avatar 1"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/2.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/2.png"  alt="Avatar 2"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/3.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/3.png"  alt="Avatar 3"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/4.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/4.png"  alt="Avatar 4"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/5.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/5.png"  alt="Avatar 5"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/6.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/6.png"  alt="Avatar 6"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/7.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/7.png"  alt="Avatar 7"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/8.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/8.png"  alt="Avatar 8"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/9.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/9.png"  alt="Avatar 9"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/10.png" data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/10.png" alt="Avatar 10"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/11.png" data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/11.png" alt="Avatar 11"/>
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/12.png" data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/12.png" alt="Avatar 12"/>
+      </div>
+    </div>
+  </div>
+
   <!-- KC Alert -->
   <div id="kcAlert" class="kc-alert" style="display:none"></div>
-  <!-- Sidebars (Account / Admin) -->
+
+  <!-- Account Sidebar -->
   <div id="accountSidebar" class="sidebar">
-    <button class="close-btn" id="closeAccountSidebar">Close</button>
-    <h2>Account Options</h2>
-    <button id="signOutBtn" class="sidebar-btn">Sign Out</button>
-    <button id="resetPassBtn" class="sidebar-btn">Reset Password</button>
-    <button id="deleteAcctBtn" class="sidebar-btn-red">Delete Account</button>
+    <div class="sidebar-header">
+      <h2>Account Options</h2>
+      <button class="close-btn" id="closeAccountSidebar">Close</button>
+    </div>
+    <button id="signOutBtn"    class="sidebar-btn">Sign Out</button>
+    <button id="resetPassBtn"  class="sidebar-btn">Reset Password</button>
+    <button id="deleteAcctBtn" class="sidebar-btn-red">Delete Account</button>
   </div>
+
+  <!-- Admin Sidebar -->
   <div id="adminSidebar" class="sidebar">
-    <button class="close-btn" id="closeAdminSidebar">Close</button>
-    <h2>Admin Portal</h2>
+    <div class="sidebar-header">
+      <h2>Admin Portal</h2>
+      <button class="close-btn" id="closeAdminSidebar">Close</button>
+    </div>
     <div id="adminAuthSection">
-      <label>Admin Password</label>
+      <label>Admin Password</label>
       <input id="adminPass" type="password" placeholder="Password"/>
       <button id="adminLoginBtn" class="sidebar-btn">Enter</button>
     </div>
     <div id="adminContent" style="display:none">
-      <label>Edit Badges For User:</label>
+      <label>Edit Badges For User:</label>
       <select id="userSelect"></select>
-      <div style="display:flex; gap:7px; margin-bottom:8px;">
+      <div style="display:flex;gap:7px;margin:12px 0;">
         <button data-badge="offence" class="sidebar-btn" id="addOffence">+ Offence</button>
         <button data-badge="defence" class="sidebar-btn" id="addDefence">+ Defence</button>
         <button data-badge="overall" class="sidebar-btn" id="addOverall">+ Overall</button>
       </div>
-      <div style="display:flex; gap:7px; margin-bottom:12px;">
+      <div style="display:flex;gap:7px;margin-bottom:12px;">
         <button data-badge="offence" class="sidebar-btn-red" id="remOffence">- Offence</button>
         <button data-badge="defence" class="sidebar-btn-red" id="remDefence">- Defence</button>
         <button data-badge="overall" class="sidebar-btn-red" id="remOverall">- Overall</button>
       </div>
-      <button id="saveAdmin" class="sidebar-btn">Save Changes</button>
-      <label style="margin-top:16px;">All Users & Badges:</label>
+      <button id="saveAdmin" class="sidebar-btn">Save Changes</button>
+      <label style="margin-top:16px;">All Users & Badges:</label>
       <div class="admin-users-list" id="adminUsersList"><ul></ul></div>
     </div>
   </div>
+
   <!-- Delete Confirm Dialog -->
   <div id="confirmOverlay" class="confirm-overlay" style="display:none;">
     <div class="confirm-box">
@@ -433,8 +438,9 @@
       <button class="confirm-btn cancel" id="confirmNoBtn">No</button>
     </div>
   </div>
+
   <script>
-    // ========== FIREBASE INIT ==========
+ // ========== FIREBASE INIT ==========
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -447,13 +453,9 @@
     };
     firebase.initializeApp(cfg);
     const auth = firebase.auth(), db = firebase.database();
-    const actionCodeSettings = {
-      url: window.location.origin + "/?mode=verifyEmail",
-      handleCodeInApp: true
-    };
+    const actionCodeSettings = { url: window.location.origin + "/?mode=verifyEmail", handleCodeInApp:true };
 
     // ========== UI REFS ==========
-    // Forms
     const authForms    = document.getElementById("authForms"),
           registerForm = document.getElementById("registerForm"),
           loginForm    = document.getElementById("loginForm"),
@@ -465,77 +467,56 @@
           loginPass    = document.getElementById("loginPass"),
           loginBtn     = document.getElementById("loginBtn"),
           toLogin      = document.getElementById("toLogin"),
-          toRegister   = document.getElementById("toRegister");
-    // Logged in/out
-    const profileUI    = document.getElementById("profileUI"),
+          toRegister   = document.getElementById("toRegister"),
+          profileUI    = document.getElementById("profileUI"),
           welcomeUser  = document.getElementById("welcomeUser"),
           userCounter  = document.getElementById("userCounter"),
           badgeList    = document.getElementById("badgeList"),
           joinBadge    = document.getElementById("joinBadge"),
           badgesCard   = document.getElementById("badgesCard"),
-          mainContent  = document.getElementById("mainContent"),
-          profileCard  = document.getElementById("profileCard");
-    // Icons/Menus
-    const accountBtn   = document.getElementById("accountOptionsBtn"),
+          avatarBtn    = document.getElementById("avatarBtn"),
+          avatarImg    = document.getElementById("avatarImg"),
+          accountBtn   = document.getElementById("accountOptionsBtn"),
           adminBtn     = document.getElementById("adminPortalBtn"),
-          accountSidebar = document.getElementById("accountSidebar"),
-          adminSidebar   = document.getElementById("adminSidebar"),
+          accountSidebar   = document.getElementById("accountSidebar"),
+          adminSidebar     = document.getElementById("adminSidebar"),
           closeAccountSidebar = document.getElementById("closeAccountSidebar"),
           closeAdminSidebar   = document.getElementById("closeAdminSidebar"),
-          signOutBtn   = document.getElementById("signOutBtn"),
-          resetPassBtn = document.getElementById("resetPassBtn"),
-          deleteAcctBtn= document.getElementById("deleteAcctBtn"),
-          confirmOverlay = document.getElementById("confirmOverlay"),
-          confirmYesBtn  = document.getElementById("confirmYesBtn"),
-          confirmNoBtn   = document.getElementById("confirmNoBtn"),
-          kcAlertDiv   = document.getElementById("kcAlert");
-    // Admin panel
-    const adminPassInput = document.getElementById("adminPass"),
-          adminLoginBtn  = document.getElementById("adminLoginBtn"),
-          adminAuthSection = document.getElementById("adminAuthSection"),
-          adminContent     = document.getElementById("adminContent"),
-          userSelect      = document.getElementById("userSelect"),
-          addOffence      = document.getElementById("addOffence"),
-          addDefence      = document.getElementById("addDefence"),
-          addOverall      = document.getElementById("addOverall"),
-          remOffence      = document.getElementById("remOffence"),
-          remDefence      = document.getElementById("remDefence"),
-          remOverall      = document.getElementById("remOverall"),
-          saveAdmin       = document.getElementById("saveAdmin"),
-          adminUsersList  = document.getElementById("adminUsersList");
+          kcAlertDiv   = document.getElementById("kcAlert"),
+          avatarModal  = document.getElementById("avatarModal"),
+          closeAvatarModal = document.getElementById("closeAvatarModal"),
+          avatarGrid   = document.getElementById("avatarGrid");
 
-    // ========== KC ALERT SYSTEM ==========
+    // ========== KC ALERT ==========
     let alertTimeout;
-    function kcAlert(txt, timeout=2350) {
-      kcAlertDiv.textContent = txt;
-      kcAlertDiv.style.display = "flex";
+    function kcAlert(txt, timeout=2350){
+      kcAlertDiv.textContent=txt;
+      kcAlertDiv.style.display="flex";
       kcAlertDiv.classList.remove("hide");
       if(alertTimeout) clearTimeout(alertTimeout);
-      alertTimeout = setTimeout(()=>{ kcAlertDiv.classList.add("hide"); }, timeout);
+      alertTimeout = setTimeout(()=>kcAlertDiv.classList.add("hide"), timeout);
     }
 
     // ========== SIDEBAR CONTROLS ==========
-    // Account menu
-    accountBtn.onclick = () => { accountSidebar.classList.add("open"); };
-    closeAccountSidebar.onclick = () => { accountSidebar.classList.remove("open"); };
-    // Admin menu
-    adminBtn.onclick = () => { adminSidebar.classList.add("open"); };
-    closeAdminSidebar.onclick = () => { adminSidebar.classList.remove("open"); };
-
-    // Clicking outside closes menus
+    accountBtn.onclick = ()=>accountSidebar.classList.add("open");
+    closeAccountSidebar.onclick = ()=>accountSidebar.classList.remove("open");
+    adminBtn.onclick = ()=>adminSidebar.classList.add("open");
+    closeAdminSidebar.onclick = ()=>adminSidebar.classList.remove("open");
     document.addEventListener("mousedown", e=>{
-      if(!accountSidebar.contains(e.target) && e.target!==accountBtn) accountSidebar.classList.remove("open");
-      if(!adminSidebar.contains(e.target) && e.target!==adminBtn) adminSidebar.classList.remove("open");
+      if(!accountSidebar.contains(e.target)&&e.target!==accountBtn) accountSidebar.classList.remove("open");
+      if(!adminSidebar.contains(e.target)&&e.target!==adminBtn) adminSidebar.classList.remove("open");
     });
 
-    // ========== REGISTER/LOGIN TOGGLE ==========
+    // ========== TOGGLE FORMS ==========
     toLogin.onclick = ()=>{
-      registerForm.style.display="none"; loginForm.style.display="flex";
-      kcAlertDiv.style.display = "none";
+      registerForm.style.display="none";
+      loginForm.style.display="flex";
+      kcAlertDiv.style.display="none";
     };
     toRegister.onclick = ()=>{
-      loginForm.style.display="none"; registerForm.style.display="flex";
-      kcAlertDiv.style.display = "none";
+      loginForm.style.display="none";
+      registerForm.style.display="flex";
+      kcAlertDiv.style.display="none";
     };
 
     // ========== AUTH LOGIC ==========
@@ -563,242 +544,220 @@
     };
 
     // ========== ACCOUNT ACTIONS ==========
-    signOutBtn.onclick = ()=>auth.signOut().then(()=>kcAlert("Signed out"));
-    resetPassBtn.onclick = ()=>{
+    document.getElementById("signOutBtn").onclick = ()=>auth.signOut().then(()=>kcAlert("Signed out"));
+    document.getElementById("resetPassBtn").onclick = ()=>{
       const u=auth.currentUser; if(!u) return kcAlert("Not signed in");
       auth.sendPasswordResetEmail(u.email,{url:window.location.origin+"/?mode=resetPassword",handleCodeInApp:true})
         .then(()=>kcAlert("Password reset email sent"))
         .catch(e=>kcAlert(e.message));
     };
-    deleteAcctBtn.onclick = ()=>{
-      document.getElementById("confirmMsg").textContent = "Are you sure you want to delete your account?";
-      confirmOverlay.style.display = "flex";
-      confirmYesBtn.onclick = ()=>{
+    document.getElementById("deleteAcctBtn").onclick = ()=>{
+      document.getElementById("confirmMsg").textContent="Are you sure you want to delete your account?";
+      document.getElementById("confirmOverlay").style.display="flex";
+      document.getElementById("confirmYesBtn").onclick = ()=>{
         const u=auth.currentUser; if(!u) return;
         u.delete()
          .then(()=>{
-           confirmOverlay.style.display = "none";
+           document.getElementById("confirmOverlay").style.display="none";
            kcAlert("Account deleted");
          })
          .catch(err=>{
-           confirmOverlay.style.display = "none";
+           document.getElementById("confirmOverlay").style.display="none";
            if(err.code==="auth/requires-recent-login")
              kcAlert("Please sign out and back in before deleting.");
            else kcAlert(err.message);
          });
       };
-      confirmNoBtn.onclick = ()=>{
-        confirmOverlay.style.display = "none";
+      document.getElementById("confirmNoBtn").onclick = ()=>{
+        document.getElementById("confirmOverlay").style.display="none";
       };
     };
 
     // ========== ADMIN PORTAL ==========
-    let adminAuthenticated = false;
-    adminLoginBtn.onclick = ()=>{
-      if(adminPassInput.value==="events2025KC"){
-        adminAuthenticated = true;
-        adminAuthSection.style.display="none";
-        adminContent.style.display="block";
+    let adminAuthenticated=false;
+    document.getElementById("adminLoginBtn").onclick = ()=>{
+      if(document.getElementById("adminPass").value==="events2025KC"){
+        adminAuthenticated=true;
+        document.getElementById("adminAuthSection").style.display="none";
+        document.getElementById("adminContent").style.display="block";
         kcAlert("Admin authenticated");
         loadAllUsersToAdmin();
         refreshUserSelect();
-      } else {
-        kcAlert("Wrong admin password");
-      }
+      } else kcAlert("Wrong admin password");
     };
-    // Only allow admin actions if authenticated
-    function ensureAdmin() { return adminAuthenticated; }
-    // User selection dropdown
-    function refreshUserSelect() {
+    function ensureAdmin(){return adminAuthenticated;}
+    function refreshUserSelect(){
       db.ref("users").once("value").then(snap=>{
-        userSelect.innerHTML="";
-        snap.forEach(c=>{
-          let o=document.createElement("option");
-          o.value=c.key; o.textContent=c.val().displayName;
-          userSelect.appendChild(o);
+        const sel=document.getElementById("userSelect");
+        sel.innerHTML="";
+        snap.forEach(u=>{
+          const o=document.createElement("option");
+          o.value=u.key; o.textContent=u.val().displayName;
+          sel.appendChild(o);
         });
       });
     }
-    // Load all users & badges to admin list
     function loadAllUsersToAdmin(){
-      db.ref("users").once("value").then(usersSnap=>{
-        db.ref("badges").once("value").then(badgesSnap=>{
+      Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
+        .then(([us,bad])=>{
           let html="<ul>";
-          usersSnap.forEach(u=>{
-            let b=badgesSnap.child(u.key).val()||{};
-            html+=`<li><b>${u.val().displayName}</b> 
+          us.forEach(u=>{
+            const b=bad.child(u.key).val()||{};
+            html+=`<li><b>${u.val().displayName}</b>
               <span class="admin-badge-list">
-                <span>🏆 <span class="admin-badge-count">${b.overall||0}</span></span>
-                <span>🔥 <span class="admin-badge-count">${b.offence||0}</span></span>
-                <span>🛡️ <span class="admin-badge-count">${b.defence||0}</span></span>
+                <span>🏆<span class="admin-badge-count">${b.overall||0}</span></span>
+                <span>🔥<span class="admin-badge-count">${b.offence||0}</span></span>
+                <span>🛡️<span class="admin-badge-count">${b.defence||0}</span></span>
               </span></li>`;
           });
           html+="</ul>";
-          adminUsersList.innerHTML=html;
+          document.getElementById("adminUsersList").innerHTML=html;
         });
-      });
     }
-    // Add/remove badges on selected user (requires save)
-    let badgeChanges = {offence:0, defence:0, overall:0};
-    userSelect.onchange = ()=>{ badgeChanges={offence:0,defence:0,overall:0}; };
-    addOffence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.offence=(badgeChanges.offence||0)+1; kcAlert("+1 Best Offence staged (Save to apply)");};
-    addDefence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.defence=(badgeChanges.defence||0)+1; kcAlert("+1 Best Defence staged (Save to apply)");};
-    addOverall.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.overall=(badgeChanges.overall||0)+1; kcAlert("+1 Overall Winner staged (Save to apply)");};
-    remOffence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.offence=(badgeChanges.offence||0)-1; kcAlert("-1 Best Offence staged (Save to apply)");};
-    remDefence.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.defence=(badgeChanges.defence||0)-1; kcAlert("-1 Best Defence staged (Save to apply)");};
-    remOverall.onclick = ()=>{ if(!ensureAdmin())return; badgeChanges.overall=(badgeChanges.overall||0)-1; kcAlert("-1 Overall Winner staged (Save to apply)");};
-    saveAdmin.onclick = ()=>{
-      if(!ensureAdmin())return;
-      const uid = userSelect.value;
+    ["Offence","Defence","Overall"].forEach(type=>{
+      document.getElementById("add"+type).onclick = ()=>{
+        if(!ensureAdmin()) return;
+        badgeChanges[type.toLowerCase()]++;
+        kcAlert(`+1 ${type} staged (Save to apply)`);
+      };
+      document.getElementById("rem"+type).onclick = ()=>{
+        if(!ensureAdmin()) return;
+        badgeChanges[type.toLowerCase()]--;
+        kcAlert(`-1 ${type} staged (Save to apply)`);
+      };
+    });
+    let badgeChanges={offence:0,defence:0,overall:0};
+    document.getElementById("saveAdmin").onclick = ()=>{
+      if(!ensureAdmin()) return;
+      const uid=document.getElementById("userSelect").value;
       db.ref("badges/"+uid).get().then(snap=>{
-        let current = snap.val()||{};
-        let upd = {};
-        ['offence','defence','overall'].forEach(k=>{
-          upd[k] = Math.max(0, (current[k]||0)+(badgeChanges[k]||0));
+        const cur=snap.val()||{};
+        const upd={};
+        ["offence","defence","overall"].forEach(k=>{
+          upd[k]=Math.max(0,(cur[k]||0)+badgeChanges[k]);
         });
         db.ref("badges/"+uid).set(upd).then(()=>{
           badgeChanges={offence:0,defence:0,overall:0};
           kcAlert("Badges updated");
           loadAllUsersToAdmin();
-          // If it's current user, reload their badge view instantly!
-          if(auth.currentUser && auth.currentUser.uid===uid)
+          if(auth.currentUser&&auth.currentUser.uid===uid)
             loadBadges(uid,auth.currentUser.emailVerified);
         });
       });
     };
 
-    // ========== BADGES LOGIC ==========
-function loadBadges(uid, verified) {
-  badgeList.innerHTML = "";
-  joinBadge.innerHTML = "";
-
-  // VERIFIED BADGE
-  let verifiedBox = document.createElement("div");
-  verifiedBox.className = "badge-item verified";
-  verifiedBox.tabIndex = 0;
-
-  if (verified) {
-    // Show tick, green gradient, green glow on hover
-    verifiedBox.innerHTML = `
-      <span style="font-size:2.2em; color:#fff; margin-bottom:3px;">✔️</span>
-      <span class="badge-label">VERIFIED</span>`;
-    verifiedBox.style.background = "linear-gradient(90deg, #10b981 70%, #22e67b 120%)";
-    verifiedBox.onmouseover = () => {
-      verifiedBox.style.boxShadow = "0 0 18px 0 #18e178cc, 0 4px 14px #18e17844";
-      verifiedBox.style.transform = "translateY(-3px) scale(1.045)";
-    };
-    verifiedBox.onmouseleave = () => {
-      verifiedBox.style.boxShadow = "";
-      verifiedBox.style.transform = "";
-    };
-  } else {
-    // Show cross, gray gradient, gray glow on hover, click to resend
-    verifiedBox.classList.add("locked");
-    verifiedBox.innerHTML = `
-      <span style="font-size:2.2em; color:#aaa; margin-bottom:3px;">❌</span>
-      <span class="badge-label">Not Verified</span>
-      <span class="lock-icon">🔒</span>`;
-    verifiedBox.style.background = "linear-gradient(90deg, #cfd8dc 65%, #eceff1 120%)";
-    verifiedBox.onmouseover = () => {
-      verifiedBox.style.boxShadow = "0 0 12px 0 #bbb8, 0 1px 6px #aaa4";
-    };
-    verifiedBox.onmouseleave = () => {
-      verifiedBox.style.boxShadow = "";
-    };
-    verifiedBox.onclick = () => {
-  auth.currentUser.sendEmailVerification(actionCodeSettings)
-    .then(() => kcAlert("Verification email resent!"))
-    .catch(e => kcAlert(e.message));
-};
-  }
-  badgeList.appendChild(verifiedBox);
-
-  // BADGE SPECS (with gradients for unlocked state)
-  const badgeSpecs = {
-    offence:  {label:"Best Offence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png",cls:"offence",grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)"},
-    defence:  {label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)"},
-    overall:  {label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)"}
-  };
-
-  db.ref(`badges/${uid}`).once("value").then(snap => {
-    Object.entries(badgeSpecs).forEach(([k, s]) => {
-      let cnt = (snap.val() || {})[k] || 0;
-      let el = document.createElement("div");
-      el.className = "badge-item " + s.cls + (cnt ? "" : " locked");
-      el.tabIndex = 0;
-      el.innerHTML = `<img src="${s.icon}" alt="${s.label}"/>
-        <span class="badge-label">${s.label}</span>`;
-      if (cnt) {
-        el.innerHTML += `<span class="badge-mult">x${cnt}</span>`;
-        el.style.background = s.grad;
-        // Glow and lift on hover
-        let glow = "#eee";
-        if (k === "offence") glow = "#ef4744cc";
-        if (k === "defence") glow = "#4489f6cc";
-        if (k === "overall") glow = "#e8be31cc";
-        el.onmouseover = () => {
-          el.style.boxShadow = `0 0 18px 0 ${glow}, 0 4px 14px ${glow}77`;
-          el.style.transform = "translateY(-3px) scale(1.045)";
-        };
-        el.onmouseleave = () => {
-          el.style.boxShadow = "";
-          el.style.transform = "";
-        };
-      } else {
-        el.innerHTML += `<span class="lock-icon">🔒</span>`;
-        el.onmouseover = () => el.style.boxShadow = "0 0 12px 0 #aaa8, 0 1px 6px #aaa4";
-        el.onmouseleave = () => el.style.boxShadow = "";
-      }
-      badgeList.appendChild(el);
+    // ========== AVATAR PICKER LOGIC ==========
+    avatarBtn.onclick = ()=>avatarModal.classList.add("open");
+    closeAvatarModal.onclick = ()=>avatarModal.classList.remove("open");
+    avatarModal.addEventListener("mousedown",e=>{
+      if(!e.target.closest(".avatar-content"))
+        avatarModal.classList.remove("open");
+    });
+    avatarGrid.querySelectorAll("img").forEach(img=>{
+      img.onclick = ()=>{
+        const url=img.dataset.url, user=auth.currentUser;
+        if(!user) return kcAlert("Please log in to set an avatar.");
+        db.ref(`users/${user.uid}/avatar`).set(url)
+          .then(()=>{
+            avatarImg.src=url;
+            avatarImg.style.display="block";
+            kcAlert("Avatar updated!");
+            avatarModal.classList.remove("open");
+          })
+          .catch(e=>kcAlert(e.message));
+      };
     });
 
-    // Join badge/supporter
-    db.ref(`users/${uid}`).once("value").then(uSnap => {
-      let joinRaw = uSnap.val()?.joined;
-      let joinDate = joinRaw ? new Date(joinRaw) : null;
-      let dateStr = joinDate ? joinDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : "Unknown";
-      db.ref("users").orderByChild("joined").endAt(joinRaw).once("value")
-        .then(r => {
-          let rank = r.numChildren(), txt = "", cls = "";
-if (rank <= 30) {
-  txt = "Early Supporter";
-  cls = "early";
-} else if (rank <= 60) {
-  txt = "Supporter";
-  cls = "supporter";
-} else {
-  txt = "New Generation";
-  cls = "newgen";
-}
-joinBadge.innerHTML =
-  `<div>Join Date: ${dateStr}</div>` +
-  (txt ? `<div class="supporter ${cls}">${txt}</div>` : "");
-        });
-    });
-  });
-}
-
-
-    // ========== AUTH STATE ==========
+    // ========== AUTH STATE & INIT AVATAR ==========
     auth.onAuthStateChanged(u=>{
-    if(u){
-      authForms.style.display="none";
-      profileUI.style.display="block";
-      badgesCard.style.display="flex";
-      document.querySelector(".kc-title").textContent="KC Events";
-      welcomeUser.innerHTML = `👋 <span style="color:#1992d4;">Welcome, ${u.displayName||u.email}</span>`;
-      db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
-      loadBadges(u.uid, u.emailVerified);
-    } else {
-      authForms.style.display="flex";
-      profileUI.style.display="none";
-      badgeList.innerHTML="";
-      joinBadge.innerHTML="";
-      badgesCard.style.display="none"; // HIDE BADGES CARD IF LOGGED OUT!
-      document.querySelector(".kc-title").textContent="KC Events";
-    }
-  });
-</script>
-  </script>
+      if(u){
+        authForms.style.display="none";
+        profileUI.style.display="block";
+        badgesCard.style.display="flex";
+        document.querySelector(".kc-title").textContent="KC Events";
+        welcomeUser.innerHTML=`👋 <span style="color:#1992d4;">Welcome, ${u.displayName||u.email}</span>`;
+        db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
+        db.ref(`users/${u.uid}/avatar`).once("value").then(snap=>{
+          const url=snap.val()||"avatars/default.png";
+          avatarImg.src=url; avatarImg.style.display="block";
+        });
+        loadBadges(u.uid,u.emailVerified);
+      } else {
+        authForms.style.display="flex";
+        profileUI.style.display="none";
+        badgesCard.style.display="none";
+        avatarImg.style.display="none";
+        document.querySelector(".kc-title").textContent="KC Events";
+      }
+    });
+
+    // ========== BADGES LOGIC ==========
+    function loadBadges(uid,verified){
+      badgeList.innerHTML=""; joinBadge.innerHTML="";
+      const verifiedBox=document.createElement("div");
+      verifiedBox.className="badge-item verified"; verifiedBox.tabIndex=0;
+      if(verified){
+        verifiedBox.innerHTML=`
+          <span style="font-size:2.2em;color:#fff;margin-bottom:3px;">✔️</span>
+          <span class="badge-label">VERIFIED</span>`;
+        verifiedBox.style.background="linear-gradient(90deg,#10b981 70%,#22e67b 120%)";
+        verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 18px #18e178cc,0 4px 14px #18e17844";verifiedBox.style.transform="translateY(-3px) scale(1.045)";};
+        verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";verifiedBox.style.transform="";};
+      } else {
+        verifiedBox.classList.add("locked");
+        verifiedBox.innerHTML=`
+          <span style="font-size:2.2em;color:#aaa;margin-bottom:3px;">❌</span>
+          <span class="badge-label">Not Verified</span>
+          <span class="lock-icon">🔒</span>`;
+        verifiedBox.style.background="linear-gradient(90deg,#cfd8dc 65%,#eceff1 120%)";
+        verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 12px #bbb8,0 1px 6px #aaa4";};
+        verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";};
+        verifiedBox.onclick=()=>{
+          auth.currentUser.sendEmailVerification(actionCodeSettings)
+            .then(()=>kcAlert("Verification email resent!"))
+            .catch(e=>kcAlert(e.message));
+        };
+      }
+      badgeList.appendChild(verifiedBox);
+
+      const specs={
+        offence:{label:"Best Offence", icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png", cls:"offence", grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)"},
+        defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)"},
+        overall:{label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)"}
+      };
+      db.ref(`badges/${uid}`).once("value").then(snap=>{
+        Object.entries(specs).forEach(([k,s])=>{
+          const cnt=(snap.val()||{})[k]||0;
+          const el=document.createElement("div");
+          el.className=`badge-item ${s.cls}${cnt?"":" locked"}`; el.tabIndex=0;
+          el.innerHTML=`<img src="${s.icon}" alt="${s.label}"/><span class="badge-label">${s.label}</span>`;
+          if(cnt){
+            el.innerHTML+=`<span class="badge-mult">x${cnt}</span>`;
+            el.style.background=s.grad;
+            const glow=k==="offence"? "#ef4744cc": k==="defence"? "#4489f6cc": "#e8be31cc";
+            el.onmouseover=()=>{el.style.boxShadow=`0 0 18px ${glow},0 4px 14px ${glow}77`;el.style.transform="translateY(-3px) scale(1.045)";};
+            el.onmouseleave=()=>{el.style.boxShadow="";el.style.transform="";};
+          } else {
+            el.innerHTML+=`<span class="lock-icon">🔒</span>`;
+            el.onmouseover=()=>{el.style.boxShadow="0 0 12px #aaa8,0 1px 6px #aaa4";};
+            el.onmouseleave=()=>{el.style.boxShadow="";};
+          }
+          badgeList.appendChild(el);
+        });
+
+        db.ref(`users/${uid}`).once("value").then(uSnap=>{
+          const joined=uSnap.val()?.joined;
+          const dateStr=joined? new Date(joined).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"Unknown";
+          db.ref("users").orderByChild("joined").endAt(joined).once("value").then(r=>{
+            const rank=r.numChildren();
+            let txt="",cls="";
+            if(rank<=30){txt="Early Supporter";cls="early";}
+            else if(rank<=60){txt="Supporter";cls="supporter";}
+            else{txt="New Generation";cls="newgen";}
+          
+          });
+        });
+      });
+    }  </script>
 </body>
 </html>
