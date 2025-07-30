@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>KC Apple Glass Leaderboard Carousel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    html, body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(ellipse 90% 70% at 55% 18%, #23334f 60%, #181d29 100%);
+      font-family: 'Poppins', sans-serif;
+    }
+    .glass-bg {
+      background: rgba(30,32,42,0.68);
+      backdrop-filter: blur(25px) brightness(1.1);
+      box-shadow: 0 10px 48px 0 #10152044, 0 2px 8px #5a668133;
+      border-radius: 32px;
+      border: 1.5px solid rgba(255,255,255,0.10);
+      transition: box-shadow .2s;
+      perspective: 1000px;
+    }
+    .pill {
+      border-radius: 32px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      padding: 0.48em 1.8em;
+      transition: box-shadow .19s, background .22s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3em;
+      box-shadow: 0 2px 16px 0 #fff3;
+      margin: 0 0.15em;
+      user-select: none;
+      cursor: pointer;
+      position: relative;
+      z-index: 11;
+      min-width: 152px;
+    }
+    .pill.active {
+      box-shadow: 0 4px 32px 0 var(--glow,#ffd70099),0 1.5px 8px #fff6;
+      border: 2px solid #fff5;
+      transform: scale(1.08);
+    }
+    .pill img {
+      margin: 0 !important;
+      display: block;
+      margin-bottom: 0.14em;
+    }
+    .pill span {
+      margin: 0;
+      display: block;
+      text-align: center;
+      width: 100%;
+      font-size: 1.03em;
+    }
+    .pill.gold {
+      background: linear-gradient(90deg,#ffe066 0%,#f4d644 100%);
+      color: #826c10;
+      --glow: #ffe06699;
+    }
+    .pill.red {
+      background: linear-gradient(90deg,#fa5252 0%,#fbba34 100%);
+      color: #84121e;
+      --glow: #fa525299;
+    }
+    .pill.blue {
+      background: linear-gradient(90deg,#3b82f6 0%,#60a5fa 100%);
+      color: #204f8e;
+      --glow: #3b82f666;
+    }
+    /* Card Carousel Animations */
+   .card-carousel {
+  position: relative;
+  width: 560px;
+  max-width: 99vw;
+  min-height: 480px;  /* was 380px, now 480px */
+  height: 560px;      /* was 450px, now 560px */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  margin: 0 auto;
+  perspective: 1200px;
+}
+.card-slide {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 99%;
+  max-width: 97vw;
+  min-height: 480px;  /* was 380px, now 480px */
+  height: 520px;      /* was 420px, now 520px */
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+  transform: scale(0.85) translateX(0px) rotateY(0deg);
+  transition: 
+    transform .47s cubic-bezier(.74,.06,.13,.97),
+    opacity .36s cubic-bezier(.68,0,.42,1.1),
+    z-index .18s;
+  box-shadow: 0 8px 40px #0004, 0 2px 8px #5a66811a;
+  filter: blur(2.3px) grayscale(.36) brightness(.92);
+}
+
+    .card-slide.center {
+      z-index: 12;
+      opacity: 1;
+      pointer-events: auto;
+      filter: none;
+      transform: scale(1.04) translate(-50%,0) rotateY(0deg);
+    }
+    .card-slide.left {
+      z-index: 6;
+      opacity: .62;
+      pointer-events: none;
+      transform: scale(.92) translate(-93%, 22px) rotateY(16deg);
+    }
+    .card-slide.right {
+      z-index: 6;
+      opacity: .62;
+      pointer-events: none;
+      transform: scale(.92) translate(20%, 22px) rotateY(-16deg);
+    }
+    .flip-card {
+      transition: transform .66s cubic-bezier(.63,.09,.23,1.07);
+      transform-style: preserve-3d;
+      position: relative;
+    }
+    .flipped .flip-card {
+      transform: rotateY(180deg);
+    }
+    .flip-front, .flip-back {
+      width: 100%; height: 100%;
+      backface-visibility: hidden;
+      position: absolute;
+      top: 0; left: 0;
+      border-radius: 32px;
+    }
+    .flip-back {
+      transform: rotateY(180deg);
+      background: rgba(30,32,42,0.98);
+      box-shadow: 0 16px 48px #13172048, 0 2px 8px #5a668133;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.6rem 1.4rem 1.4rem 1.4rem;
+      z-index: 101;
+    }
+    /* 1st, 2nd, 3rd place gradients/text */
+    .gold-grad {
+      background: linear-gradient(90deg,#ffe066 45%,#f4d644 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+    .silver-grad {
+      background: linear-gradient(90deg,#f1f1f5 0%,#bfc4c9 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+    .bronze-grad {
+      background: linear-gradient(90deg,#fbc28b 0%,#cd7f32 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+    }
+    .info-btn {
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      background: rgba(255,255,255,0.13);
+      border-radius: 50%;
+      padding: 0.45rem 0.55rem;
+      cursor: pointer;
+      z-index: 103;
+      border: 1.7px solid #ffffff25;
+      transition: background .19s;
+      box-shadow: 0 4px 24px #0003;
+      font-size: 1.45rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .info-btn:hover { background: rgba(255,255,255,0.22); }
+    .info-close {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      z-index: 110;
+      opacity: 0.8;
+      transition: opacity .14s;
+    }
+    .info-close:hover { opacity: 1; }
+    /* Hide scrollbar for leaderboard list */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @media (max-width: 700px) {
+      .card-carousel { width:99vw; min-width:0; }
+      .card-slide { width:98vw; }
+    }
+  </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-transparent">
+  <div class="w-full flex flex-col items-center justify-center z-10">
+    <!-- Fixed Pills -->
+    <div class="flex justify-center w-full mb-2 mt-1 gap-2 relative z-20 select-none">
+      <button class="pill gold" id="pill0">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" width="30" class="mx-auto mb-1">
+        <span>Overall Winner</span>
+      </button>
+      <button class="pill red"  id="pill1">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" width="30" class="mx-auto mb-1">
+        <span>Best Offence</span>
+      </button>
+      <button class="pill blue" id="pill2">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" width="30" class="mx-auto mb-1">
+        <span>Best Defence</span>
+      </button>
+    </div>
+    <!-- Carousel of glass cards -->
+    <div class="card-carousel h-[460px] max-w-[99vw]">
+      <div id="card0" class="card-slide glass-bg"><div class="flip-card"></div></div>
+      <div id="card1" class="card-slide glass-bg"><div class="flip-card"></div></div>
+      <div id="card2" class="card-slide glass-bg"><div class="flip-card"></div></div>
+    </div>
+    <div class="flex gap-5 mt-20 z-30">
+      <button id="arrowLeft" class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full shadow flex items-center justify-center border border-white/10 text-xl transition" aria-label="Left">
+        <svg width="26" height="26" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button id="arrowRight" class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full shadow flex items-center justify-center border border-white/10 text-xl transition" aria-label="Right">
+        <svg width="26" height="26" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+<script>
+  // --- Leaderboard meta, matching pills order
+  const LB_META = [
+    {
+      label: "Overall Winner",
+      icon: `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" width="58" style="display:block;margin:0 auto 0.1em auto;">`,
+      pillIcon: `https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png`,
+      key: 'overallScore',
+      pillClass: 'gold',
+      info: `
+        <div class="flex flex-col items-center gap-1">
+          <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" width="80" class="mb-3 mt-1" />
+          
+          <div class="text-slate-100 opacity-80 text-base mt-1 text-center leading-normal">
+            The "Overall Winner" award is reserved for the ultimate champion – the player who rose to the top of the leaderboard through a perfect balance of offence, defence, and strategy.<br><br>
+            With sharp instincts, clever tactics, and consistent dominance, they outplayed the competition from start to finish. Decided by the game rules, this title marks the best of the best / a true all-rounder who earned their victory the hard way.
+          </div>
+        </div>
+      `
+    },
+    {
+      label: "Best Offence",
+      icon: `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" width="58" style="display:block;margin:0 auto 0.1em auto;">`,
+      pillIcon: `https://kevinmidnight7-sudo.github.io/messageboardkc/red.png`,
+      key: 'offenceScore',
+      pillClass: 'red',
+      info: `
+        <div class="flex flex-col items-center gap-1">
+          <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" width="80" class="mb-3 mt-1" />
+          
+          <div class="text-slate-100 opacity-80 text-base mt-1 text-center leading-normal">
+            The "Best Offence" award goes to players who strike with precision, speed, and relentless pressure.<br><br>
+            Known for their aggressive playstyle and daring moves, these contenders dominate the map with fearless attacks and surgical timing. Voted by the KC Events community, they turn every encounter into a high-stakes battle - if they’re near, you’d better be ready.
+          </div>
+        </div>
+      `
+    },
+    {
+      label: "Best Defence",
+      icon: `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" width="58" style="display:block;margin:0 auto 0.1em auto;">`,
+      pillIcon: `https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png`,
+      key: 'defenceScore',
+      pillClass: 'blue',
+      info: `
+        <div class="flex flex-col items-center gap-1">
+          <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" width="80" class="mb-3 mt-1" />
+         
+          <div class="text-slate-100 opacity-80 text-base mt-1 text-center leading-normal">
+            The "Best Defence" award celebrates players who are masters of survival, strategy, and control.<br><br>
+            Whether they’re outnumbered, cornered, or surrounded, they hold their ground with calm precision and smart positioning. Chosen by the KC Events community, these players turn defence into an art form - slippery, unshakable, and always one step ahead.
+          </div>
+        </div>
+      `
+    }
+  ];
+  const DEFAULT_AVATAR = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+  const ROWS_PER_PAGE = 5;
+  let data = [];
+  let page = [0, 0, 0]; // separate page for each card
+  let current = 0;
+  let flipped = [false, false, false]; // which card is flipped
+
+  // --- Firebase config (your KC Events db)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+    authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+    databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "kckillerscompany-ab1ec",
+    storageBucket: "kckillerscompany-ab1ec.appspot.com",
+    messagingSenderId: "198711213988",
+    appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+    measurementId: "G-4LKP2M3JXE"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // --- Fetch leaderboard data
+  async function fetchData() {
+    const [usersSnap, badgesSnap] = await Promise.all([
+      db.ref('users').once('value'),
+      db.ref('badges').once('value')
+    ]);
+    const users = usersSnap.val() || {};
+    const badges = badgesSnap.val() || {};
+
+    data = Object.entries(users).map(([uid, u]) => {
+      const b = badges[uid] || {};
+      return {
+        name: u.displayName || u.email || '(unknown)',
+        avatarUrl: u.avatar || DEFAULT_AVATAR,
+        overallScore: b.overall || 0,
+        offenceScore: b.offence || 0,
+        defenceScore: b.defence || 0
+      };
+    });
+    renderAll();
+  }
+
+  // --- Render all three cards
+  function renderAll() {
+    LB_META.forEach((cat, idx) => renderCard(idx));
+    updateCarousel();
+    updatePills();
+  }
+  function updateCarousel() {
+    for (let i = 0; i < 3; ++i) {
+      const card = document.getElementById('card'+i);
+      card.classList.remove('center','left','right','flipped');
+      if (i === current) card.classList.add('center');
+      else if (i === (current+2)%3) card.classList.add('left');
+      else if (i === (current+1)%3) card.classList.add('right');
+      if (flipped[i]) card.classList.add('flipped');
+    }
+  }
+  function updatePills() {
+    for (let i = 0; i < 3; ++i) {
+      document.getElementById('pill'+i).classList.toggle('active', i===current);
+    }
+  }
+
+  // --- Render one card leaderboard (with flip front/back)
+  function renderCard(idx) {
+    const {label, icon, key, info} = LB_META[idx];
+    const sorted = data.slice().sort((a, b) => (b[key]||0)-(a[key]||0));
+    const start = page[idx] * ROWS_PER_PAGE;
+    const show = sorted.slice(start, start+ROWS_PER_PAGE);
+
+    let rows = '';
+    show.forEach((player, i) => {
+      const rank = start+i+1;
+      let rankStyle = '', nameStyle = '', fontSize = '', rowHeight = '', crown = '';
+      if (rank === 1) {
+        rankStyle = 'gold-grad font-extrabold drop-shadow-lg';
+        nameStyle = 'gold-grad font-extrabold drop-shadow-lg';
+        fontSize = 'text-[2.10rem] sm:text-[2.25rem]';
+        rowHeight = 'min-h-[4.2rem] py-2.5';
+        crown = `<span class="inline-block align-middle -ml-1 mr-1">👑</span>`;
+      } else if (rank === 2) {
+        rankStyle = 'silver-grad font-bold';
+        nameStyle = 'silver-grad font-bold';
+        fontSize = 'text-[1.39rem] sm:text-[1.53rem]';
+        rowHeight = 'min-h-[3.7rem] py-2';
+      } else if (rank === 3) {
+        rankStyle = 'bronze-grad font-bold';
+        nameStyle = 'bronze-grad font-bold';
+        fontSize = 'text-[1.17rem] sm:text-[1.29rem]';
+        rowHeight = 'min-h-[3.15rem] py-1.5';
+      } else {
+        rankStyle = 'text-slate-300 font-semibold';
+        nameStyle = 'text-slate-200 font-semibold';
+        fontSize = 'text-[1.01rem] sm:text-[1.08rem]';
+      }
+      
+      const avatar = `<img src="${player.avatarUrl || DEFAULT_AVATAR}" alt="${player.name}'s avatar" class="w-10 h-10 rounded-full mr-3 bg-slate-100 object-cover border border-white/40"/>`;
+      rows += `
+      <li class="flex items-center px-3 rounded-2xl hover:bg-white/10 transition ${rowHeight}">
+        <div class="flex items-center min-w-0 flex-1">
+          <div class="${rankStyle} ${fontSize} w-10 text-center mr-2">${rank}</div>
+          ${avatar}
+          <span class="${nameStyle} ${fontSize} min-w-0 truncate">${crown}${player.name}</span>
+        </div>
+        <div class="ml-auto ${rankStyle} ${fontSize} tabular-nums text-right min-w-[2.5rem]">${player[key]||0}</div>
+      </li>`;
+
+});
+
+
+    // Info icon svg
+    const infoIcon = `<svg viewBox="0 0 20 20" fill="none" width="27" height="27" stroke="currentColor" stroke-width="1.9"><circle cx="10" cy="10" r="8.1" stroke="currentColor" stroke-width="2.1"/><rect x="9.2" y="8.2" width="1.6" height="5.6" rx=".82" fill="currentColor"/><rect x="9.2" y="5.1" width="1.6" height="1.65" rx=".82" fill="currentColor"/></svg>`;
+
+    document.getElementById('card'+idx).innerHTML = `
+      <div class="flip-card w-full h-full relative">
+        <!-- FRONT -->
+        <div class="flip-front glass-bg w-full h-full flex flex-col items-center py-3 select-none">
+          <button class="info-btn" onclick="window.flipToInfo(${idx})" title="More info">${infoIcon}</button>
+          <div class="w-full flex flex-row items-center justify-center mb-2 mt-2 gap-2">
+            <span class="rounded-xl px-4 py-1 text-lg font-bold drop-shadow flex flex-col items-center" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(1.5px);color:#fff;">
+              ${icon}
+              <span>${label}</span>
+            </span>
+          </div>
+          <ul class="w-full no-scrollbar space-y-2 min-h-[250px]">${rows}</ul>
+          <div class="flex items-center justify-between mt-3">
+            <button class="arrow-btn flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 transition shadow border border-white/10 mr-2"
+              onclick="window.carouselArrow(${idx},-1)"
+              ${page[idx]===0?'style="opacity:0.25;pointer-events:none;"':''}
+              aria-label="Previous Page">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b5b7ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 15l-7-7-7 7"/>
+              </svg>
+            </button>
+            <button class="arrow-btn flex items-center justify-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 transition shadow border border-white/10 ml-2"
+              onclick="window.carouselArrow(${idx},1)"
+              ${(start+ROWS_PER_PAGE)>=data.length?'style="opacity:0.25;pointer-events:none;"':''}
+              aria-label="Next Page">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b5b7ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 9l7 7 7-7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <!-- BACK (INFO) -->
+        <div class="flip-back w-full h-full glass-bg relative">
+          <button class="info-close" onclick="window.flipBack(${idx})" title="Back">&times;</button>
+          <div class="w-full h-full flex flex-col items-center justify-center">
+            ${info}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // --- Flip logic
+  window.flipToInfo = idx => { flipped[idx]=true; updateCarousel(); }
+  window.flipBack = idx => { flipped[idx]=false; updateCarousel(); }
+
+  // --- Card carousel nav
+  document.getElementById('arrowLeft').onclick = () => { current = (current+2)%3; renderAll(); }
+  document.getElementById('arrowRight').onclick = () => { current = (current+1)%3; renderAll(); }
+  for (let i = 0; i < 3; ++i) {
+    document.getElementById('pill'+i).onclick = () => { current = i; renderAll(); }
+  }
+  window.carouselArrow = (cardIdx, dir) => {
+    page[cardIdx] += dir;
+    if (page[cardIdx] < 0) page[cardIdx] = 0;
+    if (page[cardIdx]*ROWS_PER_PAGE >= data.length) page[cardIdx] = Math.floor(data.length/ROWS_PER_PAGE);
+    renderCard(cardIdx);
+  }
+
+  // --- Init
+  fetchData();
+  db.ref('users').on('value', fetchData);
+  db.ref('badges').on('value', fetchData);
+</script>
+</body>
+</html>
