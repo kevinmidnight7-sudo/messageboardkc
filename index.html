@@ -372,9 +372,11 @@ body {
 
 /* Reaction Bar */
 .reactions {
-  display: flex; gap: .32rem; margin-top: .32rem;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: .5rem;
 }
+
 .reactBtn, .addBtn {
   display: flex; align-items: center; gap: .22rem;
   background: #f5f8fd;
@@ -1128,17 +1130,37 @@ document.body.addEventListener('click', e=>{
     return;
   }
 
-  if(e.target.closest('.likeBtn')){
-    if(!u || !u.emailVerified) return kcAlert('Log in and verify to like.');
-    let p=e.target.closest('li').dataset.path;
-    db.ref(`${p}/likedBy/${u.uid}`)
-      .transaction(cur=>cur===null?true:undefined,
-        (err,ok)=> {
-          if(err) kcAlert('Error liking.');
-          else if(ok) db.ref(`${p}/likes`).transaction(c=> (c||0)+1);
-          else kcAlert('You already liked.');
-        });
-    return;
+  if (e.target.closest('.likeBtn')) {
+    if (!u || !u.emailVerified) 
+      return kcAlert('Log in and verify to like.');
+
+    const btn  = e.target.closest('.likeBtn');
+    const path = btn.closest('li').dataset.path;
+
+    if (e.detail === 2) {
+      // **double‑tap** → unlike
+      db.ref(`${path}/likedBy/${u.uid}`).remove()
+        .then(() =>
+          db.ref(`${path}/likes`)
+            .transaction(n => Math.max(0, (n||0) - 1))
+        )
+        .catch(err => kcAlert('Error unliking: ' + err.message));
+    }
+    else {
+      // single tap → like
+      db.ref(`${path}/likedBy/${u.uid}`)
+        .transaction(cur => cur === null ? true : undefined,
+          (err, committed) => {
+            if (err) return kcAlert('Error liking.');
+            if (!committed) return kcAlert('You already liked.');
+            // we just added it, bump the counter
+            db.ref(`${path}/likes`)
+              .transaction(n => (n||0) + 1);
+          }
+        );
+    }
+
+    return; 
   }
 
   if(e.target.closest('.reactBtn')){
@@ -1213,6 +1235,27 @@ document.body.addEventListener('click', e=>{
     return;
   }
 });
+// add this right after your existing click‐handler block, or anywhere after you define `auth` & `db`
+document.body.addEventListener('dblclick', e => {
+  const btn = e.target.closest('.likeBtn');
+  const u   = auth.currentUser;
+  if (!btn || !u || !u.emailVerified) return;
+
+  // find that message’s database path
+  const path = btn.closest('li').dataset.path;
+
+  // remove the user’s like and decrement the count
+  db.ref(`${path}/likedBy/${u.uid}`).remove()
+    .then(() =>
+      // atomically decrement the likes counter
+      db.ref(`${path}/likes`).transaction(current => {
+        if (!current) return 0;
+        return current - 1;
+      })
+    )
+    .catch(err => kcAlert('Error unliking: ' + err.message));
+});
+
 
 // posting
 postBtn.onclick = ()=>{
