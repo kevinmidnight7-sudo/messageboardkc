@@ -1627,12 +1627,29 @@ document.getElementById("saveAdmin").onclick = ()=>{
 };
 // Admin set login streak
 document.getElementById("setStreakBtn").onclick = ()=>{
-  const uid=document.getElementById("userSelect").value;
-  const days = parseInt(document.getElementById("adminStreakInput").value,10);
+  const uid = document.getElementById("userSelect").value;
+  const days = parseInt(document.getElementById("adminStreakInput").value, 10);
   if(!uid || isNaN(days)) return kcAlert("Select user and days!");
-  db.ref(`users/${uid}/loginStreak`).set(days);
-  kcAlert(`Set streak to ${days}!`);
+  const today = getToday();
+  db.ref(`users/${uid}`).update({
+    loginStreak: days,
+    lastLoginDate: today
+  }).then(() => {
+    kcAlert(`Set streak to ${days} for user!`, 2500);
+    loadAllUsersToAdmin(); // Refresh admin list
+    // If the currently logged-in user is being edited, refresh their profile card UI
+    if(auth.currentUser && auth.currentUser.uid === uid) {
+      loadBadges(uid, auth.currentUser.emailVerified);
+    }
+    // Optionally: clear the input for next use
+    document.getElementById("adminStreakInput").value = "";
+  }).catch(err => {
+    kcAlert("Failed to set streak: " + err.message, 3000);
+  });
 };
+
+
+
 
 // ========== STREAK LOGIC (NEW FANCY MODAL) ==========
 const streakBtn = document.getElementById('streakBtn');
