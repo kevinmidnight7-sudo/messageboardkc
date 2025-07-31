@@ -362,8 +362,8 @@ body {
   outline: none;
 }
 .likeBtn { color: #ff416c; background: rgba(255,65,108,0.08); }
-.replyBtn { color: #1f9fff; background: rgba(65,108,255,0.07);}
-.deleteBtn { color: #ff3d4a; background: rgba(255,0,0,0.05);}
+.replyBtn { color: #1f9fff; background: rgba(65,108,255,0.07);} 
+.deleteBtn { color: #ff3d4a; background: rgba(255,0,0,0.05);} 
 .likeBtn:hover, .replyBtn:hover, .deleteBtn:hover {
   background: #f7fafc;
   box-shadow: 0 2px 10px #e7ebfb44;
@@ -511,7 +511,7 @@ body {
   box-shadow: 0 2px 8px #98f0e045;
   font-weight: 700;
   transition: background .12s, box-shadow .13s;
-}a
+}
 #alertContent button:hover {
   background: linear-gradient(90deg,#19df7e,#30a9f8);
   box-shadow: 0 2px 18px #8adfdc44;
@@ -591,6 +591,17 @@ body {
   background: linear-gradient(90deg,#19df7e,#30a9f8);
 }
 
+/* Streak Pill (user streak) */
+.user-streak {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(90deg,#ff6b6b,#fca311);
+  color: #fff;
+  margin-bottom: 14px;
+}
 
   </style>
 </head>
@@ -774,7 +785,7 @@ fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.jso
   .then(r=>r.json()).then(list=>badWords=list)
   .catch(_=> kcAlert('Failed loading bad‑words.'));
 function containsBadWord(s){
-  return badWords.some(w=>new RegExp('\\b'+w+'\\b','i').test(s));
+  return badWords.some(w=>new RegExp('\b'+w+'\b','i').test(s));
 }
 
 // UI refs
@@ -848,7 +859,7 @@ registerBtn.onclick = () => {
 
 
 // login
-loginBtn.onclick = ()=>{
+loginBtn.onclick = () =>{
   const e=loginEmail.value.trim(), p=loginPass.value;
   if(!e||!p) return kcAlert('Fill both fields.');
   auth.signInWithEmailAndPassword(e,p)
@@ -912,6 +923,7 @@ userPopup.innerHTML = `
   <div style="background:#fff;padding:24px;border-radius:16px;text-align:center;max-width:350px;">
     <img id="popupAvatar" src="" style="width:80px;height:80px;border-radius:50%;margin-bottom:12px;">
     <div id="popupUserName" style="font-weight:700;font-size:1.3em;margin-bottom:8px;"></div>
+    <div id="popupStreak" class="user-streak" style="display:none;"></div>
     <div id="popupBadges" style="font-size:1em;margin-bottom:16px;">Loading badges...</div>
     <button id="closeUserPopup" style="background:#1ee57c;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-weight:600;cursor:pointer;">Close</button>
   </div>
@@ -919,68 +931,90 @@ userPopup.innerHTML = `
 document.body.appendChild(userPopup);
 document.getElementById('closeUserPopup').onclick = ()=> userPopup.style.display='none';
 
-// Load badges for popup
-function loadUserBadges(uid, container) {
-  const specs = {
-    offence: { 
-      label: "Best Offence", 
-      icon: "https://kevinmidnight7-sudo.github.io/messageboardkc/red.png",
-      gradient: "linear-gradient(45deg,#ff6b6b,#f06595)"
-    },
-    defence: { 
-      label: "Best Defence", 
-      icon: "https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",
-      gradient: "linear-gradient(45deg,#74c0fc,#4dabf7)"
-    },
-    overall: { 
-      label: "Overall Winner", 
-      icon: "https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",
-      gradient: "linear-gradient(45deg,#FFD700,#FFA500)"
+// Load badges and streak for popup
+function loadUserProfile(uid) {
+  const badgesContainer = document.getElementById('popupBadges');
+  const streakEl = document.getElementById('popupStreak');
+  // reset
+  badgesContainer.innerHTML = 'Loading...';
+  streakEl.style.display = 'none';
+  streakEl.textContent = '';
+  // fetch streak
+  db.ref(`users/${uid}/loginStreak`).once('value').then(snap => {
+    const streak = snap.val() || 0;
+    if (streak > 0) {
+      streakEl.textContent = `🔥 ${streak}`;
+      streakEl.style.display = 'inline-block';
     }
-  };
-
-  container.innerHTML = "Loading...";
-
+  });
+  // load badges
   Promise.all([
     db.ref(`users/${uid}/verified`).once('value'),
-    db.ref(`badges/${uid}`).once('value')
-  ]).then(([vsnap, bsnap]) => {
-    container.innerHTML = "";
-
-    // Show verified badge if user is verified in DB
-    if (vsnap.val() || (auth.currentUser && auth.currentUser.uid === uid && auth.currentUser.emailVerified)) {
-  const badge = document.createElement("div");
-  badge.className = "popup-badge";
-  badge.style.background = "linear-gradient(45deg,#2dd4bf,#06b6d4)";
-  badge.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png"><span>Verified</span>`;
-  container.appendChild(badge);
-}
-
-
-    // Show other badges
-    const badges = bsnap.val() || {};
-    let hasBadge = false;
-    Object.entries(specs).forEach(([key, spec]) => {
-      const count = badges[key] || 0;
+    db.ref(`badges/${uid}`).once('value'),
+    db.ref(`users/${uid}/customBadges`).once('value')
+  ]).then(([vsnap, bsnap, csnap]) => {
+    badgesContainer.innerHTML = '';
+    // Verified badge
+    const isVerified = vsnap.val() || (auth.currentUser && auth.currentUser.uid === uid && auth.currentUser.emailVerified);
+    if (isVerified) {
+      const badge = document.createElement('div');
+      badge.className = 'popup-badge';
+      badge.style.background = 'linear-gradient(45deg,#2dd4bf,#06b6d4)';
+      badge.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png"><span>Verified</span>`;
+      badgesContainer.appendChild(badge);
+    }
+    // Base badges (offence, defence, overall)
+    const baseSpecs = {
+      offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', gradient: 'linear-gradient(45deg,#ff6b6b,#f06595)' },
+      defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', gradient: 'linear-gradient(45deg,#74c0fc,#4dabf7)' },
+      overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', gradient: 'linear-gradient(45deg,#FFD700,#FFA500)' }
+    };
+    const base = bsnap.val() || {};
+    let hasCore = false;
+    Object.keys(baseSpecs).forEach(key => {
+      const count = base[key] || 0;
       if (count > 0) {
-        hasBadge = true;
-        const badge = document.createElement("div");
-        badge.className = "popup-badge";
-        badge.style.background = spec.gradient;
-        badge.innerHTML = `<img src="${spec.icon}"><span>${spec.label} ×${count}</span>`;
-        container.appendChild(badge);
+        hasCore = true;
+        const spec = baseSpecs[key];
+        const div = document.createElement('div');
+        div.className = 'popup-badge';
+        div.style.background = spec.gradient;
+        div.innerHTML = `<img src="${spec.icon}"><span>${spec.label} ×${count}</span>`;
+        badgesContainer.appendChild(div);
       }
     });
-
-    if (!hasBadge && !vsnap.val()) {
-      container.textContent = "No badges yet";
+    // Custom badges
+    const custom = csnap.val() || {};
+    Object.entries(custom).forEach(([k,badge]) => {
+      const div = document.createElement('div');
+      div.className = 'popup-badge';
+      const g1 = badge.grad1 || '#a1c4fd';
+      const g2 = badge.grad2 || '#c2e9fb';
+      div.style.background = `linear-gradient(45deg,${g1},${g2})`;
+      // set text colour from badge
+      const textCol = badge.textColor || '#ffffff';
+      div.style.color = textCol;
+      // Determine if icon is an image or emoji
+      let iconHTML = '';
+      if (badge.icon && /^https?:\/{2}/.test(badge.icon)) {
+        iconHTML = `<img src="${badge.icon}" style="width:24px;height:24px;">`;
+      } else {
+        iconHTML = `<span style="font-size:1.3rem;">${badge.icon || ''}</span>`;
+      }
+      div.innerHTML = `${iconHTML}<span>${badge.name}</span>`;
+      badgesContainer.appendChild(div);
+    });
+    // If no badges at all
+    if (!isVerified && !hasCore && Object.keys(custom).length === 0) {
+      badgesContainer.textContent = 'No badges yet';
     }
   });
 }
 
-
-
-
+// Load user badges for popup (legacy function kept for compatibility)
+function loadUserBadges(uid, container) {
+  loadUserProfile(uid);
+}
 
 // render
 function render(){
@@ -1013,11 +1047,11 @@ function render(){
     const li=document.createElement('li');
     li.className='message';
     li.dataset.path=`messages/${v.key}`;
-    li.innerHTML=`
-      <div class="emojiCell">${v.emoji}</div>
+    li.innerHTML=
+      `<div class="emojiCell">${v.emoji}</div>
       <img class="avatarImg" data-uid="${v.uid}" data-username="${v.user}" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png">
       <div class="content">
-        <span class="username">${v.user}</span>
+        <span class="username" data-uid="${v.uid}" data-username="${v.user}">${v.user}</span>
         : ${v.text}
         <span class="timestamp">${ts}</span>
         <button class="toggleReplies">${v.replies?'Show Replies':'No Replies'}</button>
@@ -1078,11 +1112,11 @@ function recurseReplies(obj, ul, base){
     let li=document.createElement('li');
     li.className='reply';
     li.dataset.path=`${base}/replies/${k}`;
-    li.innerHTML=`
-      <div class="emojiCell">${rv.emoji}</div>
+    li.innerHTML=
+      `<div class="emojiCell">${rv.emoji}</div>
       <img class="avatarImg" data-uid="${rv.uid}" data-username="${rv.user}" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png">
       <div class="content">
-        <span class="username">${rv.user}</span>
+        <span class="username" data-uid="${rv.uid}" data-username="${rv.user}">${rv.user}</span>
         : ${rv.text}
         <span class="timestamp">${ts}</span>
         <button class="toggleReplies">${rv.replies?'Show Replies':''}</button>
@@ -1115,9 +1149,26 @@ document.body.addEventListener('click', e=>{
     const uid = e.target.dataset.uid;
     const uname = e.target.dataset.username;
     document.getElementById('popupUserName').textContent = uname;
-    document.getElementById('popupAvatar').src = e.target.src;
-    loadUserBadges(uid, document.getElementById('popupBadges'));
+    // use cached avatar
+    getAvatar(uid).then(url => {
+      document.getElementById('popupAvatar').src = url;
+    });
+    loadUserProfile(uid);
     userPopup.style.display = 'flex';
+    return;
+  }
+  // clicking username shows popup too
+  if(e.target.matches('.username')) {
+    const uid = e.target.dataset.uid;
+    const uname = e.target.dataset.username;
+    if(uid){
+      document.getElementById('popupUserName').textContent = uname;
+      getAvatar(uid).then(url => {
+        document.getElementById('popupAvatar').src = url;
+      });
+      loadUserProfile(uid);
+      userPopup.style.display = 'flex';
+    }
     return;
   }
 
@@ -1235,7 +1286,7 @@ document.body.addEventListener('click', e=>{
     return;
   }
 });
-// add this right after your existing click‐handler block, or anywhere after you define `auth` & `db`
+// add this right after your existing click‑handler block, or anywhere after you define `auth` & `db`
 document.body.addEventListener('dblclick', e => {
   const btn = e.target.closest('.likeBtn');
   const u   = auth.currentUser;
@@ -1307,13 +1358,13 @@ auth.onAuthStateChanged(u => {
 
 
 
-
 </script>
 <!-- User Info Popup -->
 <div id="userPopup" style="display:none;">
   <div class="user-popup-card">
     <img id="popupAvatar" src="" class="popup-avatar">
     <div id="popupUserName" class="popup-username"></div>
+    <div id="popupStreak" class="user-streak" style="display:none;"></div>
     <div id="popupBadges" class="popup-badges">Loading badges...</div>
     <button id="closeUserPopup" class="popup-close-btn">Close</button>
   </div>
