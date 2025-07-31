@@ -1644,10 +1644,10 @@ const streakModalDesc = document.getElementById('streakModalDesc');
 
 // Define your milestones (customise if you want)
 const streakMilestones = [
-  { days: 10, label: "10 Days", rewardIcon: "", rewardText: "Custom Profile Picture!" },
+  { days: 10, label: "10 Days", rewardIcon: "✨", rewardText: "Custom Profile Picture!" },
   // Remove the coin icon for 50 days so the label sits cleanly in the container
   { days: 50, label: "50 Days", rewardIcon: "", rewardText: "Custom Badge" },
-  { days: 100, label: "100 Days", rewardIcon: "", rewardText: "2 Custom Badges" }
+  { days: 100, label: "100 Days", rewardIcon: "🔥", rewardText: "2 Custom Badges" }
 ];
 
 // Button opens fancy modal (shows rewards)
@@ -1697,7 +1697,7 @@ function renderStreakModal(streak){
     // Tooltip / click message for locked badges
     node.onclick = function(){
       if(state === 'locked'){
-        kcAlert('Reach ' + ms.days + ' days to unlock this reward!');
+        alert('Reach ' + ms.days + ' days to unlock this reward!');
       }
     };
     streakProgressNodes.appendChild(node);
@@ -1734,11 +1734,22 @@ function handleStreak(uid){
     yesterday.setDate(yesterday.getDate()-1);
     let ystr = `${yesterday.getFullYear()}-${pad2(yesterday.getMonth()+1)}-${pad2(yesterday.getDate())}`;
 
+    // If the user logged in yesterday then increment the streak as normal
     if(lastLoginDate===ystr){
       loginStreak += 1;
     } else {
-      loginStreak = 1;
+      /*
+       * When the previous login was not yesterday we used to reset the
+       * streak back to 1. This caused a problem where an admin‑set
+       * streak would immediately be overwritten the next time the user
+       * logged in. To respect manually set streak values, retain the
+       * current loginStreak but ensure it is at least 1. This way an
+       * admin can bump a user's streak to an arbitrary number and the
+       * value will persist across logins instead of being reset to 1.
+       */
+      loginStreak = Math.max(loginStreak, 1);
     }
+    // Persist the updated lastLoginDate and streak back to the database
     db.ref(`users/${uid}/lastLoginDate`).set(today);
     db.ref(`users/${uid}/loginStreak`).set(loginStreak);
   });
