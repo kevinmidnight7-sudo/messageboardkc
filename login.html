@@ -1,411 +1,1173 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Events</title>
+  <title>KC Events (Improved)</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-  /* ─────────────── Updated Button Styles ─────────────── */
-.sidebar .sidebar-btn {
-  font-size: 1.12rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
-  width: 100%;
-  background: linear-gradient(90deg, #1ee57c 0%, #50b2fa 100%);
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  transition: background .18s, box-shadow .18s;
-}
-.sidebar .sidebar-btn:hover {
-  background: linear-gradient(90deg, #19df7e 0%, #30a9f8 100%);
-}
+  /*
+   * This file contains a revised version of the original KC Events page. The changes
+   * implemented here aim to address a handful of UX and styling issues raised by
+   * the user. Highlights include:
+   *  - Properly aligned streak rewards modal without overlapping text.
+   *  - Hover glows on all badge items (including custom and create/edit slots).
+   *  - A more intuitive badge creation workflow supporting multiple custom badges and
+   *    editing via a pencil icon.
+   *  - A refreshed badge panel with subtle 3D interaction on hover.
+   *  - A redesigned upload-your-own-avatar card styled as a gold gradient circle
+   *    with a plus icon.
+   *  - A futuristic upload modal inspired by the provided GIF, utilising 3D
+   *    transforms and gradients.
+   */
 
-.sidebar .sidebar-btn-red {
-  font-size: 1.12rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 6px;
-  width: 100%;
-  background: linear-gradient(90deg, #f44336 0%, #e53935 100%);
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  transition: background .18s, box-shadow .18s;
-}
-.sidebar .sidebar-btn-red:hover {
-  background: linear-gradient(90deg, #e53935 0%, #d32f2f 100%);
-}
+  /* ────── Global & Layout ────── */
+  html, body {
+    height:100%; margin:0; padding:0;
+    font-family:'Poppins',sans-serif; color:#222;
+    background:url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
+    display:flex; align-items:flex-start; justify-content:center;
+    min-height:100vh;
+  }
+  #main-wrapper {
+    width:100vw; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .kc-logo {
+    width:70px; margin:32px auto 0; display:block;
+  }
+  .kc-title {
+    font-size:2.3rem; font-weight:700; text-align:center;
+    margin:0 0 32px; color:#fff; letter-spacing:.02em;
+    text-shadow:0 2px 16px #2227,0 1px 2px #8885;
+  }
+  .flex-row {
+    display:flex; gap:2.5vw; align-items:flex-start; justify-content:center;
+    margin-bottom:32px;
+  }
+  .card {
+    background:linear-gradient(135deg,#fff 65%,#e9ecf4 100%);
+    border-radius:32px; box-shadow:0 6px 40px #0001;
+    padding:36px; min-width:350px; max-width:390px; min-height:520px;
+    display:flex; flex-direction:column; position:relative; margin-bottom:32px;
+  }
+  @media(max-width:960px){
+    .flex-row{flex-direction:column;align-items:center;gap:32px;}
+    .card{width:100%;max-width:96vw;min-width:0;}
+  }
 
+  /* ────── Profile Card ────── */
+  .profile-title{font-size:1.3rem;font-weight:600;margin:0 0 16px;}
+  .profile-welcome{
+    font-size:1.08rem;font-weight:600;color:#17a589;
+    display:flex;align-items:center;gap:.38em;margin-bottom:.9rem;
+    word-break:break-word;
+  }
+  .profile-counter{color:#669;font-size:1rem;margin-bottom:1.3rem;}
+  .profile-icon-bar{display:flex;gap:16px;margin-top:16px;justify-content:center;}
+  .profile-icon-btn{
+    background:#fff;border-radius:50%;box-shadow:0 2px 10px #3332;
+    border:none;width:55px;height:55px;font-size:2rem;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:box-shadow .18s,transform .15s;
+    outline:none;
+  }
+  .profile-icon-btn:active,
+  .profile-icon-btn:focus{box-shadow:0 2px 14px #0055ffaa;transform:scale(.96);}
 
-/* ────────── Profile Info (Join Date + Version) ────────── */
-.profile-info {
-  text-align: center;
-  margin: 12px 0;
-}
-.join-badge {
-  margin-bottom: 6px;
-  font-size: 1rem;
-  color: #544;
-}
-.version {
-  font-size: .85rem;
-  color: #b7c3d0;
-}
+  /* Add a hover animation to the avatar, settings and admin buttons reminiscent of the streak button */
+  #avatarBtn,
+  #accountOptionsBtn,
+  #adminPortalBtn {
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  #avatarBtn:hover {
+    transform: scale(1.12) rotate(-6deg);
+    box-shadow:0 6px 28px rgba(59,130,246,0.55), 0 2px 12px rgba(59,130,246,0.35);
+  }
+  #accountOptionsBtn:hover {
+    transform: scale(1.12) rotate(6deg);
+    box-shadow:0 6px 28px rgba(16,185,129,0.55), 0 2px 12px rgba(16,185,129,0.35);
+  }
+  #adminPortalBtn:hover {
+    transform: scale(1.12) rotate(-6deg);
+    box-shadow:0 6px 28px rgba(139,92,246,0.55), 0 2px 12px rgba(139,92,246,0.35);
+  }
 
+  /* ---------------------------------------------
+   *  Badge creator modal (fancy) styling tweaks
+   *  Make the panel match the light card aesthetic used
+   *  throughout the rest of the application.  Switch
+   *  from a dark, heavy palette to a soft, glassy
+   *  appearance with subtle gradients, lighter fonts
+   *  and spaced out form controls.  These rules
+   *  override previous dark styles and should
+   *  produce a modal that feels integrated with
+   *  the surrounding UI rather than a bolt‑on.
+   *---------------------------------------------- */
+  #badgeCreatorModalFancy .carousel-content {
+    background: linear-gradient(135deg,#f8fafc 0%,#eef3f9 100%) !important;
+    border-radius: 24px !important;
+    box-shadow: 0 4px 30px rgba(0,0,0,0.12), 0 1px 10px rgba(0,0,0,0.08) !important;
+    color:#1c2431 !important;
+    padding-top:32px !important;
+    transform:none !important;
+    animation:none !important;
+  }
+  #badgeCreatorModalFancy h3 {
+    color:#1c2431;
+    margin-bottom:16px;
+  }
+  #badgeCreatorModalFancy label {
+    color:#34445b !important;
+    font-weight:600 !important;
+    display:block;
+    margin-bottom:4px;
+  }
+  #badgeCreatorModalFancy input[type="text"],
+  #badgeCreatorModalFancy input[type="color"] {
+    background:#fff !important;
+    border:1.5px solid #d0d7e2 !important;
+    border-radius:10px !important;
+    padding:8px 10px !important;
+    color:#1c2431 !important;
+    font-size:1.05rem !important;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05) inset !important;
+  }
+  #badgeCreatorModalFancy input[type="color"] {
+    cursor:pointer;
+    /* ensure light backgrounds override darker definitions */
+    background:#fff !important;
+    border:1.5px solid #d0d7e2 !important;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05) inset !important;
+  }
 
-/* ─────────── Sidebar Header Alignment ─────────── */
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
+  /* Override any remaining generic input colour definitions inside the badge creator modal */
+  #badgeCreatorModalFancy input {
+    color:#1c2431 !important;
+  }
 
-    /* ────── Global & Layout ────── */
-    html, body {
-      height:100%; margin:0; padding:0;
-      font-family:'Poppins',sans-serif; color:#222;
-      background:url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
-      display:flex; align-items:flex-start; justify-content:center;
-      min-height:100vh;
-    }
-    #main-wrapper {
-      width:100vw; min-height:100vh;
-      display:flex; flex-direction:column; align-items:center;
-    }
-    .kc-logo {
-      width:70px; margin:32px auto 0; display:block;
-    }
-    .kc-title {
-      font-size:2.3rem; font-weight:700; text-align:center;
-      margin:0 0 32px; color:#fff; letter-spacing:.02em;
-      text-shadow:0 2px 16px #2227,0 1px 2px #8885;
-    }
-    .flex-row {
-      display:flex; gap:2.5vw; align-items:flex-start; justify-content:center;
-      margin-bottom:32px;
-    }
-    .card {
-      background:linear-gradient(135deg,#fff 65%,#e9ecf4 100%);
-      border-radius:32px; box-shadow:0 6px 40px #0001;
-      padding:36px; min-width:350px; max-width:390px; min-height:520px;
-      display:flex; flex-direction:column; position:relative; margin-bottom:32px;
-    }
-    @media(max-width:960px){
-      .flex-row{flex-direction:column;align-items:center;gap:32px;}
-      .card{width:100%;max-width:96vw;min-width:0;}
-    }
+  /* ======== New Badge Creator Wizard Styling ======== */
+  /*
+   * The badge creator has been rebuilt as a four‑step wizard.  A shimmering
+   * header invites the user to create something special, while a progress
+   * bar at the top clearly communicates which stage the user is on.  A large
+   * live preview sits prominently beneath the progress bar, updating in
+   * real time as the user types, selects icons or colours.  Each step
+   * contains its own controls and the action buttons at the bottom adapt
+   * depending on the current step.  All animations are kept subtle and
+   * cohesive with the rest of the site.
+   */
+  .badge-modal-header{
+    font-size:1.8rem;font-weight:700;margin-bottom:12px;text-align:center;
+    background:linear-gradient(90deg,#ffd54f,#ff9a9e,#a855f7,#3b82f6);
+    background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:badgeShimmer 5s linear infinite;
+  }
+  @keyframes badgeShimmer{
+    0%{background-position:0% 50%;}
+    100%{background-position:100% 50%;}
+  }
+  .badge-progress-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:14px;font-size:.95rem;
+  }
+  .badge-progress-bar .badge-step{
+    flex:1;text-align:center;padding:6px 4px;border-bottom:2px solid #d1d5db;
+    position:relative;color:#6b7280;font-weight:600;
+  }
+  .badge-progress-bar .badge-step:after{
+    content:'➜';position:absolute;right:-12px;top:50%;transform:translateY(-50%);
+    color:#9ca3af;font-weight:400;
+  }
+  .badge-progress-bar .badge-step:last-child:after{content:'';}
+  .badge-progress-bar .badge-step.active{
+    color:#0f766e;border-color:#0f766e;
+  }
+  .badge-step-content{display:none;}
+  .badge-step-content.active{display:block;animation:fadeIn .3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .badge-preview-large{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    margin:10px auto 18px auto;padding:14px;border-radius:20px;
+    min-height:120px;font-size:2.4rem;font-weight:600;
+    box-shadow:0 4px 16px rgba(0,0,0,0.1),0 2px 6px rgba(0,0,0,0.05);
+  }
+  .badge-input{
+    width:100%;padding:8px 10px;border:none;border-bottom:2px solid #d1d5db;
+    font-size:1.1rem;outline:none;background:transparent;
+    transition:border-color .3s;
+  }
+  .badge-input:focus{border-color:#0ea5e9;}
+  .icon-carousel{
+    display:flex;overflow-x:auto;gap:12px;padding:8px 0;
+  }
+  .icon-carousel::-webkit-scrollbar{height:6px;}
+  .icon-carousel::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px;}
+  .icon-item{
+    flex:0 0 auto;background:#ffffff;border-radius:14px;padding:10px;
+    display:flex;align-items:center;justify-content:center;font-size:2rem;
+    cursor:pointer;transition:transform .2s,box-shadow .2s;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  }
+  .icon-item:hover{transform:scale(1.15);box-shadow:0 4px 12px rgba(0,0,0,0.1);}  
+  .icon-item.selected{border:2px solid #0ea5e9;box-shadow:0 4px 12px rgba(14,165,233,0.3);}  
+  .gradient-options{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;
+  }
+  .gradient-box{
+    width:50px;height:50px;border-radius:10px;cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:transform .15s,box-shadow .15s;
+  }
+  .gradient-box:hover{transform:scale(1.1);box-shadow:0 4px 10px rgba(0,0,0,0.1);}  
+  .gradient-box.selected{outline:3px solid #0ea5e9;}
+  .color-swatches{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;
+  }
+  .color-swatch{
+    width:30px;height:30px;border-radius:50%;cursor:pointer;
+    border:2px solid transparent;transition:transform .15s,box-shadow .15s;
+  }
+  .color-swatch:hover{transform:scale(1.2);box-shadow:0 3px 8px rgba(0,0,0,0.15);}  
+  .color-swatch.selected{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,0.3);}  
+  .badge-action-buttons{
+    display:flex;justify-content:space-between;gap:10px;margin-top:20px;
+  }
+  .badge-action-buttons button{
+    flex:1;padding:10px 0;border:none;border-radius:12px;
+    font-size:1rem;font-weight:600;cursor:pointer;
+    transition:transform .18s,box-shadow .18s;
+  }
+  .badge-action-buttons button:hover{transform:scale(1.04);box-shadow:0 4px 12px rgba(0,0,0,0.08);}  
+  #badgeNextBtn{background:linear-gradient(90deg,#a3e635,#65a30d);color:#0f2e0f;}  
+  #badgeBackBtn{background:#e2e8f0;color:#1e293b;}  
+  #badgeCancelBtn{background:#f1f5f9;color:#1e293b;}  
+  #saveBadgeFancyBtn{
+    background:linear-gradient(90deg,#ffd54f,#ffb300);
+    color:#1f2937;
+    display:none;
+  }
 
-    /* ────── Profile Card ────── */
-    .profile-title{font-size:1.3rem;font-weight:600;margin:0 0 16px;}
-    .profile-welcome{
-      font-size:1.08rem;font-weight:600;color:#17a589;
-      display:flex;align-items:center;gap:.38em;margin-bottom:.9rem;
-      word-break:break-word;
-    }
-    .profile-counter{color:#669;font-size:1rem;margin-bottom:1.3rem;}
-    .profile-icon-bar{display:flex;gap:16px;margin-top:16px;justify-content:center;}
-    .profile-icon-btn{
-      background:#fff;border-radius:50%;box-shadow:0 2px 10px #3332;
-      border:none;width:55px;height:55px;font-size:2rem;
-      display:flex;align-items:center;justify-content:center;
-      cursor:pointer;transition:box-shadow .18s,transform .15s;
-      outline:none;
-    }
-    .profile-icon-btn:active,
-    .profile-icon-btn:focus{box-shadow:0 2px 14px #0055ffaa;transform:scale(.96);}
-    #avatarImg{
-      display:none;width:64px;height:64px;
-      border-radius:50%;margin:0 auto 12px auto;
-      box-shadow:0 2px 10px #3332;
-    }
+  /* ======== Improved Streak Rewards Styling ======== */
+  /*
+   * The streak modal has been re‑imagined as an overlay card with a dark
+   * backdrop.  The header pulses gently, the progress bar fills with a
+   * vibrant gradient and the milestones sit in a horizontally scrollable
+   * carousel.  Each badge state (unlocked, current, locked) has its own
+   * colour palette and animation cues.  A footer encourages the user
+   * with a dynamic message about upcoming rewards.
+   */
+  .streak-modal-title{
+    font-size:2.2rem;font-weight:700;color:#ff784f;text-align:center;
+    animation:pulseGlow 4s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{
+    0%{text-shadow:0 0 6px #ff784f,0 0 12px #ff784f;}
+    50%{text-shadow:0 0 18px #ffaf55,0 0 30px #ffd700;}
+    100%{text-shadow:0 0 6px #ff784f,0 0 12px #ff784f;}
+  }
+  .streak-progress-bar{
+    height:12px;border-radius:12px;background:#2f3545;overflow:hidden;margin-bottom:20px;
+  }
+  .streak-progress-bar-fill{
+    height:100%;border-radius:12px;
+    background:linear-gradient(90deg,#fbbf24 0%,#fde047 50%,#34d399 100%);
+    width:0;transition:width .8s cubic-bezier(.4,0,.2,1);
+  }
+  .streak-progress{
+    display:flex;overflow-x:auto;gap:20px;padding-bottom:10px;
+  }
+  .streak-progress::-webkit-scrollbar{height:6px;}
+  .streak-progress::-webkit-scrollbar-thumb{background:#444;border-radius:3px;}
+  .streak-node{
+    min-width:100px;height:100px;border-radius:20px;
+    flex:0 0 auto;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;position:relative;
+    cursor:pointer;transition:transform .2s,box-shadow .2s;
+  }
+  .streak-node.unlocked{
+    background:linear-gradient(90deg,#fef3c7,#fbd38d);
+    box-shadow:0 0 16px rgba(251,191,36,0.6);
+  }
+  .streak-node.current{
+    background:linear-gradient(90deg,#fde68a,#f59e0b);
+    box-shadow:0 0 22px rgba(253,224,71,0.7);
+    animation:pulseBadge 1.2s infinite alternate;
+  }
+  @keyframes pulseBadge{
+    from{transform:scale(1);}to{transform:scale(1.08);}
+  }
+  .streak-node.locked{
+    background:linear-gradient(90deg,#374151,#1f2937);
+    color:#555;filter:grayscale(0.6);
+  }
+  .streak-node .reward-icon{
+    font-size:2.3rem;
+  }
+  .streak-node .node-label{
+    font-size:.8rem;margin-top:4px;font-weight:600;
+  }
+  .streak-node .node-status{
+    font-size:.65rem;margin-top:2px;
+  }
+  .streak-modal-desc{
+    margin-top:14px;color:#cbd5e1;font-size:.95rem;
+  }
+  .streak-footer{
+    margin-top:16px;color:#a7b8d2;font-size:.9rem;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:12px;
+    max-height:140px;
+    overflow-y:auto;
+    padding:4px 2px;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy > div {
+    background: #ffffff !important;
+    border-radius:14px !important;
+    padding:8px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07) !important;
+    cursor:pointer;
+    transition: background .15s, box-shadow .15s;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy > div.selected-icon {
+    background:#e7f1ff;
+    box-shadow:0 2px 8px rgba(59,130,246,0.4);
+  }
+  #badgeCreatorModalFancy #randGradientBtn {
+    background:linear-gradient(135deg,#d9d4ff 0%,#e0c7ff 100%);
+    border:none;
+    border-radius:10px;
+    padding:6px 14px;
+    color:#4c2e8d;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+    transition:box-shadow .15s, transform .15s;
+  }
+  #badgeCreatorModalFancy #randGradientBtn:hover {
+    transform:scale(1.05);
+    box-shadow:0 4px 12px rgba(0,0,0,0.12);
+  }
+  #badgeCreatorModalFancy #badgeLivePreview {
+    background:linear-gradient(90deg,#ffe066 30%, #e0aaff 100%) !important;
+    border-radius:18px !important;
+    min-height:80px;
+    padding:12px 18px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04) inset !important;
+    color:#1c2431 !important;
+  }
+  #badgeCreatorModalFancy #saveBadgeFancyBtn {
+    background: linear-gradient(90deg,#ffd54f 0%,#ffb300 100%);
+    border:none;
+    border-radius:12px;
+    color:#1c2431;
+    padding:12px 0;
+    font-weight:700;
+    cursor:pointer;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow:0 3px 12px rgba(0,0,0,0.1);
+  }
+  #badgeCreatorModalFancy #saveBadgeFancyBtn:hover {
+    transform: translateY(-2px);
+    box-shadow:0 6px 18px rgba(0,0,0,0.15);
+  }
 
-    /* ────── Badges Card ────── */
-    .badges-header{
-      font-size:1.55rem;font-weight:700;color:#e6b300;
-      margin:0 0 8px;text-align:center;
-      text-shadow:0 2px 20px #fff5,0 1px 2px #fb0a;
-    }
-    .badges-sub{
-      font-style:italic;color:#536082;margin-bottom:26px;
-      text-align:center;font-size:1.1rem;
-    }
-    .badges-grid{
-      display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:26px;
-    }
-    .badge-item{
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      border-radius:22px;height:112px;background:#f4f4f4;
-      box-shadow:0 2px 10px #ccd2ee33;cursor:pointer;
-      position:relative;transition:box-shadow .18s,transform .13s;
-      border:none;font-size:1.03rem;
-    }
-    .badge-item.locked{
-      filter:grayscale(.8) brightness(1.05);background:#e5e6ea;color:#aaa;opacity:.8;
-    }
-    .badge-item .lock-icon{
-      position:absolute;top:12px;right:18px;
-      font-size:1.4rem;color:#999;opacity:.9;
-    }
-    .badge-item .badge-mult{
-      position:absolute;top:12px;right:18px;
-      background:#fff;color:#333;border-radius:1.2em;
-      min-width:2em;min-height:1.8em;font-weight:700;font-size:1.1em;
-      box-shadow:0 1px 8px #9992;display:flex;align-items:center;justify-content:center;
-      padding:0 .55em;z-index:10;border:2px solid #fff;
-    }
-    .badge-item img{width:36px;height:36px;margin-bottom:5px;}
-    .badge-item .badge-label{
-      font-weight:600;font-size:1.07rem;letter-spacing:.01em;
-      margin-top:2px;text-align:center;
-    }
-    /* (hover states omitted for brevity) */
+  /* Override dark styles on the name input when editing a badge */
+  #badgeCreatorModalFancy input#badgeNameFancy {
+    background:#fff !important;
+    border:1.5px solid #d0d7e2 !important;
+    border-radius:10px !important;
+    color:#1c2431 !important;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05) inset !important;
+    padding:8px 10px !important;
+    width:80%;
+    margin:0 auto;
+  }
 
-    /* ────── KC Alert ────── */
-    .kc-alert{
-      position:fixed;top:32px;left:50%;transform:translateX(-50%);
-      background:#fff;color:#232f38;font-weight:600;font-size:1.13rem;
-      padding:13px 32px;border-radius:15px;box-shadow:0 2px 20px #2263;
-      z-index:2000;min-width:160px;max-width:96vw;
-      opacity:1;transition:opacity .16s;display:flex;align-items:center;gap:10px;
-    }
-    .kc-alert.hide{opacity:0;pointer-events:none;}
+  /* Arrange badge creator fields in a neat centred stack */
+  #badgeCreatorModalFancy .badge-field {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    width:100%;
+  }
+  #badgeCreatorModalFancy .badge-field label {
+    align-self:flex-start;
+    margin-left:10%;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy {
+    justify-content:center;
+  }
+  #badgeCreatorModalFancy #gradCol1,
+  #badgeCreatorModalFancy #gradCol2 {
+    margin:0 4px;
+  }
+  #badgeCreatorModalFancy #badgeLivePreview {
+    margin:12px auto;
+    width:60%;
+  }
+  #badgeCreatorModalFancy #saveBadgeFancyBtn {
+    width:90%;
+    margin:0 auto;
+  }
+  /* text colour picker styling */
+  #badgeCreatorModalFancy #textColorPicker {
+    width:48px;
+    height:32px;
+    border-radius:8px;
+    border:1.5px solid #d0d7e2;
+    padding:0;
+  }
 
-    /* ────── Sidebars ────── */
-    .sidebar{
-      position:fixed;top:0;right:0;height:100%;width:340px;max-width:94vw;
-      background:linear-gradient(135deg,#fff 65%,#e7eaf3 100%);
-      box-shadow:-4px 0 24px #0003;transform:translateX(110%);
-      transition:transform .28s cubic-bezier(.72,0,.26,1.03);
-      z-index:2100;padding:32px 18px 24px 30px;box-sizing:border-box;
-      display:flex;flex-direction:column;gap:16px;
-    }
-    .sidebar.open{transform:translateX(0);}
-    .sidebar h2{font-size:1.25rem;font-weight:700;margin:0 0 12px;}
-    .sidebar label{display:block;font-size:1.07rem;margin:0 0 4px 2px;}
-    .sidebar input,.sidebar select{
-      width:100%;margin:0 0 12px;font-size:1.05rem;
-      border-radius:8px;border:1px solid #dde3ee;background:#f5f7fc;
-      padding:8px 10px;outline:none;transition:border .16s;color:#253047;
-    }
-    .sidebar input:focus{border:1.5px solid #3899ff;}
-    .sidebar .sidebar-btn{
-      font-size:1.12rem;font-weight:600;border:none;border-radius:8px;
-      padding:10px 0;margin-bottom:8px;width:100%;
-      background:linear-gradient(90deg,#13ce7c 0%,#44b0ef 100%);
-      color:#fff;cursor:pointer;transition:background .13s,box-shadow .13s;
-      box-shadow:0 2px 10px #6db8fb22;
-    }
-    .sidebar .sidebar-btn:hover,.sidebar .sidebar-btn:focus{
-      background:linear-gradient(90deg,#08d763 0%,#4183f8 100%);
-      box-shadow:0 3px 16px #338be955;
-    }
-    .sidebar .sidebar-btn-red{
-      background:#f44336;box-shadow:0 3px 16px #e54e4e55;color:#fff;margin-top:6px;
-    }
-    .sidebar .sidebar-btn-red:hover{background:#d32f2f;}
-    .sidebar .close-btn{
-      position:absolute;top:22px;right:26px;
-      background:#f44336;color:#fff;border:none;
-      padding:7px 26px;border-radius:9px;font-weight:600;
-      cursor:pointer;box-shadow:0 2px 10px #dc535555;
-      transition:background .13s;
-    }
-    .sidebar .close-btn:hover{background:#d32f2f;}
-    .sidebar .delete-warning{
-      color:#e53935;font-weight:600;text-align:center;margin:16px 0 8px;
-      font-size:1.1rem;
-    }
+  /* Edit and delete icons on custom badges */
+  .badge-item .edit-icon,
+  .badge-item .delete-icon {
+    position:absolute;
+    top:8px;
+    font-size:1.4em;
+    z-index:3;
+    user-select:none;
+  }
+  .badge-item .edit-icon {
+    right:10px;
+    color:rgba(59,130,246,0.92);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+    pointer-events:none;
+  }
+  .badge-item .delete-icon {
+    left:10px;
+    color:rgba(239,68,68,0.92);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+    cursor:pointer;
+  }
 
-    .admin-users-list{
-      background:#f6f7fb;border-radius:9px;box-shadow:0 1px 8px #dde3ee88;
-      margin:0 0 16px;padding:6px 2px 6px 12px;max-height:240px;overflow-y:auto;
-      font-size:.99rem;
-    }
-    .admin-users-list ul{margin:0;padding:0;list-style:none;}
-    .admin-users-list li{
-      padding:6px 0;border-bottom:1px solid #eee;
-      display:flex;align-items:center;justify-content:space-between;gap:12px;
-    }
-    .admin-badge-list{display:flex;gap:7px;}
-    .admin-badge-count{
-      background:#eee;color:#234;font-weight:700;font-size:1em;
-      border-radius:9px;padding:2px 8px;margin-left:3px;
-      box-shadow:0 1px 3px #2222;
-    }
+  /* Account sidebar red button unified styling */
+  .sidebar .sidebar-btn-red {
+    font-size:1.12rem;
+    font-weight:600;
+    border:none;
+    border-radius:8px;
+    padding:12px;
+    width:100%;
+    background: linear-gradient(90deg,#f44336 0%, #e53935 100%);
+    color:#fff;
+    cursor:pointer;
+    transition: background .18s, box-shadow .18s;
+    box-shadow:0 2px 12px rgba(0,0,0,0.15);
+  }
+  .sidebar .sidebar-btn-red:hover {
+    background: linear-gradient(90deg,#e53935 0%, #d32f2f 100%);
+    box-shadow:0 3px 16px rgba(0,0,0,0.2);
+  }
 
-    /* ────── Forms & Confirm ────── */
-    #authForms{display:flex;flex-direction:column;gap:1.3rem;align-items:center;min-width:320px;margin-top:18px;}
-    .form-section{display:flex;flex-direction:column;gap:.85rem;}
-    .form-section input{
-      padding:.75rem .9rem;border:none;border-radius:7px;
-      background:#f6f7fc;color:#222;font-size:1.04rem;
-      outline:none;transition:background .18s;border:1.2px solid #e6ebf2;
-    }
-    .form-section input:focus{background:#ebeff6;border-color:#53c4fa;}
-    .form-section .form-btn{
-      padding:.68rem;border:none;border-radius:7px;
-      font-size:1.08rem;font-weight:700;color:#fff;
-      cursor:pointer;transition:background .18s;
-      background:linear-gradient(90deg,#1ee57c,#50b2fa);
-    }
-    .form-section .form-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}
-    .switch-link{font-size:.97rem;color:#318be9;cursor:pointer;text-decoration:underline;text-align:center;}
+  /* Adjust spacing between progress bar and reward nodes to avoid overlap */
+  .streak-progress {
+    margin-top:20px;
+    margin-bottom:26px;
+  }
+  #avatarImg{
+    display:none;width:64px;height:64px;
+    border-radius:50%;margin:0 auto 12px auto;
+    box-shadow:0 2px 10px #3332;
+  }
 
-    .confirm-overlay{
-      position:fixed;top:0;left:0;width:100vw;height:100vh;
-      background:rgba(45,65,80,.5);display:flex;align-items:center;justify-content:center;
-      z-index:5000;
-    }
-    .confirm-box{
-      background:#fff;color:#1c2228;font-size:1.14rem;
-      padding:28px 42px 18px;border-radius:18px;box-shadow:0 3px 26px #2336;
-      text-align:center;min-width:290px;
-    }
-    .confirm-box .confirm-btn{
-      margin:10px 8px 0;border:none;padding:10px 26px;border-radius:8px;
-      font-size:1.09rem;font-weight:600;cursor:pointer;
-      background:linear-gradient(90deg,#1ee57c,#50b2fa);color:#fff;
-      transition:background .14s;
-    }
-    .confirm-box .confirm-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}
-    .confirm-box .confirm-btn.cancel{background:#eee;color:#234;box-shadow:none;}
-    
-    /* ========== Apple-Like Avatar Carousel ========== */
-.apple-modal {
-  position:fixed; top:0; left:0; width:100vw; height:100vh;
-  background:rgba(30,38,45,.45);
-  display:flex; align-items:center; justify-content:center;
-  z-index:2000; opacity:0; pointer-events:none; transition:opacity .26s;
-}
-.apple-modal.open { opacity:1; pointer-events:auto; }
+  /* ────── Badges Card ────── */
+  .badges-header{
+    font-size:1.55rem;font-weight:700;color:#e6b300;
+    margin:0 0 8px;text-align:center;
+    text-shadow:0 2px 20px #fff5,0 1px 2px #fb0a;
+  }
+  .badges-sub{
+    font-style:italic;color:#536082;margin-bottom:26px;
+    text-align:center;font-size:1.1rem;
+  }
+  .badges-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:26px;
+  }
+  .badge-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:22px;height:112px;background:#f4f4f4;
+    box-shadow:0 2px 10px #ccd2ee33;cursor:pointer;
+    position:relative;transition:box-shadow .18s,transform .13s;
+    border:none;font-size:1.03rem;
+    /* Provide perspective for 3D hover effect */
+    perspective:600px;
+  }
+  .badge-item.locked{
+    filter:grayscale(.8) brightness(1.05);background:#e5e6ea;color:#aaa;opacity:.8;
+  }
+  .badge-item .lock-icon{
+    position:absolute;top:12px;right:18px;
+    font-size:1.4rem;color:#999;opacity:.9;
+  }
+  .badge-item .badge-mult{
+    position:absolute;top:12px;right:18px;
+    background:#fff;color:#333;border-radius:1.2em;
+    min-width:2em;min-height:1.8em;font-weight:700;font-size:1.1em;
+    box-shadow:0 1px 8px #9992;display:flex;align-items:center;justify-content:center;
+    padding:0 .55em;z-index:10;border:2px solid #fff;
+  }
+  .badge-item img{width:36px;height:36px;margin-bottom:5px;}
+  .badge-item .badge-label{
+    font-weight:600;font-size:1.07rem;letter-spacing:.01em;
+    margin-top:2px;text-align:center;
+  }
+  /* Add a hover glow and slight lift to all unlocked badge items */
+  /* Remove generic golden hover glow so JS-defined glows can take effect */
+  .badge-item:not(.locked) {
+    transition: transform .18s, box-shadow .18s;
+  }
+  .badge-item:not(.locked):hover {
+    transform: translateY(-3px) scale(1.05);
+  }
 
-.carousel-content {
-  background:rgba(255,255,255,0.91);
-  border-radius:28px;
-  padding:28px 32px 30px 32px;
-  box-shadow:0 12px 50px #0002, 0 1.5px 16px #0088ff22;
-  position:relative;
-  min-width:330px;
-  min-height:230px;
-  max-width:98vw;
-}
+  /* Colour-coded hover glows for core badges */
+  .badge-item.offence:not(.locked):hover {
+    box-shadow:0 0 22px rgba(255,64,64,0.8),0 4px 18px rgba(255,64,64,0.55) !important;
+    transform:translateY(-3px) scale(1.06);
+  }
+  .badge-item.defence:not(.locked):hover {
+    box-shadow:0 0 22px rgba(59,130,246,0.8),0 4px 18px rgba(59,130,246,0.55) !important;
+    transform:translateY(-3px) scale(1.06);
+  }
+  .badge-item.overall:not(.locked):hover {
+    box-shadow:0 0 22px rgba(234,179,8,0.8),0 4px 18px rgba(234,179,8,0.55) !important;
+    transform:translateY(-3px) scale(1.06);
+  }
 
-.carousel-content h3 {
-  font-size:1.35rem;
-  font-weight:700;
-  margin:0 0 24px 0;
-  letter-spacing:.01em;
-  color:#151d25;
-}
+  /* ────── KC Alert ────── */
+  .kc-alert{
+    position:fixed;top:32px;left:50%;transform:translateX(-50%);
+    background:#fff;color:#232f38;font-weight:600;font-size:1.13rem;
+    padding:13px 32px;border-radius:15px;box-shadow:0 2px 20px #2263;
+    z-index:2000;min-width:160px;max-width:96vw;
+    opacity:1;transition:opacity .16s;display:flex;align-items:center;gap:10px;
+  }
+  .kc-alert.hide{opacity:0;pointer-events:none;}
 
-.carousel-arrows {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  width:100%;
-  margin-top:8px;
-}
+  /* ────── Sidebars ────── */
+  .sidebar{
+    position:fixed;top:0;right:0;height:100%;width:340px;max-width:94vw;
+    background:linear-gradient(135deg,#fff 65%,#e7eaf3 100%);
+    box-shadow:-4px 0 24px #0003;transform:translateX(110%);
+    transition:transform .28s cubic-bezier(.72,0,.26,1.03);
+    z-index:2100;padding:32px 18px 24px 30px;box-sizing:border-box;
+    display:flex;flex-direction:column;gap:16px;
+  }
+  .sidebar.open{transform:translateX(0);}
+  .sidebar h2{font-size:1.25rem;font-weight:700;margin:0 0 12px;}
+  .sidebar label{display:block;font-size:1.07rem;margin:0 0 4px 2px;}
+  .sidebar input,.sidebar select{
+    width:100%;margin:0 0 12px;font-size:1.05rem;
+    border-radius:8px;border:1px solid #dde3ee;background:#f5f7fc;
+    padding:8px 10px;outline:none;transition:border .16s;color:#253047;
+  }
+  .sidebar input:focus{border:1.5px solid #3899ff;}
+  .sidebar .sidebar-btn{
+    font-size:1.12rem;font-weight:600;border:none;border-radius:8px;
+    padding:10px 0;margin-bottom:8px;width:100%;
+    background:linear-gradient(90deg,#13ce7c 0%,#44b0ef 100%);
+    color:#fff;cursor:pointer;transition:background .13s,box-shadow .13s;
+    box-shadow:0 2px 10px #6db8fb22;
+  }
+  .sidebar .sidebar-btn:hover,.sidebar .sidebar-btn:focus{
+    background:linear-gradient(90deg,#08d763 0%,#4183f8 100%);
+    box-shadow:0 3px 16px #338be955;
+  }
+  .sidebar .sidebar-btn-red{
+      background: linear-gradient(90deg,#ef4444 0%,#dc2626 100%);
+      color:#fff;
+      margin-top:6px;
+      border:none;
+      font-weight:600;
+      padding:10px 0;
+      width:100%;
+      border-radius:8px;
+      box-shadow:0 2px 10px rgba(220,38,38,0.35);
+      transition:background .18s, box-shadow .18s, transform .13s;
+  }
+  .sidebar .sidebar-btn-red:hover{
+      background: linear-gradient(90deg,#dc2626 0%,#b91c1c 100%);
+      box-shadow:0 4px 16px rgba(220,38,38,0.45);
+      transform:translateY(-2px);
+  }
+  .sidebar .close-btn{
+    position:absolute;top:22px;right:26px;
+    background:#f44336;color:#fff;border:none;
+    padding:7px 26px;border-radius:9px;font-weight:600;
+    cursor:pointer;box-shadow:0 2px 10px #dc535555;
+    transition:background .13s;
+  }
+  .sidebar .close-btn:hover{background:#d32f2f;}
+  .sidebar .delete-warning{
+    color:#e53935;font-weight:600;text-align:center;margin:16px 0 8px;
+    font-size:1.1rem;
+  }
+  .admin-users-list{
+    background:#f6f7fb;border-radius:9px;box-shadow:0 1px 8px #dde3ee88;
+    margin:0 0 16px;padding:6px 2px 6px 12px;max-height:240px;overflow-y:auto;
+    font-size:.99rem;
+  }
+  .admin-users-list ul{margin:0;padding:0;list-style:none;}
+  .admin-users-list li{
+    padding:6px 0;border-bottom:1px solid #eee;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .admin-badge-list{display:flex;gap:7px;}
+  .admin-badge-count{
+    background:#eee;color:#234;font-weight:700;font-size:1em;
+    border-radius:9px;padding:2px 8px;margin-left:3px;
+    box-shadow:0 1px 3px #2222;
+  }
 
-.arrow-btn {
-  background:linear-gradient(120deg,#e9efff 0%,#cbe8ff 100%);
-  border:none;
-  border-radius:50%;
-  width:44px; height:44px;
-  font-size:1.8rem; color:#3899ff;
-  box-shadow:0 2px 10px #a0c7ff22;
-  cursor:pointer; transition:background .18s,box-shadow .18s,transform .11s;
-  outline:none;
-  z-index:2;
-  user-select:none;
-}
-.arrow-btn:active { transform:scale(.92); background:#e7f4ff; }
+  /* ────── Forms & Confirm ────── */
+  #authForms{display:flex;flex-direction:column;gap:1.3rem;align-items:center;min-width:320px;margin-top:18px;}
+  .form-section{display:flex;flex-direction:column;gap:.85rem;}
+  .form-section input{
+    padding:.75rem .9rem;border:none;border-radius:7px;
+    background:#f6f7fc;color:#222;font-size:1.04rem;
+    outline:none;transition:background .18s;border:1.2px solid #e6ebf2;
+  }
+  .form-section input:focus{background:#ebeff6;border-color:#53c4fa;}
+  .form-section .form-btn{
+    padding:.68rem;border:none;border-radius:7px;
+    font-size:1.08rem;font-weight:700;color:#fff;
+    cursor:pointer;transition:background .18s;
+    background:linear-gradient(90deg,#1ee57c,#50b2fa);
+  }
 
-.avatar-carousel {
-  display:flex;
-  overflow-x:auto;
-  gap:18px;
-  padding:14px 10px;
-  scroll-snap-type: x mandatory;
-  scrollbar-width:thin;
-  background:rgba(235,240,245,0.45);
-  border-radius:20px;
-  min-width:240px;
-  max-width:calc(85vw - 120px);
-}
-.avatar-carousel::-webkit-scrollbar {
-  height:9px; background:rgba(220,220,250,0.08);
-}
-.avatar-carousel::-webkit-scrollbar-thumb {
-  background:rgba(140,180,255,0.28); border-radius:12px;
-}
-.avatar-carousel .avatar-item {
-  scroll-snap-align:center;
-  flex:0 0 92px;
-  width:92px; height:92px;
-  display:flex; align-items:center; justify-content:center;
-  cursor:pointer;
-  border-radius:50%;
-  background:rgba(255,255,255,0.66);
-  box-shadow:0 3px 18px #a0c8fa19,0 1.5px 8px #3fa8e022;
-  position:relative;
-  transition:transform .19s cubic-bezier(.5,1.7,.7,1.01), box-shadow .15s;
-}
-.avatar-carousel .avatar-item img {
-  width:76px; height:76px; object-fit:cover; border-radius:50%;
-  box-shadow:0 2px 10px #b0cdfc12;
-  transition:box-shadow .18s, border .16s;
-  border:3px solid transparent;
-  background:#f6f9fc;
-}
-.avatar-carousel .avatar-item:hover,
-.avatar-carousel .avatar-item.selected {
-  transform:scale(1.14);
-  box-shadow:0 8px 32px #b3deff99,0 1.5px 18px #8dc8ff45;
-  z-index:1;
-}
-.avatar-carousel .avatar-item.selected img {
-  border-color:#3899ff;
-  box-shadow:0 2px 18px #7cdbfa44;
-}
-.close-btn {
-  position: absolute;
-  top: 18px;
-  right: 22px;
-  background: #f8fafd;
-  color: #232f38;
-  border: none;
-  padding: 8px 18px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1.04rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px #dbeafe44;
-  transition: background 0.14s, color 0.14s, box-shadow 0.14s;
-  outline: none;
-  z-index: 2;
-}
-.close-btn:hover, .close-btn:focus {
-  background: #f44336;
-  color: #fff;
-  box-shadow: 0 4px 16px #f4433644;
-}
+  /* Give the avatar upload button a gold gradient like other primary actions */
+  #uploadAvatarModal #uploadAvatarBtn {
+    background: linear-gradient(90deg,#ffd54f 0%,#ffb300 100%);
+    color:#1c2431;
+    font-weight:700;
+    box-shadow:0 2px 12px rgba(0,0,0,0.1);
+    border-radius:12px;
+  }
+  #uploadAvatarModal #uploadAvatarBtn:hover {
+    background: linear-gradient(90deg,#ffb300 0%,#ff8f00 100%);
+    transform: translateY(-2px);
+    box-shadow:0 4px 16px rgba(0,0,0,0.15);
+  }
+  .form-section .form-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}
+  .switch-link{font-size:.97rem;color:#318be9;cursor:pointer;text-decoration:underline;text-align:center;}
+
+  .confirm-overlay{
+    position:fixed;top:0;left:0;width:100vw;height:100vh;
+    background:rgba(45,65,80,.5);display:flex;align-items:center;justify-content:center;
+    z-index:5000;
+  }
+  .confirm-box{
+    background:#fff;color:#1c2228;font-size:1.14rem;
+    padding:28px 42px 18px;border-radius:18px;box-shadow:0 3px 26px #2336;
+    text-align:center;min-width:290px;
+  }
+  .confirm-box .confirm-btn{
+    margin:10px 8px 0;border:none;padding:10px 26px;border-radius:8px;
+    font-size:1.09rem;font-weight:600;cursor:pointer;
+    background:linear-gradient(90deg,#1ee57c,#50b2fa);color:#fff;
+    transition:background .14s;
+  }
+  .confirm-box .confirm-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}  
+  .confirm-box .confirm-btn.cancel{background:#eee;color:#234;box-shadow:none;}
+
+  /* ========== Apple-Like Avatar Carousel ========== */
+  .apple-modal {
+    position:fixed; top:0; left:0; width:100vw; height:100vh;
+    background:rgba(30,38,45,.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000; opacity:0; pointer-events:none; transition:opacity .26s;
+  }
+  .apple-modal.open { opacity:1; pointer-events:auto; }
+
+  .carousel-content {
+    background:rgba(255,255,255,0.91);
+    border-radius:28px;
+    padding:28px 32px 30px 32px;
+    box-shadow:0 12px 50px #0002, 0 1.5px 16px #0088ff22;
+    position:relative;
+    min-width:330px;
+    min-height:230px;
+    max-width:98vw;
+  }
+
+  .carousel-content h3 {
+    font-size:1.35rem;
+    font-weight:700;
+    margin:0 0 24px 0;
+    letter-spacing:.01em;
+    color:#151d25;
+  }
+
+  /* Lighten the heading inside the badge creator modal */
+  #badgeCreatorModalFancy .carousel-content h3 {
+    color:#f3f4f6;
+    text-shadow:0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .carousel-arrows {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    margin-top:8px;
+  }
+
+  .arrow-btn {
+    background:linear-gradient(120deg,#e9efff 0%,#cbe8ff 100%);
+    border:none;
+    border-radius:50%;
+    width:44px; height:44px;
+    font-size:1.8rem; color:#3899ff;
+    box-shadow:0 2px 10px #a0c7ff22;
+    cursor:pointer; transition:background .18s,box-shadow .18s,transform .11s;
+    outline:none;
+    z-index:2;
+    user-select:none;
+  }
+  .arrow-btn:active { transform:scale(.92); background:#e7f4ff; }
+
+  .avatar-carousel {
+    display:flex;
+    overflow-x:auto;
+    gap:18px;
+    padding:14px 10px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width:thin;
+    background:rgba(235,240,245,0.45);
+    border-radius:20px;
+    min-width:240px;
+    max-width:calc(85vw - 120px);
+  }
+  .avatar-carousel::-webkit-scrollbar {
+    height:9px; background:rgba(220,220,250,0.08);
+  }
+  .avatar-carousel::-webkit-scrollbar-thumb {
+    background:rgba(140,180,255,0.28); border-radius:12px;
+  }
+  .avatar-carousel .avatar-item {
+    scroll-snap-align:center;
+    flex:0 0 92px;
+    width:92px; height:92px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    border-radius:50%;
+    background:rgba(255,255,255,0.66);
+    box-shadow:0 3px 18px #a0c8fa19,0 1.5px 8px #3fa8e022;
+    position:relative;
+    transition:transform .19s cubic-bezier(.5,1.7,.7,1.01), box-shadow .15s;
+  }
+  .avatar-carousel .avatar-item img {
+    width:76px; height:76px; object-fit:cover; border-radius:50%;
+    box-shadow:0 2px 10px #b0cdfc12;
+    transition:box-shadow .18s, border .16s;
+    border:3px solid transparent;
+    background:#f6f9fc;
+  }
+  .avatar-carousel .avatar-item:hover,
+  .avatar-carousel .avatar-item.selected {
+    transform:scale(1.14);
+    box-shadow:0 8px 32px #b3deff99,0 1.5px 18px #8dc8ff45;
+    z-index:1;
+  }
+  .avatar-carousel .avatar-item.selected img {
+    border-color:#3899ff;
+    box-shadow:0 2px 18px #7cdbfa44;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    background: #f8fafd;
+    color: #232f38;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.04rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #dbeafe44;
+    transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+    outline: none;
+    z-index: 2;
+  }
+  .close-btn:hover, .close-btn:focus {
+    background: #f44336;
+    color: #fff;
+    box-shadow: 0 4px 16px #f4433644;
+  }
+  .avatar-upload-unlocked {
+    /* redesigned upload-your-own badge: gold gradient circle with plus */
+    background: linear-gradient(135deg,#ffd24b 0%,#fbc02d 45%,#ffe066 100%) !important;
+    color:#fff !important;
+    border: 2.5px solid #fffbe7;
+    box-shadow:0 0 22px #ffe06699, 0 2px 8px #ffd96666;
+    font-weight:700;
+    position:relative;
+  }
+  .avatar-upload-unlocked span.plus-icon {
+    font-size:2.6em;
+    color:#fff;
+  }
+  .avatar-upload-unlocked div.upload-label {
+    font-size:0.68em;
+    margin-top:4px;
+    color:#fff;
+  }
+  @keyframes shine {
+    0% { box-shadow:0 0 20px #ffe06677,0 2px 8px #e0aaff33; }
+    60% { box-shadow:0 0 50px #ffe066cc,0 2px 14px #e0aaff66; }
+    100% { box-shadow:0 0 20px #ffe06677,0 2px 8px #e0aaff33; }
+  }
+
+  /* --- Fancy Streak Button (fixed in profile card) --- */
+  #streakBtn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 5;
+    background: linear-gradient(100deg, #fff3 60%, #ffcc40 100%);
+    border: 2.5px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 3px 18px #ffdf5299, 0 1.5px 8px #ffa500cc;
+    width: 53px; height: 53px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.1rem;
+    cursor: pointer;
+    transition: box-shadow .22s, transform .17s, background .15s;
+    animation: streak-glow 1.9s infinite alternate;
+  }
+  #streakBtn:hover {
+    box-shadow: 0 6px 34px #ffbb0099, 0 1.5px 16px #ffe271cc;
+    transform: scale(1.11) rotate(-7deg);
+    background: linear-gradient(90deg, #ffcc40 0%, #fff3 100%);
+  }
+  @keyframes streak-glow {
+    0% { box-shadow: 0 3px 18px #ffdf5277; }
+    100% { box-shadow: 0 6px 34px #ffd700bb, 0 1.5px 16px #ffe271; }
+  }
+
+  /* --- Streak Modal (futuristic, 3D pop) --- */
+  #streakRewardsModal {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15,18,24,0.84);
+    z-index: 4000; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity .3s;
+  }
+  #streakRewardsModal.open { opacity: 1; pointer-events: auto; }
+  .streak-modal-content {
+    background: linear-gradient(135deg, #191c23 90%, #232b39 100%);
+    border-radius: 2.2em;
+    box-shadow: 0 12px 50px #0008, 0 4px 32px #ffe08344;
+    padding: 40px 50px 34px 50px;
+    min-width: 390px; max-width: 92vw; text-align: center;
+    transform: scale(0.97) rotateY(12deg);
+    animation: streak-pop-in .6s cubic-bezier(.6,2,.5,1.1) 1;
+  }
+  @keyframes streak-pop-in {
+    from { transform: scale(0.7) rotateY(50deg); opacity: 0; }
+    to   { transform: scale(0.97) rotateY(12deg); opacity: 1; }
+  }
+  .streak-modal-title {
+    font-size: 2.1rem; font-weight: 700; color: #ffd000;
+    letter-spacing: 0.01em; margin-bottom: 24px;
+    text-shadow: 0 2px 16px #ffd50090, 0 1px 2px #fff7;
+  }
+  .streak-progress {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1.6rem; margin-bottom: 22px; margin-top: 12px;
+  }
+  .streak-node {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #242832 70%, #323b4d 100%);
+    box-shadow: 0 2px 12px #0004;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; font-size: 1.6rem; position: relative;
+    border: 3px solid #3e485a;
+    transition: box-shadow .21s, border .14s;
+    overflow:hidden;
+    text-align:center;
+  }
+  .streak-node.current {
+    background: linear-gradient(90deg, #fffd7c 10%, #ffd000 100%);
+    box-shadow: 0 0 18px #ffd500cc, 0 2px 18px #ffd70055;
+    border-color: #ffd70099;
+    animation: streak-current-glow 1.3s infinite alternate;
+    /* When a node is current, switch the label colour to dark so it remains readable
+       on the bright yellow background */
+    color: #3b3200;
+  }
+  @keyframes streak-current-glow {
+    0% { box-shadow: 0 0 20px #ffe47c66; }
+    100% { box-shadow: 0 0 35px #ffe47cbb; }
+  }
+  .streak-node .node-label {
+    font-size: .88em;
+    font-weight: 600;
+    color: #ffd000;
+    text-shadow: 0 1px 4px #0008;
+    margin-top: 0;
+    width:100%;
+    text-align:center;
+    line-height:1;
+  }
+  .streak-node.locked {
+    opacity: 0.42;
+    filter: grayscale(1) blur(.5px);
+  }
+  .streak-modal-close {
+    position: absolute; top: 25px; right: 36px; font-size: 1.7rem;
+    background: none; border: none; color: #fffde0;
+    cursor: pointer; opacity: .68; transition: opacity .14s;
+  }
+  .streak-modal-close:hover { opacity: 1; color: #ffd000; }
+
+  .streak-modal-desc {
+    margin-top: 18px;
+    font-size: 1.15rem;
+    color: #fff9c0;
+    text-shadow: 0 2px 12px #3336;
+    letter-spacing: .01em;
+  }
+
+  .streak-progress-bar {
+    width: 90%; height: 10px; background: #444;
+    margin: 0 auto 18px auto; border-radius: 6px; position: relative;
+    overflow: hidden;
+  }
+  .streak-progress-bar-fill {
+    height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, #ffd700 20%, #ffbb00 100%);
+    transition: width .5s cubic-bezier(.7,1.5,.3,1);
+  }
+
+  .streak-reward-mini {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 1.01rem; background: #fffbdb26; color: #ffd000;
+    border-radius: 9px; padding: 4px 11px; margin: 0 6px 0 0;
+    box-shadow: 0 1px 8px #ffd50022;
+    font-weight: 600;
+  }
+
+  /* === Upload Modal Enhancements === */
+  /*
+   * Upload Avatar modal styling
+   * Use a dark, soft neuromorphic panel inspired by the provided gif.  The
+   * container has a subtle dual drop shadow to simulate depth and a slight
+   * tilt on entry.  Colours are pulled from a deep blue/grey palette to
+   * complement the rest of the application.
+   */
+  #uploadAvatarModal .carousel-content {
+    background: linear-gradient(145deg,#0e1823 0%,#172a3a 100%);
+    box-shadow: 12px 12px 24px rgba(1,10,20,0.55), -12px -12px 24px rgba(30,50,70,0.35);
+    border-radius:28px;
+    transform: rotateX(-8deg) scale(0.92);
+    animation: modal-pop-in .7s cubic-bezier(.65,1.9,.35,1) forwards;
+  }
+  @keyframes modal-pop-in {
+    from { transform: rotateX(-50deg) scale(0.7); opacity: 0; }
+    to { transform: rotateX(-8deg) scale(0.92); opacity: 1; }
+  }
+  /* Primary action button within the upload avatar modal */
+  #uploadAvatarModal .form-btn {
+    background: linear-gradient(90deg,#eab308 0%,#f59e0b 100%);
+    box-shadow:0 4px 12px rgba(234,179,8,0.35);
+    font-weight:700;
+    border:none;
+    border-radius:14px;
+    color:#0e1823;
+    padding:0.75rem 1.5rem;
+    transition:background .18s, box-shadow .18s, transform .12s;
+  }
+  #uploadAvatarModal .form-btn:hover {
+    background: linear-gradient(90deg,#d97706,#b45309);
+    box-shadow:0 6px 20px rgba(217,119,6,0.45);
+    transform: translateY(-2px);
+  }
+  #uploadAvatarModal input[type="file"] {
+    display:none;
+  }
+  /* custom styled file input */
+  .upload-file-label {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background: linear-gradient(90deg,#3b82f6 0%,#6366f1 100%);
+    color:#f9fafb;
+    padding:12px 24px;
+    border-radius:16px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.08);
+    transition:background .18s,box-shadow .18s,transform .12s;
+  }
+  .upload-file-label:hover {
+    transform:translateY(-2px);
+    box-shadow:0 8px 22px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+  }
+  .upload-preview {
+    margin-top:12px;
+    font-size:0.92rem;
+    color:#94a3b8;
+    text-align:center;
+  }
+
+  /* === Fancy Badge Creator Modal Enhancements === */
+  #badgeCreatorModalFancy .carousel-content {
+    /* Updated dark neumorphic appearance matching the upload modal */
+    background: linear-gradient(145deg,#0e1823 0%,#172a3a 100%);
+    box-shadow: 12px 12px 24px rgba(1,10,20,0.55), -12px -12px 24px rgba(30,50,70,0.35);
+    border-radius:28px;
+    transform: rotateX(-8deg) scale(0.94);
+    animation: modal-pop-in .7s cubic-bezier(.65,1.9,.35,1) forwards;
+  }
+  #badgeCreatorModalFancy input#badgeNameFancy {
+    padding:10px 14px;
+    width:80%;
+    font-size:1.12em;
+    margin:6px 0 14px;
+    border-radius:12px;
+    border:1.5px solid #374151;
+    background:#1e293b;
+    color:#e5e7eb;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.4);
+    transition:border .18s, box-shadow .18s, background .18s;
+  }
+  #badgeCreatorModalFancy input#badgeNameFancy:focus {
+    border-color:#6366f1;
+    box-shadow:0 0 0 3px rgba(99,102,241,0.35);
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy div {
+    background:#2d3748;
+    border-radius:14px;
+    padding:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:48px; height:48px;
+    font-size:2.1em;
+    cursor:pointer;
+    transition:background .18s, transform .15s, box-shadow .15s;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.4);
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy div:hover {
+    transform:translateY(-2px);
+    box-shadow:inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.6);
+  }
+  /* Highlight selected icon in badge creator */
+  #badgeCreatorModalFancy #badgeIconRowFancy div.selected-icon {
+    background:#374151;
+    box-shadow:0 0 0 3px rgba(99,102,241,0.6), inset 0 1px 3px rgba(255,255,255,0.1);
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy div[style*="background: #e3e8ff"] {
+    /* highlight selected icon differently */
+    box-shadow:0 0 0 3px rgba(99,102,241,0.6), inset 0 1px 3px rgba(255,255,255,0.1);
+  }
+
+  /* Ensure the icon container wraps its items neatly and adds vertical scroll if needed */
+  #badgeCreatorModalFancy #badgeIconRowFancy {
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    justify-content:center;
+    max-height:140px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:4px;
+  }
+  #badgeCreatorModalFancy #gradCol1,
+  #badgeCreatorModalFancy #gradCol2 {
+    width:46px;
+    height:36px;
+    border:1px solid #374151;
+    border-radius:8px;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.4);
+    cursor:pointer;
+  }
+  #badgeCreatorModalFancy #gradCol1 { margin-right:6px; }
+  #badgeCreatorModalFancy #randGradientBtn {
+    background: linear-gradient(90deg,#6366f1,#8b5cf6);
+    color:#f3f4f6;
+    border:none;
+    border-radius:10px;
+    padding:6px 12px;
+    cursor:pointer;
+    transition:background .18s, box-shadow .18s;
+  }
+  #badgeCreatorModalFancy #randGradientBtn:hover {
+    background: linear-gradient(90deg,#4f46e5,#7c3aed);
+    box-shadow:0 3px 8px rgba(99,102,241,0.4);
+  }
+  #badgeCreatorModalFancy #badgeLivePreview {
+    height:80px;
+    width:170px;
+    border-radius:20px;
+    box-shadow:inset 0 1px 3px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.5);
+    font-size:1.1em;
+  }
+
+  /* Improve readability of labels and inputs inside the badge creator modal */
+  #badgeCreatorModalFancy label {
+    color:#e5e7eb;
+    font-weight:600;
+    margin-bottom:2px;
+  }
+  #badgeCreatorModalFancy input {
+    color:#f3f4f6;
+  }
+  #badgeCreatorModalFancy .badge-field {
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  #badgeCreatorModalFancy .form-btn {
+    width:90%;
+    margin:12px auto 0 auto;
+    background: linear-gradient(90deg,#f0c808,#fcd34d);
+    box-shadow:0 4px 12px rgba(255,206,74,0.45);
+    border-radius:12px;
+    padding:10px;
+    font-weight:700;
+    transition:background .18s, box-shadow .18s, transform .13s;
+    display:block;
+  }
+  #badgeCreatorModalFancy .form-btn:hover {
+    background: linear-gradient(90deg,#eeb304,#f4c21c);
+    box-shadow:0 6px 18px rgba(255,206,74,0.55);
+    transform: translateY(-2px);
+  }
+  /* Edit pencil styling for custom badges */
+  .edit-icon {
+    pointer-events:none;
+    font-size:1.3em;
+    color:rgba(255,255,255,0.85);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+  .delete-icon {
+    font-size:1.3em;
+    color:rgba(239,68,68,0.9);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  /* Ensure upload tile uses gold gradient instead of default avatar item background */
+  .avatar-carousel .avatar-upload-unlocked {
+    background: linear-gradient(135deg,#ffd24b 0%,#fbc02d 45%,#ffe066 100%) !important;
+    color:#fff !important;
+    border: 2.5px solid #fffbe7;
+    box-shadow:0 0 22px #ffe06699, 0 2px 8px #ffd96666;
+    font-weight:700;
+  }
 
   </style>
 </head>
@@ -446,6 +1208,8 @@
             <button id="avatarBtn" class="profile-icon-btn" title="Choose Avatar">🖼️</button>
             <button id="accountOptionsBtn" class="profile-icon-btn" title="Account Options">⚙️</button>
             <button id="adminPortalBtn" class="profile-icon-btn" title="Admin Portal">🛠️</button>
+               <!-- Streak fire button (fixed in card) -->
+            <button id="streakBtn" title="View your streak rewards">🔥</button>
           </div>
         </div>
       </div>
@@ -461,19 +1225,120 @@
 
   <!-- Avatar Picker Modal -->
   <div id="avatarModal" class="apple-modal">
-  <div class="carousel-content">
-    <button class="close-btn" id="closeAvatarModal">Close</button>
-    <h3>Select Your Avatar</h3>
-    <div class="carousel-arrows">
-      <button id="carouselLeft" class="arrow-btn" tabindex="-1">&lt;</button>
-      <div class="avatar-carousel" id="avatarCarousel">
-        <!-- JS will fill in avatars here -->
+    <div class="carousel-content">
+      <button class="close-btn" id="closeAvatarModal">Close</button>
+      <h3>Select Your Avatar</h3>
+      <div class="carousel-arrows">
+        <button id="carouselLeft" class="arrow-btn" tabindex="-1">&lt;</button>
+        <div class="avatar-carousel" id="avatarCarousel">
+          <!-- JS will fill in avatars here -->
+        </div>
+        <button id="carouselRight" class="arrow-btn" tabindex="-1">&gt;</button>
       </div>
-      <button id="carouselRight" class="arrow-btn" tabindex="-1">&gt;</button>
     </div>
   </div>
-</div>
+  <!-- LOGIN STREAK POPUP -->
+  <div id="streakModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;">
+      <button class="close-btn" id="closeStreakModal">Close</button>
+      <h3>🔥 Login Streak!</h3>
+      <div style="font-size:3.2rem;font-weight:700;margin-bottom:8px;color:#f84;">
+        <span id="streakCount"></span> days
+      </div>
+      <div id="streakRewardMsg" style="font-size:1.18rem;color:#3899ff;"></div>
+    </div>
+  </div>
 
+  <!-- AVATAR UPLOAD MODAL (shown only if streak >= 10) -->
+  <div id="uploadAvatarModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:300px;">
+      <button class="close-btn" id="closeUploadAvatarModal">Close</button>
+      <h3>Upload Your Own Avatar</h3>
+      <!-- Styled file input: clicking the label triggers the hidden input -->
+      <label for="avatarFile" class="upload-file-label">Choose File 📂</label>
+      <input type="file" id="avatarFile" accept="image/*"/>
+      <div id="fileNameDisplay" class="upload-preview">No file chosen</div>
+      <div id="avatarUploadMsg" style="font-size:1.05rem;color:#1992d4;margin-bottom:8px;"></div>
+      <button id="uploadAvatarBtn" class="form-btn" style="width:80%;">Upload</button>
+    </div>
+  </div>
+
+  <!-- BADGE CREATOR MODAL (streak >= 50) -->
+  <div id="badgeCreatorModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:320px;">
+      <button class="close-btn" id="closeBadgeCreatorModal">Close</button>
+      <h3>Create Your Own Badge</h3>
+      <input id="customBadgeName" placeholder="Badge Name" maxlength="15" style="padding:10px;width:70%;font-size:1.05rem;margin-bottom:12px;"/>
+      <div style="margin-bottom:8px;">Choose an icon:</div>
+      <div id="badgeIconRow" style="display:flex;gap:13px;justify-content:center;margin-bottom:15px;">
+        <!-- icons filled by JS -->
+      </div>
+      <button id="saveBadgeBtn" class="form-btn" style="width:80%;">Save Badge</button>
+      <div id="badgeCreateMsg" style="margin-top:10px;font-size:1.07rem;"></div>
+    </div>
+  </div>
+  <!-- Streak Rewards Modal -->
+  <div id="streakRewardsModal">
+    <div class="streak-modal-content">
+      <button class="streak-modal-close" id="closeStreakModal2">&times;</button>
+      <div class="streak-modal-title">🔥 Streak Rewards 🔥</div>
+      <div id="streakProgressBar" class="streak-progress-bar">
+        <div id="streakProgressBarFill" class="streak-progress-bar-fill" style="width:0"></div>
+      </div>
+      <div class="streak-progress" id="streakProgressNodes">
+        <!-- JS will render streak milestones here -->
+      </div>
+      <div class="streak-modal-desc" id="streakModalDesc"></div>
+      <div class="streak-footer" id="streakFooterMsg"></div>
+    </div>
+  </div>
+  <!-- Fancy Badge Creator Modal with gradient picker -->
+  <div id="badgeCreatorModalFancy" class="apple-modal">
+    <div class="carousel-content" style="min-width:360px;animation:badge-pop-in .7s cubic-bezier(.8,2,.4,1.1) 1;">
+      <button class="close-btn" id="closeBadgeCreatorModalFancy">×</button>
+      <div class="badge-modal-header">✨ Create Your Own Badge ✨</div>
+      <div class="badge-progress-bar">
+        <div class="badge-step active" data-step="1">Name</div>
+        <div class="badge-step" data-step="2">Icon</div>
+        <div class="badge-step" data-step="3">Style</div>
+        <div class="badge-step" data-step="4">Confirm</div>
+      </div>
+      <div id="badgePreviewLarge" class="badge-preview-large"></div>
+      <div id="badgeStep1" class="badge-step-content active">
+        <label for="badgeNameFancy">Badge Name:</label>
+        <input id="badgeNameFancy" class="badge-input" maxlength="15" placeholder="Enter badge name" />
+      </div>
+      <div id="badgeStep2" class="badge-step-content">
+        <label>Pick an icon:</label>
+        <div id="badgeIconRowFancy" class="icon-carousel">
+          <!-- icons filled by JS -->
+        </div>
+      </div>
+      <div id="badgeStep3" class="badge-step-content">
+        <label>Gradient:</label>
+        <div id="gradOptions" class="gradient-options"></div>
+        <!-- Hidden inputs to store selected gradient colours for logic -->
+        <input type="color" id="gradCol1" value="#ffe066" style="display:none;" />
+        <input type="color" id="gradCol2" value="#e0aaff" style="display:none;" />
+        <button id="randGradientBtn" title="Random gradient" style="margin-top:8px;">🎲 Random</button>
+        <label style="margin-top:14px;">Text Colour:</label>
+        <div id="textColorSwatches" class="color-swatches"></div>
+        <!-- hidden native colour input for custom colours -->
+        <input type="color" id="textColorPicker" value="#ffffff" style="margin-top:8px;width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;" />
+      </div>
+      <div id="badgeStep4" class="badge-step-content">
+        <div id="badgeLivePreview" style="margin-bottom:16px;padding:12px;border-radius:16px;font-size:1.5rem;display:flex;align-items:center;justify-content:center;gap:8px;"></div>
+        <div id="badgeConfirmText" style="font-size:0.95rem;color:#475569;text-align:center;">Review your badge above. If you're happy with it, click Save Badge to finish.</div>
+      </div>
+      <div class="badge-action-buttons">
+        <button id="badgeBackBtn">Back</button>
+        <button id="badgeNextBtn">Next</button>
+        <button id="badgeCancelBtn">Cancel</button>
+        <button id="saveBadgeFancyBtn">Save Badge</button>
+      </div>
+      <div id="badgeCreateMsgFancy" style="margin-top:8px;text-align:center;"></div>
+    </div>
+  </div>
 
   <!-- KC Alert -->
   <div id="kcAlert" class="kc-alert" style="display:none"></div>
@@ -508,6 +1373,11 @@
         <button data-badge="defence" class="sidebar-btn" id="addDefence">+ Defence</button>
         <button data-badge="overall" class="sidebar-btn" id="addOverall">+ Overall</button>
       </div>
+      <label>Set Login Streak Days:</label>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <input id="adminStreakInput" type="number" min="0" max="999" style="padding:6px;width:70px;">
+        <button id="setStreakBtn" class="sidebar-btn">Set Streak</button>
+      </div>
       <div style="display:flex;gap:7px;margin-bottom:12px;">
         <button data-badge="offence" class="sidebar-btn-red" id="remOffence">- Offence</button>
         <button data-badge="defence" class="sidebar-btn-red" id="remDefence">- Defence</button>
@@ -529,244 +1399,382 @@
   </div>
 
   <script>
- // ========== FIREBASE INIT ==========
-    const cfg = {
-      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "kckillerscompany-ab1ec",
-      storageBucket: "kckillerscompany-ab1ec.appspot.com",
-      messagingSenderId: "198711213988",
-      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-      measurementId: "G-4LKP2M3JXE"
-    };
-    firebase.initializeApp(cfg);
-    const auth = firebase.auth(), db = firebase.database();
-    const actionCodeSettings = { url: window.location.origin + "/?mode=verifyEmail", handleCodeInApp:true };
+// ========== FIREBASE INIT ==========
+const cfg = {
+  apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+  authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+  databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kckillerscompany-ab1ec",
+  storageBucket: "kckillerscompany-ab1ec.appspot.com",
+  messagingSenderId: "198711213988",
+  appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+  measurementId: "G-4LKP2M3JXE"
+};
+firebase.initializeApp(cfg);
+const auth = firebase.auth(), db = firebase.database();
+const actionCodeSettings = { url: window.location.origin + "/?mode=verifyEmail", handleCodeInApp:true };
 
-    // ========== UI REFS ==========
-    const authForms    = document.getElementById("authForms"),
-          registerForm = document.getElementById("registerForm"),
-          loginForm    = document.getElementById("loginForm"),
-          regName      = document.getElementById("regName"),
-          regEmail     = document.getElementById("regEmail"),
-          regPass      = document.getElementById("regPass"),
-          registerBtn  = document.getElementById("registerBtn"),
-          loginEmail   = document.getElementById("loginEmail"),
-          loginPass    = document.getElementById("loginPass"),
-          loginBtn     = document.getElementById("loginBtn"),
-          toLogin      = document.getElementById("toLogin"),
-          toRegister   = document.getElementById("toRegister"),
-          profileUI    = document.getElementById("profileUI"),
-          welcomeUser  = document.getElementById("welcomeUser"),
-          userCounter  = document.getElementById("userCounter"),
-          badgeList    = document.getElementById("badgeList"),
-          joinBadge    = document.getElementById("joinBadge"),
-          badgesCard   = document.getElementById("badgesCard"),
-          avatarBtn    = document.getElementById("avatarBtn"),
-          avatarImg    = document.getElementById("avatarImg"),
-          accountBtn   = document.getElementById("accountOptionsBtn"),
-          adminBtn     = document.getElementById("adminPortalBtn"),
-          accountSidebar   = document.getElementById("accountSidebar"),
-          adminSidebar     = document.getElementById("adminSidebar"),
-          closeAccountSidebar = document.getElementById("closeAccountSidebar"),
-          closeAdminSidebar   = document.getElementById("closeAdminSidebar"),
-          kcAlertDiv   = document.getElementById("kcAlert"),
-          avatarModal  = document.getElementById("avatarModal"),
-          closeAvatarModal = document.getElementById("closeAvatarModal"),
-          avatarGrid   = document.getElementById("avatarGrid");
+// ========== Profanity Filter Setup ==========
+// Load the profanity list once from the provided GitHub repository. If the request
+// fails (e.g. due to network restrictions), the list will remain empty and no
+// filtering will occur. The list is lowercased to make comparisons case-insensitive.
+let bannedWords = [];
+fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
+  .then(r => r.ok ? r.json() : [])
+  .then(list => { bannedWords = (list||[]).map(w => w.toLowerCase()); })
+  .catch(() => { bannedWords = []; });
+function containsProfane(str){
+  if(!bannedWords || bannedWords.length===0) return false;
+  const lower = (str || '').toLowerCase();
+  return bannedWords.some(w => lower.includes(w));
+}
 
-    // ========== KC ALERT ==========
-    let alertTimeout;
-    function kcAlert(txt, timeout=2350){
-      kcAlertDiv.textContent=txt;
-      kcAlertDiv.style.display="flex";
-      kcAlertDiv.classList.remove("hide");
-      if(alertTimeout) clearTimeout(alertTimeout);
-      alertTimeout = setTimeout(()=>kcAlertDiv.classList.add("hide"), timeout);
-    }
+// ========== UI REFS ==========
+const authForms    = document.getElementById("authForms"),
+      registerForm = document.getElementById("registerForm"),
+      loginForm    = document.getElementById("loginForm"),
+      regName      = document.getElementById("regName"),
+      regEmail     = document.getElementById("regEmail"),
+      regPass      = document.getElementById("regPass"),
+      registerBtn  = document.getElementById("registerBtn"),
+      loginEmail   = document.getElementById("loginEmail"),
+      loginPass    = document.getElementById("loginPass"),
+      loginBtn     = document.getElementById("loginBtn"),
+      toLogin      = document.getElementById("toLogin"),
+      toRegister   = document.getElementById("toRegister"),
+      profileUI    = document.getElementById("profileUI"),
+      welcomeUser  = document.getElementById("welcomeUser"),
+      userCounter  = document.getElementById("userCounter"),
+      badgeList    = document.getElementById("badgeList"),
+      joinBadge    = document.getElementById("joinBadge"),
+      badgesCard   = document.getElementById("badgesCard"),
+      avatarBtn    = document.getElementById("avatarBtn"),
+      avatarImg    = document.getElementById("avatarImg"),
+      accountBtn   = document.getElementById("accountOptionsBtn"),
+      adminBtn     = document.getElementById("adminPortalBtn"),
+      accountSidebar   = document.getElementById("accountSidebar"),
+      adminSidebar     = document.getElementById("adminSidebar"),
+      closeAccountSidebar = document.getElementById("closeAccountSidebar"),
+      closeAdminSidebar   = document.getElementById("closeAdminSidebar"),
+      kcAlertDiv   = document.getElementById("kcAlert"),
+      avatarModal  = document.getElementById("avatarModal"),
+      closeAvatarModal = document.getElementById("closeAvatarModal");
 
-    // ========== SIDEBAR CONTROLS ==========
-    accountBtn.onclick = ()=>accountSidebar.classList.add("open");
-    closeAccountSidebar.onclick = ()=>accountSidebar.classList.remove("open");
-    adminBtn.onclick = ()=>adminSidebar.classList.add("open");
-    closeAdminSidebar.onclick = ()=>adminSidebar.classList.remove("open");
-    document.addEventListener("mousedown", e=>{
-      if(!accountSidebar.contains(e.target)&&e.target!==accountBtn) accountSidebar.classList.remove("open");
-      if(!adminSidebar.contains(e.target)&&e.target!==adminBtn) adminSidebar.classList.remove("open");
-    });
+// ========== KC ALERT ==========
+let alertTimeout;
+function kcAlert(txt, timeout=2350){
+  kcAlertDiv.textContent=txt;
+  kcAlertDiv.style.display="flex";
+  kcAlertDiv.classList.remove("hide");
+  if(alertTimeout) clearTimeout(alertTimeout);
+  alertTimeout = setTimeout(()=>kcAlertDiv.classList.add("hide"), timeout);
+}
 
-    // ========== TOGGLE FORMS ==========
-    toLogin.onclick = ()=>{
-      registerForm.style.display="none";
-      loginForm.style.display="flex";
-      kcAlertDiv.style.display="none";
-    };
-    toRegister.onclick = ()=>{
-      loginForm.style.display="none";
-      registerForm.style.display="flex";
-      kcAlertDiv.style.display="none";
-    };
+// ========== UTILS ==========
+function pad2(x){return x<10?"0"+x:x;}
+function getToday(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
 
-    // ========== AUTH LOGIC ==========
-    registerBtn.onclick = ()=>{
-      const name=regName.value.trim(), email=regEmail.value.trim(), pass=regPass.value;
-      if(!name||!email||!pass) return kcAlert("Fill all fields.");
-      auth.createUserWithEmailAndPassword(email,pass)
-        .then(u=>u.user.updateProfile({displayName:name}).then(()=>u.user))
-        .then(u=>db.ref(`users/${u.uid}`).set({displayName:name,email,joined:firebase.database.ServerValue.TIMESTAMP}).then(()=>u))
-        .then(u=>u.sendEmailVerification(actionCodeSettings))
-        .then(()=>kcAlert("Verification email sent!"))
-        .catch(e=>kcAlert(e.message));
-    };
-    loginBtn.onclick = ()=>{
-      const email=loginEmail.value.trim(), pass=loginPass.value;
-      if(!email||!pass) return kcAlert("Enter email and password!");
-      auth.signInWithEmailAndPassword(email,pass)
-        .then(res=>{
-          if(!res.user.emailVerified){
-            auth.signOut();
-            throw new Error("Please verify your email before logging in.");
-          }
-        })
-        .catch(e=>kcAlert(e.message));
-    };
+// ========== SIDEBAR CONTROLS ==========
+accountBtn.onclick = ()=>accountSidebar.classList.add("open");
+closeAccountSidebar.onclick = ()=>accountSidebar.classList.remove("open");
+adminBtn.onclick = ()=>adminSidebar.classList.add("open");
+closeAdminSidebar.onclick = ()=>adminSidebar.classList.remove("open");
+document.addEventListener("mousedown", e=>{
+  if(!accountSidebar.contains(e.target)&&e.target!==accountBtn) accountSidebar.classList.remove("open");
+  if(!adminSidebar.contains(e.target)&&e.target!==adminBtn) adminSidebar.classList.remove("open");
+});
 
-    // ========== ACCOUNT ACTIONS ==========
-    document.getElementById("signOutBtn").onclick = ()=>auth.signOut().then(()=>kcAlert("Signed out"));
-    document.getElementById("resetPassBtn").onclick = ()=>{
-      const u=auth.currentUser; if(!u) return kcAlert("Not signed in");
-      auth.sendPasswordResetEmail(u.email,{url:window.location.origin+"/?mode=resetPassword",handleCodeInApp:true})
-        .then(()=>kcAlert("Password reset email sent"))
-        .catch(e=>kcAlert(e.message));
-    };
-    document.getElementById("deleteAcctBtn").onclick = ()=>{
-      document.getElementById("confirmMsg").textContent="Are you sure you want to delete your account?";
-      document.getElementById("confirmOverlay").style.display="flex";
-      document.getElementById("confirmYesBtn").onclick = ()=>{
-        const u=auth.currentUser; if(!u) return;
-        u.delete()
-         .then(()=>{
-           document.getElementById("confirmOverlay").style.display="none";
-           kcAlert("Account deleted");
-         })
-         .catch(err=>{
-           document.getElementById("confirmOverlay").style.display="none";
-           if(err.code==="auth/requires-recent-login")
-             kcAlert("Please sign out and back in before deleting.");
-           else kcAlert(err.message);
-         });
-      };
-      document.getElementById("confirmNoBtn").onclick = ()=>{
-        document.getElementById("confirmOverlay").style.display="none";
-      };
-    };
+// ========== TOGGLE FORMS ==========
+toLogin.onclick = ()=>{
+  registerForm.style.display="none";
+  loginForm.style.display="flex";
+  kcAlertDiv.style.display="none";
+};
+toRegister.onclick = ()=>{
+  loginForm.style.display="none";
+  registerForm.style.display="flex";
+  kcAlertDiv.style.display="none";
+};
 
-    // ========== ADMIN PORTAL ==========
-    let adminAuthenticated=false;
-    document.getElementById("adminLoginBtn").onclick = ()=>{
-      if(document.getElementById("adminPass").value==="events2025KC"){
-        adminAuthenticated=true;
-        document.getElementById("adminAuthSection").style.display="none";
-        document.getElementById("adminContent").style.display="block";
-        kcAlert("Admin authenticated");
-        loadAllUsersToAdmin();
-        refreshUserSelect();
-      } else kcAlert("Wrong admin password");
-    };
-    function ensureAdmin(){return adminAuthenticated;}
-    function refreshUserSelect(){
-      db.ref("users").once("value").then(snap=>{
-        const sel=document.getElementById("userSelect");
-        sel.innerHTML="";
-        snap.forEach(u=>{
-          const o=document.createElement("option");
-          o.value=u.key; o.textContent=u.val().displayName;
-          sel.appendChild(o);
-        });
-      });
-    }
-    function loadAllUsersToAdmin(){
-      Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
-        .then(([us,bad])=>{
-          let html="<ul>";
-          us.forEach(u=>{
-            const b=bad.child(u.key).val()||{};
-            html+=`<li><b>${u.val().displayName}</b>
-              <span class="admin-badge-list">
-                <span>🏆<span class="admin-badge-count">${b.overall||0}</span></span>
-                <span>🔥<span class="admin-badge-count">${b.offence||0}</span></span>
-                <span>🛡️<span class="admin-badge-count">${b.defence||0}</span></span>
-              </span></li>`;
-          });
-          html+="</ul>";
-          document.getElementById("adminUsersList").innerHTML=html;
-        });
-    }
-    ["Offence","Defence","Overall"].forEach(type=>{
-      document.getElementById("add"+type).onclick = ()=>{
-        if(!ensureAdmin()) return;
-        badgeChanges[type.toLowerCase()]++;
-        kcAlert(`+1 ${type} staged (Save to apply)`);
-      };
-      document.getElementById("rem"+type).onclick = ()=>{
-        if(!ensureAdmin()) return;
-        badgeChanges[type.toLowerCase()]--;
-        kcAlert(`-1 ${type} staged (Save to apply)`);
-      };
-    });
-    let badgeChanges={offence:0,defence:0,overall:0};
-    document.getElementById("saveAdmin").onclick = ()=>{
-      if(!ensureAdmin()) return;
-      const uid=document.getElementById("userSelect").value;
-      db.ref("badges/"+uid).get().then(snap=>{
-        const cur=snap.val()||{};
-        const upd={};
-        ["offence","defence","overall"].forEach(k=>{
-          upd[k]=Math.max(0,(cur[k]||0)+badgeChanges[k]);
-        });
-        db.ref("badges/"+uid).set(upd).then(()=>{
-          badgeChanges={offence:0,defence:0,overall:0};
-          kcAlert("Badges updated");
-          loadAllUsersToAdmin();
-          if(auth.currentUser&&auth.currentUser.uid===uid)
-            loadBadges(uid,auth.currentUser.emailVerified);
-        });
-      });
-    };
-    
-
-    // ========== AUTH STATE & INIT AVATAR ==========
-    auth.onAuthStateChanged(u=>{
-      if(u){
-        authForms.style.display="none";
-        profileUI.style.display="block";
-        badgesCard.style.display="flex";
-        document.querySelector(".kc-title").textContent="KC Events";
-        welcomeUser.innerHTML=`👋 <span style="color:#1992d4;">Welcome, ${u.displayName||u.email}</span>`;
-        db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
-        db.ref(`users/${u.uid}/avatar`).once("value").then(snap=>{
-          const url=snap.val()||"avatars/default.png";
-          avatarImg.src=url; avatarImg.style.display="block";
-        });
-        loadBadges(u.uid,u.emailVerified);
-      } else {
-        authForms.style.display="flex";
-        profileUI.style.display="none";
-        badgesCard.style.display="none";
-        avatarImg.style.display="none";
-        document.querySelector(".kc-title").textContent="KC Events";
+// ========== AUTH LOGIC ==========
+registerBtn.onclick = ()=>{
+  const name=regName.value.trim(), email=regEmail.value.trim(), pass=regPass.value;
+  if(!name||!email||!pass) return kcAlert("Fill all fields.");
+  auth.createUserWithEmailAndPassword(email,pass)
+    .then(u=>u.user.updateProfile({displayName:name}).then(()=>u.user))
+    .then(u=>db.ref(`users/${u.uid}`).set({displayName:name,email,joined:firebase.database.ServerValue.TIMESTAMP}).then(()=>u))
+    .then(u=>u.sendEmailVerification(actionCodeSettings))
+    .then(()=>kcAlert("Verification email sent!"))
+    .catch(e=>kcAlert(e.message));
+};
+loginBtn.onclick = ()=>{
+  const email=loginEmail.value.trim(), pass=loginPass.value;
+  if(!email||!pass) return kcAlert("Enter email and password!");
+  auth.signInWithEmailAndPassword(email,pass)
+    .then(res=>{
+      if(!res.user.emailVerified){
+        auth.signOut();
+        throw new Error("Please verify your email before logging in.");
       }
+    })
+    .catch(e=>kcAlert(e.message));
+};
+
+// ========== ACCOUNT ACTIONS ==========
+document.getElementById("signOutBtn").onclick = ()=>auth.signOut().then(()=>kcAlert("Signed out"));
+document.getElementById("resetPassBtn").onclick = ()=>{
+  const u=auth.currentUser; if(!u) return kcAlert("Not signed in");
+  auth.sendPasswordResetEmail(u.email,{url:window.location.origin+"/?mode=resetPassword",handleCodeInApp:true})
+    .then(()=>kcAlert("Password reset email sent"))
+    .catch(e=>kcAlert(e.message));
+};
+document.getElementById("deleteAcctBtn").onclick = ()=>{
+  document.getElementById("confirmMsg").textContent="Are you sure you want to delete your account?";
+  document.getElementById("confirmOverlay").style.display="flex";
+  document.getElementById("confirmYesBtn").onclick = ()=>{
+    const u=auth.currentUser; if(!u) return;
+    u.delete()
+     .then(()=>{
+       document.getElementById("confirmOverlay").style.display="none";
+       kcAlert("Account deleted");
+     })
+     .catch(err=>{
+       document.getElementById("confirmOverlay").style.display="none";
+       if(err.code==="auth/requires-recent-login")
+         kcAlert("Please sign out and back in before deleting.");
+       else kcAlert(err.message);
+     });
+  };
+  document.getElementById("confirmNoBtn").onclick = ()=>{
+    document.getElementById("confirmOverlay").style.display="none";
+  };
+};
+
+// ========== ADMIN PORTAL ==========
+let adminAuthenticated=false;
+document.getElementById("adminLoginBtn").onclick = ()=>{
+  if(document.getElementById("adminPass").value==="events2025KC"){
+    adminAuthenticated=true;
+    document.getElementById("adminAuthSection").style.display="none";
+    document.getElementById("adminContent").style.display="block";
+    kcAlert("Admin authenticated");
+    loadAllUsersToAdmin();
+    refreshUserSelect();
+  } else kcAlert("Wrong admin password");
+};
+function ensureAdmin(){return adminAuthenticated;}
+function refreshUserSelect(){
+  db.ref("users").once("value").then(snap=>{
+    const sel=document.getElementById("userSelect");
+    sel.innerHTML="";
+    snap.forEach(u=>{
+      const o=document.createElement("option");
+      o.value=u.key; o.textContent=u.val().displayName;
+      sel.appendChild(o);
     });
-    
-    // ----- AVATAR CAROUSEL LOGIC -----
+  });
+}
+function loadAllUsersToAdmin(){
+  Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
+    .then(([us,bad])=>{
+      let html="<ul>";
+      us.forEach(u=>{
+        const b=bad.child(u.key).val()||{};
+        html+=`<li><b>${u.val().displayName}</b>
+          <span class="admin-badge-list">
+            <span>🏆<span class="admin-badge-count">${b.overall||0}</span></span>
+            <span>🔥<span class="admin-badge-count">${b.offence||0}</span></span>
+            <span>🛡️<span class="admin-badge-count">${b.defence||0}</span></span>
+          </span></li>`;
+      });
+      html+="</ul>";
+      document.getElementById("adminUsersList").innerHTML=html;
+    });
+}
+["Offence","Defence","Overall"].forEach(type=>{
+  document.getElementById("add"+type).onclick = ()=>{
+    if(!ensureAdmin()) return;
+    badgeChanges[type.toLowerCase()]++;
+    kcAlert(`+1 ${type} staged (Save to apply)`);
+  };
+  document.getElementById("rem"+type).onclick = ()=>{
+    if(!ensureAdmin()) return;
+    badgeChanges[type.toLowerCase()]--;
+    kcAlert(`-1 ${type} staged (Save to apply)`);
+  };
+});
+let badgeChanges={offence:0,defence:0,overall:0};
+document.getElementById("saveAdmin").onclick = ()=>{
+  if(!ensureAdmin()) return;
+  const uid=document.getElementById("userSelect").value;
+  db.ref("badges/"+uid).get().then(snap=>{
+    const cur=snap.val()||{};
+    const upd={};
+    ["offence","defence","overall"].forEach(k=>{
+      upd[k]=Math.max(0,(cur[k]||0)+badgeChanges[k]);
+    });
+    db.ref("badges/"+uid).set(upd).then(()=>{
+      badgeChanges={offence:0,defence:0,overall:0};
+      kcAlert("Badges updated");
+      loadAllUsersToAdmin();
+      if(auth.currentUser&&auth.currentUser.uid===uid)
+        loadBadges(uid,auth.currentUser.emailVerified);
+    });
+  });
+};
+// Admin set login streak
+document.getElementById("setStreakBtn").onclick = ()=>{
+  const uid=document.getElementById("userSelect").value;
+  const days = parseInt(document.getElementById("adminStreakInput").value,10);
+  if(!uid || isNaN(days)) return kcAlert("Select user and days!");
+  db.ref(`users/${uid}/loginStreak`).set(days);
+  kcAlert(`Set streak to ${days}!`);
+};
+
+// ========== STREAK LOGIC (NEW FANCY MODAL) ==========
+const streakBtn = document.getElementById('streakBtn');
+const streakRewardsModal = document.getElementById('streakRewardsModal');
+const closeStreakModal2 = document.getElementById('closeStreakModal2');
+const streakProgressBarFill = document.getElementById('streakProgressBarFill');
+const streakProgressNodes = document.getElementById('streakProgressNodes');
+const streakModalDesc = document.getElementById('streakModalDesc');
+
+// Define your milestones (customise if you want)
+const streakMilestones = [
+  { days: 10, label: "10 Days", rewardIcon: "", rewardText: "Custom Profile Picture!" },
+  // Remove the coin icon for 50 days so the label sits cleanly in the container
+  { days: 50, label: "50 Days", rewardIcon: "", rewardText: "Custom Badge" },
+  { days: 100, label: "100 Days", rewardIcon: "", rewardText: "2 Custom Badges" }
+];
+
+// Button opens fancy modal (shows rewards)
+streakBtn.onclick = ()=>{
+  db.ref(`users/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
+    const streak = snap.val()||0;
+    renderStreakModal(streak);
+    streakRewardsModal.classList.add('open');
+  });
+};
+closeStreakModal2.onclick = ()=>streakRewardsModal.classList.remove('open');
+streakRewardsModal.addEventListener('mousedown', e=>{
+  if(!e.target.closest('.streak-modal-content')) streakRewardsModal.classList.remove('open');
+});
+
+function renderStreakModal(streak){
+  // Render progress bar: show how far through milestones you are
+  const maxMilestone = streakMilestones[streakMilestones.length-1].days;
+  const progress = Math.min(100, (streak / maxMilestone) * 100);
+  streakProgressBarFill.style.width = `${progress}%`;
+
+  // Determine unlocked and current indices
+  let unlockedIndex = -1;
+  streakMilestones.forEach((ms,i)=>{ if(streak >= ms.days) unlockedIndex = i; });
+  const currentIndex = Math.min(unlockedIndex + 1, streakMilestones.length - 1);
+
+  // Render milestone nodes with statuses
+  streakProgressNodes.innerHTML = "";
+  streakMilestones.forEach((ms,i)=>{
+    const node = document.createElement("div");
+    let state;
+    /*
+     * Determine the state of each milestone node:
+     *  - Unlocked: any milestone index up to and including the last unlocked index.
+     *  - Current: the immediate next milestone after the unlocked ones (if any remain).
+     *  - Locked: all remaining milestones.
+     */
+    if(i <= unlockedIndex) state = 'unlocked';
+    else if(i === unlockedIndex + 1) state = 'current';
+    else state = 'locked';
+    node.className = `streak-node ${state}`;
+    const iconChar = state === 'locked' ? '🔒' : (ms.rewardIcon || '');
+    const statusLabel = state === 'unlocked' ? 'Unlocked' : (state === 'current' ? 'Current' : 'Upcoming');
+    node.innerHTML = `<span class="reward-icon">${iconChar}</span>
+      <div class="node-label">${ms.label}</div>
+      <div class="node-status">${statusLabel}</div>`;
+    // Tooltip / click message for locked badges
+    node.onclick = function(){
+      if(state === 'locked'){
+        kcAlert('Reach ' + ms.days + ' days to unlock this reward!');
+      }
+    };
+    streakProgressNodes.appendChild(node);
+  });
+  // Description and upcoming rewards
+  let desc="";
+  if(streak < streakMilestones[0].days) desc = `Log in daily to unlock your first reward at ${streakMilestones[0].days} days.`;
+  else if(streak < streakMilestones[1].days) desc = `Great job! Next reward at ${streakMilestones[1].days} days.`;
+  else if(streak < streakMilestones[2].days) desc = `Awesome! Next reward at ${streakMilestones[2].days} days.`;
+  else desc = "Legend! You've unlocked all current streak rewards.";
+  desc += " More streak rewards coming in the next update.";
+  streakModalDesc.textContent = desc;
+  // Footer encouragement message
+  const footer = document.getElementById('streakFooterMsg');
+  if(footer){
+    const nextMs = streakMilestones.find(ms => ms.days > streak);
+    if(nextMs){
+      footer.textContent = `🚀 You're doing great! Next reward at ${nextMs.days} days. More exciting rewards coming soon!`;
+    } else {
+      footer.textContent = `🎉 You've unlocked all rewards! More exciting rewards coming soon!`;
+    }
+  }
+}
+
+// ========== CLASSIC STREAK (still works for popup, you can remove it if you wish) ==========
+function handleStreak(uid){
+  const today=getToday();
+  db.ref(`users/${uid}`).once("value").then(snap=>{
+    let {lastLoginDate,loginStreak} = snap.val() || {};
+    loginStreak = loginStreak || 0;
+    if(lastLoginDate===today) return; // already counted today
+
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    let ystr = `${yesterday.getFullYear()}-${pad2(yesterday.getMonth()+1)}-${pad2(yesterday.getDate())}`;
+
+    if(lastLoginDate===ystr){
+      loginStreak += 1;
+    } else {
+      loginStreak = 1;
+    }
+    db.ref(`users/${uid}/lastLoginDate`).set(today);
+    db.ref(`users/${uid}/loginStreak`).set(loginStreak);
+  });
+}
+
+// ========== AUTH STATE & INIT AVATAR ==========
+auth.onAuthStateChanged(u=>{
+  if(u){
+    authForms.style.display="none";
+    profileUI.style.display="block";
+    handleStreak(u.uid);
+    badgesCard.style.display="flex";
+    document.querySelector(".kc-title").textContent="KC Events";
+    welcomeUser.innerHTML=`👋 <span style="color:#1992d4;">Welcome, ${u.displayName||u.email}</span>`;
+    db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
+    db.ref(`users/${u.uid}/avatar`).once("value").then(snap=>{
+      const url=snap.val()||"avatars/default.png";
+      avatarImg.src=url; avatarImg.style.display="block";
+    });
+    loadBadges(u.uid,u.emailVerified);
+  } else {
+    authForms.style.display="flex";
+    profileUI.style.display="none";
+    badgesCard.style.display="none";
+    avatarImg.style.display="none";
+    document.querySelector(".kc-title").textContent="KC Events";
+  }
+});
+
+// ========== AVATAR CAROUSEL LOGIC ==========
 const avatarImgs = [
   "1.png","2.png","3.png","4.png","5.png","6.png","7.png","13.png","9.png","10.png","11.png","12.png"
 ].map(n => `https://kevinmidnight7-sudo.github.io/messageboardkc/${n}`);
 
 const avatarCarousel = document.getElementById("avatarCarousel");
 
-// Populate avatars horizontally (once)
 function renderAvatars(selectedUrl) {
   avatarCarousel.innerHTML = "";
   avatarImgs.forEach(url => {
@@ -792,32 +1800,96 @@ function renderAvatars(selectedUrl) {
   });
 }
 
-// Show selected avatar if exists on modal open
+function renderAvatarsWithUpload(user){
+  avatarCarousel.innerHTML = "";
+  // Shiny upload button!
+  const div = document.createElement("div");
+  div.className = "avatar-item avatar-upload-unlocked";
+  div.innerHTML = `<span class="plus-icon">+</span><div class="upload-label">Upload</div>`;
+  div.onclick = function(){
+    avatarModal.classList.remove("open");
+    document.getElementById("uploadAvatarModal").classList.add("open");
+  };
+  avatarCarousel.appendChild(div);
+  // Render normal avatars
+  avatarImgs.forEach(url => {
+    const adiv = document.createElement("div");
+    adiv.className = "avatar-item";
+    adiv.innerHTML = `<img src="${url}" alt="Avatar">`;
+    db.ref(`users/${user.uid}/avatar`).once("value").then(snap=>{
+      if (url === snap.val()) adiv.classList.add('selected');
+    });
+    adiv.onclick = function() {
+      document.querySelectorAll('.avatar-carousel .avatar-item').forEach(el=>el.classList.remove('selected'));
+      adiv.classList.add('selected');
+      db.ref(`users/${user.uid}/avatar`).set(url)
+        .then(()=>{
+          avatarImg.src = url;
+          avatarImg.style.display = "block";
+          kcAlert("Avatar updated!");
+          setTimeout(()=>avatarModal.classList.remove("open"),450);
+        });
+    };
+    avatarCarousel.appendChild(adiv);
+  });
+}
+
+// Show avatar modal with/without upload
 avatarBtn.onclick = ()=> {
-  if (!auth.currentUser) return kcAlert("Please log in first.");
-  db.ref(`users/${auth.currentUser.uid}/avatar`).once("value").then(snap=>{
-    renderAvatars(snap.val());
+  db.ref(`users/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
+    const streak = snap.val() || 0;
+    if(streak >= 10){
+      renderAvatarsWithUpload(auth.currentUser);
+    } else {
+      renderAvatars(null);
+    }
     avatarModal.classList.add("open");
     setTimeout(()=>{
-      // Scroll to selected avatar in carousel
       let selected = document.querySelector('.avatar-carousel .avatar-item.selected');
       if(selected) selected.scrollIntoView({inline:"center",behavior:"smooth"});
     },50);
   });
 };
+// Avatar upload modal logic
+document.getElementById("closeUploadAvatarModal").onclick = function(){
+  document.getElementById("uploadAvatarModal").classList.remove("open");
+  document.getElementById("avatarUploadMsg").textContent = "";
+};
+document.getElementById("uploadAvatarBtn").onclick = function(){
+  const file = document.getElementById("avatarFile").files[0];
+  if(!file) return document.getElementById("avatarUploadMsg").textContent = "Select a file!";
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const url = e.target.result;
+    db.ref(`users/${auth.currentUser.uid}/avatar`).set(url).then(()=>{
+      avatarImg.src = url;
+      avatarImg.style.display = "block";
+      document.getElementById("avatarUploadMsg").textContent = "Avatar uploaded!";
+      setTimeout(()=>{
+        document.getElementById("uploadAvatarModal").classList.remove("open");
+        avatarModal.classList.remove("open");
+      },650);
+    });
+  };
+  reader.readAsDataURL(file);
+};
+// show selected file name
+document.getElementById("avatarFile").addEventListener('change',function(){
+  const file = this.files[0];
+  document.getElementById('fileNameDisplay').textContent = file ? file.name : 'No file chosen';
+});
 closeAvatarModal.onclick = ()=>avatarModal.classList.remove("open");
 avatarModal.addEventListener("mousedown",e=>{
   if(!e.target.closest(".carousel-content"))
     avatarModal.classList.remove("open");
 });
-// Carousel arrows
 document.getElementById('carouselLeft').onclick = ()=>{
   avatarCarousel.scrollBy({left:-110,behavior:'smooth'});
 };
 document.getElementById('carouselRight').onclick = ()=>{
   avatarCarousel.scrollBy({left:110,behavior:'smooth'});
 };
-// Optional: handle swipe on mobile for extra smoothness
+// Swipe support
 let startX=0, scrollLeft=0, isDown=false;
 avatarCarousel.addEventListener('pointerdown', e=>{
   isDown=true; startX=e.pageX; scrollLeft=avatarCarousel.scrollLeft;
@@ -831,74 +1903,423 @@ avatarCarousel.addEventListener('pointermove', e=>{
   avatarCarousel.scrollLeft = scrollLeft - walk;
 });
 
-
-    // ========== BADGES LOGIC ==========
-    function loadBadges(uid,verified){
-      badgeList.innerHTML=""; joinBadge.innerHTML="";
-      const verifiedBox=document.createElement("div");
-      verifiedBox.className="badge-item verified"; verifiedBox.tabIndex=0;
-      if(verified){
-        verifiedBox.innerHTML=`
-          <span style="font-size:2.2em;color:#fff;margin-bottom:3px;">✔️</span>
-          <span class="badge-label">VERIFIED</span>`;
-        verifiedBox.style.background="linear-gradient(90deg,#10b981 70%,#22e67b 120%)";
-        verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 18px #18e178cc,0 4px 14px #18e17844";verifiedBox.style.transform="translateY(-3px) scale(1.045)";};
-        verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";verifiedBox.style.transform="";};
-      } else {
-        verifiedBox.classList.add("locked");
-        verifiedBox.innerHTML=`
-          <span style="font-size:2.2em;color:#aaa;margin-bottom:3px;">❌</span>
-          <span class="badge-label">Not Verified</span>
-          <span class="lock-icon">🔒</span>`;
-        verifiedBox.style.background="linear-gradient(90deg,#cfd8dc 65%,#eceff1 120%)";
-        verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 12px #bbb8,0 1px 6px #aaa4";};
-        verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";};
-        verifiedBox.onclick=()=>{
-          auth.currentUser.sendEmailVerification(actionCodeSettings)
-            .then(()=>kcAlert("Verification email resent!"))
-            .catch(e=>kcAlert(e.message));
-        };
-      }
-      badgeList.appendChild(verifiedBox);
-
-      const specs={
-        offence:{label:"Best Offence", icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png", cls:"offence", grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)"},
-        defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)"},
-        overall:{label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)"}
+// ========== BADGES LOGIC ==========
+let editingBadgeId = null; // holds the key of the badge being edited
+async function loadBadges(uid, verified){
+  badgeList.innerHTML="";
+  joinBadge.innerHTML="";
+  // Verified box always first
+  const verifiedBox=document.createElement("div");
+  verifiedBox.className="badge-item verified";
+  verifiedBox.tabIndex=0;
+  if(verified){
+    verifiedBox.innerHTML=`
+      <span style="font-size:2.2em;color:#fff;margin-bottom:3px;">✔️</span>
+      <span class="badge-label">VERIFIED</span>`;
+    verifiedBox.style.background="linear-gradient(90deg,#10b981 70%,#22e67b 120%)";
+    verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 18px #18e178cc,0 4px 14px #18e17844";verifiedBox.style.transform="translateY(-3px) scale(1.045)";};
+    verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";verifiedBox.style.transform="";};
+  } else {
+    verifiedBox.classList.add("locked");
+    verifiedBox.innerHTML=`
+      <span style="font-size:2.2em;color:#aaa;margin-bottom:3px;">❌</span>
+      <span class="badge-label">Not Verified</span>
+      <span class="lock-icon">🔒</span>`;
+    verifiedBox.style.background="linear-gradient(90deg,#cfd8dc 65%,#eceff1 120%)";
+    verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 12px #bbb8,0 1px 6px #aaa4";};
+    verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";};
+    verifiedBox.onclick=()=>{
+      auth.currentUser.sendEmailVerification(actionCodeSettings)
+        .then(()=>kcAlert("Verification email resent!"))
+        .catch(e=>kcAlert(e.message));
+    };
+  }
+  badgeList.appendChild(verifiedBox);
+  // Offence/Defence/Overall
+  const specs={
+    offence:{label:"Best Offence", icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png", cls:"offence", grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)", glow: "#ff6b6bcc"},
+    defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)", glow: "rgba(59,130,246,0.9)"},
+    overall:{label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)", glow: "rgba(234,179,8,0.9)"}
+  };
+  const countsSnap = await db.ref(`badges/${uid}`).once('value');
+  const counts = countsSnap.val() || {};
+  for(const [k,s] of Object.entries(specs)){
+    const cnt=counts[k]||0;
+    const el=document.createElement("div");
+    el.className=`badge-item ${s.cls}${cnt?"":" locked"}`;
+    el.tabIndex=0;
+    el.innerHTML=`<img src="${s.icon}" alt="${s.label}"/><span class="badge-label">${s.label}</span>`;
+    if(cnt){
+      el.innerHTML+=`<span class="badge-mult">x${cnt}</span>`;
+      el.style.background=s.grad;
+      el.onmouseover=()=>{
+        el.style.boxShadow=`0 0 18px ${s.glow},0 4px 14px ${s.glow}77`;
+        el.style.transform="translateY(-3px) scale(1.045)";
       };
-      db.ref(`badges/${uid}`).once("value").then(snap=>{
-        Object.entries(specs).forEach(([k,s])=>{
-          const cnt=(snap.val()||{})[k]||0;
-          const el=document.createElement("div");
-          el.className=`badge-item ${s.cls}${cnt?"":" locked"}`; el.tabIndex=0;
-          el.innerHTML=`<img src="${s.icon}" alt="${s.label}"/><span class="badge-label">${s.label}</span>`;
-          if(cnt){
-            el.innerHTML+=`<span class="badge-mult">x${cnt}</span>`;
-            el.style.background=s.grad;
-            const glow=k==="offence"? "#ef4744cc": k==="defence"? "#4489f6cc": "#e8be31cc";
-            el.onmouseover=()=>{el.style.boxShadow=`0 0 18px ${glow},0 4px 14px ${glow}77`;el.style.transform="translateY(-3px) scale(1.045)";};
-            el.onmouseleave=()=>{el.style.boxShadow="";el.style.transform="";};
-          } else {
-            el.innerHTML+=`<span class="lock-icon">🔒</span>`;
-            el.onmouseover=()=>{el.style.boxShadow="0 0 12px #aaa8,0 1px 6px #aaa4";};
-            el.onmouseleave=()=>{el.style.boxShadow="";};
-          }
-          badgeList.appendChild(el);
-        });
-
-        db.ref(`users/${uid}`).once("value").then(uSnap=>{
-          const joined=uSnap.val()?.joined;
-          const dateStr=joined? new Date(joined).toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}):"Unknown";
-          db.ref("users").orderByChild("joined").endAt(joined).once("value").then(r=>{
-            const rank=r.numChildren();
-            let txt="",cls="";
-            if(rank<=30){txt="Early Supporter";cls="early";}
-            else if(rank<=60){txt="Supporter";cls="supporter";}
-            else{txt="New Generation";cls="newgen";}
-          
-          });
-        });
+      el.onmouseleave=()=>{
+        el.style.boxShadow="";
+        el.style.transform="";
+      };
+    } else {
+      el.innerHTML+=`<span class="lock-icon">🔒</span>`;
+      el.onmouseover=()=>{el.style.boxShadow="0 0 12px #aaa8,0 1px 6px #aaa4";};
+      el.onmouseleave=()=>{el.style.boxShadow="";};
+    }
+    badgeList.appendChild(el);
+  }
+  // Load streak and custom badges
+  const streakSnap = await db.ref(`users/${uid}/loginStreak`).once('value');
+  const streak = streakSnap.val() || 0;
+  const customSnap = await db.ref(`users/${uid}/customBadges`).once('value');
+  const customBadges = customSnap.val() || {};
+  const customKeys = Object.keys(customBadges);
+  const customCount = customKeys.length;
+  const maxCustom = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
+  // Show create badge tile only if under limit
+  if(streak >= 50 && customCount < maxCustom){
+    const addDiv=document.createElement("div");
+    addDiv.className="badge-item";
+    addDiv.style.background="linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%)";
+    addDiv.innerHTML=`<span style="font-size:2.3em;">➕</span><span class="badge-label">Create Badge</span>`;
+    addDiv.onmouseover=()=>{
+      addDiv.style.boxShadow="0 0 18px #fdd835aa,0 4px 14px #fdd83555";
+      addDiv.style.transform="translateY(-3px) scale(1.045)";
+    };
+    addDiv.onmouseleave=()=>{
+      addDiv.style.boxShadow="";
+      addDiv.style.transform="";
+    };
+    addDiv.onclick = function(){
+      editingBadgeId = null; // new badge
+      // Reset modal fields
+      document.getElementById('badgeNameFancy').value = '';
+      document.getElementById('gradCol1').value = '#ffe066';
+      document.getElementById('gradCol2').value = '#e0aaff';
+      const tInput = document.getElementById('textColorPicker');
+      if(tInput) tInput.value = '#ffffff';
+      // reset icon selection
+      const iconRow = document.getElementById('badgeIconRowFancy');
+      if(iconRow){
+        iconRow.querySelectorAll('.icon-item').forEach(el => el.classList.remove('selected'));
+      }
+      // reset gradient boxes and colour swatches
+      const gradContainer = document.getElementById('gradOptions');
+      if(gradContainer) gradContainer.querySelectorAll('.gradient-box').forEach(el => el.classList.remove('selected'));
+      const colourContainer = document.getElementById('textColorSwatches');
+      if(colourContainer) colourContainer.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
+      updateBadgePreview();
+      if(typeof showBadgeStep === 'function') showBadgeStep(1);
+      document.getElementById("badgeCreatorModalFancy").classList.add("open");
+    };
+    badgeList.appendChild(addDiv);
+  }
+  // Render custom badges
+  customKeys.forEach(key=>{
+    const badge = customBadges[key];
+    const cdiv = document.createElement("div");
+    cdiv.className = "badge-item";
+    cdiv.style.background = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
+    cdiv.innerHTML = `<span style="font-size:2.2em;">${badge.icon}</span>
+      <span class="badge-label" style="color:${badge.textColor||'#e5e7eb'};">${badge.name}</span>`;
+    // Add edit icon
+    const editIcon=document.createElement('span');
+    editIcon.textContent='✏️';
+    editIcon.className='edit-icon';
+    editIcon.style.position='absolute';
+    editIcon.style.top='8px';
+    editIcon.style.right='12px';
+    editIcon.style.fontSize='1.2em';
+    editIcon.style.opacity='0.8';
+    editIcon.style.pointerEvents='none';
+    cdiv.appendChild(editIcon);
+    // Delete icon (trash)
+    const delIcon=document.createElement('span');
+    delIcon.textContent='🗑️';
+    delIcon.className='delete-icon';
+    delIcon.style.position='absolute';
+    delIcon.style.top='8px';
+    delIcon.style.left='12px';
+    delIcon.style.fontSize='1.2em';
+    delIcon.style.opacity='0.8';
+    delIcon.style.cursor='pointer';
+    delIcon.onclick = function(e){
+      e.stopPropagation();
+      // Delete immediately and show KC Alert instead of browser confirm
+      db.ref(`users/${uid}/customBadges/${key}`).remove().then(()=>{
+        kcAlert('Badge deleted');
+        loadBadges(uid,auth.currentUser.emailVerified);
       });
-    }  </script>
+    };
+    cdiv.appendChild(delIcon);
+    // Hover effect: derive glow from gradient
+    function hexToRgb(h){
+      let r=0,g=0,b=0;
+      if(h.length===4){r=parseInt(h[1]+h[1],16);g=parseInt(h[2]+h[2],16);b=parseInt(h[3]+h[3],16);} 
+      else if(h.length===7){r=parseInt(h.substring(1,3),16);g=parseInt(h.substring(3,5),16);b=parseInt(h.substring(5,7),16);} 
+      return {r,g,b};
+    }
+    function lighten(col,amt){
+      const {r,g,b}=hexToRgb(col);
+      const lr = Math.min(255, Math.floor(r + (255-r)*amt));
+      const lg = Math.min(255, Math.floor(g + (255-g)*amt));
+      const lb = Math.min(255, Math.floor(b + (255-b)*amt));
+      return `rgba(${lr},${lg},${lb},0.85)`;
+    }
+    const glowColor = lighten(badge.grad2||badge.grad1||'#e0aaff',0.4);
+    cdiv.onmouseover=()=>{
+      cdiv.style.boxShadow=`0 0 18px ${glowColor},0 4px 14px ${glowColor}77`;
+      cdiv.style.transform="translateY(-3px) scale(1.045)";
+    };
+    cdiv.onmouseleave=()=>{
+      cdiv.style.boxShadow="";
+      cdiv.style.transform="";
+    };
+    cdiv.onclick = function(){
+      editingBadgeId = key;
+      // populate fields
+      document.getElementById('badgeNameFancy').value = badge.name;
+      const g1 = badge.grad1 || '#ffe066';
+      const g2 = badge.grad2 || '#e0aaff';
+      document.getElementById('gradCol1').value = g1;
+      document.getElementById('gradCol2').value = g2;
+      const tcol = badge.textColor || '#ffffff';
+      const tInput = document.getElementById('textColorPicker');
+      if(tInput) tInput.value = tcol;
+      // reset all selections
+      const iconRow2 = document.getElementById('badgeIconRowFancy');
+      if(iconRow2){
+        iconRow2.querySelectorAll('.icon-item').forEach(el => {
+          el.classList.remove('selected');
+          if(el.innerText.trim() === badge.icon) el.classList.add('selected');
+        });
+      }
+      const gradContainer2 = document.getElementById('gradOptions');
+      if(gradContainer2){
+        gradContainer2.querySelectorAll('.gradient-box').forEach(el => {
+          el.classList.remove('selected');
+          if(el.dataset.c1 === g1 && el.dataset.c2 === g2) el.classList.add('selected');
+        });
+      }
+      const colourContainer2 = document.getElementById('textColorSwatches');
+      if(colourContainer2){
+        colourContainer2.querySelectorAll('.color-swatch').forEach(el => {
+          el.classList.remove('selected');
+          if(el.dataset.col && el.dataset.col.toLowerCase() === tcol.toLowerCase()) el.classList.add('selected');
+        });
+      }
+      updateBadgePreview();
+      if(typeof showBadgeStep === 'function') showBadgeStep(1);
+      document.getElementById("badgeCreatorModalFancy").classList.add("open");
+    };
+    badgeList.appendChild(cdiv);
+  });
+}
+
+// ========== FANCY BADGE CREATOR LOGIC ==========
+const badgeIcons = ["🏆","🔥","💎","⭐","🐍","👑","🎯","🛡️"];
+const badgeIconRowFancy = document.getElementById("badgeIconRowFancy");
+badgeIcons.forEach(icon=>{
+  const b = document.createElement("div");
+  b.className = "icon-item";
+  b.innerHTML = `<span>${icon}</span>`;
+  b.onclick = function(){
+    badgeIconRowFancy.querySelectorAll('.icon-item').forEach(el=>el.classList.remove('selected'));
+    b.classList.add('selected');
+    updateBadgePreview();
+  };
+  badgeIconRowFancy.appendChild(b);
+});
+function getSelectedBadgeIcon(){
+  // Query the icon row dynamically in case it wasn't defined at load time
+  const row = document.getElementById('badgeIconRowFancy');
+  if(!row) return null;
+  const iconDiv = Array.from(row.children).find(el => el.classList.contains('selected'));
+  return iconDiv ? iconDiv.innerText.trim() : null;
+}
+function updateBadgePreview(){
+  const name = document.getElementById("badgeNameFancy").value.trim() || "Custom Badge";
+  const icon = getSelectedBadgeIcon() || "🏆";
+  const c1 = document.getElementById("gradCol1").value;
+  const c2 = document.getElementById("gradCol2").value;
+  const textColPicker = document.getElementById("textColorPicker");
+  const textCol = textColPicker ? textColPicker.value : '#ffffff';
+  const prevSmall = document.getElementById("badgeLivePreview");
+  if(prevSmall){
+    prevSmall.innerHTML = `<span style="font-size:2.2em;">${icon}</span><span style="font-weight:600;font-size:1.07rem;margin-left:9px;color:${textCol};">${name}</span>`;
+    prevSmall.style.background = `linear-gradient(90deg,${c1} 30%,${c2} 100%)`;
+  }
+  const prevLarge = document.getElementById("badgePreviewLarge");
+  if(prevLarge){
+    prevLarge.innerHTML = `<span style="font-size:2.4rem;">${icon}</span><span style="font-weight:600;font-size:1.3rem;margin-left:9px;color:${textCol};">${name}</span>`;
+    prevLarge.style.background = `linear-gradient(90deg,${c1} 30%,${c2} 100%)`;
+  }
+}
+
+/* ----- Badge Creator Wizard Setup ----- */
+let currentBadgeStep = 1;
+function showBadgeStep(step){
+  currentBadgeStep = step;
+  const stepContents = document.querySelectorAll('#badgeCreatorModalFancy .badge-step-content');
+  stepContents.forEach(el=>el.classList.remove('active'));
+  const target = document.getElementById('badgeStep'+step);
+  if(target) target.classList.add('active');
+  const steps = document.querySelectorAll('#badgeCreatorModalFancy .badge-progress-bar .badge-step');
+  steps.forEach((el,idx)=>{
+    if(idx < step){
+      el.classList.add('active');
+    } else {
+      el.classList.remove('active');
+    }
+  });
+  const backBtn = document.getElementById('badgeBackBtn');
+  const nextBtn = document.getElementById('badgeNextBtn');
+  const saveBtn = document.getElementById('saveBadgeFancyBtn');
+  if(backBtn && nextBtn && saveBtn){
+    if(step === 1){
+      backBtn.style.display = 'none';
+      nextBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+    } else if(step === 4){
+      backBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-block';
+    } else {
+      backBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+    }
+  }
+  updateBadgePreview();
+}
+// Wizard navigation buttons
+if(document.getElementById('badgeNextBtn')){
+  document.getElementById('badgeNextBtn').onclick = function(){
+    if(currentBadgeStep < 4) showBadgeStep(currentBadgeStep + 1);
+  };
+}
+if(document.getElementById('badgeBackBtn')){
+  document.getElementById('badgeBackBtn').onclick = function(){
+    if(currentBadgeStep > 1) showBadgeStep(currentBadgeStep - 1);
+  };
+}
+if(document.getElementById('badgeCancelBtn')){
+  document.getElementById('badgeCancelBtn').onclick = function(){
+    document.getElementById('badgeCreatorModalFancy').classList.remove('open');
+    document.getElementById('badgeCreateMsgFancy').textContent = '';
+    editingBadgeId = null;
+    showBadgeStep(1);
+  };
+}
+
+/* ----- Gradient and Colour Options ----- */
+const gradPresets = [
+  ['#ff9a9e','#fad0c4'],
+  ['#a1c4fd','#c2e9fb'],
+  ['#f6d365','#fda085'],
+  ['#a8edea','#fed6e3'],
+  ['#f093fb','#f5576c'],
+  ['#6ee7b7','#3b82f6']
+];
+const gradContEl = document.getElementById('gradOptions');
+if(gradContEl){
+  gradPresets.forEach(pair=>{
+    const box=document.createElement('div');
+    box.className='gradient-box';
+    box.style.background=`linear-gradient(90deg,${pair[0]} 30%,${pair[1]} 100%)`;
+    box.dataset.c1=pair[0];
+    box.dataset.c2=pair[1];
+    box.onclick=function(){
+      gradContEl.querySelectorAll('.gradient-box').forEach(el=>el.classList.remove('selected'));
+      box.classList.add('selected');
+      document.getElementById('gradCol1').value=pair[0];
+      document.getElementById('gradCol2').value=pair[1];
+      updateBadgePreview();
+    };
+    gradContEl.appendChild(box);
+  });
+  // preselect first gradient
+  if(gradContEl.firstElementChild){ gradContEl.firstElementChild.classList.add('selected'); }
+}
+const textColours = ['#ffffff','#facc15','#22d3ee','#4ade80','#f472b6','#a78bfa','#f97316','#0f172a'];
+const swatchEl = document.getElementById('textColorSwatches');
+if(swatchEl){
+  textColours.forEach(col=>{
+    const sw=document.createElement('div');
+    sw.className='color-swatch';
+    sw.style.background=col;
+    sw.dataset.col=col;
+    sw.onclick=function(){
+      swatchEl.querySelectorAll('.color-swatch').forEach(el=>el.classList.remove('selected'));
+      sw.classList.add('selected');
+      const tPicker=document.getElementById('textColorPicker');
+      if(tPicker) tPicker.value=col;
+      updateBadgePreview();
+    };
+    swatchEl.appendChild(sw);
+  });
+  // preselect first colour swatch
+  if(swatchEl.firstElementChild){ swatchEl.firstElementChild.classList.add('selected'); }
+}
+["badgeNameFancy","gradCol1","gradCol2","textColorPicker"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.oninput=updateBadgePreview;
+});
+document.getElementById("randGradientBtn").onclick = function(){
+  function randCol(){ return "#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"); }
+  document.getElementById("gradCol1").value = randCol();
+  document.getElementById("gradCol2").value = randCol();
+  updateBadgePreview();
+};
+document.getElementById("closeBadgeCreatorModalFancy").onclick = function(){
+  document.getElementById("badgeCreatorModalFancy").classList.remove("open");
+  document.getElementById("badgeCreateMsgFancy").textContent = "";
+  editingBadgeId = null;
+  if(typeof showBadgeStep === 'function') showBadgeStep(1);
+};
+document.getElementById("saveBadgeFancyBtn").onclick = function(){
+  const name = document.getElementById("badgeNameFancy").value.trim();
+  const icon = getSelectedBadgeIcon();
+  const c1 = document.getElementById("gradCol1").value;
+  const c2 = document.getElementById("gradCol2").value;
+  const tcolInput = document.getElementById("textColorPicker");
+  const textColor = tcolInput ? tcolInput.value : '#ffffff';
+  if(!name || !icon) {
+    document.getElementById("badgeCreateMsgFancy").textContent = "Pick a name and icon!";
+    return;
+  }
+  // Profanity check
+  if(containsProfane(name)){
+    document.getElementById("badgeCreateMsgFancy").textContent = "Please choose a different name.";
+    return;
+  }
+  const uid = auth.currentUser.uid;
+  if(editingBadgeId){
+    // update existing badge
+    db.ref(`users/${uid}/customBadges/${editingBadgeId}`).set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
+      document.getElementById("badgeCreateMsgFancy").textContent = "Badge updated!";
+      setTimeout(()=>{
+        document.getElementById("badgeCreatorModalFancy").classList.remove("open");
+        document.getElementById("badgeCreateMsgFancy").textContent = "";
+        editingBadgeId=null;
+      }, 800);
+      loadBadges(uid,auth.currentUser.emailVerified);
+    });
+  } else {
+    // create new badge
+    const newRef = db.ref(`users/${uid}/customBadges`).push();
+    newRef.set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
+      document.getElementById("badgeCreateMsgFancy").textContent = "Badge saved!";
+      setTimeout(()=>{
+        document.getElementById("badgeCreatorModalFancy").classList.remove("open");
+        document.getElementById("badgeCreateMsgFancy").textContent = "";
+      }, 800);
+      loadBadges(uid,auth.currentUser.emailVerified);
+    });
+  }
+};
+// initialise preview
+updateBadgePreview();
+
+  </script>
 </body>
 </html>
