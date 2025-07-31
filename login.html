@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -175,34 +176,6 @@
     }
     /* (hover states omitted for brevity) */
 
-    /* ────── Avatar Modal ────── */
-    #avatarModal{
-      position:fixed;top:0;left:0;width:100vw;height:100vh;
-      background:rgba(0,0,0,.5);
-      display:flex;align-items:center;justify-content:center;
-      opacity:0;pointer-events:none;transition:opacity .2s;
-    }
-    #avatarModal.open{opacity:1;pointer-events:auto;}
-    .avatar-content{
-      background:#fff;border-radius:20px;padding:24px;
-      max-width:90vw;max-height:90vh;overflow-y:auto;
-      position:relative;box-shadow:0 4px 20px rgba(0,0,0,.3);
-    }
-    .avatar-content .close-btn{
-      position:absolute;top:12px;right:12px;
-      background:#f44336;color:#fff;border:none;
-      padding:6px 12px;border-radius:8px;cursor:pointer;
-    }
-    .avatar-grid{
-      display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
-      gap:16px;margin-top:16px;
-    }
-    .avatar-grid img{
-      width:80px;height:80px;border-radius:50%;
-      cursor:pointer;border:2px solid transparent;transition:border .2s;
-    }
-    .avatar-grid img:hover{border-color:#318be9;}
-
     /* ────── KC Alert ────── */
     .kc-alert{
       position:fixed;top:32px;left:50%;transform:translateX(-50%);
@@ -312,6 +285,128 @@
     }
     .confirm-box .confirm-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}
     .confirm-box .confirm-btn.cancel{background:#eee;color:#234;box-shadow:none;}
+    
+    /* ========== Apple-Like Avatar Carousel ========== */
+.apple-modal {
+  position:fixed; top:0; left:0; width:100vw; height:100vh;
+  background:rgba(30,38,45,.45);
+  display:flex; align-items:center; justify-content:center;
+  z-index:2000; opacity:0; pointer-events:none; transition:opacity .26s;
+}
+.apple-modal.open { opacity:1; pointer-events:auto; }
+
+.carousel-content {
+  background:rgba(255,255,255,0.91);
+  border-radius:28px;
+  padding:28px 32px 30px 32px;
+  box-shadow:0 12px 50px #0002, 0 1.5px 16px #0088ff22;
+  position:relative;
+  min-width:330px;
+  min-height:230px;
+  max-width:98vw;
+}
+
+.carousel-content h3 {
+  font-size:1.35rem;
+  font-weight:700;
+  margin:0 0 24px 0;
+  letter-spacing:.01em;
+  color:#151d25;
+}
+
+.carousel-arrows {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+  margin-top:8px;
+}
+
+.arrow-btn {
+  background:linear-gradient(120deg,#e9efff 0%,#cbe8ff 100%);
+  border:none;
+  border-radius:50%;
+  width:44px; height:44px;
+  font-size:1.8rem; color:#3899ff;
+  box-shadow:0 2px 10px #a0c7ff22;
+  cursor:pointer; transition:background .18s,box-shadow .18s,transform .11s;
+  outline:none;
+  z-index:2;
+  user-select:none;
+}
+.arrow-btn:active { transform:scale(.92); background:#e7f4ff; }
+
+.avatar-carousel {
+  display:flex;
+  overflow-x:auto;
+  gap:18px;
+  padding:14px 10px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width:thin;
+  background:rgba(235,240,245,0.45);
+  border-radius:20px;
+  min-width:240px;
+  max-width:calc(85vw - 120px);
+}
+.avatar-carousel::-webkit-scrollbar {
+  height:9px; background:rgba(220,220,250,0.08);
+}
+.avatar-carousel::-webkit-scrollbar-thumb {
+  background:rgba(140,180,255,0.28); border-radius:12px;
+}
+.avatar-carousel .avatar-item {
+  scroll-snap-align:center;
+  flex:0 0 92px;
+  width:92px; height:92px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+  border-radius:50%;
+  background:rgba(255,255,255,0.66);
+  box-shadow:0 3px 18px #a0c8fa19,0 1.5px 8px #3fa8e022;
+  position:relative;
+  transition:transform .19s cubic-bezier(.5,1.7,.7,1.01), box-shadow .15s;
+}
+.avatar-carousel .avatar-item img {
+  width:76px; height:76px; object-fit:cover; border-radius:50%;
+  box-shadow:0 2px 10px #b0cdfc12;
+  transition:box-shadow .18s, border .16s;
+  border:3px solid transparent;
+  background:#f6f9fc;
+}
+.avatar-carousel .avatar-item:hover,
+.avatar-carousel .avatar-item.selected {
+  transform:scale(1.14);
+  box-shadow:0 8px 32px #b3deff99,0 1.5px 18px #8dc8ff45;
+  z-index:1;
+}
+.avatar-carousel .avatar-item.selected img {
+  border-color:#3899ff;
+  box-shadow:0 2px 18px #7cdbfa44;
+}
+.close-btn {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: #f8fafd;
+  color: #232f38;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1.04rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #dbeafe44;
+  transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+  outline: none;
+  z-index: 2;
+}
+.close-btn:hover, .close-btn:focus {
+  background: #f44336;
+  color: #fff;
+  box-shadow: 0 4px 16px #f4433644;
+}
+
   </style>
 </head>
 <body>
@@ -365,26 +460,20 @@
   </div>
 
   <!-- Avatar Picker Modal -->
-  <div id="avatarModal">
-    <div class="avatar-content">
-      <button class="close-btn" id="closeAvatarModal">Close</button>
-      <h3>Select Your Avatar</h3>
-      <div class="avatar-grid" id="avatarGrid">
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png"  alt="Avatar 1"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/2.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/2.png"  alt="Avatar 2"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/3.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/3.png"  alt="Avatar 3"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/4.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/4.png"  alt="Avatar 4"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/5.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/5.png"  alt="Avatar 5"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/6.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/6.png"  alt="Avatar 6"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/7.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/7.png"  alt="Avatar 7"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/13.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/13.png"  alt="Avatar 8"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/9.png"  data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/9.png"  alt="Avatar 9"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/10.png" data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/10.png" alt="Avatar 10"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/11.png" data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/11.png" alt="Avatar 11"/>
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/12.png" data-url="https://kevinmidnight7-sudo.github.io/messageboardkc/12.png" alt="Avatar 12"/>
+  <div id="avatarModal" class="apple-modal">
+  <div class="carousel-content">
+    <button class="close-btn" id="closeAvatarModal">Close</button>
+    <h3>Select Your Avatar</h3>
+    <div class="carousel-arrows">
+      <button id="carouselLeft" class="arrow-btn" tabindex="-1">&lt;</button>
+      <div class="avatar-carousel" id="avatarCarousel">
+        <!-- JS will fill in avatars here -->
       </div>
+      <button id="carouselRight" class="arrow-btn" tabindex="-1">&gt;</button>
     </div>
   </div>
+</div>
+
 
   <!-- KC Alert -->
   <div id="kcAlert" class="kc-alert" style="display:none"></div>
@@ -395,24 +484,24 @@
       <h2>Account Options</h2>
       <button class="close-btn" id="closeAccountSidebar">Close</button>
     </div>
-    <button id="signOutBtn"    class="sidebar-btn">Sign Out</button>
-    <button id="resetPassBtn"  class="sidebar-btn">Reset Password</button>
-    <button id="deleteAcctBtn" class="sidebar-btn-red">Delete Account</button>
+    <button id="signOutBtn"    class="sidebar-btn">Sign Out</button>
+    <button id="resetPassBtn"  class="sidebar-btn">Reset Password</button>
+    <button id="deleteAcctBtn" class="sidebar-btn-red">Delete Account</button>
   </div>
 
   <!-- Admin Sidebar -->
   <div id="adminSidebar" class="sidebar">
     <div class="sidebar-header">
-      <h2>Admin Portal</h2>
+      <h2>Admin Portal</h2>
       <button class="close-btn" id="closeAdminSidebar">Close</button>
     </div>
     <div id="adminAuthSection">
-      <label>Admin Password</label>
+      <label>Admin Password</label>
       <input id="adminPass" type="password" placeholder="Password"/>
       <button id="adminLoginBtn" class="sidebar-btn">Enter</button>
     </div>
     <div id="adminContent" style="display:none">
-      <label>Edit Badges For User:</label>
+      <label>Edit Badges For User:</label>
       <select id="userSelect"></select>
       <div style="display:flex;gap:7px;margin:12px 0;">
         <button data-badge="offence" class="sidebar-btn" id="addOffence">+ Offence</button>
@@ -424,8 +513,8 @@
         <button data-badge="defence" class="sidebar-btn-red" id="remDefence">- Defence</button>
         <button data-badge="overall" class="sidebar-btn-red" id="remOverall">- Overall</button>
       </div>
-      <button id="saveAdmin" class="sidebar-btn">Save Changes</button>
-      <label style="margin-top:16px;">All Users & Badges:</label>
+      <button id="saveAdmin" class="sidebar-btn">Save Changes</button>
+      <label style="margin-top:16px;">All Users & Badges:</label>
       <div class="admin-users-list" id="adminUsersList"><ul></ul></div>
     </div>
   </div>
@@ -645,28 +734,7 @@
         });
       });
     };
-
-    // ========== AVATAR PICKER LOGIC ==========
-    avatarBtn.onclick = ()=>avatarModal.classList.add("open");
-    closeAvatarModal.onclick = ()=>avatarModal.classList.remove("open");
-    avatarModal.addEventListener("mousedown",e=>{
-      if(!e.target.closest(".avatar-content"))
-        avatarModal.classList.remove("open");
-    });
-    avatarGrid.querySelectorAll("img").forEach(img=>{
-      img.onclick = ()=>{
-        const url=img.dataset.url, user=auth.currentUser;
-        if(!user) return kcAlert("Please log in to set an avatar.");
-        db.ref(`users/${user.uid}/avatar`).set(url)
-          .then(()=>{
-            avatarImg.src=url;
-            avatarImg.style.display="block";
-            kcAlert("Avatar updated!");
-            avatarModal.classList.remove("open");
-          })
-          .catch(e=>kcAlert(e.message));
-      };
-    });
+    
 
     // ========== AUTH STATE & INIT AVATAR ==========
     auth.onAuthStateChanged(u=>{
@@ -690,6 +758,79 @@
         document.querySelector(".kc-title").textContent="KC Events";
       }
     });
+    
+    // ----- AVATAR CAROUSEL LOGIC -----
+const avatarImgs = [
+  "1.png","2.png","3.png","4.png","5.png","6.png","7.png","13.png","9.png","10.png","11.png","12.png"
+].map(n => `https://kevinmidnight7-sudo.github.io/messageboardkc/${n}`);
+
+const avatarCarousel = document.getElementById("avatarCarousel");
+
+// Populate avatars horizontally (once)
+function renderAvatars(selectedUrl) {
+  avatarCarousel.innerHTML = "";
+  avatarImgs.forEach(url => {
+    const div = document.createElement("div");
+    div.className = "avatar-item";
+    div.innerHTML = `<img src="${url}" alt="Avatar">`;
+    if (url === selectedUrl) div.classList.add('selected');
+    div.onclick = function() {
+      document.querySelectorAll('.avatar-carousel .avatar-item').forEach(el=>el.classList.remove('selected'));
+      div.classList.add('selected');
+      const user = auth.currentUser;
+      if(user) {
+        db.ref(`users/${user.uid}/avatar`).set(url)
+          .then(()=>{
+            avatarImg.src = url;
+            avatarImg.style.display = "block";
+            kcAlert("Avatar updated!");
+            setTimeout(()=>avatarModal.classList.remove("open"),450);
+          });
+      } else kcAlert("Please log in to set an avatar.");
+    };
+    avatarCarousel.appendChild(div);
+  });
+}
+
+// Show selected avatar if exists on modal open
+avatarBtn.onclick = ()=> {
+  if (!auth.currentUser) return kcAlert("Please log in first.");
+  db.ref(`users/${auth.currentUser.uid}/avatar`).once("value").then(snap=>{
+    renderAvatars(snap.val());
+    avatarModal.classList.add("open");
+    setTimeout(()=>{
+      // Scroll to selected avatar in carousel
+      let selected = document.querySelector('.avatar-carousel .avatar-item.selected');
+      if(selected) selected.scrollIntoView({inline:"center",behavior:"smooth"});
+    },50);
+  });
+};
+closeAvatarModal.onclick = ()=>avatarModal.classList.remove("open");
+avatarModal.addEventListener("mousedown",e=>{
+  if(!e.target.closest(".carousel-content"))
+    avatarModal.classList.remove("open");
+});
+// Carousel arrows
+document.getElementById('carouselLeft').onclick = ()=>{
+  avatarCarousel.scrollBy({left:-110,behavior:'smooth'});
+};
+document.getElementById('carouselRight').onclick = ()=>{
+  avatarCarousel.scrollBy({left:110,behavior:'smooth'});
+};
+// Optional: handle swipe on mobile for extra smoothness
+let startX=0, scrollLeft=0, isDown=false;
+avatarCarousel.addEventListener('pointerdown', e=>{
+  isDown=true; startX=e.pageX; scrollLeft=avatarCarousel.scrollLeft;
+});
+avatarCarousel.addEventListener('pointerup', ()=>isDown=false);
+avatarCarousel.addEventListener('pointerleave', ()=>isDown=false);
+avatarCarousel.addEventListener('pointermove', e=>{
+  if(!isDown) return;
+  e.preventDefault();
+  const walk = (e.pageX-startX)*1.2;
+  avatarCarousel.scrollLeft = scrollLeft - walk;
+});
+
 
     // ========== BADGES LOGIC ==========
     function loadBadges(uid,verified){
