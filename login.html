@@ -96,6 +96,28 @@
     box-shadow:0 6px 28px rgba(139,92,246,0.55), 0 2px 12px rgba(139,92,246,0.35);
   }
 
+  /* Codes button inherits the same animated feel but uses a gold glow to signify exclusivity */
+  #codesBtn {
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  #codesBtn:hover {
+    transform: scale(1.12) rotate(6deg);
+    /* goldish glow reminiscent of premium content */
+    box-shadow: 0 6px 28px rgba(253, 214, 0, 0.55), 0 2px 12px rgba(253, 214, 0, 0.35);
+  }
+  /* Ensure images inside profile buttons scale nicely and ignore pointer events */
+  .profile-icon-btn img {
+    width: 28px;
+    height: 28px;
+    pointer-events: none;
+  }
+  /* Also size the streak icon */
+  #streakBtn img {
+    width: 28px;
+    height: 28px;
+    pointer-events: none;
+  }
+
   /* === About Me Section === */
   .about-me-box {
     background: rgba(255,255,255,0.4);
@@ -1310,6 +1332,33 @@
   .profile-welcome .username-container:hover .edit-icon {
     display:inline-block;
   }
+.profile-icon-btn img, #streakBtn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: none;
+}
+.profile-icon-btn, #streakBtn {
+  width: 55px;
+  height: 55px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: 0 2px 10px #3332;
+  border: none;
+  cursor: pointer;
+}
+
+
   </style>
 </head>
 <body>
@@ -1351,11 +1400,23 @@
             <div class="version">KC Events V1.5</div>
           </div>
           <div class="profile-icon-bar">
-            <button id="avatarBtn" class="profile-icon-btn" title="Choose Avatar">🖼️</button>
-            <button id="accountOptionsBtn" class="profile-icon-btn" title="Account Options">⚙️</button>
-            <button id="adminPortalBtn" class="profile-icon-btn" title="Admin Portal">🛠️</button>
+            <button id="avatarBtn" class="profile-icon-btn" title="Choose Avatar">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Avatar.png" alt="Avatar"/>
+            </button>
+            <button id="accountOptionsBtn" class="profile-icon-btn" title="Account Options">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Settings.png" alt="Settings"/>
+            </button>
+            <button id="adminPortalBtn" class="profile-icon-btn" title="Admin Portal">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Admin.png" alt="Admin"/>
+            </button>
+            <!-- Codes button opens exclusive features panel -->
+            <button id="codesBtn" class="profile-icon-btn" title="Codes">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Codes.png" alt="Codes"/>
+            </button>
                <!-- Streak fire button (fixed in card) -->
-            <button id="streakBtn" title="View your streak rewards">🔥</button>
+            <button id="streakBtn" title="View your streak rewards">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Streak.png" alt="Streak"/>
+            </button>
           </div>
         </div>
       </div>
@@ -1512,6 +1573,20 @@
     </div>
   </div>
 
+  <!-- Codes Modal for entering exclusive codes -->
+  <div id="codesModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:300px;">
+      <button class="close-btn" id="closeCodesModal">Close</button>
+      <h3 style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Codes.png" alt="Codes" style="width:28px;height:28px;"/>
+        Enter your code!
+      </h3>
+      <input id="codeInput" type="text" placeholder="Enter code" style="padding:10px;width:80%;font-size:1.05rem;margin-bottom:12px;border-radius:12px;border:1.5px solid #374151;background:#f8fafc;color:#1e293b;box-shadow: inset 0 1px 2px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);"/>
+      <button id="submitCodeBtn" class="form-btn" style="width:80%;">Submit Code</button>
+      <div id="codeMsg" style="font-size:1rem;color:#7f9db5;margin-top:6px;"></div>
+    </div>
+  </div>
+
   <!-- KC Alert -->
   <div id="kcAlert" class="kc-alert" style="display:none"></div>
 
@@ -1598,6 +1673,29 @@ function containsProfane(str){
   return bannedWords.some(w => lower.includes(w));
 }
 
+// ================== CODES CONFIGURATION ==================
+// Define exclusive codes here. Each code maps to an object describing
+// the key used to store redemption, the alert message to display,
+// the icon shown in the alert, and the bonus custom badge count or
+// avatar unlock flag. To add more codes in the future simply append
+// additional entries to this object with the code string as the key.
+const codesConfig = {
+  "D1//\\0ND-S70N3": {
+    key: "diamond",
+    alert: "Diamond Exclusives Introduced",
+    icon: "https://cdn.discordapp.com/emojis/1381097369474695178.webp?size=128",
+    customBonus: 2,
+    avatarUnlock: true
+  },
+  "3M-R@LD_GR33N": {
+    key: "emerald",
+    alert: "Emerald Exclusives Introduced",
+    icon: "https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128",
+    customBonus: 1,
+    avatarUnlock: true
+  }
+};
+
 // ========== UI REFS ==========
 const authForms    = document.getElementById("authForms"),
       registerForm = document.getElementById("registerForm"),
@@ -1629,6 +1727,14 @@ const authForms    = document.getElementById("authForms"),
       avatarModal  = document.getElementById("avatarModal"),
       closeAvatarModal = document.getElementById("closeAvatarModal");
 
+// Codes UI references
+const codesBtn        = document.getElementById("codesBtn"),
+      codesModal      = document.getElementById("codesModal"),
+      closeCodesModal = document.getElementById("closeCodesModal"),
+      submitCodeBtn   = document.getElementById("submitCodeBtn"),
+      codeInput       = document.getElementById("codeInput"),
+      codeMsg         = document.getElementById("codeMsg");
+
 // References for username modal and controls
 const usernameModal    = document.getElementById("usernameModal"),
       closeUsernameModal = document.getElementById("closeUsernameModal"),
@@ -1638,9 +1744,15 @@ const usernameModal    = document.getElementById("usernameModal"),
 
 // ========== KC ALERT ==========
 let alertTimeout;
-function kcAlert(txt, timeout=2350){
-  kcAlertDiv.textContent=txt;
-  kcAlertDiv.style.display="flex";
+function kcAlert(txt, timeout=2350, iconURL=null){
+  // If an icon URL is provided, inject it alongside the message. Otherwise
+  // fall back to plain text content. Reset any previous content first.
+  if(iconURL){
+    kcAlertDiv.innerHTML = `<img src="${iconURL}" alt="icon" style="width:22px;height:22px;"> <span>${txt}</span>`;
+  } else {
+    kcAlertDiv.textContent = txt;
+  }
+  kcAlertDiv.style.display = "flex";
   kcAlertDiv.classList.remove("hide");
   if(alertTimeout) clearTimeout(alertTimeout);
   alertTimeout = setTimeout(()=>kcAlertDiv.classList.add("hide"), timeout);
@@ -1662,6 +1774,77 @@ document.addEventListener("mousedown", e=>{
   if(!accountSidebar.contains(e.target)&&e.target!==accountBtn) accountSidebar.classList.remove("open");
   if(!adminSidebar.contains(e.target)&&e.target!==adminBtn) adminSidebar.classList.remove("open");
 });
+
+// ========== CODES FEATURE ==========
+// Show the codes modal when the codes button is clicked
+codesBtn.onclick = () => {
+  codesModal.classList.add("open");
+};
+// Hide the codes modal when the close button is clicked
+closeCodesModal.onclick = () => {
+  codesModal.classList.remove("open");
+  codeInput.value = "";
+  codeMsg.textContent = "";
+};
+// Allow closing the codes modal by clicking the backdrop
+codesModal.addEventListener("mousedown", e => {
+  if(!e.target.closest(".carousel-content")){
+    codesModal.classList.remove("open");
+    codeInput.value = "";
+    codeMsg.textContent = "";
+  }
+});
+// Handle code submission
+submitCodeBtn.onclick = async () => {
+  const code = codeInput.value.trim();
+  if(!code){
+    codeMsg.textContent = "Please enter a code!";
+    return;
+  }
+  const conf = codesConfig[code];
+  if(!conf){
+    codeMsg.textContent = "Invalid code!";
+    return;
+  }
+  const user = auth.currentUser;
+  if(!user){
+    codesModal.classList.remove("open");
+    codeInput.value = "";
+    codeMsg.textContent = "";
+    kcAlert("Please log in first!", 2500);
+    return;
+  }
+  const uid = user.uid;
+  // Check if the code has already been redeemed
+  const redeemedSnap = await db.ref(`users/${uid}/codesUnlocked/${conf.key}`).once('value');
+  if(redeemedSnap.val()){
+    codesModal.classList.remove("open");
+    codeInput.value = "";
+    codeMsg.textContent = "";
+    kcAlert("Code already redeemed!", 2500);
+    return;
+  }
+  // Prepare updates: mark the code as unlocked, record that avatar can be changed
+  const updates = {};
+  updates[`users/${uid}/codesUnlocked/${conf.key}`] = true;
+  if(conf.avatarUnlock){
+    updates[`users/${uid}/avatarUnlocked`] = true;
+  }
+  // accumulate customBonus in a separate field (useful for future extensibility)
+  const bonusSnap = await db.ref(`users/${uid}/customBonus`).once('value');
+  const existingBonus = bonusSnap.val() || 0;
+  updates[`users/${uid}/customBonus`] = existingBonus + (conf.customBonus || 0);
+  // Apply updates atomically
+  await db.ref().update(updates).catch(()=>{});
+  // Reload badges so the new allowance takes effect
+  loadBadges(uid, user.emailVerified);
+  // Reset modal state and close
+  codesModal.classList.remove("open");
+  codeInput.value = "";
+  codeMsg.textContent = "";
+  // Show a customised alert with the provided icon
+  kcAlert(conf.alert, 2500, conf.icon);
+};
 
 // ========== TOGGLE FORMS ==========
 toLogin.onclick = ()=>{
@@ -2135,20 +2318,29 @@ function renderAvatarsWithUpload(user){
   });
 }
 
-// Show avatar modal with/without upload
+// Show avatar modal with/without upload. In addition to the login streak, users
+// who have redeemed an exclusive code with avatar unlock privileges can also
+// upload their own avatar regardless of streak length.
 avatarBtn.onclick = ()=> {
-  db.ref(`users/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
-    const streak = snap.val() || 0;
-    if(streak >= 10){
-      renderAvatarsWithUpload(auth.currentUser);
+  const user = auth.currentUser;
+  if(!user) return;
+  const uid = user.uid;
+  Promise.all([
+    db.ref(`users/${uid}/loginStreak`).once("value"),
+    db.ref(`users/${uid}/avatarUnlocked`).once("value")
+  ]).then(([streakSnap, unlockSnap]) => {
+    const streak  = (streakSnap.val() || 0);
+    const unlocked = !!unlockSnap.val();
+    if(streak >= 10 || unlocked){
+      renderAvatarsWithUpload(user);
     } else {
       renderAvatars(null);
     }
     avatarModal.classList.add("open");
-    setTimeout(()=>{
-      let selected = document.querySelector('.avatar-carousel .avatar-item.selected');
+    setTimeout(() => {
+      const selected = document.querySelector('.avatar-carousel .avatar-item.selected');
       if(selected) selected.scrollIntoView({inline:"center",behavior:"smooth"});
-    },50);
+    }, 50);
   });
 };
 // Avatar upload modal logic
@@ -2275,9 +2467,19 @@ async function loadBadges(uid, verified){
   const customBadges = customSnap.val() || {};
   const customKeys = Object.keys(customBadges);
   const customCount = customKeys.length;
-  const maxCustom = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
+  // Determine the base number of custom badges allowed by streak milestones
+  const baseMax = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
+  // Fetch codes unlocked to compute additional allowances
+  const codesSnap = await db.ref(`users/${uid}/codesUnlocked`).once('value');
+  const codesUnlocked = codesSnap.val() || {};
+  let bonus = 0;
+  if(codesUnlocked.diamond) bonus += 2;
+  if(codesUnlocked.emerald) bonus += 1;
+  const maxCustom = baseMax + bonus;
+  // Users can create custom badges if they meet the streak requirement or have any bonus
+  const allowCustom = (streak >= 50) || (bonus > 0);
   // Show create badge tile only if under limit
-  if(streak >= 50 && customCount < maxCustom){
+  if(allowCustom && customCount < maxCustom){
     const addDiv=document.createElement("div");
     addDiv.className="badge-item";
     addDiv.style.background="linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%)";
