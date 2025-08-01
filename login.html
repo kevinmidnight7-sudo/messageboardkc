@@ -1773,28 +1773,53 @@ function handleStreak(uid){
 }
 
 // ========== AUTH STATE & INIT AVATAR ==========
-auth.onAuthStateChanged(u=>{
-  if(u){
-    authForms.style.display="none";
-    profileUI.style.display="block";
-    handleStreak(u.uid);
-    badgesCard.style.display="flex";
-    document.querySelector(".kc-title").textContent="KC Events";
-    welcomeUser.innerHTML=`👋 <span style="color:#1992d4;">Welcome, ${u.displayName||u.email}</span>`;
-    db.ref("users").once("value").then(s=>userCounter.textContent=`There are now ${s.numChildren()} users registered!`);
-    db.ref(`users/${u.uid}/avatar`).once("value").then(snap=>{
-      const url=snap.val()||"avatars/default.png";
-      avatarImg.src=url; avatarImg.style.display="block";
+auth.onAuthStateChanged(u => {
+  if (u) {
+    // Prepare restore data
+    const restored = {
+      displayName: u.displayName || u.email,
+      email: u.email,
+      emailVerified: u.emailVerified,
+    };
+    // Only restore photoURL if present and no custom avatar in DB
+    if (u.photoURL) restored.avatar = u.photoURL;
+
+    // Check current DB data, only update if missing
+    db.ref(`users/${u.uid}`).once("value").then(snapshot => {
+      const data = snapshot.val() || {};
+      const toUpdate = {};
+      Object.keys(restored).forEach(key => {
+        // Only update field if missing or empty in DB
+        if (!data[key]) toUpdate[key] = restored[key];
+      });
+      if (Object.keys(toUpdate).length > 0) {
+        db.ref(`users/${u.uid}`).update(toUpdate);
+      }
     });
-    loadBadges(u.uid,u.emailVerified);
+
+    // UI & profile setup logic (unchanged)
+    authForms.style.display = "none";
+    profileUI.style.display = "block";
+    handleStreak(u.uid);
+    badgesCard.style.display = "flex";
+    document.querySelector(".kc-title").textContent = "KC Events";
+    welcomeUser.innerHTML = `👋 <span style="color:#1992d4;">Welcome, ${u.displayName || u.email}</span>`;
+    db.ref("users").once("value").then(s => userCounter.textContent = `There are now ${s.numChildren()} users registered!`);
+    db.ref(`users/${u.uid}/avatar`).once("value").then(snap => {
+      const url = snap.val() || "avatars/default.png";
+      avatarImg.src = url; avatarImg.style.display = "block";
+    });
+    loadBadges(u.uid, u.emailVerified);
   } else {
-    authForms.style.display="flex";
-    profileUI.style.display="none";
-    badgesCard.style.display="none";
-    avatarImg.style.display="none";
-    document.querySelector(".kc-title").textContent="KC Events";
+    authForms.style.display = "flex";
+    profileUI.style.display = "none";
+    badgesCard.style.display = "none";
+    avatarImg.style.display = "none";
+    document.querySelector(".kc-title").textContent = "KC Events";
   }
 });
+
+
 
 // ========== AVATAR CAROUSEL LOGIC ==========
 const avatarImgs = [
