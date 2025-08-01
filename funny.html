@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KC Events Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .gradient-item.selected, .banner-item.selected {
+            border-color: #3b82f6;
+            transform: scale(1.08);
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+<div id="mainContent" class="w-full max-w-md p-4">
+    <!-- Login/Register Card -->
+    <div id="authCard" class="glass-card rounded-2xl shadow-lg p-8">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="w-20 mx-auto mb-4" alt="KC Events Logo"/>
+        <h2 id="formTitle" class="text-2xl font-bold text-center text-gray-800 mb-6">Login</h2>
+
+        <!-- Login Form -->
+        <div id="loginForm" class="space-y-4">
+            <input id="loginEmail" type="email" placeholder="Email" class="w-full px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition">
+            <input id="loginPass" type="password" placeholder="Password" class="w-full px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition">
+            <button id="loginBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Log In</button>
+            <p class="text-center text-sm">No account? <a href="#" id="toRegister" class="font-semibold text-blue-600 hover:underline">Register</a></p>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" class="space-y-4 hidden">
+            <input id="regName" placeholder="Display Name" class="w-full px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition">
+            <input id="regEmail" type="email" placeholder="Email" class="w-full px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition">
+            <input id="regPass" type="password" placeholder="Password" class="w-full px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-blue-500 focus:bg-white outline-none transition">
+            <button id="registerBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Register</button>
+            <p class="text-center text-sm">Already have an account? <a href="#" id="toLogin" class="font-semibold text-blue-600 hover:underline">Log In</a></p>
+        </div>
+    </div>
+
+    <!-- Profile UI (Shown on Login) -->
+    <div id="profileUI" class="hidden mt-6 glass-card rounded-2xl shadow-lg p-8 text-center">
+        <h3 id="welcomeUser" class="text-xl font-bold text-gray-800"></h3>
+        <p class="text-gray-600 mb-6">Welcome back!</p>
+        
+        <!-- Code Entry Section -->
+        <div id="codeEntryCard">
+            <h4 class="font-semibold text-gray-700 mb-2">Have a Code?</h4>
+            <input id="unlockCodeInput" type="text" placeholder="Enter D1//\\0ND-S70N3" class="w-full text-center px-4 py-3 bg-gray-100 rounded-lg border-2 border-transparent focus:border-purple-500 focus:bg-white outline-none transition">
+            <button id="unlockBtn" class="mt-3 w-full bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Unlock Features</button>
+        </div>
+
+        <!-- Customization Button -->
+        <button id="editProfileBtn" class="hidden mt-4 w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">
+            💎 Customize Profile
+        </button>
+         <button id="signOutBtn" class="mt-4 w-full bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Sign Out</button>
+    </div>
+</div>
+
+
+<!-- Profile Customization Modal -->
+<div id="profileCustomizationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg relative">
+        <button id="closeCustomizationModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+        <h3 class="text-2xl font-bold text-center mb-6">Customize Your Profile</h3>
+
+        <div class="mb-6">
+            <h4 class="font-semibold text-lg mb-3">Username Gradient</h4>
+            <div id="gradientSelectionGrid" class="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                <!-- Gradients populated by JS -->
+            </div>
+        </div>
+
+        <div>
+            <h4 class="font-semibold text-lg mb-3">Message Banner</h4>
+            <div id="bannerSelectionGrid" class="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                <!-- Banners populated by JS -->
+            </div>
+        </div>
+
+        <button id="saveCustomizationBtn" class="mt-8 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Save Customization</button>
+    </div>
+</div>
+
+
+<script>
+    // ========== FIREBASE INIT ==========
+    const firebaseConfig = {
+        apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+        authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+        databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "kckillerscompany-ab1ec",
+        storageBucket: "kckillerscompany-ab1ec.appspot.com",
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // ========== UI ELEMENTS ==========
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const toLogin = document.getElementById('toLogin');
+    const toRegister = document.getElementById('toRegister');
+    const authCard = document.getElementById('authCard');
+    const profileUI = document.getElementById('profileUI');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const codeEntryCard = document.getElementById('codeEntryCard');
+    const customizationModal = document.getElementById('profileCustomizationModal');
+
+    // ========== FORM TOGGLING ==========
+    toLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerForm.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+        document.getElementById('formTitle').innerText = 'Login';
+    });
+    toRegister.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginForm.classList.add('hidden');
+        registerForm.classList.remove('hidden');
+        document.getElementById('formTitle').innerText = 'Register';
+    });
+
+    // ========== AUTH LOGIC ==========
+    document.getElementById('registerBtn').addEventListener('click', () => {
+        const name = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const pass = document.getElementById('regPass').value;
+        auth.createUserWithEmailAndPassword(email, pass)
+            .then(cred => {
+                return db.ref('users/' + cred.user.uid).set({
+                    displayName: name,
+                    email: email,
+                    joined: firebase.database.ServerValue.TIMESTAMP
+                });
+            })
+            .then(() => alert('Registration successful! Please log in.'))
+            .catch(err => alert(err.message));
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+        const email = document.getElementById('loginEmail').value;
+        const pass = document.getElementById('loginPass').value;
+        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+    });
+    
+    document.getElementById('signOutBtn').addEventListener('click', () => auth.signOut());
+
+    // ========== AUTH STATE CHANGE ==========
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            authCard.classList.add('hidden');
+            profileUI.classList.remove('hidden');
+            
+            const userRef = db.ref('users/' + user.uid);
+            userRef.on('value', snapshot => {
+                const userData = snapshot.val() || {};
+                document.getElementById('welcomeUser').innerText = `Hello, ${userData.displayName || 'User'}!`;
+
+                // Check for diamond member status to show/hide UI elements
+                if (userData.diamondMember) {
+                    editProfileBtn.classList.remove('hidden');
+                    codeEntryCard.classList.add('hidden');
+                } else {
+                    editProfileBtn.classList.add('hidden');
+                    codeEntryCard.classList.remove('hidden');
+                }
+            });
+        } else {
+            authCard.classList.remove('hidden');
+            profileUI.classList.add('hidden');
+        }
+    });
+
+    // ========== CODE UNLOCK LOGIC ==========
+    document.getElementById('unlockBtn').addEventListener('click', () => {
+        const codeInput = document.getElementById('unlockCodeInput');
+        const user = auth.currentUser;
+        if (!user) return alert('You must be logged in!');
+        
+        // Note: The backslash needs to be escaped in a string
+        if (codeInput.value.trim() === 'D1//\\0ND-S70N3') {
+            db.ref('users/' + user.uid).update({ diamondMember: true })
+                .then(() => {
+                    alert('💎 Diamond features unlocked!');
+                    codeInput.value = '';
+                })
+                .catch(err => alert('Error: ' + err.message));
+        } else {
+            alert('Invalid code.');
+        }
+    });
+
+    // ========== CUSTOMIZATION MODAL LOGIC ==========
+    const gradientOptions = [
+        'linear-gradient(to right, #ff8c00, #ff0080)', 'linear-gradient(to right, #4a00e0, #8e2de2)',
+        'linear-gradient(to right, #1d2b64, #f8cdda)', 'linear-gradient(to right, #00c9ff, #92fe9d)',
+        'linear-gradient(to right, #ff7e5f, #feb47b)', 'linear-gradient(to right, #c33764, #1d2671)'
+    ];
+
+    const bannerOptions = [
+        'linear-gradient(135deg, #f6d365 0%, #fda085 100%)', 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)',
+        'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)', 'linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)',
+        'linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)', 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)'
+    ];
+
+    function populatePicker(gridId, options, currentSelection, type) {
+        const grid = document.getElementById(gridId);
+        grid.innerHTML = '';
+        options.forEach(option => {
+            const item = document.createElement('div');
+            item.className = `${type}-item w-20 h-20 rounded-lg cursor-pointer border-4 border-transparent transition-all duration-200`;
+            item.style.background = option;
+            item.dataset.value = option;
+            if (option === currentSelection) {
+                item.classList.add('selected');
+            }
+            item.addEventListener('click', () => {
+                grid.querySelectorAll(`.${type}-item`).forEach(el => el.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+            grid.appendChild(item);
+        });
+    }
+
+    editProfileBtn.addEventListener('click', () => {
+        const user = auth.currentUser;
+        if (!user) return;
+        db.ref('users/' + user.uid).once('value').then(snapshot => {
+            const userData = snapshot.val() || {};
+            populatePicker('gradientSelectionGrid', gradientOptions, userData.gradient, 'gradient');
+            populatePicker('bannerSelectionGrid', bannerOptions, userData.bannerGradient, 'banner');
+            customizationModal.classList.remove('hidden');
+        });
+    });
+
+    document.getElementById('closeCustomizationModal').addEventListener('click', () => {
+        customizationModal.classList.add('hidden');
+    });
+
+    document.getElementById('saveCustomizationBtn').addEventListener('click', () => {
+        const user = auth.currentUser;
+        if (!user) return;
+
+        const selectedGradient = document.querySelector('#gradientSelectionGrid .gradient-item.selected');
+        const selectedBanner = document.querySelector('#bannerSelectionGrid .banner-item.selected');
+
+        const updates = {};
+        if (selectedGradient) updates.gradient = selectedGradient.dataset.value;
+        if (selectedBanner) updates.bannerGradient = selectedBanner.dataset.value;
+
+        if (Object.keys(updates).length > 0) {
+            db.ref('users/' + user.uid).update(updates)
+                .then(() => {
+                    alert('Customization saved!');
+                    customizationModal.classList.add('hidden');
+                })
+                .catch(err => alert('Error: ' + err.message));
+        } else {
+             customizationModal.classList.add('hidden');
+        }
+    });
+
+</script>
+</body>
+</html>
