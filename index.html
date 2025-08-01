@@ -532,7 +532,9 @@
       box-shadow: 0 8px 48px #b2b9cf34, 0 1.5px 8px #8492b21a;
       backdrop-filter: blur(18px) saturate(1.12) brightness(1.13);
       -webkit-backdrop-filter: blur(18px) saturate(1.12) brightness(1.13);
-      padding: 28px 32px;
+      /* Increase top padding to leave space for the pinned top badges.
+         The left/right and bottom paddings remain the same as before. */
+      padding: 64px 32px 28px;
       max-width: 380px;
       width: 90%;
       text-align: center;
@@ -549,6 +551,9 @@
       border-radius: 50%;
       box-shadow: 0 0 25px #7ce4ff66;
       border: 3px solid #aeeaff80;
+      /* Reset top margin since the container’s top padding now handles
+         spacing from the pinned badges. */
+      margin-top: 0;
       margin-bottom: 14px;
     }
     .popup-username {
@@ -558,10 +563,12 @@
       margin-bottom: 14px;
     }
     .popup-badges {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 13px;
+      /* Display badge collection as a responsive grid.  Two columns provide
+         a balanced layout similar to the user’s mockup.  Badges will wrap
+         as needed. */
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
       margin-bottom: 24px;
       width: 100%;
     }
@@ -575,12 +582,13 @@
     .popup-badge {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 11px;
       padding: 11px 20px;
       border-radius: 16px;
       font-weight: 600;
       font-size: 1.09rem;
-      margin: 2px 0;
+      margin: 0;
       box-shadow: 0 2px 14px rgba(0,0,0,0.09);
       background: linear-gradient(45deg,#74c0fc,#4dabf7);
       transition: 
@@ -631,6 +639,77 @@
       text-shadow: 0 2px 9px #c0442188;
       transition: box-shadow 0.22s;
       animation: flame-glow 1.4s infinite alternate;
+    }
+
+    /* Layout container for the top row of the popup card.  We
+       position the container absolutely so the streak and verified
+       badges appear pinned to the top corners of the card rather
+       than flowing in the normal document order.  Padding within
+       the container provides horizontal spacing from the card edges. */
+    .popup-top-badges {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 24px;
+      pointer-events: none; /* allow individual badges to remain clickable */
+    }
+    /* Individual badges remain interactive; override pointer-events to
+       permit hover effects and click handling. */
+    #popupStreak, #popupVerified {
+      pointer-events: auto;
+    }
+    /* Override the bottom margin on the streak badge when pinned to the
+       top of the card; absolute positioning ignores margin-bottom but
+       this ensures consistency across browsers. */
+    #popupStreak {
+      margin-bottom: 0;
+    }
+    /* Verified badge styling for the top row.  Reuses the badge look
+       but with a smaller padding and ensures the content remains on
+       one line. */
+    .popup-verified-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 16px;
+      font-weight: 600;
+      font-size: 1rem;
+      background: linear-gradient(45deg,#2dd4bf,#06b6d4);
+      color: #fff;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      white-space: nowrap;
+      /* Push the verified badge to the right when streak is hidden so it
+         aligns with the right edge of the popup card. */
+      margin-left: auto;
+    }
+    .popup-verified-badge img {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* About Me styling for the user popup.  Provides a subtle glassy
+       container with scroll support for longer descriptions. */
+    .popup-about-me {
+      background: rgba(255,255,255,0.6);
+      backdrop-filter: blur(8px) saturate(1.2);
+      -webkit-backdrop-filter: blur(8px) saturate(1.2);
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-top: 8px;
+      margin-bottom: 20px;
+      font-size: 1.05rem;
+      line-height: 1.33;
+      max-height: 140px;
+      overflow-y: auto;
+      color: #1d2736;
+      text-align: left;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
+      word-break: break-word;
     }
     @keyframes flame-glow {
       from { box-shadow: 0 0 15px 2px #ff990088, 0 0 20px 2px #ff5b4588; }
@@ -774,10 +853,16 @@
   <div id="userPopup">
     <button class="nav-arrow prev-arrow">&#8249;</button>
     <div class="user-popup-card">
+      <!-- Top row badges: streak on the left, verified on the right -->
+      <div id="popupTopBadges" class="popup-top-badges">
+        <div id="popupStreak" class="user-streak" style="display:none;"></div>
+        <div id="popupVerified" class="popup-verified-badge" style="display:none;"></div>
+      </div>
       <img id="popupAvatar" src="" class="popup-avatar">
       <div id="popupUserName" class="popup-username"></div>
-      <div id="popupStreak" class="user-streak" style="display:none;"></div>
       <div id="popupBadges" class="popup-badges">Loading badges...</div>
+      <!-- About Me display for user profiles.  If none is set the script will set a default -->
+      <div id="popupAboutMe" class="popup-about-me">Loading about me...</div>
       <button id="closeUserPopup" class="popup-close-btn">Close</button>
     </div>
     <button class="nav-arrow next-arrow">&#8250;</button>
@@ -1091,9 +1176,20 @@
   function loadUserProfile(uid) {
     const badgesContainer = document.getElementById('popupBadges');
     const streakEl = document.getElementById('popupStreak');
+    // grab the verified and about elements for top badges and about me
+    const verifiedEl = document.getElementById('popupVerified');
+    const aboutEl = document.getElementById('popupAboutMe');
     badgesContainer.innerHTML = 'Loading...';
+    // reset streak and verified display for each profile load
     streakEl.style.display = 'none';
     streakEl.textContent = '';
+    if (verifiedEl) {
+      verifiedEl.style.display = 'none';
+      verifiedEl.innerHTML = '';
+    }
+    if (aboutEl) {
+      aboutEl.textContent = 'Loading about me...';
+    }
     db.ref(`users/${uid}/loginStreak`).once('value').then(snap => {
       const streak = snap.val() || 0;
       if (streak > 0) {
@@ -1108,16 +1204,12 @@
     ]).then(([vsnap, bsnap, csnap]) => {
       badgesContainer.innerHTML = '';
       const isVerified = vsnap.val() || (auth.currentUser && auth.currentUser.uid === uid && auth.currentUser.emailVerified);
-      if (isVerified) {
-        const badge = document.createElement('div');
-        badge.className = 'popup-badge';
-        badge.style.background = 'linear-gradient(45deg,#2dd4bf,#06b6d4)';
-        badge.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png"><span>Verified</span>`;
-        // assign glow colour for verified (teal)
-        badge.style.setProperty('--glow-color', '#2dd4bf');
-        // attach dynamic hover styling
-        attachBadgeHover(badge);
-        badgesContainer.appendChild(badge);
+      // If the user is verified, show the verified badge in the top row instead of inside the badge list
+      if (isVerified && verifiedEl) {
+        verifiedEl.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png" alt="Verified"><span>Verified</span>`;
+        verifiedEl.style.display = 'inline-flex';
+        verifiedEl.style.setProperty('--glow-color', '#2dd4bf');
+        attachBadgeHover(verifiedEl);
       }
       const baseSpecs = {
         offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', gradient: 'linear-gradient(45deg,#ff6b6b,#f06595)' },
@@ -1171,6 +1263,19 @@
       if (!isVerified && !hasCore && Object.keys(custom).length === 0) {
         badgesContainer.textContent = 'No badges yet';
       }
+    });
+
+    // Load the user’s about me text from the database.  A blank or missing
+    // value is replaced with a default placeholder.  Errors are silently
+    // ignored and fallback text is shown instead.
+    db.ref(`users/${uid}/aboutMe`).once('value').then(snap => {
+      const txtRaw = snap && snap.val() ? String(snap.val()) : '';
+      const txt = txtRaw.trim();
+      if (aboutEl) {
+        aboutEl.textContent = txt.length > 0 ? txt : 'No about me yet';
+      }
+    }).catch(() => {
+      if (aboutEl) aboutEl.textContent = 'No about me yet';
     });
   }
 
