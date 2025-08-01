@@ -1795,7 +1795,7 @@ function renderStreakModal(streak){
     // Tooltip / click message for locked badges
     node.onclick = function(){
       if(state === 'locked'){
-        alert('Reach ' + ms.days + ' days to unlock this reward!');
+        kcAlert('Reach ' + ms.days + ' days to unlock this reward!');
       }
     };
     streakProgressNodes.appendChild(node);
