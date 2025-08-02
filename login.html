@@ -21,6 +21,7 @@
    * with a plus icon.
    * - A futuristic upload modal inspired by the provided GIF, utilising 3D
    * transforms and gradients.
+   * - A multi-step wizard for profile customization.
    */
 
   /* ────── Global & Layout ────── */
@@ -344,10 +345,10 @@
     transition:transform .18s,box-shadow .18s;
   }
   .badge-action-buttons button:hover{transform:scale(1.04);box-shadow:0 4px 12px rgba(0,0,0,0.08);}  
-  #badgeNextBtn{background:linear-gradient(90deg,#a3e635,#65a30d);color:#0f2e0f;}  
-  #badgeBackBtn{background:#e2e8f0;color:#1e293b;}  
+  #badgeNextBtn, #profileNextBtn {background:linear-gradient(90deg,#a3e635,#65a30d);color:#0f2e0f;}  
+  #badgeBackBtn, #profileBackBtn {background:#e2e8f0;color:#1e293b;}  
   #badgeCancelBtn{background:#f1f5f9;color:#1e293b;}  
-  #saveBadgeFancyBtn{
+  #saveBadgeFancyBtn, #saveCustomizationBtn {
     background:linear-gradient(90deg,#ffd54f,#ffb300);
     color:#1f2937;
     display:none;
@@ -1465,7 +1466,7 @@
 #codeMsg.success { color: #16a34a; }
 #codeMsg.error { color: #dc2626; }
 
-/* ======== TASK 2: Profile Customization Modal ======== */
+/* ======== TASK 2: Profile Customization Wizard ======== */
 #profileCustomizationModal .carousel-content {
     background: #f8fafc;
     color: #0f172a;
@@ -1473,9 +1474,67 @@
     max-width: 95vw;
     animation: code-modal-pop-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
-.customization-section {
-    margin-bottom: 24px;
+#profileCustomizationModal .badge-modal-header {
+    font-size: 1.5rem;
+    background: linear-gradient(90deg,#a855f7,#3b82f6, #ec4899);
+    background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:badgeShimmer 5s linear infinite;
 }
+
+/* Live Preview Area */
+.profile-preview-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: #e2e8f0;
+    border-radius: 16px;
+}
+.card-preview {
+    width: 250px;
+    min-height: 150px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    padding: 18px;
+    background: linear-gradient(135deg, #fff 65%, #e9ecf4 100%);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s ease;
+}
+.profile-banner-preview {
+    width: calc(100% + 36px);
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 20px 20px 0 0;
+    margin: -18px -18px 8px -18px;
+    background-color: #cbd5e1;
+    transition: background-image 0.3s ease-in-out;
+}
+.avatar-preview {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin: -32px auto 8px auto;
+    position: relative;
+    z-index: 2;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: block;
+}
+.welcome-preview {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    color: #475569;
+}
+.username-preview {
+    color: #1992d4;
+    transition: color 0.3s ease;
+}
+
 .customization-section h4 {
     font-size: 1.1rem;
     font-weight: 600;
@@ -1489,15 +1548,15 @@
 .banner-grid, .gradient-grid, .color-grid {
     display: grid;
     gap: 12px;
-    max-height: 250px;
+    max-height: 180px;
     overflow-y: auto;
     padding: 8px;
     background: #e2e8f0;
     border-radius: 12px;
 }
-.banner-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-.gradient-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
-.color-grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
+.banner-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+.gradient-grid { grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); }
+.color-grid { grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); }
 
 
 .banner-item, .gradient-item, .color-item {
@@ -1507,11 +1566,11 @@
     transition: border-color 0.2s, transform 0.2s;
     overflow: hidden;
 }
-.banner-item, .gradient-item { aspect-ratio: 16 / 9; }
+.banner-item { aspect-ratio: 16 / 9; }
 .gradient-item { aspect-ratio: 1 / 1; }
 .color-item {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
 }
 
@@ -1545,23 +1604,6 @@
 #suggestColorBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-}
-
-#saveCustomizationBtn {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    background: linear-gradient(45deg, #6366f1, #8b5cf6);
-    color: white;
-    font-weight: 700;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-#saveCustomizationBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
 }
 
 /* New CSS for the profile banner */
@@ -1809,37 +1851,55 @@
     </div>
   </div>
 
-  <!-- Profile Customization Modal (Task 2) -->
+  <!-- Profile Customization Modal (Wizard) -->
   <div id="profileCustomizationModal" class="apple-modal">
-    <div class="carousel-content">
+    <div class="carousel-content" style="width: 420px; max-width: 95vw;">
         <button class="close-btn" id="closeCustomizationModal">&times;</button>
-        <h3>Customize Profile</h3>
-        
-        <div class="customization-section">
+        <div class="badge-modal-header">💎 Diamond Profile Customizer 💎</div>
+
+        <!-- Progress Bar -->
+        <div id="profileCustomizationProgressBar" class="badge-progress-bar">
+            <div class="badge-step active" data-step="1">Banner</div>
+            <div class="badge-step" data-step="2">Theme</div>
+            <div class="badge-step" data-step="3">Color</div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="profile-preview-area">
+             <div id="cardPreview" class="card-preview">
+                 <div id="profileBannerPreview" class="profile-banner-preview"></div>
+                 <img id="avatarPreview" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png" class="avatar-preview" alt="Avatar Preview"/>
+                 <div class="welcome-preview">
+                     👋 <span id="usernamePreview" class="username-preview">Username</span>
+                 </div>
+             </div>
+        </div>
+
+        <!-- Step Content -->
+        <div id="customizationStep1" class="badge-step-content active">
             <h4>Profile Banner</h4>
-            <div id="bannerSelectionGrid" class="banner-grid">
-                <!-- Banner options will be populated by JS -->
-            </div>
+            <div id="bannerSelectionGrid" class="banner-grid"></div>
         </div>
 
-        <div class="customization-section">
+        <div id="customizationStep2" class="badge-step-content">
             <h4>Profile Card Theme</h4>
-            <div id="gradientSelectionGrid" class="gradient-grid">
-                <!-- Gradient options will be populated by JS -->
-            </div>
+            <div id="gradientSelectionGrid" class="gradient-grid"></div>
         </div>
 
-        <div class="customization-section">
-            <h4>
+        <div id="customizationStep3" class="badge-step-content">
+             <h4>
                 <span>Username Color</span>
                 <button id="suggestColorBtn" title="Suggest colors with AI">✨ Suggest with AI</button>
             </h4>
-            <div id="nameColorSelectionGrid" class="color-grid">
-                <!-- Color swatches will be populated by JS -->
-            </div>
+            <div id="nameColorSelectionGrid" class="color-grid"></div>
         </div>
 
-        <button id="saveCustomizationBtn">Save Customization</button>
+        <!-- Action Buttons -->
+        <div class="badge-action-buttons">
+            <button id="profileBackBtn">Back</button>
+            <button id="profileNextBtn">Next</button>
+            <button id="saveCustomizationBtn">Save Profile</button>
+        </div>
     </div>
   </div>
 
@@ -2002,6 +2062,8 @@ const nameColorSelectionGrid = document.getElementById('nameColorSelectionGrid')
 const saveCustomizationBtn = document.getElementById('saveCustomizationBtn');
 const profileBanner = document.getElementById('profileBanner');
 const suggestColorBtn = document.getElementById('suggestColorBtn');
+const profileNextBtn = document.getElementById('profileNextBtn');
+const profileBackBtn = document.getElementById('profileBackBtn');
 
 
 // ========== KC ALERT ==========
@@ -3118,7 +3180,9 @@ document.addEventListener('DOMContentLoaded', function(){
   };
 });
 
-// ========== PROFILE CUSTOMIZATION LOGIC ==========
+// ========== PROFILE CUSTOMIZATION WIZARD LOGIC ==========
+let currentProfileStep = 1;
+
 const bannerOptions = [
     'https://kevinmidnight7-sudo.github.io/messageboardkc/banner1.png',
     'https://kevinmidnight7-sudo.github.io/messageboardkc/banner2.jpg',
@@ -3129,8 +3193,6 @@ const bannerOptions = [
     'https://kevinmidnight7-sudo.github.io/messageboardkc/banner7.jpeg',
     'https://kevinmidnight7-sudo.github.io/messageboardkc/banner8.jpg',
     'https://kevinmidnight7-sudo.github.io/messageboardkc/banner9.jpg',
-
-
 ];
 const gradientOptions = [
      'linear-gradient(135deg, rgb(246, 211, 101) 0%, rgb(253, 160, 133) 100%)', // Warm golden sunset
@@ -3153,7 +3215,6 @@ const gradientOptions = [
   'linear-gradient(135deg, rgb(216, 180, 254) 0%, rgb(134, 182, 246) 100%)', // Lavender blue
   'linear-gradient(135deg, rgb(247, 151, 30) 0%, rgb(255, 210, 63) 100%)',   // Bright orange
   'linear-gradient(135deg, rgb(221, 214, 243) 0%, rgb(250, 172, 168) 100%)', // Soft lavender & rose
-  // Vibrant and neon
   'linear-gradient(135deg, rgb(0, 210, 255) 0%, rgb(58, 123, 213) 100%)',    // Electric blue
   'linear-gradient(135deg, rgb(255, 0, 204) 0%, rgb(51, 0, 102) 100%)',      // Neon pink & purple
   'linear-gradient(135deg, rgb(72, 85, 99) 0%, rgb(41, 50, 60) 100%)',       // Dark slate
@@ -3166,21 +3227,44 @@ const gradientOptions = [
   'linear-gradient(135deg, rgb(67, 198, 172) 0%, rgb(248, 255, 174) 100%)'  
 ];
 const defaultNameColorOptions = [
- 
-  '#18181b', // Very dark grey (universal text)
-  '#f3f4f6', // Very light grey (contrast on dark backgrounds)
-  '#ffffff', // Pure white (classic on dark)
-  '#f59e42', // Vibrant orange (warm accent)
-  '#f43f5e', // Vivid pink (playful accent)
-  '#fbbf24', // Warm yellow (sunny highlight)
-  '#14b8a6', // Teal (modern cool accent)
-  '#6366f1', // Indigo blue (rich accent)
-  '#38bdf8', // Soft blue (friendly, readable)
-  '#84cc16', // Lime green (fresh pop)
-  '#ef4444', // Bright red (attention)
-  '#3f3f46'  // Slate grey (secondary text)
-
+  '#18181b', '#f3f4f6', '#ffffff', '#f59e42', '#f43f5e', '#fbbf24', '#14b8a6', 
+  '#6366f1', '#38bdf8', '#84cc16', '#ef4444', '#3f3f46'
 ];
+
+function updateProfilePreview() {
+    const bannerPreview = document.getElementById('profileBannerPreview');
+    const cardPreview = document.getElementById('cardPreview');
+    const usernamePreview = document.getElementById('usernamePreview');
+
+    const selectedBannerEl = bannerSelectionGrid.querySelector('.banner-item.selected img');
+    const selectedGradientEl = gradientSelectionGrid.querySelector('.gradient-item.selected');
+    const selectedColorEl = nameColorSelectionGrid.querySelector('.color-item.selected');
+
+    if (bannerPreview) {
+        bannerPreview.style.backgroundImage = selectedBannerEl ? `url('${selectedBannerEl.src}')` : 'none';
+    }
+    if (cardPreview) {
+        cardPreview.style.background = selectedGradientEl ? selectedGradientEl.style.background : 'linear-gradient(135deg, #fff 65%, #e9ecf4 100%)';
+    }
+    if (usernamePreview) {
+        usernamePreview.style.color = selectedColorEl ? selectedColorEl.style.backgroundColor : '#1992d4';
+    }
+}
+
+function showProfileStep(step) {
+    currentProfileStep = step;
+    document.querySelectorAll('#profileCustomizationModal .badge-step-content').forEach(el => el.classList.remove('active'));
+    document.querySelector(`#customizationStep${step}`).classList.add('active');
+
+    const steps = document.querySelectorAll('#profileCustomizationProgressBar .badge-step');
+    steps.forEach((el, idx) => {
+        el.classList.toggle('active', idx < step);
+    });
+
+    profileBackBtn.style.display = (step === 1) ? 'none' : 'inline-block';
+    profileNextBtn.style.display = (step === 3) ? 'none' : 'inline-block';
+    saveCustomizationBtn.style.display = (step === 3) ? 'inline-block' : 'none';
+}
 
 function updateColorSwatches(colors, currentNameColor) {
     nameColorSelectionGrid.innerHTML = '';
@@ -3192,19 +3276,13 @@ function updateColorSwatches(colors, currentNameColor) {
         item.onclick = () => {
             nameColorSelectionGrid.querySelectorAll('.color-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
-            // Live preview the name color
-            const usernameText = document.querySelector('#welcomeUser .username-text');
-            if (usernameText) {
-                usernameText.style.color = color;
-            }
+            updateProfilePreview();
         };
         nameColorSelectionGrid.appendChild(item);
     });
 }
 
-
 function populateCustomizationModal(current) {
-    // Banners
     bannerSelectionGrid.innerHTML = '';
     bannerOptions.forEach(url => {
         const item = document.createElement('div');
@@ -3214,12 +3292,11 @@ function populateCustomizationModal(current) {
         item.onclick = () => {
             bannerSelectionGrid.querySelectorAll('.banner-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
-            if (profileBanner) profileBanner.style.backgroundImage = `url('${url}')`;
+            updateProfilePreview();
         };
         bannerSelectionGrid.appendChild(item);
     });
 
-    // Gradients
     gradientSelectionGrid.innerHTML = '';
     gradientOptions.forEach(grad => {
         const item = document.createElement('div');
@@ -3229,27 +3306,35 @@ function populateCustomizationModal(current) {
         item.onclick = () => {
             gradientSelectionGrid.querySelectorAll('.gradient-item').forEach(el => el.classList.remove('selected'));
             item.classList.add('selected');
-            document.getElementById('profileCard').style.background = grad;
+            updateProfilePreview();
         };
         gradientSelectionGrid.appendChild(item);
     });
     
-    // Name Colors
     updateColorSwatches(defaultNameColorOptions, current.nameColor);
 }
 
 editProfileBtn.onclick = () => {
     const user = auth.currentUser;
     if (!user) return;
-    db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
-        const current = snap.val() || {};
+    db.ref(`users/${user.uid}`).once('value').then(snap => {
+        const userData = snap.val() || {};
+        const current = userData.profileCustomization || {};
+        
+        // Populate preview with current user data
+        document.getElementById('avatarPreview').src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+        document.getElementById('usernamePreview').textContent = userData.username || 'Username';
+
         populateCustomizationModal(current);
+        updateProfilePreview();
+        showProfileStep(1);
         profileCustomizationModal.classList.add('open');
     });
 };
 
 closeCustomizationModal.onclick = () => {
     profileCustomizationModal.classList.remove('open');
+    // Restore the actual profile view from DB, in case user cancelled changes
     const user = auth.currentUser;
     if(user) {
         db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
@@ -3272,6 +3357,9 @@ profileCustomizationModal.addEventListener('mousedown', e => {
     }
 });
 
+profileNextBtn.onclick = () => showProfileStep(currentProfileStep + 1);
+profileBackBtn.onclick = () => showProfileStep(currentProfileStep - 1);
+
 saveCustomizationBtn.onclick = () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -3289,6 +3377,15 @@ saveCustomizationBtn.onclick = () => {
     db.ref(`users/${user.uid}/profileCustomization`).update(updates).then(() => {
         kcAlert('Profile customization saved!');
         profileCustomizationModal.classList.remove('open');
+        // The onAuthStateChanged listener will re-apply the saved styles automatically on next load,
+        // but we can apply them immediately for a better UX.
+        if(updates.banner) profileBanner.style.backgroundImage = `url('${updates.banner}')`;
+        else profileBanner.style.backgroundImage = 'none';
+        if(updates.gradient) document.getElementById('profileCard').style.background = updates.gradient;
+        else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+        const usernameText = document.querySelector('#welcomeUser .username-text');
+        if(usernameText) usernameText.style.color = updates.nameColor || '#1992d4';
+
     }).catch(err => {
         kcAlert('Error saving: ' + err.message);
     });
@@ -3351,7 +3448,6 @@ suggestColorBtn.onclick = async () => {
         suggestColorBtn.textContent = '✨ Suggest with AI';
     }
 };
-
 
   </script>
 </body>
