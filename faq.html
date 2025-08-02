@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KC Events - FAQ Carousel</title>
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --background-start: #1a1611;
+      --background-end: #0a0908;
+      --glass-bg: rgba(50, 42, 30, 0.5); 
+      --glass-border: rgba(255, 215, 0, 0.2);
+      --text-primary: #fefae0;
+      --text-secondary: #faedcd;
+      --accent-glow: rgba(255, 215, 0, 0.25); /* Reduced glow */
+      --accent-light: #FFD700; /* Gold */
+      --scrollbar-thumb: rgba(255, 215, 0, 0.3);
+      --scrollbar-thumb-hover: rgba(255, 215, 0, 0.5);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Poppins', sans-serif;
+      height: 100%;
+      background-color: transparent; /* For embedding */
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .faq-section {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 0;
+      box-sizing: border-box;
+      background-image:transparent;
+      position: relative; /* For alert positioning */
+    }
+    
+    .faq-title {
+      font-size: 2.8rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 1rem;
+      letter-spacing: 0.03em;
+      color: var(--text-primary);
+      /* Enhanced 3D Text Effect */
+      text-shadow: 0px 1px 0px rgba(255, 215, 0, 0.3), 0px 2px 0px rgba(0,0,0,0.7), 0px 6px 10px rgba(0,0,0,0.6);
+    }
+
+    .swiper-container {
+      width: 100%;
+      height: 70%;
+      max-height: 600px;
+    }
+
+    .swiper-slide {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60%;
+      max-width: 600px;
+      transition: transform 0.4s ease, opacity 0.4s ease;
+      transform: scale(0.8);
+      opacity: 0.5;
+    }
+    
+    .swiper-slide-active {
+        transform: scale(1);
+        opacity: 1;
+    }
+    
+    .faq-item {
+      width: 100%;
+      max-height: 95%;
+      background: var(--glass-bg);
+      border-radius: 32px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(25px) saturate(180%);
+      -webkit-backdrop-filter: blur(25px) saturate(180%);
+      transition: box-shadow 0.4s ease;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .swiper-slide-active .faq-item {
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 25px var(--accent-glow);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 1.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text-primary);
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+      flex-shrink: 0;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    }
+
+    .faq-question:hover {
+      background: rgba(255, 215, 0, 0.05);
+    }
+
+    .faq-question .icon {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      margin-left: 1rem;
+      transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+      stroke: var(--accent-light);
+    }
+    
+    .faq-item.active .faq-question .icon {
+        transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.6s ease-in-out;
+    }
+    
+    .faq-answer-content {
+      overflow-y: auto;
+      max-height: 350px;
+      padding: 0 2rem 2rem 2rem;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      font-family: 'Poppins', sans-serif;
+    }
+    
+    /* Custom Scrollbar for Answer */
+    .faq-answer-content::-webkit-scrollbar {
+        width: 8px;
+    }
+    .faq-answer-content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .faq-answer-content::-webkit-scrollbar-thumb {
+        background-color: var(--scrollbar-thumb);
+        border-radius: 10px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+    }
+    .faq-answer-content::-webkit-scrollbar-thumb:hover {
+        background-color: var(--scrollbar-thumb-hover);
+    }
+    
+    .faq-answer-content p, .faq-answer-content ul {
+        margin: 0 0 1rem 0;
+    }
+    
+    .faq-answer-content p:last-child { margin-bottom: 0; }
+    .faq-answer-content ul { padding-left: 20px; }
+    
+    .faq-answer-content a {
+        color: var(--accent-light);
+        text-decoration: none;
+        font-weight: 600;
+        transition: text-shadow 0.3s;
+    }
+    
+    .faq-answer-content a:hover {
+        text-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    .swiper-button-next, .swiper-button-prev {
+      color: var(--accent-light);
+      transform: scale(0.8);
+      filter: drop-shadow(0 0 8px var(--accent-glow));
+    }
+    
+    .swiper-pagination-bullet {
+        background: var(--accent-light);
+        opacity: 0.6;
+    }
+    
+    .swiper-pagination-bullet-active {
+        opacity: 1;
+        box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    /* Privacy Policy Button */
+    #privacy-policy-btn {
+        margin-top: 2rem;
+        padding: 12px 28px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 32px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+    }
+
+    #privacy-policy-btn:hover {
+        background: rgba(255, 215, 0, 0.1);
+        box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    /* Privacy Policy Overlay */
+    .privacy-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(10, 9, 8, 0.7);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.4s ease;
+    }
+
+    .privacy-overlay.visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .privacy-content {
+        background: var(--glass-bg);
+        border-radius: 32px;
+        border: 1px solid var(--glass-border);
+        width: 90%;
+        max-width: 700px;
+        max-height: 80vh;
+        padding: 2.5rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 25px var(--accent-glow);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        transform: scale(0.95);
+        transition: transform 0.4s ease;
+    }
+    
+    .privacy-overlay.visible .privacy-content {
+        transform: scale(1);
+    }
+
+    .privacy-content h2 {
+        text-align: center;
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        text-shadow: 0px 1px 0px rgba(255, 215, 0, 0.3), 0px 2px 0px rgba(0,0,0,0.7), 0px 6px 10px rgba(0,0,0,0.6);
+    }
+
+    .privacy-text {
+        overflow-y: auto;
+        padding-right: 1rem; /* space for scrollbar */
+    }
+    
+    .privacy-text h3 {
+        color: var(--accent-light);
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 0.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .privacy-text p, .privacy-text li {
+        color: var(--text-secondary);
+        line-height: 1.7;
+    }
+
+    .privacy-close-btn {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-size: 2rem;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.3s, transform 0.3s;
+    }
+    .privacy-close-btn:hover {
+        opacity: 1;
+        transform: rotate(90deg);
+    }
+
+    /* UI Alert */
+    .ui-alert {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        padding: 12px 28px;
+        font-family: 'Poppins', sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        border-radius: 32px;
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        box-shadow: 0 0 20px var(--accent-glow);
+        z-index: 2000;
+        opacity: 0;
+        transition: transform 0.4s ease, opacity 0.4s ease;
+        pointer-events: none;
+    }
+
+    .ui-alert.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+
+    @media (max-width: 768px) {
+        .swiper-slide {
+            width: 90%;
+            transform: scale(0.85);
+        }
+        .faq-title {
+            font-size: 2rem;
+        }
+        .faq-question {
+            font-size: 1rem;
+            padding: 1.25rem 1.5rem;
+        }
+        .faq-answer-content {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+        }
+        .privacy-content {
+            padding: 1.5rem;
+        }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="faq-section">
+    <h1 class="faq-title">Frequently Asked Questions</h1>
+    
+    <div class="swiper-container">
+      <div class="swiper-wrapper">
+        
+        <div class="swiper-slide">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How do I win the Overall Winner title?</span>
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-content">
+                <p>Winning the Overall Winner title is all about skill, consistency, and fair play. To be crowned as the Overall Winner at the end of a KC Event:</p>
+                <ul>
+                  <li><strong>Play by the rules:</strong> You must not have broken any event rules throughout the game. Any form of cheating, exploiting, or breaking the event guidelines will automatically disqualify you.</li>
+                  <li><strong>Be at the top when it counts:</strong> You must be #1 on the leaderboard when the game ends. It’s not just about leading early on — you need to maintain your position all the way to the finish.</li>
+                  <li><strong>Play the full event:</strong> You need to have participated for the entire duration of the event. If you join halfway through, even if you climb to the top of the leaderboard, you won’t be eligible for the Overall Winner title.</li>
+                </ul>
+                <p>In short, it’s about dedication and fair competition — stay active, follow the rules, and secure your position until the very end to earn the crown.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Do I need a KC Events account to win?</span>
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>Yes, you must have a KC Events account to be eligible for titles like Best Offence or Best Defence. This is to ensure:</p>
+                  <ul>
+                    <li><strong>Fair tracking of wins:</strong> Having an account allows us to accurately track your achievements and maintain a transparent system for awarding titles.</li>
+                    <li><strong>Preventing unfair voting:</strong> It prevents people from creating multiple accounts or bots to manipulate the votes. This ensures that the awards go to players who truly earned them, based on real performance and votes from genuine participants.</li>
+                  </ul>
+                  <p>Creating an account only takes a minute, and it’s worth it — not only do you unlock eligibility for titles, but you also gain access to streak rewards, badges, and other personalized features on the site.</p>
+                </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="swiper-slide">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How can I create my own event?</span>
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>Hosting your own KC Event is a great way to engage with the community and put your creativity to work. We’ve made it simple by providing a detailed Event Guide, which you can find here: <a href="https://kcevents.uk/#eventguides" target="_blank">Event Guides</a>.</p>
+                  <p>In this guide, you’ll learn:</p>
+                  <ul>
+                    <li>How to structure your event: From choosing the game mode to setting rules and objectives.</li>
+                    <li>Tips for hosting: Best practices to make your event enjoyable and fair for all participants.</li>
+                    <li>How to promote it: Ways to get more players involved and make your event a success.</li>
+                  </ul>
+                  <p>If you can’t find what you’re looking for in the guide or need additional support, you can always leave a message on our Message Board, where the community and admins are happy to help.</p>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>What counts as a team win?</span>
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>A team win happens when multiple players from the same team perform well together in a KC Event. Here’s how it works:</p>
+                  <ul>
+                    <li><strong>In small team events:</strong> If two or more teammates finish consecutively on the leaderboard (for example, #1 and #2 or #2 and #3), they can all claim the Overall Winner title.</li>
+                    <li><strong>In larger team events (like Red vs Blue):</strong> If one team dominates the leaderboard (e.g., a majority of Red Team players make it to the top spots), that team earns a team victory. However, Overall Winner is still limited to players who hold those consecutive top positions (e.g., #1, #2, etc.).</li>
+                  </ul>
+                  <p>This system rewards both individual excellence and team coordination. Whether you’re playing solo or with friends, aiming for those top positions is key.</p>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>How do streaks work on KC Events?</span>
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>Streaks are our way of rewarding players who stay active and connected with the KC community. Here’s how they work:</p>
+                  <ul>
+                    <li>You earn streaks by logging in every day. The longer your streak, the more rewards you unlock.</li>
+                    <li><strong>At 10 days:</strong> You unlock a custom profile picture, letting you personalize your profile in a unique way.</li>
+                    <li><strong>At 50 days:</strong> You gain the ability to create a custom badge and access the Diamond Profile Customizer — a feature normally reserved for Diamond members of the community.</li>
+                    <li><strong>At 100 days:</strong> You unlock unlimited custom badge creation, giving you even more ways to express yourself, with more features planned for the future.</li>
+                  </ul>
+                  <p>Streaks are a fun way to celebrate dedication. They’re designed not only to keep you engaged but also to give back to those who actively contribute to the community over time.</p>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="swiper-slide">
+          <div class="faq-item">
+            <button class="faq-question">
+              <span>Where can I get support?</span>
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </button>
+            <div class="faq-answer">
+                <div class="faq-answer-content">
+                  <p>If your question wasn’t covered in this FAQ, we’ve got multiple ways for you to get support:</p>
+                  <ul>
+                    <li><strong>Message Board:</strong> Post your question, and either an admin or another community member will help you out.</li>
+                    <li><strong>Discord:</strong> Join our community chat at <a href="https://discord.gg/slitherkc" target="_blank">discord.gg/slitherkc</a> where you can connect with admins and fellow players directly for real-time assistance.</li>
+                  </ul>
+                  <p>We’re committed to making KC Events a welcoming, helpful place, so don’t hesitate to reach out!</p>
+                </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <!-- Add Pagination -->
+      <div class="swiper-pagination"></div>
+      <!-- Add Navigation -->
+      <div class="swiper-button-next"></div>
+      <div class="swiper-button-prev"></div>
+    </div>
+
+    <button id="privacy-policy-btn">Privacy Policy</button>
+    <div id="ui-alert" class="ui-alert"></div>
+  </div>
+
+  <div class="privacy-overlay" id="privacy-overlay">
+    <div class="privacy-content">
+        <button class="privacy-close-btn" id="privacy-close-btn">&times;</button>
+        <h2>Privacy Policy</h2>
+        <div class="privacy-text">
+            <h3>1. Information We Collect</h3>
+            <p>When you use KC Events, we may collect:</p>
+            <ul>
+                <li><strong>Account details:</strong> Username, email address, and profile settings.</li>
+                <li><strong>Gameplay data:</strong> Leaderboard positions, votes, badges, and streaks.</li>
+                <li><strong>Device data:</strong> Browser type, IP address, and basic technical info (for site security and performance).</li>
+                <li><strong>Messages and interactions:</strong> Posts you make on our Message Board or during events.</li>
+            </ul>
+            <h3>2. How We Use Your Information</h3>
+            <p>We use your information to:</p>
+            <ul>
+                <li>Run events: Track scores, award badges, and manage leaderboards.</li>
+                <li>Personalize your experience: Display your profile, custom badges, and streaks.</li>
+                <li>Ensure fair play: Prevent duplicate voting or automated/botted accounts.</li>
+                <li>Improve our services: Analyze how the site is used and fix issues.</li>
+            </ul>
+            <p>We do not sell your personal data to third parties.</p>
+            <h3>3. Sharing Your Information</h3>
+            <p>We may share limited data:</p>
+            <ul>
+                <li><strong>With service providers:</strong> For example, we use Firebase for authentication and database management.</li>
+                <li><em>If required by law:</em> Only when legally necessary.</li>
+            </ul>
+            <h3>4. Cookies & Analytics</h3>
+            <p>We may use cookies and analytics tools (e.g., Google Analytics) to understand how our site is used and improve your experience.</p>
+            <h3>5. Your Rights</h3>
+            <p>You have the right to:</p>
+            <ul>
+                <li><strong>Access your data:</strong> Ask what information we hold about you.</li>
+                <li><strong>Edit or delete your account:</strong> Contact us to make changes or request removal.</li>
+            </ul>
+            <p>You will always be allowed to also delete your account through the profile settings.</p>
+            <h3>6. Security</h3>
+            <p>We take steps to keep your data safe, using encrypted storage and secure authentication.</p>
+            <h3>7. Changes to This Policy</h3>
+            <p>We may update this policy if we add new features or legal requirements. Any changes will be posted here with a new effective date.</p>
+            <h3>8. Contact Us</h3>
+            <p>Questions? Contact us through our Discord or through the KC Events Message Board.</p>
+        </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const swiper = new Swiper('.swiper-container', {
+        effect: 'slide',
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: 'auto',
+        loop: true,
+        pagination: {
+          el: '.swiper-pagination',
+          clickable: true,
+        },
+        navigation: {
+          nextEl: '.swiper-button-next',
+          prevEl: '.swiper-button-prev',
+        },
+        on: {
+          slideChange: function () {
+            // Close any open accordions when slide changes
+            document.querySelectorAll('.faq-item.active').forEach(activeItem => {
+              const answer = activeItem.querySelector('.faq-answer');
+              activeItem.classList.remove('active');
+              answer.style.maxHeight = null;
+            });
+          },
+        },
+      });
+
+      const faqItems = document.querySelectorAll('.faq-item');
+      faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        const answer = item.querySelector('.faq-answer');
+        const answerContent = answer.querySelector('.faq-answer-content');
+
+        question.addEventListener('click', () => {
+          // Check if the clicked item is in the active slide
+          if (!item.closest('.swiper-slide').classList.contains('swiper-slide-active')) {
+              return; // Do nothing if it's not the center slide
+          }
+
+          const isActive = item.classList.contains('active');
+          
+          // Close all other items first
+          faqItems.forEach(otherItem => {
+              if (otherItem !== item && otherItem.classList.contains('active')) {
+                  otherItem.classList.remove('active');
+                  otherItem.querySelector('.faq-answer').style.maxHeight = null;
+              }
+          });
+
+          // Toggle the clicked item
+          if (isActive) {
+            item.classList.remove('active');
+            answer.style.maxHeight = null;
+          } else {
+            item.classList.add('active');
+            answer.style.maxHeight = answerContent.scrollHeight + 'px';
+          }
+        });
+      });
+
+      // Privacy Policy Logic
+      const privacyBtn = document.getElementById('privacy-policy-btn');
+      const privacyOverlay = document.getElementById('privacy-overlay');
+      const closePrivacyBtn = document.getElementById('privacy-close-btn');
+      const uiAlert = document.getElementById('ui-alert');
+      let alertTimeout;
+
+      const kcAlert = (message) => {
+          if (alertTimeout) {
+              clearTimeout(alertTimeout);
+          }
+          uiAlert.textContent = message;
+          uiAlert.classList.add('visible');
+          alertTimeout = setTimeout(() => {
+              uiAlert.classList.remove('visible');
+          }, 3000);
+      };
+
+      privacyBtn.addEventListener('click', () => {
+          const isFaqOpen = document.querySelector('.faq-item.active');
+          if (isFaqOpen) {
+              kcAlert('Close the question first!');
+          } else {
+              privacyOverlay.classList.add('visible');
+          }
+      });
+
+      closePrivacyBtn.addEventListener('click', () => {
+          privacyOverlay.classList.remove('visible');
+      });
+
+      privacyOverlay.addEventListener('click', (e) => {
+          if (e.target === privacyOverlay) {
+              privacyOverlay.classList.remove('visible');
+          }
+      });
+    });
+  </script>
+
+</body>
+</html>
