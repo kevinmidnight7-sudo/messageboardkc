@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Event Board w/ Sort & Reactions</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <title>KC Event Board w/ Discord UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    /* === LEFT PANEL: FROM NEW CSS (emoji/gradient picker and auth panel) === */
+    /* === Global & Left Panel Styles === */
     body {
       margin: 0; padding: 0;
       width: 100vw; height: 100vh;
@@ -63,15 +63,6 @@
       letter-spacing: 0.02em;
       color: #2d3444;
     }
-    /* Pickers (no bg/box-shadow here) */
-    #emojiPicker, #gradientPicker {
-      width: 99%;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
     #emojiPicker p, #gradientPicker p {
       margin: 0 0 1.0em 0;
       font-weight: 600;
@@ -110,7 +101,6 @@
       box-shadow: 0 6px 24px #b4e6fd53;
       transform: scale(1.05);
     }
-    /* GRADIENT PICKER */
     #gradientPicker .grad-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -139,8 +129,6 @@
       box-shadow: 0 8px 22px #e1fadc55;
       transform: scale(1.05);
     }
-
-    /* --- Message input/buttons (identical in both) --- */
     #messageInput {
       width: 100%;
       border-radius: 12px;
@@ -202,8 +190,6 @@
       box-shadow: 0 2px 12px #f89ca666;
       transform: translateY(-2px) scale(1.04);
     }
-
-    /* ----------- Auth (login/register) form styling ----------- */
     #registerForm, #loginForm {
       display: flex;
       flex-direction: column;
@@ -246,18 +232,16 @@
       position: relative;
       overflow-y: auto;
     }
-
-    /* === RIGHT PANEL / MESSAGE BOARD: FROM OLD CSS (card look, gradients, buttons) === */
     .avatarImg {
       border-radius: 50%;
       width: 40px;
       height: 40px;
       object-fit: cover;
+      cursor: pointer;
     }
     .message {
       align-items: center;
     }
-
     #sortControls {
       display: flex;
       justify-content: flex-end;
@@ -281,15 +265,12 @@
     #sortControls select:focus {
       box-shadow: 0 2px 10px #aad8ff50;
     }
-
     #msgList {
       list-style: none;
       padding: 0;
       margin: 0;
       flex: 1;
     }
-
-    /* --- Message Card --- */
     .message, .reply {
       display: flex;
       gap: 0.78rem;
@@ -323,16 +304,9 @@
       font-weight: 700;
       cursor: pointer;
       font-size: 1.09em;
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
       transition: text-shadow .11s, color .11s;
-      text-shadow: 0 1px 5px #e8eefb18;
       letter-spacing: 0.01em;
     }
-    .username[style*="background-image:"] { color: transparent !important; }
-    .username:not([style*="background-image"]) { color: #222 !important; }
-
     .timestamp {
       display: block;
       font-size: .83rem;
@@ -368,8 +342,6 @@
       box-shadow: 0 2px 10px #e7ebfb44;
       transform: translateY(-2px) scale(1.06);
     }
-
-    /* Reaction Bar */
     .reactions {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
@@ -401,8 +373,6 @@
       background: #d5eafd;
       color: #38a1db;
     }
-
-    /* Reply panel (frosted style) */
     .reply-row {
       width: 94%; margin: .8rem auto 0.5rem auto;
       display: flex; align-items: center; justify-content: flex-start;
@@ -515,208 +485,163 @@
       box-shadow: 0 2px 18px #8adfdc44;
     }
 
-    /* ===== USER POPUP STYLES ===== */
+    /* ===== NEW DISCORD-INSPIRED USER POPUP STYLES ===== */
     #userPopup {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.55);
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 10000;
       font-family: 'Poppins', sans-serif;
+      animation: fadeInBg 0.3s ease;
     }
+    @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
     .user-popup-card {
-      background: rgba(255,255,255,0.68);
-      border-radius: 22px;
-      box-shadow: 0 8px 48px #b2b9cf34, 0 1.5px 8px #8492b21a;
-      backdrop-filter: blur(18px) saturate(1.12) brightness(1.13);
-      -webkit-backdrop-filter: blur(18px) saturate(1.12) brightness(1.13);
-      /* Increase top padding to leave space for the pinned top badges.
-         The left/right and bottom paddings remain the same as before. */
-      padding: 64px 32px 28px;
-      max-width: 380px;
-      width: 90%;
-      text-align: center;
-      animation: popupIn 0.2s ease-out;
+      width: 360px;
+      max-width: 95vw;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
       position: relative;
-      border: 1.3px solid #e0e5f0;
-      transition: box-shadow 0.18s, transform 0.16s;
+      background: #f1f3f5; /* Default background */
     }
-    @keyframes popupIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .popup-banner {
+      height: 120px;
+      background-color: #ced4da; /* Default banner color */
+      background-size: cover;
+      background-position: center;
+    }
+
+    .popup-header {
+      padding: 0 16px;
+      position: relative;
+      height: 48px;
+    }
 
     .popup-avatar {
-      width: 90px;
-      height: 90px;
+      width: 96px;
+      height: 96px;
       border-radius: 50%;
-      box-shadow: 0 0 25px #7ce4ff66;
-      border: 3px solid #aeeaff80;
-      /* Reset top margin since the container’s top padding now handles
-         spacing from the pinned badges. */
-      margin-top: 0;
-      margin-bottom: 14px;
+      object-fit: cover;
+      position: absolute;
+      top: -48px; /* Pulls it up to overlap the banner */
+      left: 16px;
+      border: 6px solid; /* Border color will be set by JS to match card bg */
+      background-color: #f1f3f5; /* Prevents transparent parts of avatar showing banner */
     }
+
+    .popup-body {
+      padding: 12px 16px 16px;
+      margin-top: 48px; /* Space for the avatar */
+    }
+
     .popup-username {
+      font-size: 1.5rem;
       font-weight: 700;
-      font-size: 1.4rem;
-      color: #1d2736;
-      margin-bottom: 14px;
+      color: #111827;
+      text-align: left;
+      margin-bottom: 16px;
+      position: relative;
     }
+
+    .popup-section {
+      background: rgba(255,255,255,0.5);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .popup-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .popup-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 8px 0;
+      text-align: left;
+    }
+
+    .popup-about-me {
+      font-size: 0.95rem;
+      color: #374151;
+      line-height: 1.5;
+      word-break: break-word;
+      text-align: left;
+      white-space: pre-wrap; /* Respects newlines */
+    }
+
     .popup-badges {
-      /* Display badge collection as a responsive grid.  Two columns provide
-         a balanced layout similar to the user’s mockup.  Badges will wrap
-         as needed. */
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
-      width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
-    /*
-      Each badge uses a CSS custom property (`--glow-color`) to control the
-      hover glow colour. JavaScript assigns this property based on the badge
-      type (verified, offence, defence, overall or custom). The hover rules
-      reference this variable to produce a matching coloured glow instead of
-      a fixed turquoise.
-    */
+
     .popup-badge {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 11px;
-      padding: 11px 20px;
-      border-radius: 16px;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
       font-weight: 600;
-      font-size: 1.09rem;
-      margin: 0;
-      box-shadow: 0 2px 14px rgba(0,0,0,0.09);
-      background: linear-gradient(45deg,#74c0fc,#4dabf7);
-      transition: 
-        box-shadow 0.22s cubic-bezier(.22,.61,.36,1),
-        transform 0.19s cubic-bezier(.22,.61,.36,1),
-        filter 0.16s;
-      cursor: pointer;
-      filter: brightness(1) blur(0);
-      will-change: transform, box-shadow, filter;
-      /* default glow colour if not overridden via inline style */
-      --glow-color: #3ad9ff;
+      font-size: 0.9rem;
+      color: white;
+      background: #6b7280; /* Default badge color */
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .popup-badge:hover {
-      box-shadow: 0 10px 28px var(--glow-color)55, 0 2px 14px var(--glow-color)30;
-      transform: translateY(-4px) scale(1.05) rotate(-1.5deg);
-      filter: brightness(1.08) drop-shadow(0 2px 6px var(--glow-color)bb);
-      z-index: 2;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    .popup-badge img {
-      width: 24px;
-      height: 24px;
-    }
-    .popup-close-btn {
-      background: linear-gradient(90deg,#1ee57c,#50b2fa);
-      color: #fff;
-      font-weight: 700;
-      border: none;
-      border-radius: 10px;
-      padding: 10px 20px;
-      font-size: 1.05rem;
-      cursor: pointer;
-      box-shadow: 0 3px 14px rgba(0,0,0,0.15);
-      transition: background 0.18s;
-    }
-    .popup-close-btn:hover {
-      background: linear-gradient(90deg,#19df7e,#30a9f8);
-    }
-    .user-streak {
-      display: inline-block;
-      padding: 7px 18px;
-      border-radius: 999px;
-      font-size: 1.07rem;
-      font-weight: 700;
-      background: linear-gradient(90deg,#ff6b6b,#fca311 90%);
-      color: #fff;
-      margin-bottom: 16px;
-      box-shadow: 0 0 15px 2px #ff990088, 0 0 20px 2px #ff5b4588;
-      text-shadow: 0 2px 9px #c0442188;
-      transition: box-shadow 0.22s;
-      animation: flame-glow 1.4s infinite alternate;
-    }
-
-    /* Layout container for the top row of the popup card.  We
-       position the container absolutely so the streak and verified
-       badges appear pinned to the top corners of the card rather
-       than flowing in the normal document order.  Padding within
-       the container provides horizontal spacing from the card edges. */
-    .popup-top-badges {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 24px;
-      pointer-events: none; /* allow individual badges to remain clickable */
-    }
-    /* Individual badges remain interactive; override pointer-events to
-       permit hover effects and click handling. */
-    #popupStreak, #popupVerified {
-      pointer-events: auto;
-    }
-    /* Override the bottom margin on the streak badge when pinned to the
-       top of the card; absolute positioning ignores margin-bottom but
-       this ensures consistency across browsers. */
-    #popupStreak {
-      margin-bottom: 0;
-    }
-    /* Verified badge styling for the top row.  Reuses the badge look
-       but with a smaller padding and ensures the content remains on
-       one line. */
-    .popup-verified-badge {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 16px;
-      border-radius: 16px;
-      font-weight: 600;
-      font-size: 1rem;
-      background: linear-gradient(45deg,#2dd4bf,#06b6d4);
-      color: #fff;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-      white-space: nowrap;
-      /* Push the verified badge to the right when streak is hidden so it
-         aligns with the right edge of the popup card. */
-      margin-left: auto;
-    }
-    .popup-verified-badge img {
+    .popup-badge img, .popup-badge .emoji-icon {
       width: 20px;
       height: 20px;
+      font-size: 1.2rem;
+    }
+    /* Keyframes for random animations */
+    @keyframes wiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+    @keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+
+
+    .user-streak {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #d9480f;
     }
 
-    /* About Me styling for the user popup.  Provides a subtle glassy
-       container with scroll support for longer descriptions. */
-    .popup-about-me {
-      background: rgba(255,255,255,0.6);
-      backdrop-filter: blur(8px) saturate(1.2);
-      -webkit-backdrop-filter: blur(8px) saturate(1.2);
-      border-radius: 18px;
-      padding: 14px 16px;
-      margin-top: 8px;
-      margin-bottom: 20px;
-      font-size: 1.05rem;
-      line-height: 1.33;
-      max-height: 140px;
-      overflow-y: auto;
-      color: #1d2736;
-      text-align: left;
-      box-shadow: inset 0 0 8px rgba(0,0,0,0.05);
-      word-break: break-word;
+    .popup-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 5;
     }
-    @keyframes flame-glow {
-      from { box-shadow: 0 0 15px 2px #ff990088, 0 0 20px 2px #ff5b4588; }
-      to   { box-shadow: 0 0 22px 7px #ff9900aa, 0 0 28px 7px #ff5b45aa; }
+    .popup-close-btn:hover {
+      background: rgba(0,0,0,0.5);
     }
 
-    /* Navigation arrows for profile slider */
     .nav-arrow {
       position: absolute;
       top: 50%;
@@ -744,17 +669,48 @@
     }
     .prev-arrow { left: 10px; }
     .next-arrow { right: 10px; }
+
+    /* Membership Tooltip Styles */
+    .membership-tooltip {
+        position: absolute;
+        visibility: hidden; /* Start hidden */
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #111827;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        z-index: 10;
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+        transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+    .membership-tooltip.visible {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+    .membership-tooltip img {
+        width: 24px;
+        height: 24px;
+    }
+
   </style>
 </head>
 <body>
 <!-- Alert modal -->
-<div id="alertModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:1000;">
-  <div id="alertContent" style="background:#fff; color:#233046; padding:1.5rem 1rem 1.2rem 1rem; border-radius:18px; text-align:center; box-shadow: 0 3px 34px #c9defb65; max-width: 320px; width:90%; font-size: 1.13em;">
+<div id="alertModal" style="display:none;">
+  <div id="alertContent">
     <strong>Notification</strong>
     <p id="alertMsg"></p>
-    <div id="alertBtnRow" style="margin-top:.9rem; display:flex; gap:1.2em; justify-content:center;">
-      <button id="alertCancel" style="display:none;background:#e7faff; color:#16a34a; border:2px solid #16a34a; border-radius:10px; padding:.7rem 1.7rem; font-size:1.07em;">Cancel</button>
-      <button id="alertOK" style="background: linear-gradient(90deg,#1ee57c,#50b2fa); color:#fff; border-radius:10px; padding:.7rem 1.7rem; font-size:1.07em; border:none; font-weight:700;">OK</button>
+    <div id="alertBtnRow">
+      <button id="alertCancel" style="display:none;">Cancel</button>
+      <button id="alertOK">OK</button>
     </div>
   </div>
 </div>
@@ -763,73 +719,29 @@
     <!-- LEFT PANEL -->
     <div id="authContainer">
       <h2>KC Events Account</h2>
-      <!-- register / login -->
       <div id="registerForm">
         <input id="regName" placeholder="Display Name"/>
         <input id="regEmail" type="email" placeholder="Email"/>
         <input id="regPass" type="password" placeholder="Password"/>
         <button id="registerBtn">Create Account</button>
-        <p style="text-align:center;color:#ccc">
-          or <a href="#" id="showLogin" style="color:#4ade80">Log In</a>
-        </p>
+        <p style="text-align:center;color:#ccc">or <a href="#" id="showLogin" style="color:#4ade80">Log In</a></p>
       </div>
       <div id="loginForm" style="display:none">
         <input id="loginEmail" type="email" placeholder="Email"/>
         <input id="loginPass" type="password" placeholder="Password"/>
         <button id="loginBtn">Log In</button>
-        <p style="text-align:center;color:#ccc">
-          or <a href="#" id="showRegister" style="color:#4ade80">Create Account</a>
-        </p>
+        <p style="text-align:center;color:#ccc">or <a href="#" id="showRegister" style="color:#4ade80">Create Account</a></p>
       </div>
-      <!-- emoji picker card -->
       <div class="auth-card">
-        <div id="emojiPicker">
-          <p>Pick an emoji!</p>
-          <div class="emoji-grid">
-            <span class="emoji" data-emoji="😀">😀</span>
-            <span class="emoji" data-emoji="😎">😎</span>
-            <span class="emoji" data-emoji="😂">😂</span>
-            <span class="emoji" data-emoji="😍">😍</span>
-            <span class="emoji" data-emoji="👍">👍</span>
-            <span class="emoji" data-emoji="🙌">🙌</span>
-            <span class="emoji" data-emoji="😉">😉</span>
-            <span class="emoji" data-emoji="😁">😁</span>
-            <span class="emoji" data-emoji="😢">😢</span>
-            <span class="emoji" data-emoji="😮">😮</span>
-            <span class="emoji" data-emoji="😡">😡</span>
-            <span class="emoji" data-emoji="🎉">🎉</span>
-            <span class="emoji" data-emoji="🤣">🤣</span>
-            <span class="emoji" data-emoji="😭">😭</span>
-            <span class="emoji" data-emoji="🥹">🥹</span>
-            <span class="emoji" data-emoji="🥰">🥰</span>
-            <span class="emoji" data-emoji="👀">👀</span>
-            <span class="emoji" data-emoji="🫶">🫶</span>
-            <span class="emoji" data-emoji="🔥">🔥</span>
-            <span class="emoji" data-emoji="🙏">🙏</span>
-          </div>
-        </div>
+        <div id="emojiPicker"><p>Pick an emoji!</p><div class="emoji-grid">
+            <span class="emoji" data-emoji="😀">😀</span><span class="emoji" data-emoji="😎">😎</span><span class="emoji" data-emoji="😂">😂</span><span class="emoji" data-emoji="😍">😍</span><span class="emoji" data-emoji="👍">👍</span><span class="emoji" data-emoji="🙌">🙌</span><span class="emoji" data-emoji="😉">😉</span><span class="emoji" data-emoji="😁">😁</span><span class="emoji" data-emoji="😢">😢</span><span class="emoji" data-emoji="😮">😮</span><span class="emoji" data-emoji="😡">😡</span><span class="emoji" data-emoji="🎉">🎉</span><span class="emoji" data-emoji="🤣">🤣</span><span class="emoji" data-emoji="😭">😭</span><span class="emoji" data-emoji="🥹">🥹</span><span class="emoji" data-emoji="🥰">🥰</span><span class="emoji" data-emoji="👀">👀</span><span class="emoji" data-emoji="🫶">🫶</span><span class="emoji" data-emoji="🔥">🔥</span><span class="emoji" data-emoji="🙏">🙏</span>
+        </div></div>
       </div>
-      <!-- gradient picker card -->
       <div class="auth-card">
-        <div id="gradientPicker">
-          <p>Pick a gradient!</p>
-          <div class="grad-grid">
-            <span class="grad" data-grad="linear-gradient(45deg,#ff6b6b,#f06595)" style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#74c0fc,#4dabf7)" style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#51cf66,#2f9e44)" style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#f9c74f,#f9844a)" style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#845ef7,#5c7cfa)" style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#f857a6,#ff5858)" style="background:linear-gradient(45deg,#f857a6,#ff5858)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#2dd4bf,#06b6d4)" style="background:linear-gradient(45deg,#2dd4bf,#06b6d4)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#ee9ca7,#ffdde1)" style="background:linear-gradient(45deg,#ee9ca7,#ffdde1)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#43cea2,#185a9d)" style="background:linear-gradient(45deg,#43cea2,#185a9d)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#ffaf7b,#d76d77)" style="background:linear-gradient(45deg,#ffaf7b,#d76d77)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#ffe53b,#fd3838)" style="background:linear-gradient(45deg,#ffe53b,#fd3838)"></span>
-            <span class="grad" data-grad="linear-gradient(45deg,#7f53ac,#657ced)" style="background:linear-gradient(45deg,#7f53ac,#657ced)"></span>
-          </div>
-        </div>
+        <div id="gradientPicker"><p>Pick a gradient!</p><div class="grad-grid">
+            <span class="grad" data-grad="linear-gradient(45deg,#ff6b6b,#f06595)" style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span><span class="grad" data-grad="linear-gradient(45deg,#74c0fc,#4dabf7)" style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span><span class="grad" data-grad="linear-gradient(45deg,#51cf66,#2f9e44)" style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span><span class="grad" data-grad="linear-gradient(45deg,#f9c74f,#f9844a)" style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span><span class="grad" data-grad="linear-gradient(45deg,#845ef7,#5c7cfa)" style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span><span class="grad" data-grad="linear-gradient(45deg,#f857a6,#ff5858)" style="background:linear-gradient(45deg,#f857a6,#ff5858)"></span><span class="grad" data-grad="linear-gradient(45deg,#2dd4bf,#06b6d4)" style="background:linear-gradient(45deg,#2dd4bf,#06b6d4)"></span><span class="grad" data-grad="linear-gradient(45deg,#ee9ca7,#ffdde1)" style="background:linear-gradient(45deg,#ee9ca7,#ffdde1)"></span><span class="grad" data-grad="linear-gradient(45deg,#43cea2,#185a9d)" style="background:linear-gradient(45deg,#43cea2,#185a9d)"></span><span class="grad" data-grad="linear-gradient(45deg,#ffaf7b,#d76d77)" style="background:linear-gradient(45deg,#ffaf7b,#d76d77)"></span><span class="grad" data-grad="linear-gradient(45deg,#ffe53b,#fd3838)" style="background:linear-gradient(45deg,#ffe53b,#fd3838)"></span><span class="grad" data-grad="linear-gradient(45deg,#7f53ac,#657ced)" style="background:linear-gradient(45deg,#7f53ac,#657ced)"></span>
+        </div></div>
       </div>
-      <!-- message input -->
       <textarea id="messageInput" placeholder="Your message" rows="3"></textarea>
       <button id="postBtn" disabled>Send</button>
       <button id="logoutBtn" style="display:none">Sign Out</button>
@@ -843,27 +755,35 @@
           <option value="liked">Most Liked</option>
         </select>
       </div>
-      <ul id="msgList">
-        <li style="font-style:italic; opacity:.7">Loading…</li>
-      </ul>
+      <ul id="msgList"><li style="font-style:italic; opacity:.7">Loading…</li></ul>
     </div>
   </div>
 
-  <!-- USER PROFILE OVERLAY with navigation arrows -->
+  <!-- NEW DISCORD-STYLE USER PROFILE OVERLAY -->
   <div id="userPopup">
     <button class="nav-arrow prev-arrow">&#8249;</button>
-    <div class="user-popup-card">
-      <!-- Top row badges: streak on the left, verified on the right -->
-      <div id="popupTopBadges" class="popup-top-badges">
-        <div id="popupStreak" class="user-streak" style="display:none;"></div>
-        <div id="popupVerified" class="popup-verified-badge" style="display:none;"></div>
-      </div>
-      <img id="popupAvatar" src="" class="popup-avatar">
-      <div id="popupUserName" class="popup-username"></div>
-      <div id="popupBadges" class="popup-badges">Loading badges...</div>
-      <!-- About Me display for user profiles.  If none is set the script will set a default -->
-      <div id="popupAboutMe" class="popup-about-me">Loading about me...</div>
-      <button id="closeUserPopup" class="popup-close-btn">Close</button>
+    <div class="user-popup-card" id="userPopupCard">
+        <div id="membershipTooltip" class="membership-tooltip"></div>
+        <div class="popup-banner" id="popupBanner"></div>
+        <div class="popup-header">
+            <img id="popupAvatar" src="" class="popup-avatar">
+            <button id="closeUserPopup" class="popup-close-btn">&times;</button>
+        </div>
+        <div class="popup-body">
+            <div id="popupUserName" class="popup-username"></div>
+            <div class="popup-section">
+                <h4 class="popup-section-title">ABOUT ME</h4>
+                <div id="popupAboutMe" class="popup-about-me"></div>
+            </div>
+            <div class="popup-section">
+                <h4 class="popup-section-title">BADGES</h4>
+                <div id="popupBadges" class="popup-badges"></div>
+            </div>
+             <div class="popup-section">
+                <h4 class="popup-section-title">STREAK</h4>
+                 <div id="popupStreak" class="user-streak"></div>
+            </div>
+        </div>
     </div>
     <button class="nav-arrow next-arrow">&#8250;</button>
   </div>
@@ -905,7 +825,7 @@
     authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
     databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "kckillerscompany-ab1ec",
-    storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+    storageBucket: "kckillerscompany-ab1ec.appspot.com",
     messagingSenderId: "198711213988",
     appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
     measurementId: "G-4LKP2M3JXE"
@@ -943,7 +863,7 @@
   let badWords = [];
   fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
     .then(r=>r.json()).then(list=>badWords=list)
-    .catch(_=> kcAlert('Failed loading bad‑words.'));
+    .catch(_=> console.error('Failed loading bad-words.'));
   function containsBadWord(s){
     return badWords.some(w=>new RegExp('\\b'+w+'\\b','i').test(s));
   }
@@ -987,7 +907,6 @@
       .then(uCred => 
         uCred.user.updateProfile({ displayName: name })
           .then(() => {
-            // Store basic info + verified flag
             return db.ref(`users/${uCred.user.uid}`).set({ 
               displayName: name, 
               email: email, 
@@ -997,24 +916,7 @@
       )
       .then(user => user.sendEmailVerification(actionCodeSettings))
       .then(() => kcAlert('Verification email sent! Check your inbox.'))
-      .catch(err => {
-        if (err.code === 'auth/email-already-in-use') {
-          auth.fetchSignInMethodsForEmail(email)
-            .then(methods => {
-              if (methods.includes('password')) {
-                return auth.signInWithEmailAndPassword(email, pass)
-                  .then(uCred => {
-                    if (!uCred.user.emailVerified) {
-                      return uCred.user.sendEmailVerification(actionCodeSettings)
-                        .then(() => kcAlert('Account exists but not verified. Verification email resent.'));
-                    } else throw new Error('Email is already registered and verified. Please log in.');
-                  })
-                  .then(() => auth.signOut());
-              } else throw new Error('Email is already in use.');
-            })
-            .catch(innerErr => kcAlert(innerErr.message));
-        } else kcAlert(err.message);
-      });
+      .catch(err => kcAlert(err.message));
   };
 
   // login
@@ -1083,7 +985,7 @@
       const arr = [];
       snap.forEach(child => {
         const val = child.val();
-        if (val && val.verified) {
+        if (val) { // show all users, not just verified
           arr.push({uid: child.key, displayName: val.displayName || ''});
         }
       });
@@ -1091,7 +993,7 @@
       verifiedUsers = arr;
       return arr;
     }).catch(err => {
-      console.error('Error fetching verified users', err);
+      console.error('Error fetching users', err);
       return [];
     });
   }
@@ -1101,19 +1003,15 @@
     const nextBtn = document.querySelector('#userPopup .next-arrow');
     if (!prevBtn || !nextBtn) return;
     if (verifiedUsers.length > 1) {
-      prevBtn.style.display = 'inline-flex';
-      nextBtn.style.display = 'inline-flex';
+      prevBtn.style.display = 'flex';
+      nextBtn.style.display = 'flex';
     } else {
       prevBtn.style.display = 'none';
       nextBtn.style.display = 'none';
     }
   }
 
-  function showUserPopup(uid, uname, skipFetch=false) {
-    document.getElementById('popupUserName').textContent = uname;
-    getAvatar(uid).then(url => {
-      document.getElementById('popupAvatar').src = url;
-    });
+  function showUserPopup(uid, skipFetch=false) {
     loadUserProfile(uid);
     document.getElementById('userPopup').style.display = 'flex';
     if (!skipFetch) {
@@ -1130,154 +1028,137 @@
   function navigatePopup(dir) {
     if (verifiedUsers.length === 0 || currentPopupIndex === -1) return;
     currentPopupIndex = (currentPopupIndex + dir + verifiedUsers.length) % verifiedUsers.length;
-    const {uid, displayName} = verifiedUsers[currentPopupIndex];
-    showUserPopup(uid, displayName, true);
+    const {uid} = verifiedUsers[currentPopupIndex];
+    showUserPopup(uid, true);
   }
 
-  // Helper: convert a hex colour to an rgba string with specified alpha
-  function hexToRgba(hex, alpha) {
-    // Remove leading '#'
-    const cleaned = hex.replace(/#/g, '');
-    let r, g, b;
-    if (cleaned.length === 3) {
-      r = parseInt(cleaned[0] + cleaned[0], 16);
-      g = parseInt(cleaned[1] + cleaned[1], 16);
-      b = parseInt(cleaned[2] + cleaned[2], 16);
-    } else if (cleaned.length === 6) {
-      r = parseInt(cleaned.substring(0, 2), 16);
-      g = parseInt(cleaned.substring(2, 4), 16);
-      b = parseInt(cleaned.substring(4, 6), 16);
-    } else {
-      // default fallback colour (turquoise) if parsing fails
-      r = 58; g = 217; b = 255;
-    }
-    return `rgba(${r},${g},${b},${alpha})`;
-  }
-
-  // Helper: attach hover effect to a badge element using its --glow-color
-  function attachBadgeHover(el) {
-    const enter = () => {
-      const glow = getComputedStyle(el).getPropertyValue('--glow-color').trim() || '#3ad9ff';
-      // Use RGBA values with different opacities for layered shadows
-      el.style.boxShadow = `${'0 10px 28px ' + hexToRgba(glow, 0.33)}, ${'0 2px 14px ' + hexToRgba(glow, 0.18)}`;
-      el.style.transform = 'translateY(-4px) scale(1.05) rotate(-1.5deg)';
-      el.style.filter = `brightness(1.08) drop-shadow(0 2px 6px ${hexToRgba(glow, 0.5)})`;
-    };
-    const leave = () => {
-      el.style.boxShadow = '';
-      el.style.transform = '';
-      el.style.filter = '';
-    };
-    el.addEventListener('mouseenter', enter);
-    el.addEventListener('mouseleave', leave);
-  }
-
-  // Load badges and streak for popup
+  // Load user profile data into the new Discord-style popup
   function loadUserProfile(uid) {
-    const badgesContainer = document.getElementById('popupBadges');
-    const streakEl = document.getElementById('popupStreak');
-    // grab the verified and about elements for top badges and about me
-    const verifiedEl = document.getElementById('popupVerified');
-    const aboutEl = document.getElementById('popupAboutMe');
-    badgesContainer.innerHTML = 'Loading...';
-    // reset streak and verified display for each profile load
-    streakEl.style.display = 'none';
-    streakEl.textContent = '';
-    if (verifiedEl) {
-      verifiedEl.style.display = 'none';
-      verifiedEl.innerHTML = '';
-    }
-    if (aboutEl) {
-      aboutEl.textContent = 'Loading about me...';
-    }
-    db.ref(`users/${uid}/loginStreak`).once('value').then(snap => {
-      const streak = snap.val() || 0;
-      if (streak > 0) {
-        streakEl.textContent = `🔥 ${streak}`;
-        streakEl.style.display = 'inline-block';
-      }
-    });
-    Promise.all([
-      db.ref(`users/${uid}/verified`).once('value'),
-      db.ref(`badges/${uid}`).once('value'),
-      db.ref(`users/${uid}/customBadges`).once('value')
-    ]).then(([vsnap, bsnap, csnap]) => {
-      badgesContainer.innerHTML = '';
-      const isVerified = vsnap.val() || (auth.currentUser && auth.currentUser.uid === uid && auth.currentUser.emailVerified);
-      // If the user is verified, show the verified badge in the top row instead of inside the badge list
-      if (isVerified && verifiedEl) {
-        verifiedEl.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png" alt="Verified"><span>Verified</span>`;
-        verifiedEl.style.display = 'inline-flex';
-        verifiedEl.style.setProperty('--glow-color', '#2dd4bf');
-        attachBadgeHover(verifiedEl);
-      }
-      const baseSpecs = {
-        offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', gradient: 'linear-gradient(45deg,#ff6b6b,#f06595)' },
-        defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', gradient: 'linear-gradient(45deg,#74c0fc,#4dabf7)' },
-        overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', gradient: 'linear-gradient(45deg,#FFD700,#FFA500)' }
-      };
-      const base = bsnap.val() || {};
-      let hasCore = false;
-      Object.keys(baseSpecs).forEach(key => {
-        const count = base[key] || 0;
-        if (count > 0) {
-          hasCore = true;
-          const spec = baseSpecs[key];
-          const div = document.createElement('div');
-          div.className = 'popup-badge';
-          div.style.background = spec.gradient;
-          div.innerHTML = `<img src="${spec.icon}"><span>${spec.label} ×${count}</span>`;
-          // assign glow colour based on badge type
-          let glow;
-          if (key === 'offence') glow = '#ff6b6b';
-          else if (key === 'defence') glow = '#74c0fc';
-          else if (key === 'overall') glow = '#FFD700';
-          else glow = '#3ad9ff';
-          div.style.setProperty('--glow-color', glow);
-          attachBadgeHover(div);
-          badgesContainer.appendChild(div);
-        }
-      });
-      const custom = csnap.val() || {};
-      Object.entries(custom).forEach(([k,badgeData]) => {
-        const div = document.createElement('div');
-        div.className = 'popup-badge';
-        const g1 = badgeData.grad1 || '#a1c4fd';
-        const g2 = badgeData.grad2 || '#c2e9fb';
-        div.style.background = `linear-gradient(45deg,${g1},${g2})`;
-        const textCol = badgeData.textColor || '#ffffff';
-        div.style.color = textCol;
-        let iconHTML = '';
-        if (badgeData.icon && /^https?:\/{2}/.test(badgeData.icon)) {
-          iconHTML = `<img src="${badgeData.icon}" style="width:24px;height:24px;">`;
-        } else {
-          iconHTML = `<span style="font-size:1.3rem;">${badgeData.icon || ''}</span>`;
-        }
-        div.innerHTML = `${iconHTML}<span>${badgeData.name}</span>`;
-        // assign glow colour for custom badges using their text colour (fallback to gradient start)
-        const customGlow = (badgeData.textColor || g1 || '#a1c4fd');
-        div.style.setProperty('--glow-color', customGlow);
-        attachBadgeHover(div);
-        badgesContainer.appendChild(div);
-      });
-      if (!isVerified && !hasCore && Object.keys(custom).length === 0) {
-        badgesContainer.textContent = 'No badges yet';
-      }
-    });
+      const popupCard = document.getElementById('userPopupCard');
+      const bannerEl = document.getElementById('popupBanner');
+      const avatarEl = document.getElementById('popupAvatar');
+      const usernameEl = document.getElementById('popupUserName');
+      const aboutEl = document.getElementById('popupAboutMe');
+      const badgesContainer = document.getElementById('popupBadges');
+      const streakEl = document.getElementById('popupStreak');
+      const tooltip = document.getElementById('membershipTooltip');
 
-    // Load the user’s about me text from the database.  A blank or missing
-    // value is replaced with a default placeholder.  Errors are silently
-    // ignored and fallback text is shown instead.
-    db.ref(`users/${uid}/aboutMe`).once('value').then(snap => {
-      const txtRaw = snap && snap.val() ? String(snap.val()) : '';
-      const txt = txtRaw.trim();
-      if (aboutEl) {
-        aboutEl.textContent = txt.length > 0 ? txt : 'No about me yet';
-      }
-    }).catch(() => {
-      if (aboutEl) aboutEl.textContent = 'No about me yet';
-    });
+      // Reset to loading state
+      popupCard.style.background = '#f1f3f5';
+      bannerEl.style.backgroundImage = 'none';
+      bannerEl.style.backgroundColor = '#ced4da';
+      avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+      usernameEl.textContent = 'Loading...';
+      usernameEl.removeAttribute('data-member-type');
+      aboutEl.textContent = 'Loading...';
+      badgesContainer.innerHTML = 'Loading...';
+      streakEl.style.display = 'none';
+
+      // Fetch all user data
+      db.ref(`users/${uid}`).once('value').then(snap => {
+          const userData = snap.val() || {};
+          
+          usernameEl.textContent = userData.displayName || 'Anonymous User';
+          avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+          aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+
+          if (userData.loginStreak > 0) {
+              streakEl.textContent = `🔥 ${userData.loginStreak} Day Streak`;
+              streakEl.style.display = 'block';
+          } else {
+              streakEl.style.display = 'none';
+          }
+
+          const custom = userData.profileCustomization || {};
+          const defaultBg = '#f1f3f5';
+          const cardBg = custom.gradient || defaultBg;
+          
+          popupCard.style.background = cardBg;
+          avatarEl.style.borderColor = cardBg;
+          usernameEl.style.color = custom.nameColor || '#111827';
+
+
+          if (custom.banner) {
+              bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+              bannerEl.style.backgroundColor = 'transparent';
+          } else {
+              bannerEl.style.backgroundImage = 'none';
+              bannerEl.style.backgroundColor = '#ced4da';
+          }
+          
+          // Check for membership codes
+          const codes = userData.codesUnlocked || {};
+          if (codes.diamond) {
+              usernameEl.dataset.memberType = 'diamond';
+          } else if (codes.emerald) {
+              usernameEl.dataset.memberType = 'emerald';
+          }
+
+
+          // Fetch badge data
+          Promise.all([
+              db.ref(`badges/${uid}`).once('value'),
+              db.ref(`users/${uid}/customBadges`).once('value')
+          ]).then(([bsnap, csnap]) => {
+              badgesContainer.innerHTML = '';
+              let hasAnyBadge = false;
+              const animations = ['wiggle', 'pulse', 'bounce'];
+
+              const badgeSpecs = {
+                  verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+                  offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
+                  defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
+                  overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+              };
+
+              const addBadge = (spec, text) => {
+                hasAnyBadge = true;
+                const div = document.createElement('div');
+                div.className = 'popup-badge';
+                div.style.background = spec.bg;
+                div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
+                const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+                div.style.animation = `${randomAnimation} ${Math.random() * 2 + 1}s infinite`;
+                badgesContainer.appendChild(div);
+              }
+
+              // Verified badge
+              if (userData.verified) {
+                  addBadge(badgeSpecs.verified, 'Verified');
+              }
+
+              // Core badges
+              const baseBadges = bsnap.val() || {};
+              ['offence', 'defence', 'overall'].forEach(key => {
+                  if (baseBadges[key] > 0) {
+                      addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${baseBadges[key]}`);
+                  }
+              });
+
+              // Custom badges
+              const customBadges = csnap.val() || {};
+              Object.values(customBadges).forEach(badge => {
+                  hasAnyBadge = true;
+                  const div = document.createElement('div');
+                  div.className = 'popup-badge';
+                  div.style.background = badge.grad1 || '#6b7280';
+                  div.style.color = badge.textColor || 'white';
+                  div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
+                  const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
+                  div.style.animation = `${randomAnimation} ${Math.random() * 2 + 1}s infinite`;
+                  badgesContainer.appendChild(div);
+              });
+
+              if (!hasAnyBadge) {
+                  badgesContainer.textContent = 'No badges to display.';
+              }
+          });
+      }).catch(error => {
+          console.error("Error loading user profile:", error);
+          usernameEl.textContent = 'Error loading profile';
+      });
   }
+
 
   // Render and recurse functions
   function render(){
@@ -1309,9 +1190,9 @@
       li.dataset.path=`messages/${v.key}`;
       li.innerHTML=
         `<div class="emojiCell">${v.emoji}</div>
-        <img class="avatarImg" data-uid="${v.uid}" data-username="${v.user}" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png">
+        <img class="avatarImg" data-uid="${v.uid}">
         <div class="content">
-          <span class="username" data-uid="${v.uid}" data-username="${v.user}">${v.user}</span>
+          <span class="username" data-uid="${v.uid}">${v.user}</span>
           : ${v.text}
           <span class="timestamp">${ts}</span>
           <button class="toggleReplies">${v.replies?'Show Replies':'No Replies'}</button>
@@ -1326,10 +1207,20 @@
       `;
       if (v.uid) getAvatar(v.uid).then(url => li.querySelector('.avatarImg').src = url);
       let nm=li.querySelector('.username');
-      if(v.gradient){
-        nm.style.backgroundImage=v.gradient;
-        nm.style.webkitBackgroundClip=nm.style.backgroundClip='text';
-      } else { nm.style.backgroundImage=''; nm.style.color='#000'; }
+       db.ref(`users/${v.uid}/profileCustomization/nameColor`).once('value').then(snap => {
+          const color = snap.val();
+          if (color) {
+            nm.style.color = color;
+          } else if(v.gradient){
+            nm.style.backgroundImage=v.gradient;
+            nm.style.webkitBackgroundClip='text';
+            nm.style.backgroundClip='text';
+            nm.style.color='transparent';
+          } else { 
+            nm.style.backgroundImage=''; 
+            nm.style.color='#000'; 
+          }
+      });
       msgList.appendChild(li);
       let bar=li.querySelector('.reactions'), existing=v.reactions||{};
       Object.keys(existing).forEach(emo=>{
@@ -1366,9 +1257,9 @@
       li.dataset.path=`${base}/replies/${k}`;
       li.innerHTML=
         `<div class="emojiCell">${rv.emoji}</div>
-        <img class="avatarImg" data-uid="${rv.uid}" data-username="${rv.user}" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png">
+        <img class="avatarImg" data-uid="${rv.uid}">
         <div class="content">
-          <span class="username" data-uid="${rv.uid}" data-username="${rv.user}">${rv.user}</span>
+          <span class="username" data-uid="${rv.uid}">${rv.user}</span>
           : ${rv.text}
           <span class="timestamp">${ts}</span>
           <button class="toggleReplies">${rv.replies?'Show Replies':''}</button>
@@ -1377,10 +1268,20 @@
       `;
       if (rv.uid) getAvatar(rv.uid).then(url => li.querySelector('.avatarImg').src = url);
       let nm=li.querySelector('.username');
-      if(rv.gradient){
-        nm.style.backgroundImage=rv.gradient;
-        nm.style.webkitBackgroundClip=nm.style.backgroundClip='text';
-      } else nm.style.color='#000';
+       db.ref(`users/${rv.uid}/profileCustomization/nameColor`).once('value').then(snap => {
+          const color = snap.val();
+          if (color) {
+            nm.style.color = color;
+          } else if(rv.gradient){
+            nm.style.backgroundImage=rv.gradient;
+            nm.style.webkitBackgroundClip='text';
+            nm.style.backgroundClip='text';
+            nm.style.color='transparent';
+          } else { 
+            nm.style.backgroundImage=''; 
+            nm.style.color='#000'; 
+          }
+      });
       ul.appendChild(li);
       if(rv.replies){
         let child=li.querySelector('.replies');
@@ -1393,18 +1294,9 @@
   // click handlers
   document.body.addEventListener('click', e=>{
     const u=auth.currentUser;
-    if(e.target.matches('.avatarImg')) {
+    if(e.target.matches('.avatarImg, .username')) {
       const uid = e.target.dataset.uid;
-      const uname = e.target.dataset.username;
-      showUserPopup(uid, uname);
-      return;
-    }
-    if(e.target.matches('.username')) {
-      const uid = e.target.dataset.uid;
-      const uname = e.target.dataset.username;
-      if(uid){
-        showUserPopup(uid, uname);
-      }
+      if(uid) showUserPopup(uid);
       return;
     }
     if(e.target.matches('.toggleReplies')){
@@ -1419,20 +1311,14 @@
       if (!u || !u.emailVerified) return kcAlert('Log in and verify to like.');
       const btn  = e.target.closest('.likeBtn');
       const path = btn.closest('li').dataset.path;
-      if (e.detail === 2) {
-        db.ref(`${path}/likedBy/${u.uid}`).remove()
-          .then(() => db.ref(`${path}/likes`).transaction(n => Math.max(0, (n||0) - 1)))
-          .catch(err => kcAlert('Error unliking: ' + err.message));
-      } else {
-        db.ref(`${path}/likedBy/${u.uid}`)
-          .transaction(cur => cur === null ? true : undefined,
-            (err, committed) => {
-              if (err) return kcAlert('Error liking.');
-              if (!committed) return kcAlert('You already liked.');
-              db.ref(`${path}/likes`).transaction(n => (n||0) + 1);
-            }
-          );
-      }
+      db.ref(`${path}/likedBy/${u.uid}`)
+        .transaction(cur => cur === null ? true : undefined,
+          (err, committed) => {
+            if (err) return kcAlert('Error liking.');
+            if (!committed) return kcAlert('You already liked.');
+            db.ref(`${path}/likes`).transaction(n => (n||0) + 1);
+          }
+        );
       return;
     }
     if(e.target.closest('.reactBtn')){
@@ -1453,7 +1339,7 @@
       let li=e.target.closest('li'), p=li.dataset.path, bar=li.querySelector('.reactions'),
           exist=Array.from(bar.querySelectorAll('.reactBtn')).map(x=>x.dataset.emo), picker=document.createElement('div');
       picker.className='addPicker';
-      ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉','🤣','😭','🥹','🥰','👀','🫶','🔥','🙏']
+      ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉','🤣','😭','🥹','🥰','👀','🫶','🔥','🔥']
         .filter(emo=>!exist.includes(emo))
         .forEach(emo=>{
           let s=document.createElement('span');
@@ -1506,7 +1392,7 @@
     if (!btn || !u || !u.emailVerified) return;
     const path = btn.closest('li').dataset.path;
     db.ref(`${path}/likedBy/${u.uid}`).remove()
-      .then(() => db.ref(`${path}/likes`).transaction(current => { if (!current) return 0; return current - 1; }))
+      .then(() => db.ref(`${path}/likes`).transaction(current => Math.max(0, (current||0) - 1)))
       .catch(err => kcAlert('Error unliking: ' + err.message));
   });
 
@@ -1561,6 +1447,44 @@
   document.getElementById('closeUserPopup').addEventListener('click', () => {
     document.getElementById('userPopup').style.display = 'none';
   });
+  
+  // Tooltip logic
+  const usernameEl = document.getElementById('popupUserName');
+  const tooltip = document.getElementById('membershipTooltip');
+  
+  usernameEl.addEventListener('mouseenter', () => {
+    const memberType = usernameEl.dataset.memberType;
+    if (!memberType) return;
+
+    let icon = '';
+    let text = '';
+
+    if (memberType === 'diamond') {
+        icon = 'https://cdn.discordapp.com/emojis/1381097369474695178.webp?size=128';
+        text = 'Diamond Member';
+    } else if (memberType === 'emerald') {
+        icon = 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128';
+        text = 'Emerald Member';
+    } else {
+        return;
+    }
+
+    tooltip.innerHTML = `<img src="${icon}" alt="${text} icon"><span>${text}</span>`;
+    
+    const nameRect = usernameEl.getBoundingClientRect();
+    const cardRect = document.getElementById('userPopupCard').getBoundingClientRect();
+
+    tooltip.style.top = `${nameRect.top - cardRect.top - tooltip.offsetHeight - 8}px`;
+    tooltip.style.left = `${nameRect.left - cardRect.left + (nameRect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+
+    tooltip.classList.add('visible');
+  });
+
+  usernameEl.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('visible');
+  });
+
+
   </script>
 </body>
 </html>
