@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
     html, body {
-  background: transparent !important;
+      background: transparent !important;
       margin: 0; padding: 0;
       font-family: 'Poppins', sans-serif;
       min-height: 100vh;
@@ -96,6 +96,28 @@
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       letter-spacing: 0.01em;
       display: flex; align-items: center;
+      cursor: pointer;
+      position: relative;
+    }
+    .lb-user .tooltip {
+        visibility: hidden;
+        width: 120px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        margin-left: -60px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .lb-user:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
     }
     .lb-count, .lb-badgecount {
       font-weight: 800; font-size: 1.03em; color: #faf0bd;
@@ -105,6 +127,155 @@
     }
     .lb-badgecount { background: #fde34c; color: #392f17; }
     .lb-row:last-child { margin-bottom: 0; }
+    
+    /* ===== USER POPUP STYLES (from messages.html) ===== */
+    #userPopup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      font-family: 'Poppins', sans-serif;
+      animation: fadeInBg 0.3s ease;
+    }
+    @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
+    .user-popup-card {
+      width: 360px;
+      max-width: 95vw;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+      position: relative;
+      background: #f1f3f5;
+    }
+    @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .popup-banner {
+      height: 120px;
+      background-color: #ced4da;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .popup-header {
+      padding: 0 16px;
+      position: relative;
+      height: 48px;
+    }
+
+    .popup-avatar {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      object-fit: cover;
+      position: absolute;
+      top: -48px;
+      left: 16px;
+      border: 6px solid;
+      background-color: #f1f3f5;
+    }
+
+    .popup-body {
+      padding: 12px 16px 16px;
+      margin-top: 48px;
+    }
+
+    .popup-username {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #111827;
+      text-align: left;
+      margin-bottom: 16px;
+    }
+
+    .popup-section {
+      background: rgba(255,255,255,0.5);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .popup-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .popup-section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin: 0 0 8px 0;
+      text-align: left;
+    }
+
+    .popup-about-me {
+      font-size: 0.95rem;
+      color: #374151;
+      line-height: 1.5;
+      word-break: break-word;
+      text-align: left;
+      white-space: pre-wrap;
+    }
+
+    .popup-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .popup-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: white;
+      background: #6b7280;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+     .popup-badge img, .popup-badge .emoji-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 1.2rem;
+    }
+
+    .user-streak {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #d9480f;
+    }
+
+    .popup-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 5;
+    }
+    .popup-close-btn:hover {
+      background: rgba(0,0,0,0.5);
+    }
+    
     @media (max-width: 900px) {
       .discord-leaderboard { flex-direction: column; width: 99vw; padding: 24px 6px;}
       .lb-scroll-area {max-height: 168px;}
@@ -129,10 +300,35 @@
       <div class="lb-scroll-area" id="lb-badges"></div>
     </div>
   </div>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <!-- USER PROFILE POPUP (from messages.html) -->
+  <div id="userPopup">
+    <div class="user-popup-card" id="userPopupCard">
+        <div class="popup-banner" id="popupBanner"></div>
+        <div class="popup-header">
+            <img id="popupAvatar" src="" class="popup-avatar">
+            <button id="closeUserPopup" class="popup-close-btn">&times;</button>
+        </div>
+        <div class="popup-body">
+            <div id="popupUserName" class="popup-username"></div>
+            <div class="popup-section">
+                <h4 class="popup-section-title">ABOUT ME</h4>
+                <div id="popupAboutMe" class="popup-about-me"></div>
+            </div>
+            <div class="popup-section">
+                <h4 class="popup-section-title">BADGES</h4>
+                <div id="popupBadges" class="popup-badges"></div>
+            </div>
+             <div class="popup-section">
+                <h4 class="popup-section-title">STREAK</h4>
+                 <div id="popupStreak" class="user-streak"></div>
+            </div>
+        </div>
+    </div>
+  </div>
+
   <script>
-    // Firebase setup (copied from your index.html)
+    // Firebase setup
     const cfg = {
       apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -150,6 +346,144 @@
     function getAvatarUrl(user) {
       return user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
     }
+    
+    // --- POPUP LOGIC ---
+    const userPopup = document.getElementById('userPopup');
+    const closeUserPopup = document.getElementById('closeUserPopup');
+    
+    function showUserPopup(uid) {
+        loadUserProfile(uid);
+        userPopup.style.display = 'flex';
+    }
+
+    closeUserPopup.onclick = () => {
+        userPopup.style.display = 'none';
+    };
+    
+    userPopup.onclick = (e) => {
+        if (e.target === userPopup) {
+            userPopup.style.display = 'none';
+        }
+    };
+
+    function loadUserProfile(uid) {
+      const popupCard = document.getElementById('userPopupCard');
+      const bannerEl = document.getElementById('popupBanner');
+      const avatarEl = document.getElementById('popupAvatar');
+      const usernameEl = document.getElementById('popupUserName');
+      const aboutEl = document.getElementById('popupAboutMe');
+      const badgesContainer = document.getElementById('popupBadges');
+      const streakEl = document.getElementById('popupStreak');
+
+      // Reset to loading state
+      popupCard.style.background = '#f1f3f5';
+      bannerEl.style.backgroundImage = 'none';
+      bannerEl.style.backgroundColor = '#ced4da';
+      avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+      usernameEl.textContent = 'Loading...';
+      aboutEl.textContent = 'Loading...';
+      badgesContainer.innerHTML = 'Loading...';
+      streakEl.style.display = 'none';
+
+      // Fetch all user data
+      db.ref(`users/${uid}`).once('value').then(snap => {
+          const userData = snap.val() || {};
+          
+          usernameEl.textContent = userData.displayName || 'Anonymous User';
+          avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+          aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+
+          if (userData.loginStreak > 0) {
+              streakEl.textContent = `🔥 ${userData.loginStreak} Day Streak`;
+              streakEl.style.display = 'block';
+          } else {
+              streakEl.style.display = 'none';
+          }
+
+          const custom = userData.profileCustomization || {};
+          const defaultBg = '#f1f3f5';
+          const cardBg = custom.gradient || defaultBg;
+          
+          popupCard.style.background = cardBg;
+          avatarEl.style.borderColor = cardBg;
+          usernameEl.style.color = custom.nameColor || '#111827';
+
+          if (custom.banner) {
+              bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+              bannerEl.style.backgroundColor = 'transparent';
+          } else {
+              bannerEl.style.backgroundImage = 'none';
+              bannerEl.style.backgroundColor = '#ced4da';
+          }
+
+          // Fetch badge data
+          Promise.all([
+              db.ref(`badges/${uid}`).once('value'),
+              db.ref(`users/${uid}/customBadges`).once('value')
+          ]).then(([bsnap, csnap]) => {
+              badgesContainer.innerHTML = '';
+              let hasAnyBadge = false;
+              
+              const badgeSpecs = {
+                  verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+                  offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
+                  defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
+                  overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+              };
+
+              const addBadge = (spec, text) => {
+                hasAnyBadge = true;
+                const div = document.createElement('div');
+                div.className = 'popup-badge';
+                div.style.background = spec.bg;
+                div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
+                badgesContainer.appendChild(div);
+              }
+
+              if (userData.verified) {
+                  addBadge(badgeSpecs.verified, 'Verified');
+              }
+
+              const baseBadges = bsnap.val() || {};
+              ['offence', 'defence', 'overall'].forEach(key => {
+                  if (baseBadges[key] > 0) {
+                      addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${baseBadges[key]}`);
+                  }
+              });
+
+              const customBadges = csnap.val() || {};
+              Object.values(customBadges).forEach(badge => {
+                  hasAnyBadge = true;
+                  const div = document.createElement('div');
+                  div.className = 'popup-badge';
+                  div.style.background = badge.grad1 || '#6b7280';
+                  div.style.color = badge.textColor || 'white';
+                  div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
+                  badgesContainer.appendChild(div);
+              });
+
+              if (!hasAnyBadge) {
+                  badgesContainer.textContent = 'No badges to display.';
+              }
+          });
+      }).catch(error => {
+          console.error("Error loading user profile:", error);
+          usernameEl.textContent = 'Error loading profile';
+      });
+    }
+
+    // --- LEADERBOARD LOGIC ---
+    
+    function attachClickListeners() {
+        document.querySelectorAll('.lb-user').forEach(el => {
+            el.onclick = () => {
+                const uid = el.dataset.uid;
+                if (uid) {
+                    showUserPopup(uid);
+                }
+            };
+        });
+    }
 
     // Members (alphabetical)
     const lbMembers = document.getElementById('lb-members');
@@ -158,6 +492,7 @@
       snapshot.forEach(child => {
         const data = child.val();
         arr.push({
+          uid: child.key,
           name: data.displayName || data.email || child.key,
           avatar: getAvatarUrl(data)
         });
@@ -166,9 +501,10 @@
       lbMembers.innerHTML = arr.map((u, i) => `
         <div class="lb-row top${i<3?i+1:''}">
           <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
-          <span class="lb-user">${u.name}</span>
+          <span class="lb-user" data-uid="${u.uid}">${u.name}<span class="tooltip">View Profile</span></span>
         </div>
       `).join('') || `<div class="lb-row">No members yet</div>`;
+      attachClickListeners();
     });
 
     // Streaks (from users/{uid}/loginStreak)
@@ -179,6 +515,7 @@
         const v = child.val();
         let streakNum = typeof v.loginStreak === "number" ? v.loginStreak : (parseInt(v.loginStreak)||0);
         arr.push({
+          uid: child.key,
           name: v.displayName || v.email || child.key,
           streak: streakNum,
           avatar: getAvatarUrl(v)
@@ -188,10 +525,11 @@
       lbStreaks.innerHTML = arr.map((u, i) => `
         <div class="lb-row top${i<3?i+1:''}">
           <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
-          <span class="lb-user"><span class="lb-icon">🔥</span>${u.name}</span>
+          <span class="lb-user" data-uid="${u.uid}"><span class="lb-icon">🔥</span>${u.name}<span class="tooltip">View Profile</span></span>
           <span class="lb-count">${u.streak}</span>
         </div>
       `).join('') || `<div class="lb-row">No streaks yet</div>`;
+      attachClickListeners();
     });
 
     // Badges (total for each user, show avatars)
@@ -222,10 +560,11 @@
       lbBadges.innerHTML = badgeTotals.map((u, i) => `
         <div class="lb-row top${i<3?i+1:''}">
           <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
-          <span class="lb-user"><span class="lb-icon">🏅</span>${u.name}</span>
+          <span class="lb-user" data-uid="${u.uid}"><span class="lb-icon">🏅</span>${u.name}<span class="tooltip">View Profile</span></span>
           <span class="lb-badgecount">${u.count}</span>
         </div>
       `).join('') || `<div class="lb-row">No badges yet</div>`;
+      attachClickListeners();
     });
   </script>
 </body>
