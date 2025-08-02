@@ -17,14 +17,16 @@
       display: flex; align-items: center; justify-content: center; min-height: 100vh;
     }
     .discord-leaderboard {
-      width: 1160px; max-width: 98vw;
+      width: 500px;
+      max-width: 98vw;
       border-radius: 22px;
       background: rgba(24,29,39,0.98);
       box-shadow: 0 2px 26px #0c102522, 0 2px 14px #7ab9fa22;
       padding: 36px 18px 32px 18px;
-      display: flex; flex-direction: row;
-      gap: 20px;
-      justify-content: space-between;
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      align-items: stretch;
     }
     .lb-col {
       flex: 1 1 0; min-width: 0;
@@ -277,7 +279,7 @@
     }
     
     @media (max-width: 900px) {
-      .discord-leaderboard { flex-direction: column; width: 99vw; padding: 24px 6px;}
+      .discord-leaderboard { width: 99vw; padding: 24px 6px;}
       .lb-scroll-area {max-height: 168px;}
     }
   </style>
