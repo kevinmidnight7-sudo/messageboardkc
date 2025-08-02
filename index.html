@@ -398,7 +398,6 @@
     <textarea id="messageInput" placeholder="Add a comment..." rows="3"></textarea>
     <div class="composer-actions">
       <div class="picker-controls">
-        <div id="emojiPickerBtn" class="picker-btn">😀</div>
         <div id="gradientPickerBtn" class="picker-btn">🎨</div>
         <div id="logoutBtn" class="picker-btn" title="Sign Out">🚪</div>
       </div>
@@ -408,12 +407,7 @@
       </div>
     </div>
     <!-- Popovers for pickers -->
-    <div id="emojiPicker" class="popover">
-      <h4>Pick an emoji</h4>
-      <div class="emoji-grid">
-        <span class="emoji" data-emoji="😀">😀</span><span class="emoji" data-emoji="😎">😎</span><span class="emoji" data-emoji="😂">😂</span><span class="emoji" data-emoji="😍">😍</span><span class="emoji" data-emoji="👍">👍</span><span class="emoji" data-emoji="🙌">🙌</span><span class="emoji" data-emoji="😉">😉</span><span class="emoji" data-emoji="😁">😁</span><span class="emoji" data-emoji="😢">😢</span><span class="emoji" data-emoji="😮">😮</span><span class="emoji" data-emoji="😡">😡</span><span class="emoji" data-emoji="🎉">🎉</span><span class="emoji" data-emoji="🤣">🤣</span><span class="emoji" data-emoji="😭">😭</span><span class="emoji" data-emoji="🥹">🥹</span><span class="emoji" data-emoji="🥰">🥰</span><span class="emoji" data-emoji="👀">👀</span><span class="emoji" data-emoji="🫶">🫶</span><span class="emoji" data-emoji="🔥">🔥</span><span class="emoji" data-emoji="🙏">🙏</span>
-      </div>
-    </div>
+    
     <div id="gradientPicker" class="popover">
       <h4>Pick a gradient</h4>
       <div class="grad-grid">
@@ -579,17 +573,13 @@
   const reactionTooltip = document.getElementById('reactionTooltip');
 
   // New composer elements
-  const emojiPickerBtn = document.getElementById('emojiPickerBtn');
   const gradientPickerBtn = document.getElementById('gradientPickerBtn');
-  const emojiPicker = document.getElementById('emojiPicker');
   const gradientPicker = document.getElementById('gradientPicker');
-  const emojiEls = Array.from(document.querySelectorAll('.emoji'));
   const gradEls = Array.from(document.querySelectorAll('.grad'));
   const themeSwitcher = document.getElementById('themeSwitcher');
   const geminiLoading = document.getElementById('geminiLoading');
 
 
-  let selectedEmoji = null;
   let selectedGradient = null;
   let lastSnap = null;
   let sortMode = 'recent';
@@ -672,7 +662,7 @@
   };
 
   function togglePopover(popover, button) {
-    [emojiPicker, gradientPicker].forEach(p => {
+    [gradientPicker].forEach(p => {
       if (p !== popover) p.style.display = 'none';
     });
     if (popover.style.display === 'block') {
@@ -684,11 +674,9 @@
     }
   }
 
-  emojiPickerBtn.onclick = (e) => { e.stopPropagation(); togglePopover(emojiPicker, emojiPickerBtn); };
   gradientPickerBtn.onclick = (e) => { e.stopPropagation(); togglePopover(gradientPicker, gradientPickerBtn); };
   
   document.addEventListener('click', (e) => {
-    if (!emojiPicker.contains(e.target) && !emojiPickerBtn.contains(e.target)) { emojiPicker.style.display = 'none'; }
     if (!gradientPicker.contains(e.target) && !gradientPickerBtn.contains(e.target)) { gradientPicker.style.display = 'none'; }
   });
 
@@ -721,16 +709,6 @@
 
   logoutBtn.onclick = ()=> auth.signOut();
 
-  emojiEls.forEach(el=>{
-    el.onclick = ()=>{
-      emojiEls.forEach(x=>x.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedEmoji = el.dataset.emoji;
-      emojiPickerBtn.textContent = selectedEmoji;
-      emojiPicker.style.display = 'none';
-      validatePost();
-    };
-  });
   gradEls.forEach(el=>{
     el.onclick = ()=>{
       gradEls.forEach(x=>x.classList.remove('selected'));
@@ -745,7 +723,7 @@
   messageInput.oninput = validatePost;
   function validatePost(){
     const hasDiamond = currentUserProfile?.codesUnlocked?.diamond;
-    postBtn.disabled = !( auth.currentUser && auth.currentUser.emailVerified && selectedEmoji && (hasDiamond || selectedGradient) && messageInput.value.trim() );
+    postBtn.disabled = !( auth.currentUser && auth.currentUser.emailVerified && (hasDiamond || selectedGradient) && messageInput.value.trim() );
   }
 
   const avatarCache = {};
@@ -1127,11 +1105,10 @@
   postBtn.onclick = ()=>{
     let u=auth.currentUser, txt=messageInput.value.trim();
     if(!u || !u.emailVerified) return kcAlert('Log in and verify to post.');
-    if(!selectedEmoji) return kcAlert('Pick an emoji.');
     if(!txt) return kcAlert('Enter a message.');
     if(containsBadWord(txt)||containsBadWord(u.displayName)) return kcAlert('That word’s not allowed.');
     
-    let messageData = { user: u.displayName, uid: u.uid, text: txt, emoji: selectedEmoji, time: firebase.database.ServerValue.TIMESTAMP, likes: 0 };
+    let messageData = { user: u.displayName, uid: u.uid, text: txt, time: firebase.database.ServerValue.TIMESTAMP, likes: 0 };
     const hasDiamond = currentUserProfile?.codesUnlocked?.diamond;
     if (hasDiamond && currentUserProfile.profileCustomization) {
         messageData.diamondProfile = currentUserProfile.profileCustomization;
@@ -1141,8 +1118,6 @@
     }
     msgs.push(messageData);
     messageInput.value='';
-    selectedEmoji = null;
-    emojiPickerBtn.textContent = '😀';
     validatePost();
   };
 
