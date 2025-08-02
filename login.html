@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <title>KC Events (Improved)</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -12,15 +12,15 @@
    * This file contains a revised version of the original KC Events page. The changes
    * implemented here aim to address a handful of UX and styling issues raised by
    * the user. Highlights include:
-   *  - Properly aligned streak rewards modal without overlapping text.
-   *  - Hover glows on all badge items (including custom and create/edit slots).
-   *  - A more intuitive badge creation workflow supporting multiple custom badges and
-   *    editing via a pencil icon.
-   *  - A refreshed badge panel with subtle 3D interaction on hover.
-   *  - A redesigned upload-your-own-avatar card styled as a gold gradient circle
-   *    with a plus icon.
-   *  - A futuristic upload modal inspired by the provided GIF, utilising 3D
-   *    transforms and gradients.
+   * - Properly aligned streak rewards modal without overlapping text.
+   * - Hover glows on all badge items (including custom and create/edit slots).
+   * - A more intuitive badge creation workflow supporting multiple custom badges and
+   * editing via a pencil icon.
+   * - A refreshed badge panel with subtle 3D interaction on hover.
+   * - A redesigned upload-your-own-avatar card styled as a gold gradient circle
+   * with a plus icon.
+   * - A futuristic upload modal inspired by the provided GIF, utilising 3D
+   * transforms and gradients.
    */
 
   /* ────── Global & Layout ────── */
@@ -66,10 +66,10 @@
     word-break:break-word;
   }
   .profile-counter{color:#669;font-size:1rem;margin-bottom:1.3rem;}
-  .profile-icon-bar{display:flex;gap:16px;margin-top:16px;justify-content:center;}
+  .profile-icon-bar{display:flex;gap:16px;margin-top:16px;justify-content:center; flex-wrap: wrap;}
   .profile-icon-btn{
     background:#fff;border-radius:50%;box-shadow:0 2px 10px #3332;
-    border:none;width:55px;height:55px;font-size:2rem;
+    border:none;width:55px;height:55px;font-size:1.5rem; /* Adjusted for emoji */
     display:flex;align-items:center;justify-content:center;
     cursor:pointer;transition:box-shadow .18s,transform .15s;
     outline:none;
@@ -80,7 +80,8 @@
   /* Add a hover animation to the avatar, settings and admin buttons reminiscent of the streak button */
   #avatarBtn,
   #accountOptionsBtn,
-  #adminPortalBtn {
+  #adminPortalBtn,
+  #editProfileBtn {
     transition: transform .25s ease, box-shadow .25s ease;
   }
   #avatarBtn:hover {
@@ -94,6 +95,10 @@
   #adminPortalBtn:hover {
     transform: scale(1.12) rotate(-6deg);
     box-shadow:0 6px 28px rgba(139,92,246,0.55), 0 2px 12px rgba(139,92,246,0.35);
+  }
+  #editProfileBtn:hover {
+    transform: scale(1.12) rotate(6deg);
+    box-shadow:0 6px 28px rgba(236, 72, 153, 0.55), 0 2px 12px rgba(236, 72, 153, 0.35);
   }
 
   /* Codes button inherits the same animated feel but uses a gold glow to signify exclusivity */
@@ -194,15 +199,15 @@
   }
 
   /* ---------------------------------------------
-   *  Badge creator modal (fancy) styling tweaks
-   *  Make the panel match the light card aesthetic used
-   *  throughout the rest of the application.  Switch
-   *  from a dark, heavy palette to a soft, glassy
-   *  appearance with subtle gradients, lighter fonts
-   *  and spaced out form controls.  These rules
-   *  override previous dark styles and should
-   *  produce a modal that feels integrated with
-   *  the surrounding UI rather than a bolt‑on.
+   * Badge creator modal (fancy) styling tweaks
+   * Make the panel match the light card aesthetic used
+   * throughout the rest of the application.  Switch
+   * from a dark, heavy palette to a soft, glassy
+   * appearance with subtle gradients, lighter fonts
+   * and spaced out form controls.  These rules
+   * override previous dark styles and should
+   * produce a modal that feels integrated with
+   * the surrounding UI rather than a bolt‑on.
    *---------------------------------------------- */
   #badgeCreatorModalFancy .carousel-content {
     background: linear-gradient(135deg,#f8fafc 0%,#eef3f9 100%) !important;
@@ -573,6 +578,11 @@
     display:none;width:64px;height:64px;
     border-radius:50%;margin:0 auto 12px auto;
     box-shadow:0 2px 10px #3332;
+    /* New styles for avatar to overlap banner */
+    margin-top: -40px;
+    position: relative;
+    z-index: 2;
+    border: 4px solid white;
   }
 
   /* ────── Badges Card ────── */
@@ -1358,6 +1368,213 @@
   cursor: pointer;
 }
 
+/* ======== TASK 1: New "Enter Your Code" Modal UI ======== */
+#codesModal.apple-modal {
+    background: rgba(15, 23, 42, 0.6); /* Soft dark overlay */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+#codesModal .carousel-content {
+    background: rgba(255, 255, 255, 0.85); /* Frosted glass */
+    backdrop-filter: blur(15px) saturate(1.5);
+    -webkit-backdrop-filter: blur(15px) saturate(1.5);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: code-modal-pop-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+@keyframes code-modal-pop-in {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+#codesModal h3 {
+    color: #1e293b;
+    font-weight: 700;
+}
+#codesModal h3 img {
+    animation: icon-pulse 2.5s infinite ease-in-out;
+}
+@keyframes icon-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+#codesModal #codeInput {
+    background: #f1f5f9;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    color: #0f172a;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    transition: all 0.2s ease-in-out;
+}
+#codesModal #codeInput::placeholder {
+    color: #94a3b8;
+}
+#codesModal #codeInput:hover {
+    background: #e2e8f0;
+}
+#codesModal #codeInput:focus {
+    background: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), inset 0 2px 4px rgba(0,0,0,0.06);
+}
+#codesModal #submitCodeBtn {
+    background: linear-gradient(45deg, #22c55e, #10b981);
+    border-radius: 999px; /* Capsule shape */
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 12px 0;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+    transition: all 0.2s ease-in-out;
+}
+#codesModal #submitCodeBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+#codesModal #closeCodesModal {
+    background: rgba(0,0,0,0.1);
+    color: #475569;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    top: 16px; right: 16px;
+    box-shadow: none;
+}
+#codesModal #closeCodesModal:hover {
+    background: rgba(0,0,0,0.2);
+    color: #1e293b;
+}
+/* Feedback animations */
+@keyframes shake-horizontal {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+#codeInput.error {
+    animation: shake-horizontal 0.5s ease-in-out;
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+#codeInput.success {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+#codeMsg.success { color: #16a34a; }
+#codeMsg.error { color: #dc2626; }
+
+/* ======== TASK 2: Profile Customization Modal ======== */
+#profileCustomizationModal .carousel-content {
+    background: #f8fafc;
+    color: #0f172a;
+    width: 420px;
+    max-width: 95vw;
+    animation: code-modal-pop-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+.customization-section {
+    margin-bottom: 24px;
+}
+.customization-section h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 12px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.banner-grid, .gradient-grid, .color-grid {
+    display: grid;
+    gap: 12px;
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 8px;
+    background: #e2e8f0;
+    border-radius: 12px;
+}
+.banner-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+.gradient-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
+.color-grid { grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); }
+
+
+.banner-item, .gradient-item, .color-item {
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.2s, transform 0.2s;
+    overflow: hidden;
+}
+.banner-item, .gradient-item { aspect-ratio: 16 / 9; }
+.gradient-item { aspect-ratio: 1 / 1; }
+.color-item {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.banner-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.banner-item:hover, .gradient-item:hover, .color-item:hover {
+    transform: scale(1.05);
+}
+.banner-item.selected, .gradient-item.selected, .color-item.selected {
+    border-color: #3b82f6;
+}
+
+#suggestColorBtn {
+    background: linear-gradient(45deg, #a855f7, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+#suggestColorBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+#suggestColorBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+#saveCustomizationBtn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(45deg, #6366f1, #8b5cf6);
+    color: white;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+#saveCustomizationBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+}
+
+/* New CSS for the profile banner */
+.profile-banner {
+    width: calc(100% + 72px); /* Span across padding */
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 32px 32px 0 0;
+    margin: -36px -36px 16px -36px; /* Bleed to the edges */
+    background-color: #e2e8f0;
+    transition: background-image 0.3s ease-in-out;
+}
 
   </style>
 </head>
@@ -1386,6 +1603,7 @@
         </div>
         <!-- LOGGED IN -->
         <div id="profileUI" style="display:none">
+          <div id="profileBanner" class="profile-banner"></div>
           <img id="avatarImg" src="" alt="Your Avatar"/>
           <div class="profile-title">Profile:</div>
           <div class="profile-welcome" id="welcomeUser"></div>
@@ -1413,9 +1631,13 @@
             <button id="codesBtn" class="profile-icon-btn" title="Codes">
               <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Codes.png" alt="Codes"/>
             </button>
-               <!-- Streak fire button (fixed in card) -->
+             <!-- Streak fire button (fixed in card) -->
             <button id="streakBtn" title="View your streak rewards">
               <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Streak.png" alt="Streak"/>
+            </button>
+            <!-- Edit Profile Button (Task 2) - initially hidden -->
+            <button id="editProfileBtn" class="profile-icon-btn" title="Customize Profile" style="display: none;">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png" alt="Edit Profile"/>
             </button>
           </div>
         </div>
@@ -1573,17 +1795,51 @@
     </div>
   </div>
 
-  <!-- Codes Modal for entering exclusive codes -->
+  <!-- Codes Modal for entering exclusive codes (Task 1) -->
   <div id="codesModal" class="apple-modal">
-    <div class="carousel-content" style="text-align:center;min-width:300px;">
-      <button class="close-btn" id="closeCodesModal">Close</button>
+    <div class="carousel-content">
+      <button class="close-btn" id="closeCodesModal">&times;</button>
       <h3 style="display:flex;align-items:center;justify-content:center;gap:8px;">
         <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Codes.png" alt="Codes" style="width:28px;height:28px;"/>
         Enter your code!
       </h3>
-      <input id="codeInput" type="text" placeholder="Enter code" style="padding:10px;width:80%;font-size:1.05rem;margin-bottom:12px;border-radius:12px;border:1.5px solid #374151;background:#f8fafc;color:#1e293b;box-shadow: inset 0 1px 2px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);"/>
-      <button id="submitCodeBtn" class="form-btn" style="width:80%;">Submit Code</button>
-      <div id="codeMsg" style="font-size:1rem;color:#7f9db5;margin-top:6px;"></div>
+      <input id="codeInput" type="text" placeholder="Enter your exclusive code..."/>
+      <button id="submitCodeBtn" class="form-btn">Submit Code</button>
+      <div id="codeMsg" style="font-size:1rem;color:#7f9db5;margin-top:12px;font-weight:600;"></div>
+    </div>
+  </div>
+
+  <!-- Profile Customization Modal (Task 2) -->
+  <div id="profileCustomizationModal" class="apple-modal">
+    <div class="carousel-content">
+        <button class="close-btn" id="closeCustomizationModal">&times;</button>
+        <h3>Customize Profile</h3>
+        
+        <div class="customization-section">
+            <h4>Profile Banner</h4>
+            <div id="bannerSelectionGrid" class="banner-grid">
+                <!-- Banner options will be populated by JS -->
+            </div>
+        </div>
+
+        <div class="customization-section">
+            <h4>Profile Card Theme</h4>
+            <div id="gradientSelectionGrid" class="gradient-grid">
+                <!-- Gradient options will be populated by JS -->
+            </div>
+        </div>
+
+        <div class="customization-section">
+            <h4>
+                <span>Username Color</span>
+                <button id="suggestColorBtn" title="Suggest colors with AI">✨ Suggest with AI</button>
+            </h4>
+            <div id="nameColorSelectionGrid" class="color-grid">
+                <!-- Color swatches will be populated by JS -->
+            </div>
+        </div>
+
+        <button id="saveCustomizationBtn">Save Customization</button>
     </div>
   </div>
 
@@ -1674,18 +1930,14 @@ function containsProfane(str){
 }
 
 // ================== CODES CONFIGURATION ==================
-// Define exclusive codes here. Each code maps to an object describing
-// the key used to store redemption, the alert message to display,
-// the icon shown in the alert, and the bonus custom badge count or
-// avatar unlock flag. To add more codes in the future simply append
-// additional entries to this object with the code string as the key.
 const codesConfig = {
   "D1//\\0ND-S70N3": {
     key: "diamond",
     alert: "Diamond Exclusives Introduced",
     icon: "https://cdn.discordapp.com/emojis/1381097369474695178.webp?size=128",
     customBonus: 2,
-    avatarUnlock: true
+    avatarUnlock: true,
+    profileCustomization: true // New flag to unlock profile customization
   },
   "3M-R@LD_GR33N": {
     key: "emerald",
@@ -1723,9 +1975,7 @@ const authForms    = document.getElementById("authForms"),
       adminSidebar     = document.getElementById("adminSidebar"),
       closeAccountSidebar = document.getElementById("closeAccountSidebar"),
       closeAdminSidebar   = document.getElementById("closeAdminSidebar"),
-      kcAlertDiv   = document.getElementById("kcAlert"),
-      avatarModal  = document.getElementById("avatarModal"),
-      closeAvatarModal = document.getElementById("closeAvatarModal");
+      kcAlertDiv   = document.getElementById("kcAlert");
 
 // Codes UI references
 const codesBtn        = document.getElementById("codesBtn"),
@@ -1742,11 +1992,21 @@ const usernameModal    = document.getElementById("usernameModal"),
       usernameInput    = document.getElementById("usernameInput"),
       usernameMsg      = document.getElementById("usernameMsg");
 
+// Profile Customization UI Refs
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileCustomizationModal = document.getElementById('profileCustomizationModal');
+const closeCustomizationModal = document.getElementById('closeCustomizationModal');
+const bannerSelectionGrid = document.getElementById('bannerSelectionGrid');
+const gradientSelectionGrid = document.getElementById('gradientSelectionGrid');
+const nameColorSelectionGrid = document.getElementById('nameColorSelectionGrid');
+const saveCustomizationBtn = document.getElementById('saveCustomizationBtn');
+const profileBanner = document.getElementById('profileBanner');
+const suggestColorBtn = document.getElementById('suggestColorBtn');
+
+
 // ========== KC ALERT ==========
 let alertTimeout;
 function kcAlert(txt, timeout=2350, iconURL=null){
-  // If an icon URL is provided, inject it alongside the message. Otherwise
-  // fall back to plain text content. Reset any previous content first.
   if(iconURL){
     kcAlertDiv.innerHTML = `<img src="${iconURL}" alt="icon" style="width:22px;height:22px;"> <span>${txt}</span>`;
   } else {
@@ -1776,75 +2036,83 @@ document.addEventListener("mousedown", e=>{
 });
 
 // ========== CODES FEATURE ==========
-// Show the codes modal when the codes button is clicked
 codesBtn.onclick = () => {
-  codesModal.classList.add("open");
+    codesModal.classList.add("open");
 };
-// Hide the codes modal when the close button is clicked
 closeCodesModal.onclick = () => {
-  codesModal.classList.remove("open");
-  codeInput.value = "";
-  codeMsg.textContent = "";
+    codesModal.classList.remove("open");
+    codeInput.value = "";
+    codeMsg.textContent = "";
+    codeInput.className = "";
 };
-// Allow closing the codes modal by clicking the backdrop
 codesModal.addEventListener("mousedown", e => {
-  if(!e.target.closest(".carousel-content")){
-    codesModal.classList.remove("open");
-    codeInput.value = "";
-    codeMsg.textContent = "";
-  }
+    if (!e.target.closest(".carousel-content")) {
+        closeCodesModal.onclick();
+    }
 });
-// Handle code submission
 submitCodeBtn.onclick = async () => {
-  const code = codeInput.value.trim();
-  if(!code){
-    codeMsg.textContent = "Please enter a code!";
-    return;
-  }
-  const conf = codesConfig[code];
-  if(!conf){
-    codeMsg.textContent = "Invalid code!";
-    return;
-  }
-  const user = auth.currentUser;
-  if(!user){
-    codesModal.classList.remove("open");
-    codeInput.value = "";
-    codeMsg.textContent = "";
-    kcAlert("Please log in first!", 2500);
-    return;
-  }
-  const uid = user.uid;
-  // Check if the code has already been redeemed
-  const redeemedSnap = await db.ref(`users/${uid}/codesUnlocked/${conf.key}`).once('value');
-  if(redeemedSnap.val()){
-    codesModal.classList.remove("open");
-    codeInput.value = "";
-    codeMsg.textContent = "";
-    kcAlert("Code already redeemed!", 2500);
-    return;
-  }
-  // Prepare updates: mark the code as unlocked, record that avatar can be changed
-  const updates = {};
-  updates[`users/${uid}/codesUnlocked/${conf.key}`] = true;
-  if(conf.avatarUnlock){
-    updates[`users/${uid}/avatarUnlocked`] = true;
-  }
-  // accumulate customBonus in a separate field (useful for future extensibility)
-  const bonusSnap = await db.ref(`users/${uid}/customBonus`).once('value');
-  const existingBonus = bonusSnap.val() || 0;
-  updates[`users/${uid}/customBonus`] = existingBonus + (conf.customBonus || 0);
-  // Apply updates atomically
-  await db.ref().update(updates).catch(()=>{});
-  // Reload badges so the new allowance takes effect
-  loadBadges(uid, user.emailVerified);
-  // Reset modal state and close
-  codesModal.classList.remove("open");
-  codeInput.value = "";
-  codeMsg.textContent = "";
-  // Show a customised alert with the provided icon
-  kcAlert(conf.alert, 2500, conf.icon);
+    const code = codeInput.value.trim();
+    const user = auth.currentUser;
+
+    codeInput.classList.remove('success', 'error');
+    codeMsg.classList.remove('success', 'error');
+    codeMsg.textContent = '';
+
+    if (!code) {
+        codeMsg.textContent = "Please enter a code!";
+        codeInput.classList.add('error');
+        codeMsg.classList.add('error');
+        setTimeout(() => { codeInput.classList.remove('error'); codeMsg.textContent = ''; }, 1500);
+        return;
+    }
+    const conf = codesConfig[code];
+    if (!conf) {
+        codeMsg.textContent = "Invalid code!";
+        codeInput.classList.add('error');
+        codeMsg.classList.add('error');
+        setTimeout(() => { codeInput.classList.remove('error'); codeMsg.textContent = ''; }, 1500);
+        return;
+    }
+    if (!user) {
+        closeCodesModal.onclick();
+        kcAlert("Please log in first!", 2500);
+        return;
+    }
+    const uid = user.uid;
+    const redeemedSnap = await db.ref(`users/${uid}/codesUnlocked/${conf.key}`).once('value');
+    if (redeemedSnap.val()) {
+        codeMsg.textContent = "Code already redeemed!";
+        codeInput.classList.add('error');
+        codeMsg.classList.add('error');
+        setTimeout(() => closeCodesModal.onclick(), 1500);
+        return;
+    }
+
+    const updates = {};
+    updates[`users/${uid}/codesUnlocked/${conf.key}`] = true;
+    if (conf.avatarUnlock) {
+        updates[`users/${uid}/avatarUnlocked`] = true;
+    }
+    if (conf.profileCustomization) {
+        updates[`users/${uid}/profileCustomizationUnlocked`] = true;
+    }
+    const bonusSnap = await db.ref(`users/${uid}/customBonus`).once('value');
+    const existingBonus = bonusSnap.val() || 0;
+    updates[`users/${uid}/customBonus`] = existingBonus + (conf.customBonus || 0);
+
+    await db.ref().update(updates);
+    
+    codeMsg.textContent = "Success!";
+    codeInput.classList.add('success');
+    codeMsg.classList.add('success');
+    
+    setTimeout(() => {
+        closeCodesModal.onclick();
+        loadBadges(uid, user.emailVerified); // Reload badges and check for customization unlock
+        kcAlert(conf.alert, 2500, conf.icon);
+    }, 1200);
 };
+
 
 // ========== TOGGLE FORMS ==========
 toLogin.onclick = ()=>{
@@ -1996,19 +2264,14 @@ document.getElementById("setStreakBtn").onclick = ()=>{
   }).then(() => {
     kcAlert(`Set streak to ${days} for user!`, 2500);
     loadAllUsersToAdmin(); // Refresh admin list
-    // If the currently logged-in user is being edited, refresh their profile card UI
     if(auth.currentUser && auth.currentUser.uid === uid) {
       loadBadges(uid, auth.currentUser.emailVerified);
     }
-    // Optionally: clear the input for next use
     document.getElementById("adminStreakInput").value = "";
   }).catch(err => {
     kcAlert("Failed to set streak: " + err.message, 3000);
   });
 };
-
-
-
 
 // ========== STREAK LOGIC (NEW FANCY MODAL) ==========
 const streakBtn = document.getElementById('streakBtn');
@@ -2018,15 +2281,12 @@ const streakProgressBarFill = document.getElementById('streakProgressBarFill');
 const streakProgressNodes = document.getElementById('streakProgressNodes');
 const streakModalDesc = document.getElementById('streakModalDesc');
 
-// Define your milestones (customise if you want)
 const streakMilestones = [
   { days: 10, label: "10 Days", rewardIcon: "✨", rewardText: "Custom Profile Picture!" },
-  // Remove the coin icon for 50 days so the label sits cleanly in the container
-  { days: 50, label: "50 Days", rewardIcon: "", rewardText: "Custom Badge" },
-  { days: 100, label: "100 Days", rewardIcon: "🔥", rewardText: "2 Custom Badges" }
+  { days: 50, label: "50 Days", rewardIcon: "🎨", rewardText: "Profile Customization" },
+  { days: 100, label: "100 Days", rewardIcon: "�", rewardText: "2 Custom Badges" }
 ];
 
-// Button opens fancy modal (shows rewards)
 streakBtn.onclick = ()=>{
   db.ref(`users/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
     const streak = snap.val()||0;
@@ -2040,27 +2300,16 @@ streakRewardsModal.addEventListener('mousedown', e=>{
 });
 
 function renderStreakModal(streak){
-  // Render progress bar: show how far through milestones you are
   const maxMilestone = streakMilestones[streakMilestones.length-1].days;
   const progress = Math.min(100, (streak / maxMilestone) * 100);
   streakProgressBarFill.style.width = `${progress}%`;
-
-  // Determine unlocked and current indices
   let unlockedIndex = -1;
   streakMilestones.forEach((ms,i)=>{ if(streak >= ms.days) unlockedIndex = i; });
   const currentIndex = Math.min(unlockedIndex + 1, streakMilestones.length - 1);
-
-  // Render milestone nodes with statuses
   streakProgressNodes.innerHTML = "";
   streakMilestones.forEach((ms,i)=>{
     const node = document.createElement("div");
     let state;
-    /*
-     * Determine the state of each milestone node:
-     *  - Unlocked: any milestone index up to and including the last unlocked index.
-     *  - Current: the immediate next milestone after the unlocked ones (if any remain).
-     *  - Locked: all remaining milestones.
-     */
     if(i <= unlockedIndex) state = 'unlocked';
     else if(i === unlockedIndex + 1) state = 'current';
     else state = 'locked';
@@ -2070,7 +2319,6 @@ function renderStreakModal(streak){
     node.innerHTML = `<span class="reward-icon">${iconChar}</span>
       <div class="node-label">${ms.label}</div>
       <div class="node-status">${statusLabel}</div>`;
-    // Tooltip / click message for locked badges
     node.onclick = function(){
       if(state === 'locked'){
         kcAlert('Reach ' + ms.days + ' days to unlock this reward!');
@@ -2078,7 +2326,6 @@ function renderStreakModal(streak){
     };
     streakProgressNodes.appendChild(node);
   });
-  // Description and upcoming rewards
   let desc="";
   if(streak < streakMilestones[0].days) desc = `Log in daily to unlock your first reward at ${streakMilestones[0].days} days.`;
   else if(streak < streakMilestones[1].days) desc = `Great job! Next reward at ${streakMilestones[1].days} days.`;
@@ -2086,7 +2333,6 @@ function renderStreakModal(streak){
   else desc = "Legend! You've unlocked all current streak rewards.";
   desc += " More streak rewards coming in the next update.";
   streakModalDesc.textContent = desc;
-  // Footer encouragement message
   const footer = document.getElementById('streakFooterMsg');
   if(footer){
     const nextMs = streakMilestones.find(ms => ms.days > streak);
@@ -2098,42 +2344,29 @@ function renderStreakModal(streak){
   }
 }
 
-// ========== CLASSIC STREAK (still works for popup, you can remove it if you wish) ==========
 function handleStreak(uid){
   const today=getToday();
   db.ref(`users/${uid}`).once("value").then(snap=>{
     let {lastLoginDate,loginStreak} = snap.val() || {};
     loginStreak = loginStreak || 0;
-    if(lastLoginDate===today) return; // already counted today
-
+    if(lastLoginDate===today) return;
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate()-1);
     let ystr = `${yesterday.getFullYear()}-${pad2(yesterday.getMonth()+1)}-${pad2(yesterday.getDate())}`;
-
-    // If the user logged in yesterday then increment the streak as normal
     if(lastLoginDate===ystr){
       loginStreak += 1;
     } else {
-      /*
-       * When the previous login was not yesterday we used to reset the
-       * streak back to 1. This caused a problem where an admin‑set
-       * streak would immediately be overwritten the next time the user
-       * logged in. To respect manually set streak values, retain the
-       * current loginStreak but ensure it is at least 1. This way an
-       * admin can bump a user's streak to an arbitrary number and the
-       * value will persist across logins instead of being reset to 1.
-       */
       loginStreak = Math.max(loginStreak, 1);
     }
-    // Persist the updated lastLoginDate and streak back to the database
     db.ref(`users/${uid}/lastLoginDate`).set(today);
     db.ref(`users/${uid}/loginStreak`).set(loginStreak);
   });
 }
 
 // ========== USERNAME LOGIC ==========
-function displayUsername(name){
-  const html = `👋 <span class="username-container" id="usernameContainer"><span class="username-text">${name}</span><span class="edit-icon">✏️</span></span>`;
+function displayUsername(name, color = '#1992d4'){
+  const usernameText = `<span class="username-text" style="color: ${color};">${name}</span>`;
+  const html = `👋 <span class="username-container" id="usernameContainer">${usernameText}<span class="edit-icon">✏️</span></span>`;
   welcomeUser.innerHTML = html;
   const container = document.getElementById('usernameContainer');
   if(container){
@@ -2144,7 +2377,6 @@ function displayUsername(name){
     };
   }
 }
-// Track the current about me value globally
 let currentAboutMe = '';
 function openUsernameModal(isFirstTime = false){
   usernameModal.classList.add('open');
@@ -2185,7 +2417,9 @@ saveUsernameBtn.onclick = function(){
   }
   db.ref(`users/${u.uid}`).update({username: val, displayName: val}).then(()=>{
     u.updateProfile({displayName: val}).catch(()=>{});
-    displayUsername(val);
+    db.ref(`users/${u.uid}/profileCustomization/nameColor`).once('value').then(snap => {
+        displayUsername(val, snap.val() || '#1992d4');
+    });
     usernameModal.classList.remove('open');
     usernameModal.dataset.firstTime = '';
     closeUsernameModal.style.display = '';
@@ -2196,69 +2430,64 @@ saveUsernameBtn.onclick = function(){
 // ========== AUTH STATE & INIT AVATAR ==========
 auth.onAuthStateChanged(u => {
   if (u) {
-    // Prepare restore data
-    const restored = {
-      displayName: u.displayName || u.email,
-      email: u.email,
-      emailVerified: u.emailVerified,
-    };
-    if (u.photoURL) restored.avatar = u.photoURL;
-    // Check current DB data, only update if missing
-    db.ref(`users/${u.uid}`).once("value").then(snapshot => {
-      const data = snapshot.val() || {};
-      const toUpdate = {};
-      Object.keys(restored).forEach(key => {
-        if (!data[key]) toUpdate[key] = restored[key];
-      });
-      if (Object.keys(toUpdate).length > 0) {
-        db.ref(`users/${u.uid}`).update(toUpdate);
-      }
-    });
-
     authForms.style.display = "none";
     profileUI.style.display = "block";
     handleStreak(u.uid);
     badgesCard.style.display = "flex";
     document.querySelector(".kc-title").textContent = "KC Events";
 
-    // Load or prompt username
-    db.ref(`users/${u.uid}/username`).once('value').then((snap) => {
-      const uname = snap.val();
-      const nameToDisplay = uname || u.displayName || u.email;
-      displayUsername(nameToDisplay);
-      if(!uname){
+    db.ref(`users/${u.uid}`).once('value').then(snap => {
+      const userData = snap.val() || {};
+      const nameToDisplay = userData.username || u.displayName || u.email;
+      const custom = userData.profileCustomization || {};
+      
+      displayUsername(nameToDisplay, custom.nameColor);
+
+      if(!userData.username){
         openUsernameModal(true);
       }
+
+      // Apply profile card theme AND banner
+      const profileCard = document.getElementById('profileCard');
+      if (custom.gradient) {
+          profileCard.style.background = custom.gradient;
+      } else {
+          profileCard.style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+      }
+      if (profileBanner) {
+          if (custom.banner) {
+              profileBanner.style.backgroundImage = `url('${custom.banner}')`;
+          } else {
+              profileBanner.style.backgroundImage = 'none';
+          }
+      }
+       avatarImg.src = userData.avatar || "https://kevinmidnight7-sudo.github.io/messageboardkc/1.png";
+       avatarImg.style.display = "block";
+       displayAboutMe(userData.aboutMe || '');
     });
 
     db.ref("users").once("value").then(s => userCounter.textContent = `There are now ${s.numChildren()} users registered!`);
-    db.ref(`users/${u.uid}/avatar`).once("value").then(snap => {
-      const url = snap.val() || "avatars/default.png";
-      avatarImg.src = url; avatarImg.style.display = "block";
-    });
     loadBadges(u.uid, u.emailVerified);
-    // Load About Me text
-    db.ref(`users/${u.uid}/aboutMe`).once('value').then(snap => {
-      displayAboutMe(snap.val() || '');
-    });
+    
   } else {
     authForms.style.display = "flex";
     profileUI.style.display = "none";
     badgesCard.style.display = "none";
     avatarImg.style.display = "none";
     document.querySelector(".kc-title").textContent = "KC Events";
+    editProfileBtn.style.display = 'none';
+    document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+    if(profileBanner) {
+      profileBanner.style.backgroundImage = 'none';
+    }
   }
 });
-
-
 
 // ========== AVATAR CAROUSEL LOGIC ==========
 const avatarImgs = [
   "1.png","2.png","3.png","4.png","5.png","6.png","7.png","13.png","9.png","10.png","11.png","12.png"
 ].map(n => `https://kevinmidnight7-sudo.github.io/messageboardkc/${n}`);
-
 const avatarCarousel = document.getElementById("avatarCarousel");
-
 function renderAvatars(selectedUrl) {
   avatarCarousel.innerHTML = "";
   avatarImgs.forEach(url => {
@@ -2283,10 +2512,8 @@ function renderAvatars(selectedUrl) {
     avatarCarousel.appendChild(div);
   });
 }
-
 function renderAvatarsWithUpload(user){
   avatarCarousel.innerHTML = "";
-  // Shiny upload button!
   const div = document.createElement("div");
   div.className = "avatar-item avatar-upload-unlocked";
   div.innerHTML = `<span class="plus-icon">+</span><div class="upload-label">Upload</div>`;
@@ -2295,7 +2522,6 @@ function renderAvatarsWithUpload(user){
     document.getElementById("uploadAvatarModal").classList.add("open");
   };
   avatarCarousel.appendChild(div);
-  // Render normal avatars
   avatarImgs.forEach(url => {
     const adiv = document.createElement("div");
     adiv.className = "avatar-item";
@@ -2317,10 +2543,6 @@ function renderAvatarsWithUpload(user){
     avatarCarousel.appendChild(adiv);
   });
 }
-
-// Show avatar modal with/without upload. In addition to the login streak, users
-// who have redeemed an exclusive code with avatar unlock privileges can also
-// upload their own avatar regardless of streak length.
 avatarBtn.onclick = ()=> {
   const user = auth.currentUser;
   if(!user) return;
@@ -2343,7 +2565,6 @@ avatarBtn.onclick = ()=> {
     }, 50);
   });
 };
-// Avatar upload modal logic
 document.getElementById("closeUploadAvatarModal").onclick = function(){
   document.getElementById("uploadAvatarModal").classList.remove("open");
   document.getElementById("avatarUploadMsg").textContent = "";
@@ -2366,7 +2587,6 @@ document.getElementById("uploadAvatarBtn").onclick = function(){
   };
   reader.readAsDataURL(file);
 };
-// show selected file name
 document.getElementById("avatarFile").addEventListener('change',function(){
   const file = this.files[0];
   document.getElementById('fileNameDisplay').textContent = file ? file.name : 'No file chosen';
@@ -2382,7 +2602,6 @@ document.getElementById('carouselLeft').onclick = ()=>{
 document.getElementById('carouselRight').onclick = ()=>{
   avatarCarousel.scrollBy({left:110,behavior:'smooth'});
 };
-// Swipe support
 let startX=0, scrollLeft=0, isDown=false;
 avatarCarousel.addEventListener('pointerdown', e=>{
   isDown=true; startX=e.pageX; scrollLeft=avatarCarousel.scrollLeft;
@@ -2397,11 +2616,10 @@ avatarCarousel.addEventListener('pointermove', e=>{
 });
 
 // ========== BADGES LOGIC ==========
-let editingBadgeId = null; // holds the key of the badge being edited
+let editingBadgeId = null;
 async function loadBadges(uid, verified){
   badgeList.innerHTML="";
   joinBadge.innerHTML="";
-  // Verified box always first
   const verifiedBox=document.createElement("div");
   verifiedBox.className="badge-item verified";
   verifiedBox.tabIndex=0;
@@ -2428,7 +2646,6 @@ async function loadBadges(uid, verified){
     };
   }
   badgeList.appendChild(verifiedBox);
-  // Offence/Defence/Overall
   const specs={
     offence:{label:"Best Offence", icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png", cls:"offence", grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)", glow: "#ff6b6bcc"},
     defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)", glow: "rgba(59,130,246,0.9)"},
@@ -2460,25 +2677,32 @@ async function loadBadges(uid, verified){
     }
     badgeList.appendChild(el);
   }
-  // Load streak and custom badges
-  const streakSnap = await db.ref(`users/${uid}/loginStreak`).once('value');
-  const streak = streakSnap.val() || 0;
-  const customSnap = await db.ref(`users/${uid}/customBadges`).once('value');
-  const customBadges = customSnap.val() || {};
+  const userSnap = await db.ref(`users/${uid}`).once('value');
+  const userData = userSnap.val() || {};
+  const streak = userData.loginStreak || 0;
+  const customBadges = userData.customBadges || {};
   const customKeys = Object.keys(customBadges);
   const customCount = customKeys.length;
-  // Determine the base number of custom badges allowed by streak milestones
+  
   const baseMax = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
-  // Fetch codes unlocked to compute additional allowances
-  const codesSnap = await db.ref(`users/${uid}/codesUnlocked`).once('value');
-  const codesUnlocked = codesSnap.val() || {};
+  
+  const codesUnlocked = userData.codesUnlocked || {};
   let bonus = 0;
   if(codesUnlocked.diamond) bonus += 2;
   if(codesUnlocked.emerald) bonus += 1;
   const maxCustom = baseMax + bonus;
-  // Users can create custom badges if they meet the streak requirement or have any bonus
+  
   const allowCustom = (streak >= 50) || (bonus > 0);
-  // Show create badge tile only if under limit
+  
+  // Check if profile customization is unlocked and show the button
+  const profileCustomizationUnlocked = userData.profileCustomizationUnlocked || false;
+  
+  if (profileCustomizationUnlocked) {
+    editProfileBtn.style.display = 'flex';
+  } else {
+    editProfileBtn.style.display = 'none';
+  }
+
   if(allowCustom && customCount < maxCustom){
     const addDiv=document.createElement("div");
     addDiv.className="badge-item";
@@ -2493,19 +2717,16 @@ async function loadBadges(uid, verified){
       addDiv.style.transform="";
     };
     addDiv.onclick = function(){
-      editingBadgeId = null; // new badge
-      // Reset modal fields
+      editingBadgeId = null;
       document.getElementById('badgeNameFancy').value = '';
       document.getElementById('gradCol1').value = '#ffe066';
       document.getElementById('gradCol2').value = '#e0aaff';
       const tInput = document.getElementById('textColorPicker');
       if(tInput) tInput.value = '#ffffff';
-      // reset icon selection
       const iconRow = document.getElementById('badgeIconRowFancy');
       if(iconRow){
         iconRow.querySelectorAll('.icon-item').forEach(el => el.classList.remove('selected'));
       }
-      // reset gradient boxes and colour swatches
       const gradContainer = document.getElementById('gradOptions');
       if(gradContainer) gradContainer.querySelectorAll('.gradient-box').forEach(el => el.classList.remove('selected'));
       const colourContainer = document.getElementById('textColorSwatches');
@@ -2516,7 +2737,6 @@ async function loadBadges(uid, verified){
     };
     badgeList.appendChild(addDiv);
   }
-  // Render custom badges
   customKeys.forEach(key=>{
     const badge = customBadges[key];
     const cdiv = document.createElement("div");
@@ -2524,7 +2744,6 @@ async function loadBadges(uid, verified){
     cdiv.style.background = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
     cdiv.innerHTML = `<span style="font-size:2.2em;">${badge.icon}</span>
       <span class="badge-label" style="color:${badge.textColor||'#e5e7eb'};">${badge.name}</span>`;
-    // Add edit icon
     const editIcon=document.createElement('span');
     editIcon.textContent='✏️';
     editIcon.className='edit-icon';
@@ -2535,7 +2754,6 @@ async function loadBadges(uid, verified){
     editIcon.style.opacity='0.8';
     editIcon.style.pointerEvents='none';
     cdiv.appendChild(editIcon);
-    // Delete icon (trash)
     const delIcon=document.createElement('span');
     delIcon.textContent='🗑️';
     delIcon.className='delete-icon';
@@ -2547,14 +2765,12 @@ async function loadBadges(uid, verified){
     delIcon.style.cursor='pointer';
     delIcon.onclick = function(e){
       e.stopPropagation();
-      // Delete immediately and show KC Alert instead of browser confirm
       db.ref(`users/${uid}/customBadges/${key}`).remove().then(()=>{
         kcAlert('Badge deleted');
         loadBadges(uid,auth.currentUser.emailVerified);
       });
     };
     cdiv.appendChild(delIcon);
-    // Hover effect: derive glow from gradient
     function hexToRgb(h){
       let r=0,g=0,b=0;
       if(h.length===4){r=parseInt(h[1]+h[1],16);g=parseInt(h[2]+h[2],16);b=parseInt(h[3]+h[3],16);} 
@@ -2579,7 +2795,6 @@ async function loadBadges(uid, verified){
     };
     cdiv.onclick = function(){
       editingBadgeId = key;
-      // populate fields
       document.getElementById('badgeNameFancy').value = badge.name;
       const g1 = badge.grad1 || '#ffe066';
       const g2 = badge.grad2 || '#e0aaff';
@@ -2588,7 +2803,6 @@ async function loadBadges(uid, verified){
       const tcol = badge.textColor || '#ffffff';
       const tInput = document.getElementById('textColorPicker');
       if(tInput) tInput.value = tcol;
-      // reset all selections
       const iconRow2 = document.getElementById('badgeIconRowFancy');
       if(iconRow2){
         iconRow2.querySelectorAll('.icon-item').forEach(el => {
@@ -2693,7 +2907,6 @@ function showBadgeStep(step){
   }
   updateBadgePreview();
 }
-// Wizard navigation buttons
 if(document.getElementById('badgeNextBtn')){
   document.getElementById('badgeNextBtn').onclick = function(){
     if(currentBadgeStep < 4) showBadgeStep(currentBadgeStep + 1);
@@ -2739,7 +2952,6 @@ if(gradContEl){
     };
     gradContEl.appendChild(box);
   });
-  // preselect first gradient
   if(gradContEl.firstElementChild){ gradContEl.firstElementChild.classList.add('selected'); }
 }
 const textColours = ['#ffffff','#facc15','#22d3ee','#4ade80','#f472b6','#a78bfa','#f97316','#0f172a'];
@@ -2759,7 +2971,6 @@ if(swatchEl){
     };
     swatchEl.appendChild(sw);
   });
-  // preselect first colour swatch
   if(swatchEl.firstElementChild){ swatchEl.firstElementChild.classList.add('selected'); }
 }
 ["badgeNameFancy","gradCol1","gradCol2","textColorPicker"].forEach(id=>{
@@ -2789,14 +3000,12 @@ document.getElementById("saveBadgeFancyBtn").onclick = function(){
     document.getElementById("badgeCreateMsgFancy").textContent = "Pick a name and icon!";
     return;
   }
-  // Profanity check
   if(containsProfane(name)){
     document.getElementById("badgeCreateMsgFancy").textContent = "Please choose a different name.";
     return;
   }
   const uid = auth.currentUser.uid;
   if(editingBadgeId){
-    // update existing badge
     db.ref(`users/${uid}/customBadges/${editingBadgeId}`).set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
       document.getElementById("badgeCreateMsgFancy").textContent = "Badge updated!";
       setTimeout(()=>{
@@ -2807,7 +3016,6 @@ document.getElementById("saveBadgeFancyBtn").onclick = function(){
       loadBadges(uid,auth.currentUser.emailVerified);
     });
   } else {
-    // create new badge
     const newRef = db.ref(`users/${uid}/customBadges`).push();
     newRef.set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
       document.getElementById("badgeCreateMsgFancy").textContent = "Badge saved!";
@@ -2819,11 +3027,9 @@ document.getElementById("saveBadgeFancyBtn").onclick = function(){
     });
   }
 };
-// initialise preview
 updateBadgePreview();
 
 /* ========== ABOUT ME LOGIC ========== */
-// Display the about me text in the profile card
 function displayAboutMe(text){
   currentAboutMe = text || '';
   const el = document.getElementById('aboutMeDisplay');
@@ -2835,7 +3041,6 @@ function displayAboutMe(text){
     }
   }
 }
-// Open the about me modal and prefill current text
 function openAboutMeModal(){
   const modal = document.getElementById('aboutMeModal');
   if(modal){
@@ -2848,12 +3053,10 @@ function openAboutMeModal(){
     if(picker) picker.style.display = 'none';
   }
 }
-// Close the about me modal
 function closeAboutMeModal(){
   const modal = document.getElementById('aboutMeModal');
   if(modal) modal.classList.remove('open');
 }
-// Set up event handlers for About Me once DOM is ready
 document.addEventListener('DOMContentLoaded', function(){
   const aboutBox = document.getElementById('aboutMeContainer');
   if(aboutBox) aboutBox.onclick = function(){ openAboutMeModal(); };
@@ -2914,6 +3117,241 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   };
 });
+
+// ========== PROFILE CUSTOMIZATION LOGIC ==========
+const bannerOptions = [
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner1.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner2.jpg',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner3.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner4.jpg',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner5.jpg',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner6.jpg',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner7.jpeg',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner8.jpg',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/banner9.jpg',
+
+
+];
+const gradientOptions = [
+     'linear-gradient(135deg, rgb(246, 211, 101) 0%, rgb(253, 160, 133) 100%)', // Warm golden sunset
+  'linear-gradient(135deg, rgb(161, 196, 253) 0%, rgb(194, 233, 251) 100%)', // Light blue sky
+  'linear-gradient(135deg, rgb(255, 154, 158) 0%, rgb(254, 207, 239) 100%)', // Pink pastel
+  'linear-gradient(135deg, rgb(132, 250, 176) 0%, rgb(143, 211, 244) 100%)', // Green & teal
+  'linear-gradient(135deg, rgb(212, 252, 121) 0%, rgb(150, 230, 161) 100%)', // Soft green lemon
+  'linear-gradient(135deg, rgb(137, 247, 254) 0%, rgb(102, 166, 255) 100%)', // Aqua blue
+  'linear-gradient(135deg, rgb(254, 225, 64) 0%, rgb(250, 112, 154) 100%)',  // Peach sunrise
+  'linear-gradient(135deg, rgb(255, 222, 233) 0%, rgb(185, 233, 221) 100%)', // Blush & mint
+  'linear-gradient(135deg, rgb(131, 164, 212) 0%, rgb(182, 251, 255) 100%)', // Frosted blue
+  'linear-gradient(135deg, rgb(186, 255, 201) 0%, rgb(83, 201, 255) 100%)',  // Mint to blue
+  'linear-gradient(135deg, rgb(255, 221, 225) 0%, rgb(255, 247, 174) 100%)', // Pastel blush
+  'linear-gradient(135deg, rgb(252, 234, 187) 0%, rgb(248, 181, 0) 100%)',   // Yellow gold
+  'linear-gradient(135deg, rgb(238, 174, 202) 0%, rgb(148, 187, 233) 100%)', // Pink & periwinkle
+  'linear-gradient(135deg, rgb(255, 175, 189) 0%, rgb(255, 195, 160) 100%)', // Peach pastel
+  'linear-gradient(135deg, rgb(120, 115, 245) 0%, rgb(236, 72, 153) 100%)',  // Deep purple to pink (cyberpunk)
+  'linear-gradient(135deg, rgb(255, 234, 167) 0%, rgb(255, 161, 127) 100%)', // Apricot gold
+  'linear-gradient(135deg, rgb(187, 210, 197) 0%, rgb(255, 170, 165) 100%)', // Subtle vintage
+  'linear-gradient(135deg, rgb(216, 180, 254) 0%, rgb(134, 182, 246) 100%)', // Lavender blue
+  'linear-gradient(135deg, rgb(247, 151, 30) 0%, rgb(255, 210, 63) 100%)',   // Bright orange
+  'linear-gradient(135deg, rgb(221, 214, 243) 0%, rgb(250, 172, 168) 100%)', // Soft lavender & rose
+  // Vibrant and neon
+  'linear-gradient(135deg, rgb(0, 210, 255) 0%, rgb(58, 123, 213) 100%)',    // Electric blue
+  'linear-gradient(135deg, rgb(255, 0, 204) 0%, rgb(51, 0, 102) 100%)',      // Neon pink & purple
+  'linear-gradient(135deg, rgb(72, 85, 99) 0%, rgb(41, 50, 60) 100%)',       // Dark slate
+  'linear-gradient(135deg, rgb(17, 153, 142) 0%, rgb(56, 239, 125) 100%)',   // Emerald green
+  'linear-gradient(135deg, rgb(255, 48, 48) 0%, rgb(255, 200, 55) 100%)',    // Red to gold
+  'linear-gradient(135deg, rgb(238, 119, 82) 0%, rgb(231, 60, 126) 100%)',   // Sunset fire
+  'linear-gradient(135deg, rgb(29, 67, 80) 0%, rgb(106, 17, 203) 100%)',     // Deep night blue/purple
+  'linear-gradient(135deg, rgb(0, 242, 96) 0%, rgb(5, 117, 230) 100%)',      // Vibrant green-blue
+  'linear-gradient(135deg, rgb(255, 87, 34) 0%, rgb(255, 255, 0) 100%)',     // Neon orange-yellow
+  'linear-gradient(135deg, rgb(67, 198, 172) 0%, rgb(248, 255, 174) 100%)'  
+];
+const defaultNameColorOptions = [
+ 
+  '#18181b', // Very dark grey (universal text)
+  '#f3f4f6', // Very light grey (contrast on dark backgrounds)
+  '#ffffff', // Pure white (classic on dark)
+  '#f59e42', // Vibrant orange (warm accent)
+  '#f43f5e', // Vivid pink (playful accent)
+  '#fbbf24', // Warm yellow (sunny highlight)
+  '#14b8a6', // Teal (modern cool accent)
+  '#6366f1', // Indigo blue (rich accent)
+  '#38bdf8', // Soft blue (friendly, readable)
+  '#84cc16', // Lime green (fresh pop)
+  '#ef4444', // Bright red (attention)
+  '#3f3f46'  // Slate grey (secondary text)
+
+];
+
+function updateColorSwatches(colors, currentNameColor) {
+    nameColorSelectionGrid.innerHTML = '';
+    colors.forEach(color => {
+        const item = document.createElement('div');
+        item.className = 'color-item';
+        if (color === currentNameColor) item.classList.add('selected');
+        item.style.background = color;
+        item.onclick = () => {
+            nameColorSelectionGrid.querySelectorAll('.color-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            // Live preview the name color
+            const usernameText = document.querySelector('#welcomeUser .username-text');
+            if (usernameText) {
+                usernameText.style.color = color;
+            }
+        };
+        nameColorSelectionGrid.appendChild(item);
+    });
+}
+
+
+function populateCustomizationModal(current) {
+    // Banners
+    bannerSelectionGrid.innerHTML = '';
+    bannerOptions.forEach(url => {
+        const item = document.createElement('div');
+        item.className = 'banner-item';
+        if (url === current.banner) item.classList.add('selected');
+        item.innerHTML = `<img src="${url}" alt="Banner Preview">`;
+        item.onclick = () => {
+            bannerSelectionGrid.querySelectorAll('.banner-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            if (profileBanner) profileBanner.style.backgroundImage = `url('${url}')`;
+        };
+        bannerSelectionGrid.appendChild(item);
+    });
+
+    // Gradients
+    gradientSelectionGrid.innerHTML = '';
+    gradientOptions.forEach(grad => {
+        const item = document.createElement('div');
+        item.className = 'gradient-item';
+        if (grad === current.gradient) item.classList.add('selected');
+        item.style.background = grad;
+        item.onclick = () => {
+            gradientSelectionGrid.querySelectorAll('.gradient-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            document.getElementById('profileCard').style.background = grad;
+        };
+        gradientSelectionGrid.appendChild(item);
+    });
+    
+    // Name Colors
+    updateColorSwatches(defaultNameColorOptions, current.nameColor);
+}
+
+editProfileBtn.onclick = () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
+        const current = snap.val() || {};
+        populateCustomizationModal(current);
+        profileCustomizationModal.classList.add('open');
+    });
+};
+
+closeCustomizationModal.onclick = () => {
+    profileCustomizationModal.classList.remove('open');
+    const user = auth.currentUser;
+    if(user) {
+        db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
+            const custom = snap.val() || {};
+            if(custom.banner) profileBanner.style.backgroundImage = `url('${custom.banner}')`;
+            else profileBanner.style.backgroundImage = 'none';
+
+            if(custom.gradient) document.getElementById('profileCard').style.background = custom.gradient;
+            else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+
+            const usernameText = document.querySelector('#welcomeUser .username-text');
+            if(usernameText) usernameText.style.color = custom.nameColor || '#1992d4';
+        });
+    }
+};
+
+profileCustomizationModal.addEventListener('mousedown', e => {
+    if (!e.target.closest('.carousel-content')) {
+        closeCustomizationModal.onclick();
+    }
+});
+
+saveCustomizationBtn.onclick = () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const selectedBannerEl = bannerSelectionGrid.querySelector('.banner-item.selected img');
+    const selectedGradientEl = gradientSelectionGrid.querySelector('.gradient-item.selected');
+    const selectedColorEl = nameColorSelectionGrid.querySelector('.color-item.selected');
+
+    const updates = {
+        banner: selectedBannerEl ? selectedBannerEl.src : null,
+        gradient: selectedGradientEl ? selectedGradientEl.style.background : null,
+        nameColor: selectedColorEl ? selectedColorEl.style.backgroundColor : null
+    };
+
+    db.ref(`users/${user.uid}/profileCustomization`).update(updates).then(() => {
+        kcAlert('Profile customization saved!');
+        profileCustomizationModal.classList.remove('open');
+    }).catch(err => {
+        kcAlert('Error saving: ' + err.message);
+    });
+};
+
+// Gemini API call for color suggestions
+suggestColorBtn.onclick = async () => {
+    suggestColorBtn.disabled = true;
+    suggestColorBtn.textContent = 'Thinking...';
+    
+    try {
+        const prompt = "Generate a JSON object with a single key 'colors' which is an array of 7 unique, modern, and appealing hex color codes for a user profile username.";
+        const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+        const payload = {
+            contents: chatHistory,
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        "colors": {
+                            type: "ARRAY",
+                            items: { "type": "STRING" }
+                        }
+                    }
+                }
+            }
+        };
+        const apiKey = ""; 
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        const text = result.candidates[0].content.parts[0].text;
+        const parsedJson = JSON.parse(text);
+
+        if (parsedJson.colors && Array.isArray(parsedJson.colors)) {
+            const currentSelected = nameColorSelectionGrid.querySelector('.color-item.selected');
+            const currentColor = currentSelected ? currentSelected.style.backgroundColor : null;
+            updateColorSwatches(parsedJson.colors, currentColor);
+            kcAlert("Here are some new colors!");
+        } else {
+            throw new Error("Invalid format from AI.");
+        }
+
+    } catch (error) {
+        console.error("Gemini API error:", error);
+        kcAlert("Sorry, couldn't get suggestions from AI right now.");
+    } finally {
+        suggestColorBtn.disabled = false;
+        suggestColorBtn.textContent = '✨ Suggest with AI';
+    }
+};
+
 
   </script>
 </body>
