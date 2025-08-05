@@ -8,18 +8,37 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
+    /* Animated Gradient Keyframes */
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
+    }
+
     body {
       margin: 0;
       padding: 0;
       min-height: 100vh;
       font-family: 'Poppins', sans-serif;
-      background: transparent;
+      /* Bonus: Full-page glass effect background */
+      background: linear-gradient(120deg, #232936 0%, #485a85 100%);
+      overflow-x: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
       box-sizing: border-box;
     }
+    /* Bonus: Full-page glass effect overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      pointer-events: none;
+    }
+
     .grid-container {
       display: flex;
       gap: 2.5rem;
@@ -27,18 +46,20 @@
       margin-bottom: 1.7rem;
       z-index: 1;
     }
+    /* 1. Enhanced Glassmorphism on Panels & Cards */
     .panel, .leaderboard {
       width: 560px;
       min-width: 480px;
       border-radius: 24px;
       padding: 2rem 1.3rem 1.5rem 1.3rem;
-      background: rgba(36,40,48,0.65);
-      box-shadow: 0 8px 48px 0 #c0d2e733, 0 2px 8px #8390b51a;
-      backdrop-filter: blur(18px) brightness(1.13);
-      -webkit-backdrop-filter: blur(18px) brightness(1.13);
+      background: rgba(255, 255, 255, 0.18); /* Updated background */
+      backdrop-filter: blur(20px) saturate(180%); /* Updated backdrop-filter */
+      -webkit-backdrop-filter: blur(20px) saturate(180%); /* Updated -webkit-backdrop-filter */
+      border: 1.5px solid rgba(255,255,255,0.25); /* Updated border */
+      box-shadow: 0 8px 40px 0 rgba(18,40,80,0.16), 0 1.5px 12px 0 rgba(60,100,160,0.08); /* Updated box-shadow */
+      background-image: linear-gradient(120deg, rgba(255,255,255,0.13) 0%, rgba(200,225,255,0.08) 100%); /* New background-image */
       box-sizing: border-box;
       position: relative;
-      border: none;
     }
     .panel h2, .leaderboard h3 {
       font-size: 1.45rem;
@@ -48,6 +69,14 @@
       color: #fff;
       text-shadow: 0 2px 10px #21325422;
       letter-spacing: 0.02em;
+    }
+    /* 2. Animated Gradient Highlights for section headers */
+    .gradient-header {
+      background: linear-gradient(90deg, #76e4ff 0%, #a788ff 50%, #f7a5ff 100%);
+      background-size: 200% 200%;
+      animation: gradientMove 4s ease-in-out infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     label {
       display: block;
@@ -122,7 +151,7 @@
       cursor: not-allowed;
     }
 
-    /* Admin button as a circular icon */
+    /* 5. Frosted Glass Button & Icon Styles */
     #adminIconBtn {
       position: absolute;
       top: 18px;
@@ -130,47 +159,49 @@
       width: 48px;
       height: 48px;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.15); /* Slightly transparent white */
-      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255,255,255,0.19); /* Glass button background */
+      border: 1.4px solid rgba(255,255,255,0.21); /* Glass button border */
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-      z-index: 10; /* Ensure it's above other elements */
-      padding: 0; /* Remove default button padding */
+      box-shadow: 0 2px 8px rgba(120,180,255,0.14); /* Glass button shadow */
+      backdrop-filter: blur(8px); /* Glass button backdrop-filter */
+      transition: box-shadow 0.18s, background 0.13s, transform 0.2s ease; /* Added transform for hover */
+      z-index: 10;
+      padding: 0;
     }
     #adminIconBtn:hover {
-      transform: scale(1.1);
-      background: rgba(255, 255, 255, 0.25);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      background: rgba(200,240,255,0.25); /* Glass button hover background */
+      box-shadow: 0 6px 24px #90f5ffd2; /* Glass button hover shadow */
+      transform: scale(1.07); /* Glass button hover transform */
     }
     #adminIconBtn img {
-      width: 100%; /* Make the image fill the button */
+      width: 100%;
       height: 100%;
-      object-fit: cover; /* Ensure the image covers the area without distortion */
-      pointer-events: none; /* Prevent image from interfering with click */
-      border-radius: 50%; /* Keep it circular */
+      object-fit: cover;
+      pointer-events: none;
+      border-radius: 50%;
     }
 
-    /* Apple glass leaderboard */
+    /* 1. Enhanced Glassmorphism on Leaderboard */
     .leaderboard {
       display: flex;
       flex-direction: column;
       align-items: center;
-      background: rgba(31,33,36,0.46);
-      border: none;
-      box-shadow: 0 12px 60px #abc9ef25, 0 2px 8px #8390b51a;
-      backdrop-filter: blur(24px) brightness(1.10);
-      -webkit-backdrop-filter: blur(24px) brightness(1.10);
+      background: rgba(255, 255, 255, 0.18); /* Updated background */
+      backdrop-filter: blur(20px) saturate(180%); /* Updated backdrop-filter */
+      -webkit-backdrop-filter: blur(20px) saturate(180%); /* Updated -webkit-backdrop-filter */
+      border: 1.5px solid rgba(255,255,255,0.25); /* Updated border */
+      box-shadow: 0 8px 40px 0 rgba(18,40,80,0.16), 0 1.5px 12px 0 rgba(60,100,160,0.08); /* Updated box-shadow */
+      background-image: linear-gradient(120deg, rgba(255,255,255,0.13) 0%, rgba(200,225,255,0.08) 100%); /* New background-image */
     }
     .lb-group {
       width: 92%;
       border-radius: 20px;
       padding: 1.05rem 1.25rem .85rem 1.25rem;
       margin-bottom: 1.2rem;
-      background: rgba(10,14,23,0.76);
+      background: rgba(10,14,23,0.76); /* Original background, can be updated for more glass effect */
       box-shadow: 0 6px 40px #cfdef755;
       border: 2px solid rgba(140,145,170,0.13);
       transition: box-shadow .19s, transform .16s;
@@ -187,7 +218,8 @@
     }
     .lb-group:hover {
       transform: translateY(-3px) scale(1.017);
-      box-shadow: 0 8px 32px #ffe0ec90, 0 1.5px 8px #f48ca888;
+      /* 4. Subtle Glow & Neon Edge Effects for highlighted cards */
+      box-shadow: 0 0 24px 4px rgba(120,170,255,0.18), 0 1.5px 8px 0 rgba(120,220,255,0.13);
       z-index: 2;
     }
     .offenseBox:hover { box-shadow: 0 8px 38px #ff436899, 0 1.5px 8px #f48ca8bb; }
@@ -199,7 +231,9 @@
       margin-bottom: .7rem; margin-top: -.1rem;
     }
     .sectionTitle img.icon {
-      width: 27px; height: 27px; margin-right: .6rem; filter: drop-shadow(0 2px 6px #181c2c33);
+      width: 27px; height: 27px; margin-right: .6rem;
+      /* 4. Subtle Glow & Neon Edge Effects for trophy/medal icons */
+      filter: drop-shadow(0 0 7px #ffd70077);
     }
     .offenseBox .sectionTitle {
       color: #fc718c;
@@ -213,15 +247,14 @@
       list-style: none; padding: 0; margin: 0;
     }
     .leaderboard li {
-      display: flex; /* Ensure li is a flex container */
-      align-items: center; /* Vertically center items */
-      /* Removed padding and border-bottom from li */
-      margin-bottom: 8px; /* Consistent spacing between list items */
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
       font-size: 1.01rem;
       transition: background .13s, color .14s;
       border-radius: 7px;
     }
-    .leaderboard li:last-child { margin-bottom: 0; } /* No margin after the last item */
+    .leaderboard li:last-child { margin-bottom: 0; }
     .first-place .name {
       background: linear-gradient(45deg,#ffe484,#ffc93a 80%);
       -webkit-background-clip: text;
@@ -245,52 +278,52 @@
     }
     .name, .count { display: inline-block; }
     .name { transition: font-size 0.3s; }
-    .count { font-weight: 600; font-size: 1.09rem; margin-left: auto; /* Push count to the right */ color: #fff; padding-right: 5px; /* Add some padding to prevent falling out */ }
+    .count { font-weight: 600; font-size: 1.09rem; margin-left: auto; color: #fff; padding-right: 5px; }
     .leaderboard li:not(.first-place):not(.second-place):not(.third-place) .name {
       color: #e8ebfc;
       font-size: 1.06rem;
       background: none;
       font-weight: 600;
     }
-    /* Ensure all list view avatars are the same size */
     .leaderboard li .avatar-small {
-      width: 28px; /* Consistent size */
-      height: 28px; /* Consistent size */
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       object-fit: cover;
-      /* margin-right: 8px; */ /* Removed this as gap on parent handles spacing */
       border: 1.5px solid rgba(255,255,255,0.7);
     }
-    /* Base styling for all list items to act as consistent containers */
     .leaderboard li .list-item-content {
       display: flex;
       align-items: center;
       justify-content: space-between;
       width: 100%;
-      padding: 0.6rem 1.25rem; /* Consistent padding */
-      border-radius: 12px; /* Rounded corners */
-      background: rgba(255,255,255,0.05); /* Subtle background for all */
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* Subtle shadow */
+      padding: 0.6rem 1.25rem;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.05);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       transition: all 0.2s ease;
-      box-sizing: border-box; /* Include padding in width/height calculation */
+      box-sizing: border-box;
     }
     .leaderboard li:hover .list-item-content {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
-    /* Top 3 styling for list items - applies only if not diamond */
+    /* 4. Subtle Glow & Neon Edge Effects for active/selected state */
+    .glass-active {
+      border: 1.7px solid #8efbff88;
+      box-shadow: 0 0 16px 2px #a9eeff77;
+      transition: box-shadow 0.22s, border 0.19s;
+    }
     .leaderboard li.first-place:not(.diamond-member-entry) .list-item-content,
     .leaderboard li.second-place:not(.diamond-member-entry) .list-item-content,
     .leaderboard li.third-place:not(.diamond-member-entry) .list-item-content {
-        background: rgba(255,255,255,0.08); /* Slightly more prominent background for top 3 */
+        background: rgba(255,255,255,0.08);
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
-
-    /* Specific styling for diamond-member-entry in list view */
     .leaderboard li.diamond-member-entry .list-item-content {
-        background: var(--custom-gradient-bg); /* Apply custom gradient */
+        background: var(--custom-gradient-bg);
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        border: none; /* Remove default border */
+        border: none;
     }
     .leaderboard li.diamond-member-entry .background-banner {
         position: absolute;
@@ -302,16 +335,15 @@
         background-position: center;
         opacity: 0.15;
         z-index: 0;
-        border-radius: 12px; /* Match container border-radius */
+        border-radius: 12px;
     }
-    /* Ensure name and avatar are always aligned and spaced */
     .name-and-avatar {
         display: flex;
         align-items: center;
-        gap: 8px; /* Provides consistent spacing between avatar and name */
+        gap: 8px;
     }
     .leaderboard li.diamond-member-entry .avatar-small {
-        width: 32px; /* Slightly larger for diamond list entries */
+        width: 32px;
         height: 32px;
         border: 2px solid rgba(255,255,255,0.8);
     }
@@ -322,19 +354,44 @@
     .leaderboard li.diamond-member-entry .count {
         font-weight: 600;
         font-size: 1.1em;
-        margin-left: auto; /* Ensure it stays right */
-        padding-right: 0; /* Remove extra padding */
-        position: relative; /* For z-index */
+        margin-left: auto;
+        padding-right: 0;
+        position: relative;
         z-index: 1;
     }
 
-
     #leaderboardContainer { width: 100%; }
-    #leaderboardContent { display: block; } /* Default view */
-    #podiumContent, #tilesContent { display: none; } /* Hidden by default */
+    #leaderboardContent { display: block; }
+    #podiumContent, #tilesContent { display: none; }
     #leaderboardOffMessage { display: none; text-align: center; padding: 2rem 1rem; }
     .offMessage { color: #fff; text-shadow: 0 0 10px #fff8; font-size: 1.28rem; font-weight: 600; }
     .offSubtitle { color: #fff; font-style: italic; margin-top: 0.5rem; font-size: 1rem; }
+
+    /* 3. Elevate Stat Blocks & Badges with Glass Cards */
+    .glass-stat-block {
+      background: rgba(255,255,255,0.13);
+      border: 1.2px solid rgba(255,255,255,0.18);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(80,140,255,0.07);
+      backdrop-filter: blur(8px) saturate(170%);
+      padding: 0.5rem 1.1rem;
+      margin: 0.2rem 0.2rem;
+      display: inline-block;
+      min-width: 90px;
+      color: #fff; /* Ensure text is visible on glass */
+    }
+    .glass-stat-block .stat-title {
+      font-size: 0.9em;
+      font-weight: 500;
+      opacity: 0.8;
+      display: block;
+    }
+    .glass-stat-block .stat-value {
+      font-size: 1.5em;
+      font-weight: 700;
+      color: #ffd700; /* Gold color for values */
+      display: block;
+    }
 
     #eventRating {
       display: flex;
@@ -483,13 +540,13 @@
       #eventRating { font-size: .98rem; }
     }
     #alertModal {
-      display: none; /* or flex when active */
+      display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.28);  /* Or .45, whatever you use for frosted glass */
+      background: rgba(0,0,0,0.28);
       align-items: center;
       justify-content: center;
-      z-index: 9999;  /* ensure it's above everything */
+      z-index: 9999;
     }
 
     #alertContent {
@@ -509,13 +566,13 @@
       background: #fff !important;
     }
     #alertModal {
-      display: none; /* or flex when active */
+      display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.28);  /* Or .45, whatever you use for frosted glass */
+      background: rgba(0,0,0,0.28);
       align-items: center;
       justify-content: center;
-      z-index: 9999;  /* ensure it's above everything */
+      z-index: 9999;
     }
 
     #alertContent {
@@ -534,10 +591,10 @@
     .view-selector-container {
       display: flex;
       align-items: center;
-      justify-content: center; /* Center the view selector */
+      justify-content: center;
       gap: 10px;
       margin-bottom: 1rem;
-      width: 92%; /* Match lb-group width */
+      width: 92%;
     }
     .view-mode-display {
         background: rgba(252,252,255,0.15);
@@ -546,12 +603,12 @@
         color: #fff;
         font-size: 1.1em;
         font-weight: 600;
-        min-width: 100px; /* Ensure consistent width */
+        min-width: 100px;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         transition: background 0.3s ease, transform 0.3s ease;
         position: relative;
-        overflow: hidden; /* For animation */
+        overflow: hidden;
     }
     .view-mode-display::before {
         content: '';
@@ -593,9 +650,9 @@
     /* Styles for the new podium view */
     #podiumContent {
       width: 100%;
-      display: flex; /* Ensure it's a flex container */
-      flex-direction: column; /* Stack offense and defense vertically */
-      gap: 1.2rem; /* Space between the two podium sections */
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
     }
     .offensePodium, .defensePodium {
       display: flex;
@@ -609,7 +666,7 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      position: relative; /* For avatar positioning */
+      position: relative;
     }
     .podium-item .avatar-small {
       width: 40px;
@@ -625,9 +682,8 @@
       font-weight: 700;
       margin-top: 5px;
     }
-    /* Hide count in podium view */
     .podium-item .count {
-      display: none;  
+      display: none;
     }
     .podium-item .name, .podium-item .count {
       text-shadow: 0 1px 4px rgba(0,0,0,0.4);
@@ -664,7 +720,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       position: relative;
       top: 10px;
-      transition: all 0.3s ease, box-shadow 0.3s ease; /* Add box-shadow to transition */
+      transition: all 0.3s ease, box-shadow 0.3s ease;
     }
 
     .podium-stand.gold {
@@ -685,7 +741,6 @@
       background: linear-gradient(135deg, #CD7F32, #8B4513);
       box-shadow: 0 4px 12px rgba(205,127,50,0.5);
     }
-    /* Custom gradient for podium stand if user has diamond customization */
     .podium-stand.custom-gradient {
         background-image: var(--custom-podium-gradient, linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2)));
         box-shadow: 0 4px 12px var(--custom-podium-shadow-color, rgba(0,0,0,0.2));
@@ -701,7 +756,6 @@
     .podium-stand.silver span { font-size: 1.7rem; }
     .podium-stand.bronze span { font-size: 1.5rem; }
 
-    /* Podium hover glow */
     .podium-stand.gold:hover { box-shadow: 0 0 25px #ffd700, 0 0 40px #ffd700; }
     .podium-stand.silver:hover { box-shadow: 0 0 25px #C0C0C0, 0 0 40px #C0C0C0; }
     .podium-stand.bronze:hover { box-shadow: 0 0 25px #CD7F32, 0 0 40px #CD7F32; }
@@ -725,14 +779,13 @@
       text-align: center;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
       transition: transform 0.2s, box-shadow 0.2s;
-      position: relative; /* For avatar positioning */
-      display: flex; /* Use flex for internal alignment */
+      position: relative;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      /* Ensure consistent sizing for all tiles */
-      min-height: 120px;  
-      box-sizing: border-box; /* Include padding in height calculation */
+      min-height: 120px;
+      box-sizing: border-box;
     }
     .tile-item:hover {
       transform: translateY(-5px);
@@ -752,80 +805,72 @@
       font-weight: 600;
       color: #fff;
       margin-bottom: 5px;
-      text-align: center; /* Center name */
+      text-align: center;
     }
     .tile-item .count {
       font-size: 1.2rem;
       font-weight: 700;
-      color: #fff; /* White for better contrast on pill */
-      background: rgba(0,0,0,0.3); /* Pill background */
-      border-radius: 15px; /* Pill shape */
+      color: #fff;
+      background: rgba(0,0,0,0.3);
+      border-radius: 15px;
       padding: 4px 10px;
       margin-top: 5px;
-      display: inline-block; /* To apply padding/border-radius */
+      display: inline-block;
     }
-    /* Diamond member custom styling for tiles and list */
     .diamond-member-entry {
-        /* This class is now applied directly to the .tile-item or <li> */
-        /* Removed padding and margin-bottom from here for list view, now handled by li */
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
         position: relative;
-        overflow: hidden; /* For banner */
+        overflow: hidden;
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        /* Ensure it matches the overall tile/list item sizing */
         box-sizing: border-box;
-        min-height: 120px; /* For tiles */
-        /* IMPORTANT: No direct background or background-image here for tiles */
-        background: none; /* Ensure no default background interferes */
+        min-height: 120px;
+        background: none;
     }
     .diamond-member-entry .background-banner {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
-        height: 25%; /* Top 1/4th of the tile */
+        height: 25%;
         background-size: cover;
         background-position: center;
-        opacity: 0.15;
+        opacity: 0.9;
         z-index: 0;
-        border-radius: 15px 15px 0 0; /* Match tile top corners */
+        border-radius: 15px 15px 0 0;
     }
-    /* NEW: Gradient area for tiles */
     .tile-item.diamond-member-entry .gradient-area {
         position: absolute;
-        top: 25%; /* Starts below the banner */
+        top: 25%;
         left: 0;
         width: 100%;
-        height: 75%; /* Fills the rest of the tile */
-        z-index: 0; /* Same z-index as banner, but below content */
-        border-radius: 0 0 15px 15px; /* Match tile bottom corners */
+        height: 75%;
+        z-index: 0;
+        border-radius: 0 0 15px 15px;
     }
 
     .diamond-member-entry .content-wrapper {
         position: relative;
         z-index: 1;
         display: flex;
-        flex-direction: column; /* Stack avatar/name and count vertically for tiles */
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         width: 100%;
-        height: 100%; /* Ensure it fills the tile */
+        height: 100%;
     }
-    /* Specific adjustments for diamond-member-entry in list view */
     .leaderboard li.diamond-member-entry {
-        flex-direction: row; /* Keep row for list view */
+        flex-direction: row;
         justify-content: flex-start;
         align-items: center;
-        min-height: auto; /* Allow height to adjust */
-        /* No padding or margin-bottom here, handled by .list-item-content and .leaderboard li */
+        min-height: auto;
     }
     .leaderboard li.diamond-member-entry .content-wrapper {
-        flex-direction: row; /* Keep row for list view content */
-        justify-content: space-between; /* Space out name/avatar and count */
+        flex-direction: row;
+        justify-content: space-between;
         align-items: center;
         width: 100%;
         height: auto;
@@ -833,18 +878,18 @@
 
     .diamond-member-entry .name-and-avatar {
         display: flex;
-        flex-direction: row; /* Keep row for list view */
+        flex-direction: row;
         align-items: center;
         gap: 8px;
     }
     .diamond-member-entry .avatar-small {
-        width: 50px; /* Consistent with other tiles */
+        width: 50px;
         height: 50px;
         border-radius: 50%;
         object-fit: cover;
         border: 1.5px solid rgba(255,255,255,0.7);
         box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-        margin: 0; /* Remove margin auto for list view */
+        margin: 0;
     }
     .diamond-member-entry .name {
         font-weight: 700;
@@ -853,17 +898,17 @@
     .diamond-member-entry .count {
         font-weight: 600;
         font-size: 1.1em;
-        margin-top: 0; /* Remove margin for list view */
+        margin-top: 0;
     }
 
 
     /* Responsive styles for podium */
     @media (max-width: 670px) {
       .leaderboard .offensePodium, .leaderboard .defensePodium {
-        flex-direction: column; /* Stack vertically on small screens */
+        flex-direction: column;
         align-items: center;
       }
-      .podium-item { margin-bottom: 15px; } /* Add space between stacked items */
+      .podium-item { margin-bottom: 15px; }
       .podium-stand.gold { width: 80px; height: 110px; }
       .podium-stand.silver { width: 70px; height: 90px; }
       .podium-stand.bronze { width: 60px; height: 70px; }
@@ -877,10 +922,16 @@
       overflow: hidden;
       text-align: center;
       width: 100%;
-      min-width: 320px;
+      min-width: 510px;
       max-width: 440px;
       margin: 5rem auto 0 auto;
-      box-shadow: 0 8px 48px 0 #c0d2e733, 0 2px 8px #8390b51a;
+      /* 1. Enhanced Glassmorphism for profile card */
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1.5px solid rgba(255,255,255,0.25);
+      box-shadow: 0 8px 40px 0 rgba(18,40,80,0.16), 0 1.5px 12px 0 rgba(60,100,160,0.08);
+      background-image: linear-gradient(120deg, rgba(255,255,255,0.13) 0%, rgba(200,225,255,0.08) 100%);
     }
     .voted-profile-banner {
       width: 100%;
@@ -890,7 +941,7 @@
       border-radius: 20px 20px 0 0;
       position: relative;
       z-index: 1;
-      opacity: 0.2;
+      opacity: 0.9;
       background-color: #cbd5e1;
     }
     .voted-profile-gradient-area {
@@ -913,19 +964,18 @@
       object-fit: cover;
       box-shadow: 0 8px 32px 0 #19203c29;
       background: #222;
-      margin-top: -45px; /* Lift avatar to overlap banner & gradient */
+      margin-top: -45px;
       z-index: 10;
     }
     /* --- Content (name & stats) inside gradient --- */
     .voted-profile-content-wrapper {
-      margin-top: 18px; /* Space below avatar */
+      margin-top: 18px;
       color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
       width: 100%;
-            height: 335px;
-
+      height: 385px;
     }
     .voted-profile-username {
       font-size: 2.1rem;
@@ -940,7 +990,7 @@
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 15px;
-      width: 100%;
+      width: 80%;
       margin-top: 10px;
       position: relative;
       z-index: 1;
@@ -950,13 +1000,7 @@
       text-align: center;
       margin-top: 15px;
     }
-    .stat-value {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: #ffd700;
-      margin-top: 5px;
-      text-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
-    }
+    /* Removed .stat-value styling here as it's now handled by .glass-stat-block .stat-value */
   </style>
 </head>
 <body>
@@ -992,7 +1036,7 @@
   <!-- Main grid: 2x2 voting + leaderboard -->
   <div class="grid-container">
     <div class="panel">
-      <h2>KC Event Voting</h2>
+      <h2 class="gradient-header">KC Event Voting</h2> <!-- Applied gradient-header -->
       <div id="voteContainer"><p>Loading…</p></div>
       <!-- Admin button as a circular icon -->
       <button id="adminIconBtn">
@@ -1000,11 +1044,11 @@
       </button>
     </div>
     <div class="leaderboard">
-      <h3>Live Scores:</h3>
+      <h3 class="gradient-header">Live Scores:</h3> <!-- Applied gradient-header -->
       <div class="view-selector-container">
-        <button id="viewLeftArrow" class="view-selector-arrow">&lt;</button>
+        <button id="viewLeftArrow" class="view-selector-arrow glass-btn">&lt;</button> <!-- Added glass-btn -->
         <div id="viewModeDisplay" class="view-mode-display">List</div>
-        <button id="viewRightArrow" class="view-selector-arrow">&gt;</button>
+        <button id="viewRightArrow" class="view-selector-arrow glass-btn">&gt;</button> <!-- Added glass-btn -->
       </div>
       <div id="leaderboardContainer">
         <!-- Podium View -->
@@ -1097,7 +1141,7 @@
     alertOK.onclick = ()=> alertModal.style.display='none';
 
     // Admin Modal
-    const adminIconBtn = document.getElementById('adminIconBtn'), // Changed from showAdminBtn
+    const adminIconBtn = document.getElementById('adminIconBtn'),
           adminModal   = document.getElementById('adminModal'),
           adminClose   = document.getElementById('adminClose'),
           adminPass    = document.getElementById('adminPass'),
@@ -1106,7 +1150,7 @@
           adminTable   = document.getElementById('adminTable'),
           resetBtn     = document.getElementById('resetBtn'),
           adminTableContainer = document.getElementById('adminTableContainer');
-    adminIconBtn.onclick = () => { adminModal.classList.add('active'); }; // Updated click handler
+    adminIconBtn.onclick = () => { adminModal.classList.add('active'); };
     adminClose.onclick = () => { adminModal.classList.remove('active'); };
 
     // Firebase init
@@ -1125,20 +1169,18 @@
           votesRef    = firebase.database().ref('votes'),
           configRef   = firebase.database().ref('config/liveLeaderboardEnabled'),
           usersRef    = firebase.database().ref('users'),
-          badgesRef   = firebase.database().ref('badges'); // Added reference to badges
+          badgesRef   = firebase.database().ref('badges');
 
     // DOM refs for voting form
     const voteContainer = document.getElementById('voteContainer');
     // Normalize helper
-    // Updated normalize function to handle case-insensitivity and ensure consistent keys
     function normalize(name){
       if (!name) return '';
-      // Remove non-alphanumeric characters and convert to lowercase
       return name.toLowerCase().replace(/[^a-z0-9]/g,'');
     }
 
     // Leaderboard DOM references for different views
-    const viewModeDisplay = document.getElementById('viewModeDisplay'); // New display for current mode
+    const viewModeDisplay = document.getElementById('viewModeDisplay');
     const viewLeftArrow = document.getElementById('viewLeftArrow');
     const viewRightArrow = document.getElementById('viewRightArrow');
 
@@ -1147,7 +1189,7 @@
     const tilesContent = document.getElementById('tilesContent');
 
     const viewModes = ['list', 'podium', 'tiles'];
-    let currentViewIndex = 0; // Start with 'list'
+    let currentViewIndex = 0;
 
     // Function to show the selected leaderboard view
     function showLeaderboardView(view) {
@@ -1159,18 +1201,16 @@
         leaderboardContent.style.display = 'block';
         viewModeDisplay.textContent = 'List';
       } else if (view === 'podium') {
-        podiumContent.style.display = 'flex'; // Use flex for podium layout
+        podiumContent.style.display = 'flex';
         viewModeDisplay.textContent = 'Podium';
       } else if (view === 'tiles') {
         tilesContent.style.display = 'block';
         viewModeDisplay.textContent = 'Tiles';
       }
-      // Trigger animation
       viewModeDisplay.classList.remove('animate');
-      void viewModeDisplay.offsetWidth; // Trigger reflow
+      void viewModeDisplay.offsetWidth;
       viewModeDisplay.classList.add('animate');
 
-      // Update currentViewIndex
       currentViewIndex = viewModes.indexOf(view);
     }
 
@@ -1191,21 +1231,19 @@
       const [votesSnap, usersSnap, badgesSnap] = await Promise.all([
         votesRef.once('value'),
         usersRef.once('value'),
-        badgesRef.once('value') // Fetch badges data
+        badgesRef.once('value')
       ]);
       const allVotes = votesSnap.val() || {};
       const allUsers = usersSnap.val() || {};
-      const allBadges = badgesSnap.val() || {}; // All badges data
+      const allBadges = badgesSnap.val() || {};
 
-      // Build nameKey (normalized displayName/email) => UID map for all registered users
-      // Use the actual displayName or email from Firebase as the key for matching
       const nameToUidMap = {};
-      const normalizedNameToOriginalNameMap = {}; // To map normalized name back to original display name
+      const normalizedNameToOriginalNameMap = {};
       for (const uid in allUsers) {
         const user = allUsers[uid];
         const originalName = user.displayName || user.email || '';
         const nameKey = normalize(originalName);
-        if (nameKey) { // Ensure nameKey is not empty
+        if (nameKey) {
           nameToUidMap[nameKey] = uid;
           normalizedNameToOriginalNameMap[nameKey] = originalName;
         }
@@ -1213,7 +1251,6 @@
 
       const off = {}, def = {};
       
-      // Group votes by normalized name and collect all UIDs that voted for that name
       for (const voteKey in allVotes) {
         const v = allVotes[voteKey];
         const o = normalize(v.bestOffence || '');
@@ -1221,28 +1258,27 @@
         
         if (o) {
           if (!off[o]) {
-            off[o] = { count: 0, voterUids: new Set() }; // Renamed uids to voterUids for clarity
+            off[o] = { count: 0, voterUids: new Set() };
           }
           off[o].count++;
           if (v.uid) off[o].voterUids.add(v.uid);
         }
         if (d) {
           if (!def[d]) {
-            def[d] = { count: 0, voterUids: new Set() }; // Renamed uids to voterUids for clarity
+            def[d] = { count: 0, voterUids: new Set() };
           }
           def[d].count++;
           if (v.uid) def[d].voterUids.add(v.uid);
         }
       }
 
-      // Convert counts to entries and sort, associating with the correct player's user data
       const processEntries = (entriesMap) => {
         return Object.entries(entriesMap).map(([normalizedName, data]) => {
-          const votedForUid = nameToUidMap[normalizedName]; // Get the UID of the *voted-for player*
-          const representativeUser = votedForUid ? allUsers[votedForUid] : null; // Get their actual user object
-          const originalDisplayName = normalizedNameToOriginalNameMap[normalizedName] || normalizedName; // Use original name for display
+          const votedForUid = nameToUidMap[normalizedName];
+          const representativeUser = votedForUid ? allUsers[votedForUid] : null;
+          const originalDisplayName = normalizedNameToOriginalNameMap[normalizedName] || normalizedName;
 
-          return { name: originalDisplayName, count: data.count, user: representativeUser, uid: votedForUid }; // Added uid
+          return { name: originalDisplayName, count: data.count, user: representativeUser, uid: votedForUid };
         }).sort((a, b) => b.count - a.count);
       };
 
@@ -1256,11 +1292,9 @@
       renderTiles('offenseTiles', offenseEntries);
       renderTiles('defenseTiles', defenseEntries);
 
-      // Store processed data globally for voted user profile display
       window.leaderboardData = { allVotes, allUsers, allBadges, normalizedNameToOriginalNameMap };
     }
 
-    // Default profile picture URL
     const DEFAULT_AVATAR_URL = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
 
     function renderList(id, entries){
@@ -1276,10 +1310,8 @@
         let customBanner = null;
         let customNameColor = null;
 
-        // Check if the user object exists and has profile customization unlocked
         if (user && user.profileCustomizationUnlocked) {
             const codesUnlocked = user.codesUnlocked || {};
-            // Check if the user has the 'diamond' code unlocked
             if (codesUnlocked.diamond) {
                 isDiamond = true;
                 const custom = user.profileCustomization || {};
@@ -1291,6 +1323,11 @@
 
         const listItemContent = document.createElement('div');
         listItemContent.className = 'list-item-content';
+        // Add glass-active class for top 3 in list view if not diamond
+        if (!isDiamond && (i === 0 || i === 1 || i === 2)) {
+            listItemContent.classList.add('glass-active');
+        }
+
 
         const nameAndAvatar = document.createElement('div');
         nameAndAvatar.className = 'name-and-avatar';
@@ -1298,8 +1335,6 @@
         const avatar = document.createElement('img');
         avatar.src = user && user.avatar ? user.avatar : DEFAULT_AVATAR_URL;
         avatar.className = 'avatar-small';
-        // All avatars in list view are 28px, unless diamond then 32px
-        // Their sizing is now handled by CSS rules for .avatar-small and .diamond-member-entry .avatar-small
         nameAndAvatar.appendChild(avatar);
         
         const n = document.createElement('span');
@@ -1316,11 +1351,8 @@
 
         li.appendChild(listItemContent);
 
-        // Apply custom styling if diamond (for all diamond members in list view)
-        // Also apply custom styling if top 3 and diamond
         if (isDiamond) {  
             li.classList.add('diamond-member-entry');
-            // Set CSS variables for custom gradient and banner
             if (customGradient) listItemContent.style.setProperty('--custom-gradient-bg', customGradient);
             if (customBanner) {
                 const bannerDiv = document.createElement('div');
@@ -1329,14 +1361,12 @@
                 listItemContent.appendChild(bannerDiv);
             }
             if (customNameColor) n.style.color = customNameColor;
-            // Avatar size for diamond members is handled by .leaderboard li.diamond-member-entry .avatar-small
-        } else { // Standard styling for non-diamond members
-            // Apply top 3 name styling if applicable
+        } else {
             if(i===0) n.classList.add('first-place');
             else if(i===1) n.classList.add('second-place');
             else if(i===2) n.classList.add('third-place');
             else {
-                n.style.color = '#e8ebfc'; /* Default color for non-top3, non-diamond */
+                n.style.color = '#e8ebfc';
                 n.style.fontSize = '1.06rem';
                 n.style.background = 'none';
                 n.style.fontWeight = '600';
@@ -1346,7 +1376,6 @@
       });
     }
 
-    // Function to render the podium view
     function renderPodium(id, entries) {
       const podiumDiv = document.getElementById(id);
       podiumDiv.innerHTML = '';
@@ -1355,26 +1384,24 @@
         return;
       }
 
-      // Get top 3 entries for the podium
       const topEntries = entries.slice(0, 3);
 
-      // Create a temporary array to hold podium items in the correct order (2nd, 1st, 3rd)
       let orderedPodium = [];
       if (topEntries.length >= 2) {
-        orderedPodium[1] = topEntries[0]; // 1st place
-        orderedPodium[0] = topEntries[1]; // 2nd place
+        orderedPodium[1] = topEntries[0];
+        orderedPodium[0] = topEntries[1];
         if (topEntries.length >= 3) {
-          orderedPodium[2] = topEntries[2]; // 3rd place
+          orderedPodium[2] = topEntries[2];
         }
       } else if (topEntries.length === 1) {
-        orderedPodium[1] = topEntries[0]; // Only 1st place
+        orderedPodium[1] = topEntries[0];
       }
 
       const ranks = ['silver', 'gold', 'bronze'];
-      const rankNumbers = ['2', '1', '3']; // For the stand numbers
+      const rankNumbers = ['2', '1', '3'];
 
       const podiumHTML = orderedPodium.map((data, index) => {
-        if (!data) return ''; // Handle cases where there aren't enough entries for all 3 spots
+        if (!data) return '';
         const { name, count, user } = data;
         const rankClass = ranks[index];
         const rankNum = rankNumbers[index];
@@ -1387,19 +1414,16 @@
         let podiumStandClass = '';
         let glowColor = '';
 
-        // Apply custom gradient to podium bar if user is diamond
         if (user && user.profileCustomizationUnlocked && user.codesUnlocked && user.codesUnlocked.diamond && user.profileCustomization && user.profileCustomization.gradient) {
             podiumStandStyle = `background: ${user.profileCustomization.gradient};`;
             podiumStandClass = 'custom-gradient';
-            // Extract a color from the gradient for the glow effect
             const gradientMatch = user.profileCustomization.gradient.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
             if (gradientMatch) {
                 glowColor = `rgba(${gradientMatch[1]}, ${gradientMatch[2]}, ${gradientMatch[3]}, 0.8)`;
             } else {
-                glowColor = '#fff'; // Fallback
+                glowColor = '#fff';
             }
         } else {
-            // Default podium stand gradients based on rank
             if (rankClass === 'gold') podiumStandStyle = 'background: linear-gradient(135deg, #FFD700, #b8860b);';
             else if (rankClass === 'silver') podiumStandStyle = 'background: linear-gradient(135deg, #C0C0C0, #a0a0a0);';
             else if (rankClass === 'bronze') podiumStandStyle = 'background: linear-gradient(135deg, #CD7F32, #8B4513);';
@@ -1417,7 +1441,6 @@
       podiumDiv.innerHTML = podiumHTML;
     }
 
-    // Function to render the tiles view
     function renderTiles(id, entries) {
       const tilesDiv = document.getElementById(id);
       tilesDiv.innerHTML = '';
@@ -1437,10 +1460,8 @@
         let customBanner = null;
         let customNameColor = null;
 
-        // Check if the user object exists and has profile customization unlocked
         if (user && user.profileCustomizationUnlocked) {
             const codesUnlocked = user.codesUnlocked || {};
-            // Check if the user has the 'diamond' code unlocked
             if (codesUnlocked.diamond) {
                 isDiamond = true;
                 const custom = user.profileCustomization || {};
@@ -1451,10 +1472,9 @@
         }
 
         let backgroundBannerHtml = '';
-        let gradientAreaHtml = ''; // New variable for the gradient div
+        let gradientAreaHtml = '';
         let nameStyle = '';
 
-        // Apply custom styling if diamond (for all ranks in tiles view)
         if (isDiamond) {  
             if (customBanner) {
                 backgroundBannerHtml = `<div class="background-banner" style="background-image: url('${customBanner}');"></div>`;
@@ -1464,11 +1484,10 @@
             }
             nameStyle = customNameColor ? `color: ${customNameColor};` : '';
             
-            // For diamond members, the entire tile-item should have the gradient
             return `
               <div class="tile-item diamond-member-entry">
                 ${backgroundBannerHtml}
-                ${gradientAreaHtml} <!-- Inject the new gradient area -->
+                ${gradientAreaHtml}
                 <div class="content-wrapper">
                     ${avatarHtml}
                     <div class="name" style="${nameStyle}">${name}</div>
@@ -1477,7 +1496,7 @@
               </div>
             `;
 
-        } else { // Standard rendering for non-diamond members
+        } else {
             return `
               <div class="tile-item">
                 ${avatarHtml}
@@ -1490,7 +1509,6 @@
       tilesDiv.innerHTML = tilesHTML;
     }
 
-    // Function to render the user's profile and stats after voting
     async function renderVotedUserProfile(currentUser, allVotes, allUsers, allBadges, normalizedNameToOriginalNameMap) {
         const uid = currentUser.uid;
         const userData = allUsers[uid] || {};
@@ -1506,19 +1524,18 @@
             bannerStyle = `background-image: url('${profileCustomization.banner}');`;
         }
 
-        let cardBgStyle = `background: rgba(36,40,48,0.65);`; // Default background for the whole card
+        let cardBgStyle = `background: rgba(255, 255, 255, 0.18);`; // Default glassmorphism background for the whole card
 
         let gradientStyle = '';
         if (isDiamond && profileCustomization.gradient) {
             gradientStyle = `background: ${profileCustomization.gradient};`;
         }
 
-        let usernameColor = '#fff'; // Default text color
+        let usernameColor = '#fff';
         if (isDiamond && profileCustomization.nameColor) {
             usernameColor = profileCustomization.nameColor;
         }
 
-        // Calculate Rank and Votes for Offense and Defense
         let offenseRank = 'N/A';
         let offenseVotes = 0;
         let defenseRank = 'N/A';
@@ -1527,7 +1544,6 @@
         const offenseCounts = {};
         const defenseCounts = {};
 
-        // Count votes for all players
         for (const voteKey in allVotes) {
             const vote = allVotes[voteKey];
             const offensePlayer = normalize(vote.bestOffence || '');
@@ -1541,11 +1557,9 @@
             }
         }
 
-        // Sort players by votes to determine rank
         const sortedOffense = Object.entries(offenseCounts).sort(([, countA], [, countB]) => countB - countA);
         const sortedDefense = Object.entries(defenseCounts).sort(([, countA], [, countB]) => countB - countA);
 
-        // Use the normalized version of the current user's name for matching against vote counts
         const normalizedCurrentUserDisplayName = normalize(currentUser.displayName || currentUser.email);
 
         const findStats = (sortedEntries, targetNormalizedName) => {
@@ -1569,31 +1583,35 @@
         defenseRank = userDefenseStats.rank;
         defenseVotes = userDefenseStats.votes;
 
-        // Calculate Wins (from badges)
         const wins = (userBadges.offence || 0) + (userBadges.defence || 0);
 
         voteContainer.innerHTML = `
-<div class="voted-profile-card" style="${cardBgStyle}">
+<div class="voted-profile-card">
   <div class="voted-profile-banner" style="${bannerStyle}"></div>
   <div class="voted-profile-gradient-area" style="${gradientStyle}">
     <img src="${avatarSrc}" alt="Your Avatar" class="voted-profile-avatar"/>
     <div class="voted-profile-content-wrapper">
       <div class="voted-profile-username" style="color: ${usernameColor};">${username}</div>
       <div class="voted-profile-stats">
-        <div class="stat-item">
-            Offence Rank: <span class="stat-value">${offenseRank}</span>
+        <div class="glass-stat-block"> <!-- Applied glass-stat-block -->
+            <span class="stat-title">Offence Rank</span>
+            <span class="stat-value">${offenseRank}</span>
         </div>
-        <div class="stat-item">
-            Offence Votes: <span class="stat-value">${offenseVotes}</span>
+        <div class="glass-stat-block"> <!-- Applied glass-stat-block -->
+            <span class="stat-title">Offence Votes</span>
+            <span class="stat-value">${offenseVotes}</span>
         </div>
-        <div class="stat-item">
-            Defence Rank: <span class="stat-value">${defenseRank}</span>
+        <div class="glass-stat-block"> <!-- Applied glass-stat-block -->
+            <span class="stat-title">Defence Rank</span>
+            <span class="stat-value">${defenseRank}</span>
         </div>
-        <div class="stat-item">
-            Defence Votes: <span class="stat-value">${defenseVotes}</span>
+        <div class="glass-stat-block"> <!-- Applied glass-stat-block -->
+            <span class="stat-title">Defence Votes</span>
+            <span class="stat-value">${defenseVotes}</span>
         </div>
-        <div class="stat-item">
-            Total Wins: <span class="stat-value">${wins}</span>
+        <div class="glass-stat-block" style="grid-column: span 2;"> <!-- Applied glass-stat-block -->
+            <span class="stat-title">Total Wins</span>
+            <span class="stat-value">${wins}</span>
         </div>
       </div>
     </div>
@@ -1602,7 +1620,6 @@
         `;
     }
 
-    // Average rating
     function updateAverageRating(){
       votesRef.once('value').then(snap=>{
         let sum=0,n=0;
@@ -1613,7 +1630,6 @@
         document.getElementById('avgRatingNum').textContent = n? (sum/n).toFixed(2): '–';
       });
     }
-    // Render voting form
     function renderForm(user, opts){
       voteContainer.innerHTML=`
         <label>Your Username</label>
@@ -1649,18 +1665,14 @@
       def.onchange=updateBtn;
       votesRef.orderByChild('uid').equalTo(user.uid).once('value').then(async snap=>{
         if(snap.exists()){
-          // User has already voted, display their profile and stats
-          // Ensure leaderboardData is available before calling renderVotedUserProfile
           if (window.leaderboardData) {
             renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
           } else {
-            // If leaderboardData isn't ready, fetch it
             const [votesSnap, usersSnap, badgesSnap] = await Promise.all([
                 votesRef.once('value'),
                 usersRef.once('value'),
                 badgesRef.once('value')
             ]);
-            // Re-build normalizedNameToOriginalNameMap here as well
             const normalizedNameToOriginalNameMap = {};
             const allUsersLocal = usersSnap.val() || {};
             for (const uid in allUsersLocal) {
@@ -1674,7 +1686,7 @@
 
             window.leaderboardData = {
                 allVotes: votesSnap.val() || {},
-                allUsers: usersSnap.val() || {},
+                allUsers: allUsersLocal,
                 allBadges: badgesSnap.val() || {},
                 normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMap
             };
@@ -1696,11 +1708,9 @@
             kcAlert('Thanks for voting!');
             updateLeaderboard();
             updateAverageRating();
-            // After successful vote, re-render the profile card
             if (window.leaderboardData) {
                 renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
             } else {
-                // Fallback if leaderboardData is not yet available (shouldn't happen often)
                 usersRef.once('value').then(usersSnap => {
                     const allUsersLocal = usersSnap.val() || {};
                     const normalizedNameToOriginalNameMap = {};
@@ -1729,28 +1739,24 @@
         .catch(e=>kcAlert('Error submitting: '+e.message));
       };
     }
-    // Auth listener
     auth.onAuthStateChanged(u=>{
       if(!u){
         voteContainer.innerHTML =
           `<p>Please <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">log in</a> to vote.</p>`;
         return;
       }
-      // sync profile + emailVerified
       usersRef.child(u.uid).update({
         displayName: u.displayName||null,
         email:       u.email        ||null,
         joined:      firebase.database.ServerValue.TIMESTAMP,
         emailVerified: u.emailVerified
       });
-      // block unverified
       if(!u.emailVerified){
         kcAlert('Please verify your email before voting.');
         voteContainer.innerHTML =
           `<p>Verify your email to vote. <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">Resend verification</a></p>`;
         return;
       }
-      // fetch all users, filter client-side on emailVerified
       usersRef.once('value').then(snap=>{
         let opts='<option value="" disabled selected>– Select a player –</option>';
         snap.forEach(c=>{
@@ -1764,7 +1770,6 @@
         renderForm(u,opts);
       });
     });
-    // Admin unlock logic in modal
     unlockBtn.onclick = ()=>{
       if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
       if(!document.getElementById('toggleLeaderboard')){
@@ -1783,7 +1788,6 @@
             .catch(e=>kcAlert('Save failed: '+e.message));
         };
       }
-      // populate table
       votesRef.orderByChild('time').once('value').then(snap=>{
         let html=`<tr><th>Date</th><th>User</th><th>Offence</th><th>Defence</th><th>Rating</th><th>Delete</th></tr>`;
         snap.forEach(c=>{
@@ -1815,27 +1819,25 @@
         .catch(err=>kcAlert('Reset failed: '+err.message));
     };
 
-    // Live toggle & init
     configRef.on('value',snap=>{
       const on=snap.val()!==false;
       if (on) {
         document.getElementById('leaderboardOffMessage').style.display = 'none';
-        showLeaderboardView(viewModes[currentViewIndex]); // Show the currently selected view
-        document.querySelector('.view-selector-container').style.display = 'flex'; // Show new selector
+        showLeaderboardView(viewModes[currentViewIndex]);
+        document.querySelector('.view-selector-container').style.display = 'flex';
       } else {
         leaderboardContent.style.display = 'none';
         podiumContent.style.display = 'none';
         tilesContent.style.display = 'none';
         document.getElementById('leaderboardOffMessage').style.display = 'block';
-        document.querySelector('.view-selector-container').style.display = 'none'; // Hide new selector
+        document.querySelector('.view-selector-container').style.display = 'none';
       }
       if(on) updateLeaderboard();
     });
 
-    // Initial load
     updateLeaderboard();
     updateAverageRating();
-    showLeaderboardView(viewModes[currentViewIndex]); // Set initial view based on current index
+    showLeaderboardView(viewModes[currentViewIndex]);
   </script>
 </body>
 </html>
