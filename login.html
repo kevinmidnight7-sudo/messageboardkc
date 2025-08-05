@@ -2569,7 +2569,7 @@ auth.onAuthStateChanged(u => {
               profileBanner.style.backgroundImage = `url('${custom.banner}')`;
           } else {
               // Default branded banner if no custom banner is set
-              profileBanner.style.backgroundImage = 'linear-gradient(100deg, #36ffd5 60%, #1ee57c 100%)';
+              profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
           }
       }
        avatarImg.src = userData.avatar || "https://kevinmidnight7-sudo.github.io/messageboardkc/1.png";
@@ -3395,7 +3395,7 @@ closeCustomizationModal.onclick = () => {
         db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
             const custom = snap.val() || {};
             if(custom.banner) profileBanner.style.backgroundImage = `url('${custom.banner}')`;
-            else profileBanner.style.backgroundImage = 'linear-gradient(100deg, #36ffd5 60%, #1ee57c 100%)'; // Restore default branded banner
+            else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)'; // Restore default branded banner
 
             if(custom.gradient) document.getElementById('profileCard').style.background = custom.gradient;
             else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
@@ -3435,7 +3435,7 @@ saveCustomizationBtn.onclick = () => {
         // The onAuthStateChanged listener will re-apply the saved styles automatically on next load,
         // but we can apply them immediately for a better UX.
         if(updates.banner) profileBanner.style.backgroundImage = `url('${updates.banner}')`;
-        else profileBanner.style.backgroundImage = 'linear-gradient(100deg, #36ffd5 60%, #1ee57c 100%)'; // Apply default branded banner
+        else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)'; // Apply default branded banner
         if(updates.gradient) document.getElementById('profileCard').style.background = updates.gradient;
         else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
         const usernameText = document.querySelector('#welcomeUser .username-text');
@@ -3469,7 +3469,7 @@ suggestColorBtn.onclick = async () => {
                 }
             }
         };
-        const apiKey = ""; // If you want to use models other than gemini-2.5-flash-preview-05-20 or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+        const apiKey = "AIzaSyB59Lt9zuqpMpe3_18R9DGkmJBGAx75O9w"; // If you want to use models other than gemini-2.5-flash-preview-05-20 or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
         const response = await fetch(apiUrl, {
