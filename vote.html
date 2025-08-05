@@ -195,7 +195,8 @@
       list-style: none; padding: 0; margin: 0;
     }
     .leaderboard li {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; 
+      align-items: center; /* Vertically center items */
       padding: .44rem 0 .44rem .13rem;
       border-bottom: 1.2px solid rgba(255,255,255,0.10);
       font-size: 1.01rem;
@@ -226,15 +227,92 @@
     }
     .name, .count { display: inline-block; }
     .name { transition: font-size 0.3s; }
-    .count { font-weight: 600; font-size: 1.09rem; margin-left: .7rem; color: #fff; }
+    .count { font-weight: 600; font-size: 1.09rem; margin-left: auto; /* Push count to the right */ color: #fff; padding-right: 5px; /* Add some padding to prevent falling out */ }
     .leaderboard li:not(.first-place):not(.second-place):not(.third-place) .name {
       color: #e8ebfc;
       font-size: 1.06rem;
       background: none;
       font-weight: 600;
     }
+    /* Ensure all list view avatars are the same size */
+    .leaderboard li .avatar-small {
+      width: 28px; /* Consistent size */
+      height: 28px; /* Consistent size */
+      border-radius: 50%;
+      object-fit: cover;
+      /* margin-right: 8px; */ /* Removed this as gap on parent handles spacing */
+      border: 1.5px solid rgba(255,255,255,0.7);
+    }
+    /* Base styling for all list items to act as consistent containers */
+    .leaderboard li .list-item-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0.6rem 1.25rem; /* Consistent padding */
+      border-radius: 12px; /* Rounded corners */
+      background: rgba(255,255,255,0.05); /* Subtle background for all */
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1); /* Subtle shadow */
+      transition: all 0.2s ease;
+    }
+    .leaderboard li:hover .list-item-content {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    /* Top 3 styling for list items - applies only if not diamond */
+    .leaderboard li.first-place:not(.diamond-member-entry) .list-item-content,
+    .leaderboard li.second-place:not(.diamond-member-entry) .list-item-content,
+    .leaderboard li.third-place:not(.diamond-member-entry) .list-item-content {
+        background: rgba(255,255,255,0.08); /* Slightly more prominent background for top 3 */
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    /* Specific styling for diamond-member-entry in list view */
+    .leaderboard li.diamond-member-entry .list-item-content {
+        background: var(--custom-gradient-bg); /* Apply custom gradient */
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        border: none; /* Remove default border */
+    }
+    .leaderboard li.diamond-member-entry .background-banner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15;
+        z-index: 0;
+        border-radius: 12px; /* Match container border-radius */
+    }
+    /* Ensure name and avatar are always aligned and spaced */
+    .name-and-avatar {
+        display: flex;
+        align-items: center;
+        gap: 8px; /* Provides consistent spacing between avatar and name */
+    }
+    .leaderboard li.diamond-member-entry .avatar-small {
+        width: 32px; /* Slightly larger for diamond list entries */
+        height: 32px;
+        border: 2px solid rgba(255,255,255,0.8);
+    }
+    .leaderboard li.diamond-member-entry .name {
+        font-weight: 700;
+        font-size: 1.1em;
+    }
+    .leaderboard li.diamond-member-entry .count {
+        font-weight: 600;
+        font-size: 1.1em;
+        margin-left: auto; /* Ensure it stays right */
+        padding-right: 0; /* Remove extra padding */
+        position: relative; /* For z-index */
+        z-index: 1;
+    }
+
+
     #leaderboardContainer { width: 100%; }
-    #leaderboardContent { display: block; }
+    #leaderboardContent { display: block; } /* Default view */
+    #podiumContent, #tilesContent { display: none; } /* Hidden by default */
     #leaderboardOffMessage { display: none; text-align: center; padding: 2rem 1rem; }
     .offMessage { color: #fff; text-shadow: 0 0 10px #fff8; font-size: 1.28rem; font-weight: 600; }
     .offSubtitle { color: #fff; font-style: italic; margin-top: 0.5rem; font-size: 1rem; }
@@ -295,7 +373,7 @@
     }
     @keyframes modalIn {
       from { transform: translateY(32px) scale(.98); opacity: 0; }
-      to   { transform: none; opacity: 1; }
+      to  { transform: none; opacity: 1; }
     }
     #adminModalContent h3 {
       margin-top: 0; margin-bottom: 1.1rem;
@@ -385,54 +463,379 @@
       .lb-group { padding: .6rem .45rem; }
       #eventRating { font-size: .98rem; }
     }
-#alertModal {
-  display: none; /* or flex when active */
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.28);  /* Or .45, whatever you use for frosted glass */
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;  /* ensure it's above everything */
-}
+    #alertModal {
+      display: none; /* or flex when active */
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.28);  /* Or .45, whatever you use for frosted glass */
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;  /* ensure it's above everything */
+    }
 
-#alertContent {
-  background: #fff;
-  color: #233046;
-  border-radius: 18px;
-  text-align: center;
-  box-shadow: 0 3px 34px #c9defb65;
-  max-width: 320px;
-  width: 90%;
-  font-size: 1.13em;
-  padding: 1.5rem 1rem 1.2rem 1rem;
-}
+    #alertContent {
+      background: #fff;
+      color: #233046;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 3px 34px #c9defb65;
+      max-width: 320px;
+      width: 90%;
+      font-size: 1.13em;
+      padding: 1.5rem 1rem 1.2rem 1rem;
+    }
 
-select, select option {
-  color: #222 !important;
-  background: #fff !important;
-}
-#alertModal {
-  display: none; /* or flex when active */
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.28);  /* Or .45, whatever you use for frosted glass */
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;  /* ensure it's above everything */
-}
+    select, select option {
+      color: #222 !important;
+      background: #fff !important;
+    }
+    #alertModal {
+      display: none; /* or flex when active */
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.28);  /* Or .45, whatever you use for frosted glass */
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;  /* ensure it's above everything */
+    }
 
-#alertContent {
-  background: #fff;
-  color: #233046;
-  border-radius: 18px;
-  text-align: center;
-  box-shadow: 0 3px 34px #c9defb65;
-  max-width: 320px;
-  width: 90%;
-  font-size: 1.13em;
-  padding: 1.5rem 1rem 1.2rem 1rem;
-}
+    #alertContent {
+      background: #fff;
+      color: #233046;
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 3px 34px #c9defb65;
+      max-width: 320px;
+      width: 90%;
+      font-size: 1.13em;
+      padding: 1.5rem 1rem 1.2rem 1rem;
+    }
 
+    /* Styles for the new dropdown view selector */
+    .view-selector-container {
+      display: flex;
+      align-items: center;
+      justify-content: center; /* Center the view selector */
+      gap: 10px;
+      margin-bottom: 1rem;
+      width: 92%; /* Match lb-group width */
+    }
+    .view-mode-display {
+        background: rgba(252,252,255,0.15);
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        color: #fff;
+        font-size: 1.1em;
+        font-weight: 600;
+        min-width: 100px; /* Ensure consistent width */
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: background 0.3s ease, transform 0.3s ease;
+        position: relative;
+        overflow: hidden; /* For animation */
+    }
+    .view-mode-display::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s ease;
+    }
+    .view-mode-display.animate::before {
+        left: 100%;
+    }
+    .view-selector-arrow {
+        background: rgba(252,252,255,0.1);
+        border: none;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        color: #fff;
+        font-size: 1.5em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .view-selector-arrow:hover {
+        background: rgba(252,252,255,0.2);
+        transform: scale(1.1);
+    }
+    .view-selector-arrow:active {
+        transform: scale(0.9);
+    }
+
+
+    /* Styles for the new podium view */
+    #podiumContent {
+      width: 100%;
+      display: flex; /* Ensure it's a flex container */
+      flex-direction: column; /* Stack offense and defense vertically */
+      gap: 1.2rem; /* Space between the two podium sections */
+    }
+    .offensePodium, .defensePodium {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 20px;
+      padding: 1.5rem 0;
+    }
+    .podium-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative; /* For avatar positioning */
+    }
+    .podium-item .avatar-small {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin-bottom: 5px;
+      border: 2px solid rgba(255,255,255,0.8);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .podium-item .name {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+    /* Hide count in podium view */
+    .podium-item .count {
+      display: none;  
+    }
+    .podium-item .name, .podium-item .count {
+      text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .podium-item.gold .name {
+      background: linear-gradient(45deg,#ffe484,#ffc93a 80%);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 2.2rem;
+    }
+    .podium-item.silver .name {
+      background: linear-gradient(45deg,#dbe8fc,#8e9cae 85%);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 1.6rem;
+    }
+    .podium-item.bronze .name {
+      background: linear-gradient(45deg,#fbc28b,#c38348 85%);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 1.3rem;
+    }
+
+    .podium-stand {
+      background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2));
+      border-radius: 10px;
+      width: 80px;
+      height: 100px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      padding-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      position: relative;
+      top: 10px;
+      transition: all 0.3s ease, box-shadow 0.3s ease; /* Add box-shadow to transition */
+    }
+
+    .podium-stand.gold {
+      height: 140px;
+      width: 100px;
+      background: linear-gradient(135deg, #FFD700, #b8860b);
+      box-shadow: 0 6px 16px rgba(255,215,0,0.5);
+    }
+    .podium-stand.silver {
+      height: 110px;
+      width: 90px;
+      background: linear-gradient(135deg, #C0C0C0, #a0a0a0);
+      box-shadow: 0 4px 12px rgba(192,192,192,0.5);
+    }
+    .podium-stand.bronze {
+      height: 80px;
+      width: 80px;
+      background: linear-gradient(135deg, #CD7F32, #8B4513);
+      box-shadow: 0 4px 12px rgba(205,127,50,0.5);
+    }
+    /* Custom gradient for podium stand if user has diamond customization */
+    .podium-stand.custom-gradient {
+        background-image: var(--custom-podium-gradient, linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.2)));
+        box-shadow: 0 4px 12px var(--custom-podium-shadow-color, rgba(0,0,0,0.2));
+    }
+
+    .podium-stand span {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+    .podium-stand.gold span { font-size: 2rem; }
+    .podium-stand.silver span { font-size: 1.7rem; }
+    .podium-stand.bronze span { font-size: 1.5rem; }
+
+    /* Podium hover glow */
+    .podium-stand.gold:hover { box-shadow: 0 0 25px #ffd700, 0 0 40px #ffd700; }
+    .podium-stand.silver:hover { box-shadow: 0 0 25px #C0C0C0, 0 0 40px #C0C0C0; }
+    .podium-stand.bronze:hover { box-shadow: 0 0 25px #CD7F32, 0 0 40px #CD7F32; }
+    .podium-stand.custom-gradient:hover {
+        box-shadow: 0 0 25px var(--custom-podium-glow-color, #fff), 0 0 40px var(--custom-podium-glow-color, #fff);
+    }
+
+
+    /* Styles for the new tiles view */
+    .tiles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+      padding: 1rem 0;
+      justify-content: center;
+    }
+    .tile-item {
+      background: rgba(255,255,255,0.08);
+      border-radius: 15px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative; /* For avatar positioning */
+      display: flex; /* Use flex for internal alignment */
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      /* Ensure consistent sizing for all tiles */
+      min-height: 120px;  
+      box-sizing: border-box; /* Include padding in height calculation */
+    }
+    .tile-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .tile-item .avatar-small {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      margin: 0 auto 8px auto;
+      border: 2px solid rgba(255,255,255,0.8);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .tile-item .name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 5px;
+      text-align: center; /* Center name */
+    }
+    .tile-item .count {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff; /* White for better contrast on pill */
+      background: rgba(0,0,0,0.3); /* Pill background */
+      border-radius: 15px; /* Pill shape */
+      padding: 4px 10px;
+      margin-top: 5px;
+      display: inline-block; /* To apply padding/border-radius */
+    }
+    /* Diamond member custom styling for tiles and list */
+    .diamond-member-entry {
+        /* This class is now applied directly to the .tile-item or <li> */
+        padding: 10px;
+        border-radius: 12px;
+        margin-bottom: 8px; /* For list view */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        position: relative;
+        overflow: hidden; /* For banner */
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        /* Ensure it matches the overall tile/list item sizing */
+        box-sizing: border-box;
+        min-height: 120px; /* For tiles */
+    }
+    .diamond-member-entry .background-banner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 25%; /* Top 1/4th of the tile */
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15; /* Subtle overlay */
+        z-index: 0;
+        border-radius: 12px 12px 0 0; /* Match tile top corners */
+    }
+    .diamond-member-entry .content-wrapper {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column; /* Stack avatar/name and count vertically for tiles */
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%; /* Ensure it fills the tile */
+    }
+    /* Specific adjustments for diamond-member-entry in list view */
+    .leaderboard li.diamond-member-entry {
+        flex-direction: row; /* Keep row for list view */
+        justify-content: flex-start;
+        align-items: center;
+        min-height: auto; /* Allow height to adjust */
+    }
+    .leaderboard li.diamond-member-entry .content-wrapper {
+        flex-direction: row; /* Keep row for list view content */
+        justify-content: space-between; /* Space out name/avatar and count */
+        align-items: center;
+        width: 100%;
+        height: auto;
+    }
+
+    .diamond-member-entry .name-and-avatar {
+        display: flex;
+        flex-direction: row; /* Keep row for list view */
+        align-items: center;
+        gap: 8px;
+    }
+    .diamond-member-entry .avatar-small {
+        width: 50px; /* Consistent with other tiles */
+        height: 50px; /* Consistent with other tiles */
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1.5px solid rgba(255,255,255,0.7);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        margin: 0; /* Remove margin auto for list view */
+    }
+    .diamond-member-entry .name {
+        font-weight: 700;
+        font-size: 1.1em;
+    }
+    .diamond-member-entry .count {
+        font-weight: 600;
+        font-size: 1.1em;
+        margin-top: 0; /* Remove margin for list view */
+    }
+
+
+    /* Responsive styles for podium */
+    @media (max-width: 670px) {
+      .leaderboard .offensePodium, .leaderboard .defensePodium {
+        flex-direction: column; /* Stack vertically on small screens */
+        align-items: center;
+      }
+      .podium-item { margin-bottom: 15px; } /* Add space between stacked items */
+      .podium-stand.gold { width: 80px; height: 110px; }
+      .podium-stand.silver { width: 70px; height: 90px; }
+      .podium-stand.bronze { width: 60px; height: 70px; }
+    }
   </style>
 </head>
 <body>
@@ -474,7 +877,49 @@ select, select option {
     </div>
     <div class="leaderboard">
       <h3>Live Scores:</h3>
+      <div class="view-selector-container">
+        <button id="viewLeftArrow" class="view-selector-arrow">&lt;</button>
+        <div id="viewModeDisplay" class="view-mode-display">List</div>
+        <button id="viewRightArrow" class="view-selector-arrow">&gt;</button>
+      </div>
       <div id="leaderboardContainer">
+        <!-- Podium View -->
+        <div id="podiumContent">
+          <div class="lb-group offenseBox">
+            <div class="sectionTitle">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" class="icon" alt="Offense Icon"/>
+              <strong>Best Offence Podium</strong>
+            </div>
+            <div id="offensePodium" class="offensePodium"></div>
+          </div>
+          <div class="lb-group defenseBox">
+            <div class="sectionTitle">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" class="icon" alt="Defense Icon"/>
+              <strong>Best Defence Podium</strong>
+            </div>
+            <div id="defensePodium" class="defensePodium"></div>
+          </div>
+        </div>
+
+        <!-- Tiles View -->
+        <div id="tilesContent">
+          <div class="lb-group offenseBox">
+            <div class="sectionTitle">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" class="icon" alt="Offense Icon"/>
+              <strong>Best Offence Tiles</strong>
+            </div>
+            <div id="offenseTiles" class="tiles-grid"></div>
+          </div>
+          <div class="lb-group defenseBox">
+            <div class="sectionTitle">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" class="icon" alt="Defense Icon"/>
+              <strong>Best Defence Tiles</strong>
+            </div>
+            <div id="defenseTiles" class="tiles-grid"></div>
+          </div>
+        </div>
+
+        <!-- List View (Default) -->
         <div id="leaderboardContent">
           <div class="lb-group offenseBox">
             <div class="sectionTitle">
@@ -491,6 +936,7 @@ select, select option {
             <ul id="defenseScores"><li>Loading…</li></ul>
           </div>
         </div>
+
         <div id="leaderboardOffMessage">
           <div class="offMessage">The Live Leaderboard is currently offline.</div>
           <div class="offSubtitle">You can still vote! The leaderboard will be reactivated when the host decides.</div>
@@ -509,17 +955,17 @@ select, select option {
           alertOK    = document.getElementById('alertOK'),
           confirmBtns= document.getElementById('confirmBtns');
     function kcAlert(msg){
-      confirmBtns.style.display   = 'none';
-      alertOK.style.display       = 'inline-block';
-      alertMsg.textContent        = msg;
-      alertModal.style.display    = 'flex';
+      confirmBtns.style.display  = 'none';
+      alertOK.style.display      = 'inline-block';
+      alertMsg.textContent       = msg;
+      alertModal.style.display   = 'flex';
     }
     function kcConfirm(msg){
       return new Promise(resolve=>{
-        alertMsg.textContent        = msg;
-        alertOK.style.display       = 'none';
-        confirmBtns.style.display   = 'flex';
-        alertModal.style.display    = 'flex';
+        alertMsg.textContent       = msg;
+        alertOK.style.display      = 'none';
+        confirmBtns.style.display  = 'flex';
+        alertModal.style.display   = 'flex';
         confirmBtns.querySelector('.no').onclick  = ()=>{ alertModal.style.display='none'; resolve(false); };
         confirmBtns.querySelector('.yes').onclick = ()=>{ alertModal.style.display='none'; resolve(true); };
       });
@@ -545,7 +991,7 @@ select, select option {
       authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
       databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
       projectId: "kckillerscompany-ab1ec",
-      storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+      storageBucket: "kckillerscompany-ab1ec.firebaseapp.com",
       messagingSenderId: "198711213988",
       appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
       measurementId: "G-4LKP2M3JXE"
@@ -563,38 +1009,348 @@ select, select option {
       const key = name.toLowerCase().replace(/[^a-z0-9]/g,'');
       return canonical[key] || key;
     }
-    // Leaderboard
-    function updateLeaderboard(){
-      votesRef.once('value').then(snap=>{
-        const off={}, def={};
-        snap.forEach(c=>{
-          const v=c.val(),
-                o=normalize(v.bestOffence||''),
-                d=normalize(v.bestDefence||'');
-          if(o) off[o]=(off[o]||0)+1;
-          if(d) def[d]=(def[d]||0)+1;
-        });
-        renderList('offenseScores', Object.entries(off).sort((a,b)=>b[1]-a[1]));
-        renderList('defenseScores',Object.entries(def).sort((a,b)=>b[1]-a[1]));
-      });
+
+    // Leaderboard DOM references for different views
+    const viewModeDisplay = document.getElementById('viewModeDisplay'); // New display for current mode
+    const viewLeftArrow = document.getElementById('viewLeftArrow');
+    const viewRightArrow = document.getElementById('viewRightArrow');
+
+    const leaderboardContent = document.getElementById('leaderboardContent');
+    const podiumContent = document.getElementById('podiumContent');
+    const tilesContent = document.getElementById('tilesContent');
+
+    const viewModes = ['list', 'podium', 'tiles'];
+    let currentViewIndex = 0; // Start with 'list'
+
+    // Function to show the selected leaderboard view
+    function showLeaderboardView(view) {
+      leaderboardContent.style.display = 'none';
+      podiumContent.style.display = 'none';
+      tilesContent.style.display = 'none';
+
+      if (view === 'list') {
+        leaderboardContent.style.display = 'block';
+        viewModeDisplay.textContent = 'List';
+      } else if (view === 'podium') {
+        podiumContent.style.display = 'flex'; // Use flex for podium layout
+        viewModeDisplay.textContent = 'Podium';
+      } else if (view === 'tiles') {
+        tilesContent.style.display = 'block';
+        viewModeDisplay.textContent = 'Tiles';
+      }
+      // Trigger animation
+      viewModeDisplay.classList.remove('animate');
+      void viewModeDisplay.offsetWidth; // Trigger reflow
+      viewModeDisplay.classList.add('animate');
+
+      // Update currentViewIndex
+      currentViewIndex = viewModes.indexOf(view);
     }
+
+    // Arrow button functionality
+    viewLeftArrow.onclick = () => {
+        currentViewIndex = (currentViewIndex - 1 + viewModes.length) % viewModes.length;
+        showLeaderboardView(viewModes[currentViewIndex]);
+    };
+
+    viewRightArrow.onclick = () => {
+        currentViewIndex = (currentViewIndex + 1) % viewModes.length;
+        showLeaderboardView(viewModes[currentViewIndex]);
+    };
+
+
+    // Leaderboard update function
+    async function updateLeaderboard(){
+      const [votesSnap, usersSnap] = await Promise.all([
+        votesRef.once('value'),
+        usersRef.once('value')
+      ]);
+      const allVotes = votesSnap.val() || {};
+      const allUsers = usersSnap.val() || {};
+
+      // Build nameKey (normalized displayName/email) => UID map for all registered users
+      const nameToUidMap = {};
+      for (const uid in allUsers) {
+        const user = allUsers[uid];
+        const nameKey = normalize(user.displayName || user.email || '');
+        if (nameKey) { // Ensure nameKey is not empty
+          nameToUidMap[nameKey] = uid;
+        }
+      }
+
+      const off = {}, def = {};
+      
+      // Group votes by normalized name and collect all UIDs that voted for that name
+      for (const voteKey in allVotes) {
+        const v = allVotes[voteKey];
+        const o = normalize(v.bestOffence || '');
+        const d = normalize(v.bestDefence || '');
+        
+        if (o) {
+          if (!off[o]) {
+            off[o] = { count: 0, voterUids: new Set() }; // Renamed uids to voterUids for clarity
+          }
+          off[o].count++;
+          if (v.uid) off[o].voterUids.add(v.uid);
+        }
+        if (d) {
+          if (!def[d]) {
+            def[d] = { count: 0, voterUids: new Set() }; // Renamed uids to voterUids for clarity
+          }
+          def[d].count++;
+          if (v.uid) def[d].voterUids.add(v.uid);
+        }
+      }
+
+      // Convert counts to entries and sort, associating with the correct player's user data
+      const processEntries = (entriesMap) => {
+        return Object.entries(entriesMap).map(([name, data]) => {
+          const votedForUid = nameToUidMap[name]; // Get the UID of the *voted-for player*
+          const representativeUser = votedForUid ? allUsers[votedForUid] : null; // Get their actual user object
+
+          return { name, count: data.count, user: representativeUser };
+        }).sort((a, b) => b.count - a.count);
+      };
+
+      const offenseEntries = processEntries(off);
+      const defenseEntries = processEntries(def);
+
+      renderList('offenseScores', offenseEntries);
+      renderList('defenseScores', defenseEntries);
+      renderPodium('offensePodium', offenseEntries);
+      renderPodium('defensePodium', defenseEntries);
+      renderTiles('offenseTiles', offenseEntries);
+      renderTiles('defenseTiles', defenseEntries);
+    }
+
+    // Default profile picture URL
+    const DEFAULT_AVATAR_URL = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+
     function renderList(id, entries){
       const ul=document.getElementById(id);
       ul.innerHTML='';
       if(!entries.length){ ul.innerHTML='<li>No votes yet.</li>'; return; }
-      entries.forEach(([name,count],i)=>{
-        const li=document.createElement('li'),
-              n=document.createElement('span'),
-              c=document.createElement('span');
-        n.className='name'; c.className='count';
-        n.textContent=name; c.textContent=count;
-        li.append(n,c);
-        if(i===0) li.classList.add('first-place');
-        else if(i===1) li.classList.add('second-place');
-        else if(i===2) li.classList.add('third-place');
+      entries.forEach((data,i)=>{
+        const { name, count, user } = data;
+        const li=document.createElement('li');
+        
+        let isDiamond = false;
+        let customGradient = null;
+        let customBanner = null;
+        let customNameColor = null;
+
+        // Check if the user object exists and has profile customization unlocked
+        if (user && user.profileCustomizationUnlocked) {
+            const codesUnlocked = user.codesUnlocked || {};
+            // Check if the user has the 'diamond' code unlocked
+            if (codesUnlocked.diamond) {
+                isDiamond = true;
+                const custom = user.profileCustomization || {};
+                customGradient = custom.gradient;
+                customBanner = custom.banner;
+                customNameColor = custom.nameColor;
+            }
+        }
+
+        const listItemContent = document.createElement('div');
+        listItemContent.className = 'list-item-content';
+
+        const nameAndAvatar = document.createElement('div');
+        nameAndAvatar.className = 'name-and-avatar';
+
+        const avatar = document.createElement('img');
+        avatar.src = user && user.avatar ? user.avatar : DEFAULT_AVATAR_URL;
+        avatar.className = 'avatar-small';
+        // All avatars in list view are 28px, unless diamond then 32px
+        avatar.style.width = '28px';  
+        avatar.style.height = '28px';
+        nameAndAvatar.appendChild(avatar);
+        
+        const n = document.createElement('span');
+        n.className = 'name';
+        n.textContent = name;
+        nameAndAvatar.appendChild(n);
+
+        listItemContent.appendChild(nameAndAvatar);
+
+        const c = document.createElement('span');
+        c.className = 'count';
+        c.textContent = count;
+        listItemContent.appendChild(c);
+
+        li.appendChild(listItemContent);
+
+        // Apply custom styling if diamond (for all diamond members in list view)
+        // Also apply custom styling if top 3 and diamond
+        if (isDiamond) {  
+            li.classList.add('diamond-member-entry');
+            if (customGradient) listItemContent.style.background = customGradient;
+            if (customBanner) {
+                const bannerDiv = document.createElement('div');
+                bannerDiv.className = 'background-banner';
+                bannerDiv.style.backgroundImage = `url('${customBanner}')`;
+                listItemContent.appendChild(bannerDiv);
+            }
+            if (customNameColor) n.style.color = customNameColor;
+            avatar.style.width = '32px'; /* Slightly larger for diamond list entries */
+            avatar.style.height = '32px'; /* Slightly larger for diamond list entries */
+        } else { // Standard styling for non-diamond members
+            // Apply top 3 name styling if applicable
+            if(i===0) n.classList.add('first-place');
+            else if(i===1) n.classList.add('second-place');
+            else if(i===2) n.classList.add('third-place');
+            else {
+                n.style.color = '#e8ebfc'; /* Default color for non-top3, non-diamond */
+                n.style.fontSize = '1.06rem';
+                n.style.background = 'none';
+                n.style.fontWeight = '600';
+            }
+        }
         ul.append(li);
       });
     }
+
+    // Function to render the podium view
+    function renderPodium(id, entries) {
+      const podiumDiv = document.getElementById(id);
+      podiumDiv.innerHTML = '';
+      if (!entries.length) {
+        podiumDiv.innerHTML = '<p>No votes yet.</p>';
+        return;
+      }
+
+      // Get top 3 entries for the podium
+      const topEntries = entries.slice(0, 3);
+
+      // Create a temporary array to hold podium items in the correct order (2nd, 1st, 3rd)
+      let orderedPodium = [];
+      if (topEntries.length >= 2) {
+        orderedPodium[1] = topEntries[0]; // 1st place
+        orderedPodium[0] = topEntries[1]; // 2nd place
+        if (topEntries.length >= 3) {
+          orderedPodium[2] = topEntries[2]; // 3rd place
+        }
+      } else if (topEntries.length === 1) {
+        orderedPodium[1] = topEntries[0]; // Only 1st place
+      }
+
+      const ranks = ['silver', 'gold', 'bronze'];
+      const rankNumbers = ['2', '1', '3']; // For the stand numbers
+
+      const podiumHTML = orderedPodium.map((data, index) => {
+        if (!data) return ''; // Handle cases where there aren't enough entries for all 3 spots
+        const { name, count, user } = data;
+        const rankClass = ranks[index];
+        const rankNum = rankNumbers[index];
+        
+        let avatarHtml = '';
+        const avatarSrc = user && user.avatar ? user.avatar : DEFAULT_AVATAR_URL;
+        avatarHtml = `<img src="${avatarSrc}" class="avatar-small" alt="${name}'s Avatar">`;
+        
+        let podiumStandStyle = '';
+        let podiumStandClass = '';
+        let glowColor = '';
+
+        // Apply custom gradient to podium bar if user is diamond
+        if (user && user.profileCustomizationUnlocked && user.codesUnlocked && user.codesUnlocked.diamond && user.profileCustomization && user.profileCustomization.gradient) {
+            podiumStandStyle = `background: ${user.profileCustomization.gradient};`;
+            podiumStandClass = 'custom-gradient';
+            // Extract a color from the gradient for the glow effect
+            const gradientMatch = user.profileCustomization.gradient.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (gradientMatch) {
+                glowColor = `rgba(${gradientMatch[1]}, ${gradientMatch[2]}, ${gradientMatch[3]}, 0.8)`;
+            } else {
+                glowColor = '#fff'; // Fallback
+            }
+        } else {
+            // Default podium stand gradients based on rank
+            if (rankClass === 'gold') podiumStandStyle = 'background: linear-gradient(135deg, #FFD700, #b8860b);';
+            else if (rankClass === 'silver') podiumStandStyle = 'background: linear-gradient(135deg, #C0C0C0, #a0a0a0);';
+            else if (rankClass === 'bronze') podiumStandStyle = 'background: linear-gradient(135deg, #CD7F32, #8B4513);';
+        }
+
+
+        return `
+          <div class="podium-item ${rankClass}">
+            ${avatarHtml}
+            <span class="name">${name}</span>
+            <div class="podium-stand ${rankClass} ${podiumStandClass}" style="${podiumStandStyle}; --custom-podium-gradient: ${podiumStandStyle}; --custom-podium-glow-color: ${glowColor}; --custom-podium-shadow-color: ${glowColor};"><span>${rankNum}</span></div>
+            </div>
+        `;
+      }).join('');
+      podiumDiv.innerHTML = podiumHTML;
+    }
+
+    // Function to render the tiles view
+    function renderTiles(id, entries) {
+      const tilesDiv = document.getElementById(id);
+      tilesDiv.innerHTML = '';
+      if (!entries.length) {
+        tilesDiv.innerHTML = '<p>No votes yet.</p>';
+        return;
+      }
+      const tilesHTML = entries.map((data, i) => {
+        const { name, count, user } = data;
+        let avatarHtml = '';
+        const avatarSrc = user && user.avatar ? user.avatar : DEFAULT_AVATAR_URL;
+        avatarHtml = `<img src="${avatarSrc}" class="avatar-small" alt="${name}'s Avatar">`;
+        
+
+        let isDiamond = false;
+        let customGradient = null;
+        let customBanner = null;
+        let customNameColor = null;
+
+        // Check if the user object exists and has profile customization unlocked
+        if (user && user.profileCustomizationUnlocked) {
+            const codesUnlocked = user.codesUnlocked || {};
+            // Check if the user has the 'diamond' code unlocked
+            if (codesUnlocked.diamond) {
+                isDiamond = true;
+                const custom = user.profileCustomization || {};
+                customGradient = custom.gradient;
+                customBanner = custom.banner;
+                customNameColor = custom.nameColor;
+            }
+        }
+
+        let tileStyleAttr = ''; // Apply style directly to tile-item
+        let backgroundBannerHtml = '';
+        let nameStyle = '';
+
+        // Apply custom styling if diamond (for all ranks in tiles view)
+        if (isDiamond) {  
+            tileStyleAttr = customGradient ? `background: ${customGradient};` : '';
+            if (customBanner) {
+                backgroundBannerHtml = `<div class="background-banner" style="background-image: url('${customBanner}');"></div>`;
+            }
+            nameStyle = customNameColor ? `color: ${customNameColor};` : '';
+            
+            // For diamond members, the entire tile-item should have the gradient
+            return `
+              <div class="tile-item diamond-member-entry" style="${tileStyleAttr}">
+                ${backgroundBannerHtml}
+                <div class="content-wrapper">
+                    ${avatarHtml}
+                    <div class="name" style="${nameStyle}">${name}</div>
+                    <div class="count">${count}</div>
+                </div>
+              </div>
+            `;
+
+        } else { // Standard rendering for non-diamond members
+            return `
+              <div class="tile-item">
+                ${avatarHtml}
+                <div class="name">${name}</div>
+                <div class="count">${count}</div>
+              </div>
+            `;
+        }
+      }).join('');
+      tilesDiv.innerHTML = tilesHTML;
+    }
+
     // Average rating
     function updateAverageRating(){
       votesRef.once('value').then(snap=>{
@@ -661,38 +1417,38 @@ select, select option {
       };
     }
     // Auth listener
-    auth.onAuthStateChanged(user=>{
-      if(!user){
+    auth.onAuthStateChanged(u=>{
+      if(!u){
         voteContainer.innerHTML =
           `<p>Please <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">log in</a> to vote.</p>`;
         return;
       }
       // sync profile + emailVerified
-      usersRef.child(user.uid).update({
-        displayName: user.displayName||null,
-        email:       user.email      ||null,
+      usersRef.child(u.uid).update({
+        displayName: u.displayName||null,
+        email:       u.email     ||null,
         joined:      firebase.database.ServerValue.TIMESTAMP,
-        emailVerified: user.emailVerified
+        emailVerified: u.emailVerified
       });
       // block unverified
-      if(!user.emailVerified){
+      if(!u.emailVerified){
         kcAlert('Please verify your email before voting.');
         voteContainer.innerHTML =
-          `<p>Verify your email to vote. <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">Resend verification</a></p>`;
+          `<p>Verify your email to vote. <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">Resend verification</a></p>`;
         return;
       }
-      // fetch all users, filter client‑side on emailVerified
+      // fetch all users, filter client-side on emailVerified
       usersRef.once('value').then(snap=>{
         let opts='<option value="" disabled selected>– Select a player –</option>';
         snap.forEach(c=>{
-          const u=c.val();
-          if(u.emailVerified){
-            const name=u.displayName||u.email||'(unknown)',
+          const userVal=c.val();
+          if(userVal.emailVerified){
+            const name=userVal.displayName||userVal.email||'(unknown)',
                   esc=name.replace(/"/g,'&quot;');
             opts+=`<option value="${esc}">${esc}</option>`;
           }
         });
-        renderForm(user,opts);
+        renderForm(u,opts);
       });
     });
     // Admin unlock logic in modal
@@ -720,9 +1476,9 @@ select, select option {
         snap.forEach(c=>{
           const v=c.val(), d=new Date(v.time).toLocaleString();
           html+=`<tr data-key="${c.key}"><td>${d}</td><td>${v.username}</td>
-                 <td>${v.bestOffence}</td><td>${v.bestDefence}</td>
-                 <td>${v.rating}/5</td>
-                 <td><button class="delBtn">Delete</button></td></tr>`;
+                  <td>${v.bestOffence}</td><td>${v.bestDefence}</td>
+                  <td>${v.rating}/5</td>
+                  <td><button class="delBtn">Delete</button></td></tr>`;
         });
         adminTable.innerHTML=html;
         updateLeaderboard(); updateAverageRating();
@@ -745,15 +1501,35 @@ select, select option {
         .then(()=>{ adminTable.innerHTML=''; kcAlert('All votes have been reset.'); updateLeaderboard(); updateAverageRating(); })
         .catch(err=>kcAlert('Reset failed: '+err.message));
     };
+
+    // Event listener for the leaderboard view select dropdown
+    // leaderboardViewSelect.addEventListener('change', (event) => { // This was removed
+    //    showLeaderboardView(event.target.value);
+    // });
+
     // Live toggle & init
     configRef.on('value',snap=>{
       const on=snap.val()!==false;
-      document.getElementById('leaderboardContent').style.display = on?'block':'none';
-      document.getElementById('leaderboardOffMessage').style.display = on?'none':'block';
+      if (on) {
+        document.getElementById('leaderboardOffMessage').style.display = 'none';
+        showLeaderboardView(viewModes[currentViewIndex]); // Show the currently selected view
+        // leaderboardViewSelect.style.display = 'block'; // Hide old select
+        document.querySelector('.view-selector-container').style.display = 'flex'; // Show new selector
+      } else {
+        leaderboardContent.style.display = 'none';
+        podiumContent.style.display = 'none';
+        tilesContent.style.display = 'none';
+        document.getElementById('leaderboardOffMessage').style.display = 'block';
+        // leaderboardViewSelect.style.display = 'none'; // Hide old select
+        document.querySelector('.view-selector-container').style.display = 'none'; // Hide new selector
+      }
       if(on) updateLeaderboard();
     });
+
+    // Initial load
     updateLeaderboard();
     updateAverageRating();
+    showLeaderboardView(viewModes[currentViewIndex]); // Set initial view based on current index
   </script>
 </body>
 </html>
