@@ -121,19 +121,37 @@
       color: #88949c !important;
       cursor: not-allowed;
     }
-    #showAdminBtn {
-      background: linear-gradient(90deg,#d3ecfa 0%,#bde3fa 100%);
-      color: #3762a7;
-      font-weight: 600;
-      margin-top: .7rem;
-      margin-bottom: 0;
-      box-shadow: 0 2px 10px #cbe6ff22;
-      border: 1.2px solid #bad2e3;
+
+    /* Admin button as a circular icon */
+    #adminIconBtn {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15); /* Slightly transparent white */
+      border: 1.5px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      z-index: 10; /* Ensure it's above other elements */
+      padding: 0; /* Remove default button padding */
     }
-    #showAdminBtn:hover {
-      background: linear-gradient(90deg,#d6e6f8 0%,#d2f3f6 100%);
-      color: #21428f;
-      box-shadow: 0 8px 18px #b3e8ff44;
+    #adminIconBtn:hover {
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    #adminIconBtn img {
+      width: 100%; /* Make the image fill the button */
+      height: 100%;
+      object-fit: cover; /* Ensure the image covers the area without distortion */
+      pointer-events: none; /* Prevent image from interfering with click */
+      border-radius: 50%; /* Keep it circular */
     }
 
     /* Apple glass leaderboard */
@@ -850,6 +868,86 @@
       .podium-stand.silver { width: 70px; height: 90px; }
       .podium-stand.bronze { width: 60px; height: 70px; }
     }
+
+    /* New styles for the voted user profile card */
+    .voted-profile-card {
+        width: 100%;
+        min-height: 200px;
+        border-radius: 20px;
+        padding: 1.5rem;
+        background: rgba(255, 255, 255, 0.1); /* Default transparent background */
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+        color: #fff;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    .voted-profile-banner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 80px; /* Adjust height as needed */
+        background-size: cover;
+        background-position: center;
+        border-radius: 20px 20px 0 0;
+        opacity: 0.2;
+        z-index: 0;
+    }
+
+    .voted-profile-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        margin-top: 20px; /* Push down from banner */
+        position: relative;
+        z-index: 1;
+    }
+
+    .voted-profile-username {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        position: relative;
+        z-index: 1;
+        /* Default color, overridden by customization */
+        color: #fff;
+    }
+
+    .voted-profile-stats {
+        display: flex;
+        justify-content: space-around;
+        width: 100%;
+        margin-top: 10px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #e0e0e0;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #ffd700; /* Gold color for values */
+        margin-top: 5px;
+        text-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -887,7 +985,10 @@
     <div class="panel">
       <h2>KC Event Voting</h2>
       <div id="voteContainer"><p>Loading…</p></div>
-      <button id="showAdminBtn">Admin</button>
+      <!-- Admin button as a circular icon -->
+      <button id="adminIconBtn">
+        <img src="https://github.com/kevinmidnight7-sudo/messageboardkc/blob/main/Admin.png?raw=true" alt="Admin Icon"/>
+      </button>
     </div>
     <div class="leaderboard">
       <h3>Live Scores:</h3>
@@ -987,7 +1088,7 @@
     alertOK.onclick = ()=> alertModal.style.display='none';
 
     // Admin Modal
-    const showAdminBtn = document.getElementById('showAdminBtn'),
+    const adminIconBtn = document.getElementById('adminIconBtn'), // Changed from showAdminBtn
           adminModal   = document.getElementById('adminModal'),
           adminClose   = document.getElementById('adminClose'),
           adminPass    = document.getElementById('adminPass'),
@@ -996,7 +1097,7 @@
           adminTable   = document.getElementById('adminTable'),
           resetBtn     = document.getElementById('resetBtn'),
           adminTableContainer = document.getElementById('adminTableContainer');
-    showAdminBtn.onclick = () => { adminModal.classList.add('active'); };
+    adminIconBtn.onclick = () => { adminModal.classList.add('active'); }; // Updated click handler
     adminClose.onclick = () => { adminModal.classList.remove('active'); };
 
     // Firebase init
@@ -1011,17 +1112,20 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth         = firebase.auth(),
-          votesRef  = firebase.database().ref('votes'),
-          configRef = firebase.database().ref('config/liveLeaderboardEnabled'),
-          usersRef  = firebase.database().ref('users');
+    const auth        = firebase.auth(),
+          votesRef    = firebase.database().ref('votes'),
+          configRef   = firebase.database().ref('config/liveLeaderboardEnabled'),
+          usersRef    = firebase.database().ref('users'),
+          badgesRef   = firebase.database().ref('badges'); // Added reference to badges
+
     // DOM refs for voting form
     const voteContainer = document.getElementById('voteContainer');
     // Normalize helper
-    const canonical = { 'w1de':'wide','wide':'wide','w1deeee':'wide','lbgoo':'goo','lbg00':'goo','goo':'goo' };
+    // Updated normalize function to handle case-insensitivity and ensure consistent keys
     function normalize(name){
-      const key = name.toLowerCase().replace(/[^a-z0-9]/g,'');
-      return canonical[key] || key;
+      if (!name) return '';
+      // Remove non-alphanumeric characters and convert to lowercase
+      return name.toLowerCase().replace(/[^a-z0-9]/g,'');
     }
 
     // Leaderboard DOM references for different views
@@ -1075,20 +1179,26 @@
 
     // Leaderboard update function
     async function updateLeaderboard(){
-      const [votesSnap, usersSnap] = await Promise.all([
+      const [votesSnap, usersSnap, badgesSnap] = await Promise.all([
         votesRef.once('value'),
-        usersRef.once('value')
+        usersRef.once('value'),
+        badgesRef.once('value') // Fetch badges data
       ]);
       const allVotes = votesSnap.val() || {};
       const allUsers = usersSnap.val() || {};
+      const allBadges = badgesSnap.val() || {}; // All badges data
 
       // Build nameKey (normalized displayName/email) => UID map for all registered users
+      // Use the actual displayName or email from Firebase as the key for matching
       const nameToUidMap = {};
+      const normalizedNameToOriginalNameMap = {}; // To map normalized name back to original display name
       for (const uid in allUsers) {
         const user = allUsers[uid];
-        const nameKey = normalize(user.displayName || user.email || '');
+        const originalName = user.displayName || user.email || '';
+        const nameKey = normalize(originalName);
         if (nameKey) { // Ensure nameKey is not empty
           nameToUidMap[nameKey] = uid;
+          normalizedNameToOriginalNameMap[nameKey] = originalName;
         }
       }
 
@@ -1118,11 +1228,12 @@
 
       // Convert counts to entries and sort, associating with the correct player's user data
       const processEntries = (entriesMap) => {
-        return Object.entries(entriesMap).map(([name, data]) => {
-          const votedForUid = nameToUidMap[name]; // Get the UID of the *voted-for player*
+        return Object.entries(entriesMap).map(([normalizedName, data]) => {
+          const votedForUid = nameToUidMap[normalizedName]; // Get the UID of the *voted-for player*
           const representativeUser = votedForUid ? allUsers[votedForUid] : null; // Get their actual user object
+          const originalDisplayName = normalizedNameToOriginalNameMap[normalizedName] || normalizedName; // Use original name for display
 
-          return { name, count: data.count, user: representativeUser };
+          return { name: originalDisplayName, count: data.count, user: representativeUser, uid: votedForUid }; // Added uid
         }).sort((a, b) => b.count - a.count);
       };
 
@@ -1135,6 +1246,9 @@
       renderPodium('defensePodium', defenseEntries);
       renderTiles('offenseTiles', offenseEntries);
       renderTiles('defenseTiles', defenseEntries);
+
+      // Store processed data globally for voted user profile display
+      window.leaderboardData = { allVotes, allUsers, allBadges, normalizedNameToOriginalNameMap };
     }
 
     // Default profile picture URL
@@ -1367,6 +1481,118 @@
       tilesDiv.innerHTML = tilesHTML;
     }
 
+    // Function to render the user's profile and stats after voting
+    async function renderVotedUserProfile(currentUser, allVotes, allUsers, allBadges, normalizedNameToOriginalNameMap) {
+        const uid = currentUser.uid;
+        const userData = allUsers[uid] || {};
+        const userBadges = allBadges[uid] || {};
+
+        const avatarSrc = userData.avatar || DEFAULT_AVATAR_URL;
+        const username = userData.username || currentUser.displayName || currentUser.email || 'Guest';
+        const profileCustomization = userData.profileCustomization || {};
+        const isDiamond = userData.profileCustomizationUnlocked && userData.codesUnlocked && userData.codesUnlocked.diamond;
+
+        let bannerStyle = '';
+        if (isDiamond && profileCustomization.banner) {
+            bannerStyle = `background-image: url('${profileCustomization.banner}');`;
+        }
+
+        let cardStyle = '';
+        if (isDiamond && profileCustomization.gradient) {
+            cardStyle = `background: ${profileCustomization.gradient};`;
+        } else {
+            cardStyle = `background: rgba(36,40,48,0.65);`; // Default panel background
+        }
+
+        let usernameColor = '#fff'; // Default text color
+        if (isDiamond && profileCustomization.nameColor) {
+            usernameColor = profileCustomization.nameColor;
+        }
+
+        // Calculate Rank
+        let offenseRank = 'N/A';
+        let defenseRank = 'N/A';
+
+        const offenseCounts = {};
+        const defenseCounts = {};
+
+        // Count votes for all players
+        for (const voteKey in allVotes) {
+            const vote = allVotes[voteKey];
+            const offensePlayer = normalize(vote.bestOffence || '');
+            const defensePlayer = normalize(vote.bestDefence || '');
+
+            if (offensePlayer) {
+                offenseCounts[offensePlayer] = (offenseCounts[offensePlayer] || 0) + 1;
+            }
+            if (defensePlayer) {
+                defenseCounts[defensePlayer] = (defenseCounts[defensePlayer] || 0) + 1;
+            }
+        }
+
+        // Sort players by votes to determine rank
+        const sortedOffense = Object.entries(offenseCounts).sort(([, countA], [, countB]) => countB - countA);
+        const sortedDefense = Object.entries(defenseCounts).sort(([, countA], [, countB]) => countB - countA);
+
+        // Use the normalized version of the current user's name for matching against vote counts
+        const normalizedCurrentUserDisplayName = normalize(currentUser.displayName || currentUser.email);
+
+        const findRank = (sortedEntries, targetNormalizedName) => {
+            for (let i = 0; i < sortedEntries.length; i++) {
+                if (sortedEntries[i][0] === targetNormalizedName) {
+                    return `#${i + 1}`;
+                }
+            }
+            return 'N/A';
+        };
+
+        offenseRank = findRank(sortedOffense, normalizedCurrentUserDisplayName);
+        defenseRank = findRank(sortedDefense, normalizedCurrentUserDisplayName);
+
+        // Display the higher rank if available, otherwise "N/A"
+        let overallRank = 'N/A';
+        if (offenseRank !== 'N/A' && defenseRank !== 'N/A') {
+            const offenseNum = parseInt(offenseRank.substring(1));
+            const defenseNum = parseInt(defenseRank.substring(1));
+            overallRank = `#${Math.min(offenseNum, defenseNum)}`;
+        } else if (offenseRank !== 'N/A') {
+            overallRank = offenseRank;
+        } else if (defenseRank !== 'N/A') {
+            overallRank = defenseRank;
+        }
+
+        // Calculate Votes Received
+        let votesReceived = 0;
+        if (offenseCounts[normalizedCurrentUserDisplayName]) {
+            votesReceived += offenseCounts[normalizedCurrentUserDisplayName];
+        }
+        if (defenseCounts[normalizedCurrentUserDisplayName]) {
+            votesReceived += defenseCounts[normalizedCurrentUserDisplayName];
+        }
+
+        // Calculate Wins (from badges)
+        const wins = (userBadges.offence || 0) + (userBadges.defence || 0);
+
+        voteContainer.innerHTML = `
+            <div class="voted-profile-card" style="${cardStyle}">
+                <div class="voted-profile-banner" style="${bannerStyle}"></div>
+                <img src="${avatarSrc}" alt="Your Avatar" class="voted-profile-avatar"/>
+                <div class="voted-profile-username" style="color: ${usernameColor};">${username}</div>
+                <div class="voted-profile-stats">
+                    <div class="stat-item">
+                        Rank: <span class="stat-value">${overallRank}</span>
+                    </div>
+                    <div class="stat-item">
+                        Votes: <span class="stat-value">${votesReceived}</span>
+                    </div>
+                    <div class="stat-item">
+                        Wins: <span class="stat-value">${wins}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     // Average rating
     function updateAverageRating(){
       votesRef.once('value').then(snap=>{
@@ -1412,9 +1638,39 @@
       });
       off.onchange=updateBtn;
       def.onchange=updateBtn;
-      votesRef.orderByChild('uid').equalTo(user.uid).once('value').then(snap=>{
+      votesRef.orderByChild('uid').equalTo(user.uid).once('value').then(async snap=>{
         if(snap.exists()){
-          voteContainer.innerHTML=`<p>You’ve already voted—thank you!</p>`;
+          // User has already voted, display their profile and stats
+          // Ensure leaderboardData is available before calling renderVotedUserProfile
+          if (window.leaderboardData) {
+            renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
+          } else {
+            // If leaderboardData isn't ready, fetch it
+            const [votesSnap, usersSnap, badgesSnap] = await Promise.all([
+                votesRef.once('value'),
+                usersRef.once('value'),
+                badgesRef.once('value')
+            ]);
+            // Re-build normalizedNameToOriginalNameMap here as well
+            const normalizedNameToOriginalNameMap = {};
+            const allUsersLocal = usersSnap.val() || {};
+            for (const uid in allUsersLocal) {
+                const userData = allUsersLocal[uid];
+                const originalName = userData.displayName || userData.email || '';
+                const nameKey = normalize(originalName);
+                if (nameKey) {
+                    normalizedNameToOriginalNameMap[nameKey] = originalName;
+                }
+            }
+
+            window.leaderboardData = {
+                allVotes: votesSnap.val() || {},
+                allUsers: usersSnap.val() || {},
+                allBadges: badgesSnap.val() || {},
+                normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMap
+            };
+            renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
+          }
         }
       });
       sub.onclick=()=>{
@@ -1442,7 +1698,7 @@
       // sync profile + emailVerified
       usersRef.child(u.uid).update({
         displayName: u.displayName||null,
-        email:       u.email       ||null,
+        email:       u.email        ||null,
         joined:      firebase.database.ServerValue.TIMESTAMP,
         emailVerified: u.emailVerified
       });
