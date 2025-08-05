@@ -790,7 +790,7 @@
         height: 25%; /* Top 1/4th of the tile */
         background-size: cover;
         background-position: center;
-        opacity: 0.15; /* Subtle overlay */
+        opacity: 0.15;
         z-index: 0;
         border-radius: 15px 15px 0 0; /* Match tile top corners */
     }
@@ -839,7 +839,7 @@
     }
     .diamond-member-entry .avatar-small {
         width: 50px; /* Consistent with other tiles */
-        height: 50px; /* Consistent with other tiles */
+        height: 50px;
         border-radius: 50%;
         object-fit: cover;
         border: 1.5px solid rgba(255,255,255,0.7);
@@ -869,84 +869,93 @@
       .podium-stand.bronze { width: 60px; height: 70px; }
     }
 
-    /* New styles for the voted user profile card */
+    /* --- Profile Card Overall Structure --- */
     .voted-profile-card {
-        width: 100%;
-        min-height: 200px;
-        border-radius: 20px;
-        padding: 1.5rem;
-        background: rgba(255, 255, 255, 0.1); /* Default transparent background */
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        position: relative;
-        overflow: hidden;
-        color: #fff;
-        text-align: center;
-        box-sizing: border-box;
+      position: relative;
+      border-radius: 20px;
+      background: none;
+      overflow: hidden;
+      text-align: center;
+      width: 100%;
+      min-width: 320px;
+      max-width: 440px;
+      margin: 5rem auto 0 auto;
+      box-shadow: 0 8px 48px 0 #c0d2e733, 0 2px 8px #8390b51a;
     }
-
     .voted-profile-banner {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 80px; /* Adjust height as needed */
-        background-size: cover;
-        background-position: center;
-        border-radius: 20px 20px 0 0;
-        opacity: 0.2;
-        z-index: 0;
+      width: 100%;
+      height: 130px;
+      background-size: cover;
+      background-position: center;
+      border-radius: 20px 20px 0 0;
+      position: relative;
+      z-index: 1;
+      opacity: 0.2;
+      background-color: #cbd5e1;
     }
-
+    .voted-profile-gradient-area {
+      width: 100%;
+      min-height: 220px;
+      background: linear-gradient(180deg, #ff00cc 0%, #333399 100%);
+      border-radius: 0 0 20px 20px;
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* --- Avatar bridges banner and gradient --- */
     .voted-profile-avatar {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        object-fit: cover;
-        border: 4px solid rgba(255, 255, 255, 0.8);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        margin-top: 20px; /* Push down from banner */
-        position: relative;
-        z-index: 1;
+      width: 95px;
+      height: 95px;
+      border-radius: 50%;
+      border: 5px solid #fff;
+      object-fit: cover;
+      box-shadow: 0 8px 32px 0 #19203c29;
+      background: #222;
+      margin-top: -45px; /* Lift avatar to overlap banner & gradient */
+      z-index: 10;
     }
+    /* --- Content (name & stats) inside gradient --- */
+    .voted-profile-content-wrapper {
+      margin-top: 18px; /* Space below avatar */
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+            height: 335px;
 
+    }
     .voted-profile-username {
-        font-size: 1.6rem;
-        font-weight: 700;
-        margin-top: 10px;
-        margin-bottom: 20px;
-        position: relative;
-        z-index: 1;
-        /* Default color, overridden by customization */
-        color: #fff;
+      font-size: 2.1rem;
+      font-weight: 700;
+      margin-top: 7px;
+      margin-bottom: 18px;
+      color: #fff;
+      text-shadow: 0 2px 14px rgba(0,0,0,0.12);
+      z-index: 2;
     }
-
     .voted-profile-stats {
-        display: flex;
-        justify-content: space-around;
-        width: 100%;
-        margin-top: 10px;
-        position: relative;
-        z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      width: 100%;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
     }
-
-    .stat-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #e0e0e0;
+    .stat-item:last-child {
+      grid-column: span 2;
+      text-align: center;
+      margin-top: 15px;
     }
-
     .stat-value {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: #ffd700; /* Gold color for values */
-        margin-top: 5px;
-        text-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #ffd700;
+      margin-top: 5px;
+      text-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
     }
   </style>
 </head>
@@ -1497,11 +1506,11 @@
             bannerStyle = `background-image: url('${profileCustomization.banner}');`;
         }
 
-        let cardStyle = '';
+        let cardBgStyle = `background: rgba(36,40,48,0.65);`; // Default background for the whole card
+
+        let gradientStyle = '';
         if (isDiamond && profileCustomization.gradient) {
-            cardStyle = `background: ${profileCustomization.gradient};`;
-        } else {
-            cardStyle = `background: rgba(36,40,48,0.65);`; // Default panel background
+            gradientStyle = `background: ${profileCustomization.gradient};`;
         }
 
         let usernameColor = '#fff'; // Default text color
@@ -1509,9 +1518,11 @@
             usernameColor = profileCustomization.nameColor;
         }
 
-        // Calculate Rank
+        // Calculate Rank and Votes for Offense and Defense
         let offenseRank = 'N/A';
+        let offenseVotes = 0;
         let defenseRank = 'N/A';
+        let defenseVotes = 0;
 
         const offenseCounts = {};
         const defenseCounts = {};
@@ -1537,59 +1548,57 @@
         // Use the normalized version of the current user's name for matching against vote counts
         const normalizedCurrentUserDisplayName = normalize(currentUser.displayName || currentUser.email);
 
-        const findRank = (sortedEntries, targetNormalizedName) => {
+        const findStats = (sortedEntries, targetNormalizedName) => {
+            let rank = 'N/A';
+            let votes = 0;
             for (let i = 0; i < sortedEntries.length; i++) {
                 if (sortedEntries[i][0] === targetNormalizedName) {
-                    return `#${i + 1}`;
+                    rank = `#${i + 1}`;
+                    votes = sortedEntries[i][1];
+                    break;
                 }
             }
-            return 'N/A';
+            return { rank, votes };
         };
 
-        offenseRank = findRank(sortedOffense, normalizedCurrentUserDisplayName);
-        defenseRank = findRank(sortedDefense, normalizedCurrentUserDisplayName);
+        const userOffenseStats = findStats(sortedOffense, normalizedCurrentUserDisplayName);
+        offenseRank = userOffenseStats.rank;
+        offenseVotes = userOffenseStats.votes;
 
-        // Display the higher rank if available, otherwise "N/A"
-        let overallRank = 'N/A';
-        if (offenseRank !== 'N/A' && defenseRank !== 'N/A') {
-            const offenseNum = parseInt(offenseRank.substring(1));
-            const defenseNum = parseInt(defenseRank.substring(1));
-            overallRank = `#${Math.min(offenseNum, defenseNum)}`;
-        } else if (offenseRank !== 'N/A') {
-            overallRank = offenseRank;
-        } else if (defenseRank !== 'N/A') {
-            overallRank = defenseRank;
-        }
-
-        // Calculate Votes Received
-        let votesReceived = 0;
-        if (offenseCounts[normalizedCurrentUserDisplayName]) {
-            votesReceived += offenseCounts[normalizedCurrentUserDisplayName];
-        }
-        if (defenseCounts[normalizedCurrentUserDisplayName]) {
-            votesReceived += defenseCounts[normalizedCurrentUserDisplayName];
-        }
+        const userDefenseStats = findStats(sortedDefense, normalizedCurrentUserDisplayName);
+        defenseRank = userDefenseStats.rank;
+        defenseVotes = userDefenseStats.votes;
 
         // Calculate Wins (from badges)
         const wins = (userBadges.offence || 0) + (userBadges.defence || 0);
 
         voteContainer.innerHTML = `
-            <div class="voted-profile-card" style="${cardStyle}">
-                <div class="voted-profile-banner" style="${bannerStyle}"></div>
-                <img src="${avatarSrc}" alt="Your Avatar" class="voted-profile-avatar"/>
-                <div class="voted-profile-username" style="color: ${usernameColor};">${username}</div>
-                <div class="voted-profile-stats">
-                    <div class="stat-item">
-                        Rank: <span class="stat-value">${overallRank}</span>
-                    </div>
-                    <div class="stat-item">
-                        Votes: <span class="stat-value">${votesReceived}</span>
-                    </div>
-                    <div class="stat-item">
-                        Wins: <span class="stat-value">${wins}</span>
-                    </div>
-                </div>
-            </div>
+<div class="voted-profile-card" style="${cardBgStyle}">
+  <div class="voted-profile-banner" style="${bannerStyle}"></div>
+  <div class="voted-profile-gradient-area" style="${gradientStyle}">
+    <img src="${avatarSrc}" alt="Your Avatar" class="voted-profile-avatar"/>
+    <div class="voted-profile-content-wrapper">
+      <div class="voted-profile-username" style="color: ${usernameColor};">${username}</div>
+      <div class="voted-profile-stats">
+        <div class="stat-item">
+            Offence Rank: <span class="stat-value">${offenseRank}</span>
+        </div>
+        <div class="stat-item">
+            Offence Votes: <span class="stat-value">${offenseVotes}</span>
+        </div>
+        <div class="stat-item">
+            Defence Rank: <span class="stat-value">${defenseRank}</span>
+        </div>
+        <div class="stat-item">
+            Defence Votes: <span class="stat-value">${defenseVotes}</span>
+        </div>
+        <div class="stat-item">
+            Total Wins: <span class="stat-value">${wins}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
         `;
     }
 
@@ -1683,9 +1692,41 @@
           rating,
           time:firebase.database.ServerValue.TIMESTAMP
         })
-        .then(()=>{ kcAlert('Thanks for voting!'); updateLeaderboard(); updateAverageRating(); })
-        .catch(e=>kcAlert('Error submitting: '+e.message))
-        .finally(()=>renderForm(user,opts));
+        .then(()=> {
+            kcAlert('Thanks for voting!');
+            updateLeaderboard();
+            updateAverageRating();
+            // After successful vote, re-render the profile card
+            if (window.leaderboardData) {
+                renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
+            } else {
+                // Fallback if leaderboardData is not yet available (shouldn't happen often)
+                usersRef.once('value').then(usersSnap => {
+                    const allUsersLocal = usersSnap.val() || {};
+                    const normalizedNameToOriginalNameMap = {};
+                    for (const uid in allUsersLocal) {
+                        const userData = allUsersLocal[uid];
+                        const originalName = userData.displayName || userData.email || '';
+                        const nameKey = normalize(originalName);
+                        if (nameKey) {
+                            normalizedNameToOriginalNameMap[nameKey] = originalName;
+                        }
+                    }
+                    votesRef.once('value').then(votesSnap => {
+                        badgesRef.once('value').then(badgesSnap => {
+                            window.leaderboardData = {
+                                allVotes: votesSnap.val() || {},
+                                allUsers: allUsersLocal,
+                                allBadges: badgesSnap.val() || {},
+                                normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMap
+                            };
+                            renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
+                        });
+                    });
+                });
+            }
+        })
+        .catch(e=>kcAlert('Error submitting: '+e.message));
       };
     }
     // Auth listener
