@@ -2252,10 +2252,11 @@ loginBtn.onclick = ()=>{
   if(!email||!pass) return kcAlert("Enter email and password!");
   auth.signInWithEmailAndPassword(email,pass)
     .then(res=>{
+      // Allow login even if email is not verified, so user can see the badge and resend
       if(!res.user.emailVerified){
-        auth.signOut();
-        throw new Error("Please verify your email before logging in.");
+        kcAlert("Your email is not verified. Please verify it to unlock all features.", 3500);
       }
+      // No signOut or throw here, allow the user to proceed
     })
     .catch(e=>kcAlert(e.message));
 };
@@ -2269,7 +2270,7 @@ document.getElementById("resetPassBtn").onclick = ()=>{
     .catch(e=>kcAlert(e.message));
 };
 document.getElementById("deleteAcctBtn").onclick = ()=>{
-  document.getElementById("confirmMsg").textContent="Are you sure you want to delete your account?";
+  document.getElementById("confirmMsg").textContent="Are you sure you want to delete your account? This action cannot be undone.";
   document.getElementById("confirmOverlay").style.display="flex";
   document.getElementById("confirmYesBtn").onclick = ()=>{
     const u=auth.currentUser; if(!u) return;
@@ -3469,7 +3470,7 @@ suggestColorBtn.onclick = async () => {
                 }
             }
         };
-        const apiKey = "AIzaSyB59Lt9zuqpMpe3_18R9DGkmJBGAx75O9w"; // If you want to use models other than gemini-2.5-flash-preview-05-20 or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+        const apiKey = ""; // If you want to use models other than gemini-2.5-flash-preview-05-20 or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
         const response = await fetch(apiUrl, {
