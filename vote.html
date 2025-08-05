@@ -761,6 +761,8 @@
         /* Ensure it matches the overall tile/list item sizing */
         box-sizing: border-box;
         min-height: 120px; /* For tiles */
+        /* IMPORTANT: No direct background or background-image here for tiles */
+        background: none; /* Ensure no default background interferes */
     }
     .diamond-member-entry .background-banner {
         position: absolute;
@@ -772,8 +774,19 @@
         background-position: center;
         opacity: 0.15; /* Subtle overlay */
         z-index: 0;
-        border-radius: 12px 12px 0 0; /* Match tile top corners */
+        border-radius: 15px 15px 0 0; /* Match tile top corners */
     }
+    /* NEW: Gradient area for tiles */
+    .tile-item.diamond-member-entry .gradient-area {
+        position: absolute;
+        top: 25%; /* Starts below the banner */
+        left: 0;
+        width: 100%;
+        height: 75%; /* Fills the rest of the tile */
+        z-index: 0; /* Same z-index as banner, but below content */
+        border-radius: 0 0 15px 15px; /* Match tile bottom corners */
+    }
+
     .diamond-member-entry .content-wrapper {
         position: relative;
         z-index: 1;
@@ -998,7 +1011,7 @@
       measurementId: "G-4LKP2M3JXE"
     };
     firebase.initializeApp(cfg);
-    const auth       = firebase.auth(),
+    const auth         = firebase.auth(),
           votesRef  = firebase.database().ref('votes'),
           configRef = firebase.database().ref('config/liveLeaderboardEnabled'),
           usersRef  = firebase.database().ref('users');
@@ -1314,22 +1327,25 @@
             }
         }
 
-        let tileStyleAttr = ''; // Apply style directly to tile-item
         let backgroundBannerHtml = '';
+        let gradientAreaHtml = ''; // New variable for the gradient div
         let nameStyle = '';
 
         // Apply custom styling if diamond (for all ranks in tiles view)
         if (isDiamond) {  
-            tileStyleAttr = customGradient ? `background: ${customGradient};` : '';
             if (customBanner) {
                 backgroundBannerHtml = `<div class="background-banner" style="background-image: url('${customBanner}');"></div>`;
+            }
+            if (customGradient) {
+                gradientAreaHtml = `<div class="gradient-area" style="background: ${customGradient};"></div>`;
             }
             nameStyle = customNameColor ? `color: ${customNameColor};` : '';
             
             // For diamond members, the entire tile-item should have the gradient
             return `
-              <div class="tile-item diamond-member-entry" style="${tileStyleAttr}">
+              <div class="tile-item diamond-member-entry">
                 ${backgroundBannerHtml}
+                ${gradientAreaHtml} <!-- Inject the new gradient area -->
                 <div class="content-wrapper">
                     ${avatarHtml}
                     <div class="name" style="${nameStyle}">${name}</div>
@@ -1426,7 +1442,7 @@
       // sync profile + emailVerified
       usersRef.child(u.uid).update({
         displayName: u.displayName||null,
-        email:       u.email      ||null,
+        email:       u.email       ||null,
         joined:      firebase.database.ServerValue.TIMESTAMP,
         emailVerified: u.emailVerified
       });
@@ -1502,25 +1518,18 @@
         .catch(err=>kcAlert('Reset failed: '+err.message));
     };
 
-    // Event listener for the leaderboard view select dropdown
-    // leaderboardViewSelect.addEventListener('change', (event) => { // This was removed
-    //    showLeaderboardView(event.target.value);
-    // });
-
     // Live toggle & init
     configRef.on('value',snap=>{
       const on=snap.val()!==false;
       if (on) {
         document.getElementById('leaderboardOffMessage').style.display = 'none';
         showLeaderboardView(viewModes[currentViewIndex]); // Show the currently selected view
-        // leaderboardViewSelect.style.display = 'block'; // Hide old select
         document.querySelector('.view-selector-container').style.display = 'flex'; // Show new selector
       } else {
         leaderboardContent.style.display = 'none';
         podiumContent.style.display = 'none';
         tilesContent.style.display = 'none';
         document.getElementById('leaderboardOffMessage').style.display = 'block';
-        // leaderboardViewSelect.style.display = 'none'; // Hide old select
         document.querySelector('.view-selector-container').style.display = 'none'; // Hide new selector
       }
       if(on) updateLeaderboard();
