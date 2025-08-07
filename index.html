@@ -1,498 +1,282 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Event Board w/ Discord UI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KC Event Board w/ Glassmorphism UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
-    :root {
-      --brand-gradient: linear-gradient(90deg,#1ee57c,#50b2fa);
-      /* Light Mode Variables */
-      --background-color: transparent;
-      --container-bg: #ffffff;
-      --text-primary: #1d2129;
-      --text-secondary: #65676b;
-      --border-color: #e4e6eb;
-      --hover-bg: #f2f3f5;
-    }
-
-    body.dark-mode {
-      /* Dark Mode Variables */
-      --background-color: transparent;
-      --container-bg: #242526;
-      --text-primary: #e4e6eb;
-      --text-secondary: #b0b3b8;
-      --border-color: #3a3b3c;
-      --hover-bg: #3a3b3c;
-    }
-
-    /* === Global & Page Layout === */
     body {
-      margin: 0; padding: 0;
       font-family: 'Poppins', sans-serif;
-      color: var(--text-primary);
-      background-color: var(--background-color);
-      transition: background-color 0.3s, color 0.3s;
+      transition: background 0.5s ease, color 0.5s ease;
       overflow-x: hidden;
     }
-    .main-container {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 1.5rem;
+    
+    .light-theme {
+      background-image: transparent;
+      color: #1a202c;
+    }
+    
+    .dark-theme {
+      background-image: transparent;
+      color: #e2e8f0;
+    }
+    
+    .glass {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    .glass-dark {
+      background: rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
     }
 
-    /* === Logged Out Top Bar === */
-    #loginBar {
-      background: var(--container-bg);
-      padding: 1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-      margin-bottom: 2rem;
-      border-radius: 12px;
+    .brand-gradient {
+      background: linear-gradient(90deg, #1ee57c, #50b2fa);
     }
-    #loginBar h2 {
-      text-align: center;
-      margin: 0 0 1.5rem 0;
-      font-size: 1.7rem;
+    
+    .brand-text {
+      background-image: linear-gradient(90deg, #1ee57c, #50b2fa);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
-    .form-toggle {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 1.5rem;
-    }
-    .form-toggle button {
-      padding: 0.7rem 1.5rem;
-      border: none;
-      background: transparent;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      cursor: pointer;
-      position: relative;
-      transition: color 0.3s;
-    }
-    .form-toggle button.active {
-      color: var(--text-primary);
-    }
-    .form-toggle button.active::after {
-      content: '';
-      position: absolute;
-      bottom: -2px;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background: var(--brand-gradient);
-      border-radius: 2px;
-    }
-    .auth-form {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      max-width: 400px;
-      margin: 0 auto;
-    }
-    .auth-form input {
-      padding: 0.8rem 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      font-size: 1rem;
-      background: var(--hover-bg);
-      color: var(--text-primary);
-    }
-    .auth-form button {
-      padding: 0.9rem;
-      border-radius: 8px;
-      border: none;
-      background: var(--brand-gradient);
-      color: white;
-      font-size: 1.1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .auth-form button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    
+    .member-diamond {
+      background-image: linear-gradient(45deg, #A4C5FF, #717DFF);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
-    /* === Logged In Message Composer === */
-    #composerContainer {
-      background: var(--container-bg);
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-      margin-bottom: 2rem;
-      display: none; /* Hidden by default */
-    }
-    #messageInput {
-      width: 100%;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 1rem;
-      font-size: 1rem;
-      resize: vertical;
-      min-height: 60px;
-      margin-bottom: 1rem;
-      box-sizing: border-box;
-      background-color: var(--hover-bg);
-      color: var(--text-primary);
-    }
-    .composer-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-    .picker-controls {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-    .picker-btn {
-      font-size: 1.5rem;
-      cursor: pointer;
-      padding: 0.5rem;
-      border-radius: 50%;
-      transition: background-color 0.2s;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-    .picker-btn:hover {
-      background-color: var(--hover-bg);
-    }
-    .picker-btn.selected {
-      background-color: #d0e7ff;
-    }
-    .submit-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    #magicComposeBtn {
-      background: none;
-      border: none;
-      font-size: 1.5rem;
-      cursor: pointer;
-      padding: 0.5rem;
-      border-radius: 50%;
-      transition: background-color 0.2s;
-    }
-     #magicComposeBtn:hover {
-      background-color: var(--hover-bg);
-    }
-    #postBtn {
-      padding: 0.7rem 2rem;
-      border-radius: 8px;
-      border: none;
-      background: var(--brand-gradient);
-      color: white;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    #postBtn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+    .member-emerald {
+      background-image: linear-gradient(45deg, #A7FFC9, #00FF9D);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
 
-    /* Emoji/Gradient Popovers */
+    .message-text a {
+      color: #3b82f6;
+      text-decoration: underline;
+    }
+    
+    /* Popover styles */
     .popover {
-      position: absolute;
-      background: var(--container-bg);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       border-radius: 12px;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
       padding: 1rem;
-      z-index: 100;
-      display: none;
-      margin-top: 10px;
+      pointer-events: auto; /* Re-enable clicks on the popover */
+      transform: translateY(10px);
+      position: absolute;
+      z-index: 10003; /* Increased z-index to be sure it's on top */
     }
+    
     .popover h4 {
-      margin: 0 0 1rem 0;
-      text-align: center;
+        color: white;
     }
-    .popover .emoji-grid, .popover .grad-grid {
-      display: grid;
-      gap: 0.5rem;
-    }
-    .popover .emoji-grid { grid-template-columns: repeat(6, 1fr); }
-    .popover .grad-grid { grid-template-columns: repeat(5, 1fr); }
-    .popover .emoji, .popover .grad {
-      width: 38px; height: 38px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 1.5rem;
+
+    .popover .grad {
       border: 2px solid transparent;
+      transition: all 0.2s;
     }
-    .popover .emoji:hover, .popover .grad:hover {
+
+    .popover .grad:hover {
       transform: scale(1.1);
     }
-    .popover .emoji.selected, .popover .grad.selected {
+
+    .popover .grad.selected {
       border-color: #007bff;
     }
 
-    /* === Message Board === */
-    #messageContainer {
-      background: var(--container-bg);
-      padding: 1.5rem;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    .theme-icon {
+      color: #fff;
     }
-    .avatarImg { border-radius: 50%; width: 40px; height: 40px; object-fit: cover; cursor: pointer; flex-shrink: 0; }
-    #sortControls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 1rem; color: var(--text-primary); }
-    #sortControls select { margin-left: .5rem; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-weight: 500; background: var(--hover-bg); color: var(--text-primary); outline: none; }
-    #msgList { list-style: none; padding: 0; margin: 0; }
-    .message, .reply { display: flex; gap: 1rem; align-items: flex-start; padding: 1.2rem 0; border-bottom: 1px solid var(--border-color); transition: background 0.2s; }
-    .message:last-child, .reply:last-child { border-bottom: none; }
-    .content { flex: 1; min-width: 0; }
-    .message-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem; }
-    .user-info { display: flex; align-items: center; gap: 0.5rem; }
-    .username { font-weight: 600; cursor: pointer; font-size: 1rem; transition: all .11s; }
-    .timestamp { font-size: .8rem; color: var(--text-secondary); }
-    .message-actions { display: flex; align-items: center; gap: 0.75rem; }
-    .message-text { margin: 0 0 0.5rem 0; line-height: 1.5; word-wrap: break-word; }
-    .message-footer { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-    .likeBtn, .replyBtn, .deleteBtn { background: transparent; border: none; border-radius: 6px; padding: 4px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all .2s; display: flex; align-items: center; gap: .4em; outline: none; color: var(--text-secondary); }
-    .likeBtn:hover, .replyBtn:hover, .deleteBtn:hover { color: var(--text-primary); }
-    .likeBtn.liked { color: #fd5372; font-weight: 700; }
-    .reactions { display: flex; flex-wrap: wrap; gap: .5rem; }
-    .reactBtn, .addBtn { display: flex; align-items: center; gap: .22rem; background: var(--hover-bg); border-radius: 15px; padding: 5px 10px; font-size: .85rem; font-weight: 500; cursor: pointer; transition: all .2s; border: 1px solid var(--border-color); outline: none; }
-    .reactBtn.reacted { background: #d0e7ff; border-color: #a0cfff; }
-    .reactBtn:hover, .addBtn:hover { transform: scale(1.05); border-color: #a0cfff; }
-    .addBtn { color: var(--text-secondary); }
-    .reply-form-container { margin-top: 1rem; padding-left: 56px; }
-    .reply-form { background: var(--hover-bg); border-radius: 12px; padding: .7rem 1rem; display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; width: 100%; box-sizing: border-box; }
-    .reply-input-group { display: flex; width: 100%; gap: 0.5rem; }
-    .reply-form input[type="text"] { border: 1px solid var(--border-color); border-radius: 8px; background: var(--container-bg); font-size: 1rem; padding: .6rem .9rem; outline: none; transition: all .11s; flex-grow: 1; }
-    .reply-form button { background: var(--brand-gradient); color: #fff; font-weight: 600; border: none; border-radius: 8px; padding: .6rem 1.2rem; font-size: 0.9rem; cursor: pointer; transition: all .2s; }
-    .reply-form button:hover { transform: scale(1.05); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .suggest-reply-btn { background: none; border: 1px solid var(--border-color); color: var(--text-primary); }
-    .suggest-reply-btn:hover { background: var(--hover-bg); }
-    .suggested-replies { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-    .suggested-replies button { background: var(--hover-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 5px 12px; font-size: 0.85rem; cursor: pointer; }
-    .suggested-replies button:hover { background-color: #d8dbdf; }
-    .replies { list-style: none; margin: 0; padding-left: 28px; border-left: 2px solid var(--border-color); }
-    
-    #alertModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); align-items:center; justify-content:center; z-index:1000; }
-    #alertContent { background:#fff; color:#233046; padding:1.5rem 1rem 1.2rem 1rem; border-radius:18px; text-align:center; box-shadow: 0 3px 34px #c9defb65; max-width: 320px; width:90%; font-size: 1.13em; }
-    #alertContent button { margin-top:.6rem; padding:.7rem 1.7rem; background: var(--brand-gradient); border:none; color:#fff; border-radius:10px; cursor:pointer; font-size: 1.07em; box-shadow: 0 2px 8px #98f0e045; font-weight: 700; transition: all .12s; }
-    #reactionTooltip { position: fixed; display: none; background: #111827; color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; z-index: 10001; pointer-events: none; white-space: pre-wrap; max-width: 300px; text-align: center; line-height: 1.4; }
-    #userPopup { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 10000; font-family: 'Poppins', sans-serif; animation: fadeInBg 0.3s ease; }
-    .user-popup-card { width: 360px; max-width: 95vw; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1); position: relative; background: #f1f3f5; }
-    .popup-banner { height: 120px; background-color: #ced4da; background-size: cover; background-position: center; }
-    .popup-header { padding: 0 16px; position: relative; height: 48px; }
-    .popup-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; position: absolute; top: -48px; left: 16px; border: 6px solid; background-color: #f1f3f5; }
-    .popup-body { padding: 12px 16px 16px; margin-top: 48px; }
-    .popup-username { font-size: 1.5rem; font-weight: 700; color: #111827; text-align: left; margin-bottom: 16px; position: relative; }
-    .popup-section { background: rgba(255,255,255,0.5); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-    .popup-section-title { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px 0; text-align: left; }
-    .popup-about-me { font-size: 0.95rem; color: #374151; line-height: 1.5; word-break: break-word; text-align: left; white-space: pre-wrap; }
-    .popup-badges { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .popup-badge { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 6px; font-weight: 500; font-size: 0.9rem; color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-    .popup-badge:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.25); transform: translateY(-2px); }
-    .popup-badge img, .popup-badge .emoji-icon { width: 18px; height: 18px; object-fit: contain; font-size: 1.1rem; line-height: 1; flex-shrink: 0; }
-    .user-streak { font-size: 1rem; font-weight: 600; color: #d9480f; }
-    .popup-close-btn { position: absolute; top: 10px; right: 10px; width: 32px; height: 32px; border-radius: 50%; border: none; background: rgba(0,0,0,0.3); color: white; font-size: 1.2rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 5; }
-    .nav-arrow { display: none !important; } /* Hide nav arrows */
-    .membership-tooltip { position: absolute; visibility: hidden; display: flex; align-items: center; gap: 8px; background: #111827; color: white; padding: 8px 12px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; z-index: 10; opacity: 0; transform: translateY(10px) scale(0.95); transition: all 0.2s; pointer-events: none; white-space: nowrap; }
-    .membership-tooltip.visible { visibility: visible; opacity: 1; transform: translateY(0) scale(1); }
-    .membership-tooltip img { width: 24px; height: 24px; }
-    
-    /* Theme Switcher */
-    #themeSwitcher {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: var(--container-bg);
-      border-radius: 50px;
-      padding: 5px;
-      display: flex;
-      align-items: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      cursor: pointer;
-      z-index: 100;
-    }
-    #themeSwitcher svg {
-      width: 24px;
-      height: 24px;
-      color: var(--text-secondary);
-      transition: color 0.3s;
-    }
-    #themeSwitcher .icon-sun { display: none; }
-    body.dark-mode #themeSwitcher .icon-sun { display: block; }
-    body.dark-mode #themeSwitcher .icon-moon { display: none; }
+    body.dark-theme .icon-sun { display: none; }
+    body.light-theme .icon-moon { display: none; }
 
-    /* Gemini Loading Indicator */
-    .loading-indicator {
-        display: none; /* Hidden by default */
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: var(--container-bg);
-        color: var(--text-primary);
-        padding: 10px 20px;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        z-index: 10002;
-        font-weight: 500;
+    /* Fix for pointer-events on the reactBtn */
+    .reactBtn {
+        pointer-events: all;
     }
-
-    @media (max-width: 768px) { .main-container { padding: 1rem; } }
+    
   </style>
 </head>
-<body>
-<!-- Alert modal -->
-<div id="alertModal" style="display:none;">
-  <div id="alertContent">
-    <strong>Notification</strong>
-    <p id="alertMsg"></p>
-    <div id="alertBtnRow">
-      <button id="alertCancel" style="display:none;">Cancel</button>
-      <button id="alertOK">OK</button>
-    </div>
-  </div>
-</div>
-
-<!-- Reaction Tooltip -->
-<div id="reactionTooltip"></div>
-
-<!-- Gemini Loading Indicator -->
-<div id="geminiLoading" class="loading-indicator">✨ Thinking...</div>
-
-
-<div class="main-container">
-
-  <!-- Logged Out Top Bar -->
-  <div id="loginBar">
-    <h2>KC Events Account</h2>
-    <div class="form-toggle">
-      <button id="showLoginBtn" class="active">Log In</button>
-      <button id="showRegisterBtn">Create Account</button>
-    </div>
-    <form id="loginForm" class="auth-form">
-      <input id="loginEmail" type="email" placeholder="Email" required/>
-      <input id="loginPass" type="password" placeholder="Password" required/>
-      <button id="loginBtn" type="submit">Log In</button>
-    </form>
-    <form id="registerForm" class="auth-form" style="display:none;">
-      <input id="regName" placeholder="Display Name" required/>
-      <input id="regEmail" type="email" placeholder="Email" required/>
-      <input id="regPass" type="password" placeholder="Password" required/>
-      <button id="registerBtn" type="submit">Create Account</button>
-    </form>
-  </div>
-
-  <!-- Logged In Message Composer -->
-  <div id="composerContainer">
-    <textarea id="messageInput" placeholder="Add a comment..." rows="3"></textarea>
-    <div class="composer-actions">
-      <div class="picker-controls">
-        <div id="gradientPickerBtn" class="picker-btn">🎨</div>
-        <div id="logoutBtn" class="picker-btn" title="Sign Out">🚪</div>
-      </div>
-      <div class="submit-group">
-        <button id="magicComposeBtn" title="Magic Compose">✨</button>
-        <button id="postBtn" disabled>Submit</button>
-      </div>
-    </div>
-    <!-- Popovers for pickers -->
-    
-    <div id="gradientPicker" class="popover">
-      <h4>Pick a gradient</h4>
-      <div class="grad-grid">
-        <span class="grad" data-grad="linear-gradient(45deg,#ff6b6b,#f06595)" style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span><span class="grad" data-grad="linear-gradient(45deg,#74c0fc,#4dabf7)" style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span><span class="grad" data-grad="linear-gradient(45deg,#51cf66,#2f9e44)" style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span><span class="grad" data-grad="linear-gradient(45deg,#f9c74f,#f9844a)" style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span><span class="grad" data-grad="linear-gradient(45deg,#845ef7,#5c7cfa)" style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span><span class="grad" data-grad="linear-gradient(45deg,#f857a6,#ff5858)" style="background:linear-gradient(45deg,#f857a6,#ff5858)"></span><span class="grad" data-grad="linear-gradient(45deg,#2dd4bf,#06b6d4)" style="background:linear-gradient(45deg,#2dd4bf,#06b6d4)"></span><span class="grad" data-grad="linear-gradient(45deg,#ee9ca7,#ffdde1)" style="background:linear-gradient(45deg,#ee9ca7,#ffdde1)"></span><span class="grad" data-grad="linear-gradient(45deg,#43cea2,#185a9d)" style="background:linear-gradient(45deg,#43cea2,#185a9d)"></span><span class="grad" data-grad="linear-gradient(45deg,#ffaf7b,#d76d77)" style="background:linear-gradient(45deg,#ffaf7b,#d76d77)"></span>
+<body class="h-full light-theme">
+  <!-- Alert modal -->
+  <div id="alertModal" class="hidden fixed inset-0 flex items-center justify-center z-[1000] bg-black bg-opacity-50">
+    <div id="alertContent" class="bg-gray-800 text-white p-6 rounded-2xl shadow-2xl text-center max-w-sm w-11/12 glass-dark">
+      <strong class="text-xl">Notification</strong>
+      <p id="alertMsg" class="mt-4 mb-6 text-gray-200"></p>
+      <div id="alertBtnRow" class="flex justify-center gap-4">
+        <button id="alertCancel" class="hidden px-6 py-2 rounded-xl text-white font-semibold transition-all hover:scale-105 bg-gray-600">Cancel</button>
+        <button id="alertOK" class="px-8 py-2 rounded-xl text-white font-bold transition-all hover:scale-105 brand-gradient">OK</button>
       </div>
     </div>
   </div>
 
-  <!-- Message Board -->
-  <div id="messageContainer">
-    <div id="sortControls">
-      <strong>Comments</strong>
-      <select id="sortSelect">
-        <option value="recent">Most Recent</option>
-        <option value="liked">Most Liked</option>
-      </select>
-    </div>
-    <ul id="msgList"><li style="font-style:italic; opacity:.7">Loading…</li></ul>
+  <!-- Reaction Tooltip -->
+  <div id="reactionTooltip" class="hidden fixed bg-black text-white p-3 rounded-lg shadow-lg text-sm font-semibold z-[10001] pointer-events-none"></div>
+  
+  <!-- Gemini Loading Indicator -->
+  <div id="geminiLoading" class="hidden fixed top-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-gray-800 text-white rounded-lg shadow-xl z-[10002] flex items-center gap-2 glass-dark">
+    <div class="animate-spin h-4 w-4 rounded-full border-2 border-white border-t-transparent"></div>
+    <span>AI is Thinking...</span>
   </div>
 
-</div>
+  <div class="container mx-auto p-4 md:p-6 lg:p-8 flex flex-col items-center min-h-full">
+    <div id="loginBar" class="w-full max-w-2xl mt-8 p-6 md:p-8 rounded-2xl glass mb-8">
+      <h2 class="text-3xl font-bold text-center mb-6 brand-text">KC Events Account</h2>
+      <div class="flex justify-center mb-6 gap-2">
+        <button id="showLoginBtn" class="px-4 py-2 text-white font-semibold relative transition-all hover:scale-105 active:scale-95">Log In<span class="absolute bottom-0 left-0 w-full h-[2px] brand-gradient rounded-full opacity-0 scale-x-0 transition-all duration-300"></span></button>
+        <button id="showRegisterBtn" class="px-4 py-2 text-white font-semibold relative transition-all hover:scale-105 active:scale-95">Create Account<span class="absolute bottom-0 left-0 w-full h-[2px] brand-gradient rounded-full opacity-0 scale-x-0 transition-all duration-300"></span></button>
+      </div>
+      <form id="loginForm" class="flex flex-col gap-4">
+        <input id="loginEmail" type="email" placeholder="Email" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
+        <input id="loginPass" type="password" placeholder="Password" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
+        <button id="loginBtn" type="submit" class="p-4 rounded-xl text-white font-bold brand-gradient transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-gradient/30">Log In</button>
+      </form>
+      <form id="registerForm" class="hidden flex-col gap-4">
+        <input id="regName" placeholder="Display Name" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
+        <input id="regEmail" type="email" placeholder="Email" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
+        <input id="regPass" type="password" placeholder="Password" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
+        <button id="registerBtn" type="submit" class="p-4 rounded-xl text-white font-bold brand-gradient transition-all hover:scale-105 active:scale-95 shadow-lg shadow-brand-gradient/30">Create Account</button>
+      </form>
+    </div>
 
-<!-- Theme Switcher -->
-<div id="themeSwitcher" title="Toggle Theme">
-  <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-  <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-</div>
-
-
-<!-- User Profile Popup -->
-<div id="userPopup">
-    <div class="user-popup-card" id="userPopupCard">
-        <div id="membershipTooltip" class="membership-tooltip"></div>
-        <div class="popup-banner" id="popupBanner"></div>
-        <div class="popup-header">
-            <img id="popupAvatar" src="" class="popup-avatar">
-            <button id="closeUserPopup" class="popup-close-btn">&times;</button>
+    <div id="composerContainer" class="hidden w-full max-w-2xl mt-8 p-6 md:p-8 rounded-2xl glass mb-8">
+      <textarea id="messageInput" placeholder="Add a comment..." rows="3" class="w-full p-4 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300 resize-y min-h-[60px]"></textarea>
+      <div class="flex justify-between items-center flex-wrap gap-4 mt-4">
+        <div class="flex items-center gap-4">
+          <!-- The gradient picker button is now correctly displayed based on user profile -->
+          <div id="gradientPickerBtn" class="p-3 rounded-full cursor-pointer transition-all hover:scale-110 active:scale-95 glass-dark" title="Pick a gradient">
+            <span class="text-xl">🎨</span>
+          </div>
+          <div id="logoutBtn" class="p-3 rounded-full cursor-pointer transition-all hover:scale-110 active:scale-95 glass-dark" title="Sign Out">
+            <span class="text-xl">🚪</span>
+          </div>
         </div>
-        <div class="popup-body">
-            <div id="popupUserName" class="popup-username"></div>
-            <div class="popup-section">
-                <h4 class="popup-section-title">ABOUT ME</h4>
-                <div id="popupAboutMe" class="popup-about-me"></div>
-            </div>
-            <div class="popup-section">
-                <h4 class="popup-section-title">BADGES</h4>
-                <div id="popupBadges" class="popup-badges"></div>
-            </div>
-             <div class="popup-section">
-                <h4 class="popup-section-title">STREAK</h4>
-                 <div id="popupStreak" class="user-streak"></div>
-            </div>
+        <div class="flex items-center gap-2">
+          <button id="magicComposeBtn" title="Magic Compose" class="p-3 rounded-full cursor-pointer transition-all hover:scale-110 active:scale-95 glass-dark">
+            <span class="text-xl">✨</span>
+          </button>
+          <button id="postBtn" disabled class="px-6 py-3 rounded-xl text-white font-semibold transition-all hover:scale-105 active:scale-95 brand-gradient disabled:opacity-50 disabled:cursor-not-allowed">
+            Submit
+          </button>
         </div>
+      </div>
+      <!-- The popover for the gradient picker is now located in the body, but triggered from here -->
     </div>
-    <button class="nav-arrow prev-arrow">&#8249;</button>
-    <button class="nav-arrow next-arrow">&#8250;</button>
-</div>
+
+    <div id="messageContainer" class="w-full max-w-2xl p-6 md:p-8 rounded-2xl glass">
+      <div class="flex justify-between items-center mb-4">
+        <strong class="text-xl font-bold">Comments</strong>
+        <div class="flex items-center gap-2">
+          <label for="sortSelect" class="text-white text-opacity-80">Sort by:</label>
+          <select id="sortSelect" class="bg-white/10 text-white rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="recent" class="bg-gray-800">Most Recent</option>
+            <option value="liked" class="bg-gray-800">Most Liked</option>
+          </select>
+        </div>
+      </div>
+      <ul id="msgList" class="space-y-4">
+        <li class="italic opacity-70">Loading…</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Theme Switcher -->
+  <div id="themeSwitcher" title="Toggle Theme" class="fixed bottom-6 right-6 p-3 rounded-full glass cursor-pointer transition-all hover:scale-110 active:scale-95">
+    <svg class="theme-icon icon-moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+  </div>
+
+  <!-- User Profile Popup -->
+  <div id="userPopup" class="hidden fixed inset-0 flex items-center justify-center z-[10000] p-4 bg-black bg-opacity-70 backdrop-blur-sm">
+      <div id="userPopupCard" class="w-full max-w-lg rounded-2xl glass overflow-hidden relative">
+          <div id="membershipTooltip" class="hidden absolute p-2 rounded-lg bg-gray-800 text-white text-sm font-semibold whitespace-nowrap"></div>
+          <div id="popupBanner" class="h-32 bg-gray-600 bg-cover bg-center"></div>
+          <div class="p-4 -mt-16">
+              <img id="popupAvatar" src="" class="w-28 h-28 rounded-full border-4 border-gray-800 object-cover shadow-lg">
+              <button id="closeUserPopup" class="absolute top-4 right-4 text-white text-2xl font-bold bg-black/30 rounded-full w-8 h-8 flex items-center justify-center transition-all hover:bg-black/50">&times;</button>
+          </div>
+          <div class="p-4 pt-0 text-white">
+              <div class="flex items-center gap-2 mb-4">
+                  <span id="popupUserName" class="text-3xl font-bold"></span>
+                  <span id="popupMemberIcon" class="hidden text-xl"></span>
+              </div>
+              <div class="bg-white/10 p-4 rounded-xl mb-4">
+                  <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">ABOUT ME</h4>
+                  <p id="popupAboutMe" class="text-base"></p>
+              </div>
+              <div class="bg-white/10 p-4 rounded-xl mb-4">
+                  <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">BADGES</h4>
+                  <div id="popupBadges" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div id="streakSection" class="bg-white/10 p-4 rounded-xl hidden">
+                  <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">STREAK</h4>
+                  <div id="popupStreak" class="text-xl font-bold text-orange-400"></div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <!-- The Popover is now a direct child of the body to fix z-index issues -->
+  <div id="gradientPicker" class="popover hidden absolute top-0 left-0 z-[10003] mt-4 p-4 rounded-2xl glass">
+    <h4 class="text-center font-bold mb-4">Pick a gradient</h4>
+    <div class="grid grid-cols-5 gap-2">
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#ff6b6b,#f06595)" style="background:linear-gradient(45deg,#ff6b6b,#f06595)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#74c0fc,#4dabf7)" style="background:linear-gradient(45deg,#74c0fc,#4dabf7)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#51cf66,#2f9e44)" style="background:linear-gradient(45deg,#51cf66,#2f9e44)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#f9c74f,#f9844a)" style="background:linear-gradient(45deg,#f9c74f,#f9844a)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#845ef7,#5c7cfa)" style="background:linear-gradient(45deg,#845ef7,#5c7cfa)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#f857a6,#ff5858)" style="background:linear-gradient(45deg,#f857a6,#ff5858)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#2dd4bf,#06b6d4)" style="background:linear-gradient(45deg,#2dd4bf,#06b6d4)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#ee9ca7,#ffdde1)" style="background:linear-gradient(45deg,#ee9ca7,#ffdde1)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#43cea2,#185a9d)" style="background:linear-gradient(45deg,#43cea2,#185a9d)"></span>
+      <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#ffaf7b,#d76d77)" style="background:linear-gradient(45deg,#ffaf7b,#d76d77)"></span>
+    </div>
+  </div>
+
 
   <script>
   // overlay alert
   const alertModal = document.getElementById('alertModal'),
         alertMsg   = document.getElementById('alertMsg'),
-        alertOK    = document.getElementById('alertOK');
+        alertOK    = document.getElementById('alertOK'),
+        alertCancel = document.getElementById('alertCancel');
   function kcAlert(txt){
     alertMsg.textContent = txt;
-    alertModal.style.display = 'flex';
-    document.getElementById('alertCancel').style.display = 'none';
-    document.getElementById('alertOK').textContent = 'OK';
-    let okBtn = document.getElementById('alertOK');
-    okBtn.onclick = function() { alertModal.style.display = 'none'; };
+    alertModal.classList.remove('hidden');
+    alertCancel.classList.add('hidden');
+    alertOK.textContent = 'OK';
+    alertOK.onclick = function() { alertModal.classList.add('hidden'); };
   }
-  alertOK.onclick = ()=> alertModal.style.display='none';
   function kcConfirm(msg, callback) {
     alertMsg.textContent = msg;
-    alertModal.style.display = 'flex';
-    document.getElementById('alertCancel').style.display = 'inline-block';
-    document.getElementById('alertOK').textContent = 'OK';
-    let okBtn = document.getElementById('alertOK');
-    let cancelBtn = document.getElementById('alertCancel');
-    okBtn.onclick = function() {
-      alertModal.style.display = 'none';
+    alertModal.classList.remove('hidden');
+    alertCancel.classList.remove('hidden');
+    alertOK.textContent = 'OK';
+    alertOK.onclick = function() {
+      alertModal.classList.add('hidden');
       callback(true);
     };
-    cancelBtn.onclick = function() {
-      alertModal.style.display = 'none';
+    alertCancel.onclick = function() {
+      alertModal.classList.add('hidden');
       callback(false);
     };
   }
@@ -579,7 +363,6 @@
   const themeSwitcher = document.getElementById('themeSwitcher');
   const geminiLoading = document.getElementById('geminiLoading');
 
-
   let selectedGradient = null;
   let lastSnap = null;
   let sortMode = 'recent';
@@ -587,10 +370,10 @@
 
   // --- Gemini API Logic ---
   const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
-  const GEMINI_API_KEY = "AIzaSyB59Lt9zuqpMpe3_18R9DGkmJBGAx75O9w"; // This will be handled by the environment
+  const GEMINI_API_KEY = ""; // This will be handled by the environment
 
   async function callGemini(prompt, jsonSchema = null) {
-      geminiLoading.style.display = 'block';
+      geminiLoading.classList.remove('hidden');
       try {
           const payload = {
               contents: [{ parts: [{ text: prompt }] }],
@@ -614,8 +397,9 @@
           }
 
           const result = await response.json();
-          if (result.candidates && result.candidates[0].content.parts[0].text) {
-              return result.candidates[0].content.parts[0].text;
+          const text = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+              return text;
           } else {
               throw new Error("Invalid response structure from API.");
           }
@@ -624,60 +408,65 @@
           kcAlert("Sorry, the AI feature is currently unavailable.");
           return null;
       } finally {
-          geminiLoading.style.display = 'none';
+          geminiLoading.classList.add('hidden');
       }
   }
 
-
   // --- Theme Logic ---
   function applyTheme(theme) {
-    if (theme === 'dark') {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
-    }
+    document.body.classList.remove('light-theme', 'dark-theme');
+    document.body.classList.add(theme === 'dark' ? 'dark-theme' : 'light-theme');
   }
 
   themeSwitcher.onclick = () => {
-    const isDarkMode = document.body.classList.toggle('dark-mode');
-    const newTheme = isDarkMode ? 'dark' : 'light';
+    const isDarkMode = document.body.classList.contains('dark-theme');
+    const newTheme = isDarkMode ? 'light' : 'dark';
+    applyTheme(newTheme);
     if (auth.currentUser) {
       db.ref(`users/${auth.currentUser.uid}/theme`).set(newTheme);
     }
   };
 
-  
   // --- Layout & Auth Logic ---
   showLoginBtn.onclick = () => {
-    loginForm.style.display = 'flex';
-    registerForm.style.display = 'none';
-    showLoginBtn.classList.add('active');
-    showRegisterBtn.classList.remove('active');
+    loginForm.classList.remove('hidden');
+    loginForm.classList.add('flex');
+    registerForm.classList.add('hidden');
+    showLoginBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
+    showRegisterBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
   };
   showRegisterBtn.onclick = () => {
-    loginForm.style.display = 'none';
-    registerForm.style.display = 'flex';
-    showLoginBtn.classList.remove('active');
-    showRegisterBtn.classList.add('active');
+    loginForm.classList.add('hidden');
+    registerForm.classList.remove('hidden');
+    registerForm.classList.add('flex');
+    showRegisterBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
+    showLoginBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
   };
+  showLoginBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
 
   function togglePopover(popover, button) {
-    [gradientPicker].forEach(p => {
-      if (p !== popover) p.style.display = 'none';
+    const popovers = [gradientPicker];
+    popovers.forEach(p => {
+      if (p !== popover) p.classList.add('hidden');
     });
-    if (popover.style.display === 'block') {
-      popover.style.display = 'none';
-    } else {
-      popover.style.display = 'block';
-      popover.style.left = `${button.offsetLeft}px`;
-      popover.style.top = `${button.offsetTop + button.offsetHeight}px`;
+    popover.classList.toggle('hidden');
+    if (!popover.classList.contains('hidden')) {
+      const btnRect = button.getBoundingClientRect();
+      // Position the popover relative to the button
+      popover.style.left = `${btnRect.left}px`;
+      popover.style.top = `${btnRect.bottom + window.scrollY + 10}px`;
     }
   }
 
-  gradientPickerBtn.onclick = (e) => { e.stopPropagation(); togglePopover(gradientPicker, gradientPickerBtn); };
+  gradientPickerBtn.onclick = (e) => { 
+    e.stopPropagation(); 
+    togglePopover(gradientPicker, gradientPickerBtn);
+  };
   
   document.addEventListener('click', (e) => {
-    if (!gradientPicker.contains(e.target) && !gradientPickerBtn.contains(e.target)) { gradientPicker.style.display = 'none'; }
+    if (!gradientPicker.contains(e.target) && !gradientPickerBtn.contains(e.target)) { 
+      gradientPicker.classList.add('hidden'); 
+    }
   });
 
   registerForm.onsubmit = (e) => {
@@ -715,7 +504,7 @@
       el.classList.add('selected');
       selectedGradient = el.dataset.grad;
       gradientPickerBtn.style.background = selectedGradient;
-      gradientPicker.style.display = 'none';
+      gradientPicker.classList.add('hidden');
       validatePost();
     };
   });
@@ -747,80 +536,106 @@
 
   function showUserPopup(uid) {
     loadUserProfile(uid);
-    document.getElementById('userPopup').style.display = 'flex';
+    document.getElementById('userPopup').classList.remove('hidden');
+    document.getElementById('userPopup').classList.add('flex');
   }
+
   function loadUserProfile(uid) {
-      const popupCard = document.getElementById('userPopupCard');
-      const bannerEl = document.getElementById('popupBanner');
-      const avatarEl = document.getElementById('popupAvatar');
-      const usernameEl = document.getElementById('popupUserName');
-      const aboutEl = document.getElementById('popupAboutMe');
-      const badgesContainer = document.getElementById('popupBadges');
-      const streakEl = document.getElementById('popupStreak');
-      popupCard.style.background = '#f1f3f5';
-      bannerEl.style.backgroundImage = 'none';
-      bannerEl.style.backgroundColor = '#ced4da';
-      avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-      usernameEl.textContent = 'Loading...';
-      aboutEl.textContent = 'Loading...';
-      badgesContainer.innerHTML = 'Loading...';
-      streakEl.style.display = 'none';
-      db.ref(`users/${uid}`).once('value').then(snap => {
-          const userData = snap.val() || {};
-          usernameEl.textContent = userData.displayName || 'Anonymous User';
-          avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-          aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
-          if (userData.loginStreak > 0) {
-              streakEl.textContent = `🔥 ${userData.loginStreak} Day Streak`;
-              streakEl.style.display = 'block';
-          }
-          const custom = userData.profileCustomization || {};
-          const cardBg = custom.gradient || '#f1f3f5';
-          popupCard.style.background = cardBg;
-          avatarEl.style.borderColor = cardBg;
-          usernameEl.style.color = custom.nameColor || '#111827';
-          if (custom.banner) { bannerEl.style.backgroundImage = `url('${custom.banner}')`; }
-          const codes = userData.codesUnlocked || {};
-          if (codes.diamond) usernameEl.dataset.memberType = 'diamond';
-          else if (codes.emerald) usernameEl.dataset.memberType = 'emerald';
-          Promise.all([
-              db.ref(`badges/${uid}`).once('value'),
-              db.ref(`users/${uid}/customBadges`).once('value')
-          ]).then(([bsnap, csnap]) => {
-              badgesContainer.innerHTML = '';
-              let hasAnyBadge = false;
-              const badgeSpecs = {
-                  verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: 'linear-gradient(45deg, #2dd4bf, #1a9a8a)' },
-                  offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: 'linear-gradient(45deg, #ff6b6b, #d9480f)' },
-                  defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: 'linear-gradient(45deg, #74c0fc, #364fc7)' },
-                  overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: 'linear-gradient(45deg, #f9c74f, #f08c00)' }
-              };
-              const addBadge = (spec, text) => {
-                hasAnyBadge = true;
-                const div = document.createElement('div');
-                div.className = 'popup-badge';
-                div.style.background = spec.bg;
-                div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
-                badgesContainer.appendChild(div);
-              }
-              if (userData.verified) addBadge(badgeSpecs.verified, 'Verified');
-              const baseBadges = bsnap.val() || {};
-              ['offence', 'defence', 'overall'].forEach(key => {
-                  if (baseBadges[key] > 0) addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${baseBadges[key]}`);
-              });
-              const customBadges = csnap.val() || {};
-              Object.values(customBadges).forEach(badge => {
-                  hasAnyBadge = true;
-                  const div = document.createElement('div');
-                  div.className = 'popup-badge';
-                  div.style.color = badge.textColor || 'white';
-                  div.style.background = badge.grad1 || '#495057';
-                  div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
-                  badgesContainer.appendChild(div);
-              });
-              if (!hasAnyBadge) badgesContainer.textContent = 'No badges to display.';
+    const popupCard = document.getElementById('userPopupCard');
+    const bannerEl = document.getElementById('popupBanner');
+    const avatarEl = document.getElementById('popupAvatar');
+    const usernameEl = document.getElementById('popupUserName');
+    const aboutEl = document.getElementById('popupAboutMe');
+    const badgesContainer = document.getElementById('popupBadges');
+    const streakEl = document.getElementById('popupStreak');
+    const streakSection = document.getElementById('streakSection');
+
+    // Resetting UI
+    popupCard.style.background = '';
+    popupCard.classList.remove('glass');
+    popupCard.classList.add('bg-white/10'); // Default translucent background
+    bannerEl.style.backgroundImage = 'none';
+    bannerEl.style.backgroundColor = '#6b7280';
+    avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+    usernameEl.textContent = 'Loading...';
+    aboutEl.textContent = 'Loading...';
+    badgesContainer.innerHTML = 'Loading...';
+    streakSection.classList.add('hidden');
+
+    db.ref(`users/${uid}`).once('value').then(snap => {
+      const userData = snap.val() || {};
+      usernameEl.textContent = userData.displayName || 'Anonymous User';
+      avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+      aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+
+      if (userData.loginStreak > 0) {
+        streakEl.textContent = `🔥 ${userData.loginStreak} Day Streak`;
+        streakSection.classList.remove('hidden');
+      }
+
+      const custom = userData.profileCustomization || {};
+      const cardBg = custom.gradient || 'bg-white/10';
+      popupCard.classList.add('glass');
+      popupCard.classList.remove('bg-white/10');
+      popupCard.style.background = cardBg;
+
+      // To show a banner, the 'banner' property must exist in the database, e.g.,
+      // db.ref(`users/${uid}/profileCustomization/banner`).set('https://url-to-your-image.png');
+      if (custom.banner) {
+          bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+          bannerEl.style.backgroundColor = 'transparent'; // Use transparent if a banner image is set
+      }
+
+      const codes = userData.codesUnlocked || {};
+      if (codes.diamond) {
+          usernameEl.classList.add('member-diamond');
+          usernameEl.dataset.memberType = 'diamond';
+      } else if (codes.emerald) {
+          usernameEl.classList.add('member-emerald');
+          usernameEl.dataset.memberType = 'emerald';
+      } else {
+          usernameEl.classList.remove('member-diamond', 'member-emerald');
+          usernameEl.dataset.memberType = '';
+          usernameEl.style.color = '#fff';
+      }
+
+      Promise.all([
+          db.ref(`badges/${uid}`).once('value'),
+          db.ref(`users/${uid}/customBadges`).once('value')
+      ]).then(([bsnap, csnap]) => {
+          badgesContainer.innerHTML = '';
+          let hasAnyBadge = false;
+          const badgeSpecs = {
+              verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: 'linear-gradient(45deg, #2dd4bf, #1a9a8a)' },
+              offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: 'linear-gradient(45deg, #ff6b6b, #d9480f)' },
+              defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: 'linear-gradient(45deg, #74c0fc, #364fc7)' },
+              overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: 'linear-gradient(45deg, #f9c74f, #f08c00)' }
+          };
+          const addBadge = (spec, text) => {
+            hasAnyBadge = true;
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 p-2 rounded-lg text-white font-medium glass';
+            div.style.background = spec.bg;
+            div.innerHTML = `<img src="${spec.icon}" class="w-5 h-5"><span>${text}</span>`;
+            badgesContainer.appendChild(div);
+          };
+          if (userData.verified) addBadge(badgeSpecs.verified, 'Verified');
+          const baseBadges = bsnap.val() || {};
+          ['offence', 'defence', 'overall'].forEach(key => {
+              if (baseBadges[key] > 0) addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${baseBadges[key]}`);
           });
+          const customBadges = csnap.val() || {};
+          Object.values(customBadges).forEach(badge => {
+              hasAnyBadge = true;
+              const div = document.createElement('div');
+              div.className = 'flex items-center gap-2 p-2 rounded-lg text-white font-medium glass';
+              div.style.background = badge.grad1 || '#495057';
+              div.innerHTML = `<span class="text-xl">${badge.icon}</span><span>${badge.name}</span>`;
+              badgesContainer.appendChild(div);
+          });
+          if (!hasAnyBadge) badgesContainer.textContent = 'No badges to display.';
       });
+    });
   }
 
   function renderMessage(msgData, isReply = false) {
@@ -828,34 +643,40 @@
     const d = new Date(msgData.time);
     const ts = `${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     
+    const hasReplies = msgData.replies && Object.keys(msgData.replies).length > 0;
+    const repliesCount = hasReplies ? Object.keys(msgData.replies).length : 0;
+    
     const li = document.createElement('li');
-    li.className = isReply ? 'reply' : 'message';
+    li.className = `flex gap-4 items-start ${isReply ? 'ml-8' : 'border-b border-white/20 pb-4'}`;
     li.dataset.path = msgData.path;
     li.dataset.key = msgData.key;
     
     li.innerHTML = `
-      <img class="avatarImg" data-uid="${msgData.uid}">
-      <div class="content">
-        <div class="message-header">
-          <div class="user-info">
-            <span class="username" data-uid="${msgData.uid}">${msgData.user}</span>
-            <span class="timestamp">${ts}</span>
+      <img class="w-10 h-10 rounded-full object-cover cursor-pointer flex-shrink-0" data-uid="${msgData.uid}">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2">
+            <span class="username font-semibold cursor-pointer text-base" data-uid="${msgData.uid}">${msgData.user}</span>
+            <span class="text-xs text-white/50">${ts}</span>
           </div>
-          <div class="message-actions">
-            <button class="likeBtn" title="Like">❤️ <span>${msgData.likes || 0}</span></button>
-            <button class="replyBtn" title="Reply">↩️</button>
-            ${u && u.uid === msgData.uid ? '<button class="deleteBtn" title="Delete">🗑️</button>' : ''}
+          <div class="flex items-center gap-2">
+            <button class="likeBtn text-white/50 hover:text-red-400 transition-all text-lg" title="Like">❤️ <span>${msgData.likes || 0}</span></button>
+            <button class="replyBtn text-white/50 hover:text-blue-400 transition-all text-lg" title="Reply">↩️</button>
+            ${u && u.uid === msgData.uid ? '<button class="deleteBtn text-white/50 hover:text-red-600 transition-all text-lg" title="Delete">🗑️</button>' : ''}
           </div>
         </div>
-        <p class="message-text">${msgData.text}</p>
-        <div class="message-footer">
-          <div class="reactions"></div>
+        <p class="message-text text-white text-opacity-90 leading-relaxed mb-2">${msgData.text}</p>
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="reactions flex flex-wrap gap-2"></div>
         </div>
-        <div class="replies"></div>
-        <div class="reply-form-container"></div>
+        <div class="flex items-center gap-2 mt-2">
+          ${hasReplies ? `<button class="reply-toggle-btn text-white/50 hover:text-white transition-colors"><span class="icon">▼</span> ${repliesCount} repl${repliesCount > 1 ? 'ies' : 'y'}</button>` : ''}
+        </div>
+        <div class="replies hidden mt-4 space-y-4"></div>
+        <div class="reply-form-container mt-4"></div>
       </div>`;
 
-    if (msgData.uid) getAvatar(msgData.uid).then(url => li.querySelector('.avatarImg').src = url);
+    if (msgData.uid) getAvatar(msgData.uid).then(url => li.querySelector('img').src = url);
 
     const nm = li.querySelector('.username');
     if (msgData.diamondProfile && msgData.diamondProfile.nameColor) {
@@ -867,32 +688,33 @@
         nm.style.backgroundClip = 'text';
         nm.style.color = 'transparent';
     } else {
-        nm.style.color = 'var(--text-primary)';
+        nm.style.color = 'white';
         nm.style.backgroundImage = 'none';
     }
-
+    
     const reactionsContainer = li.querySelector('.reactions');
     if (msgData.reactions) {
         Object.entries(msgData.reactions).forEach(([emo, reactors]) => {
             const reactorUIDs = Object.keys(reactors);
             const btn = document.createElement('button');
-            btn.className = 'reactBtn';
+            // Fix for pointer-events: The reaction button must be clickable and hoverable
+            btn.className = `reactBtn flex items-center gap-1 px-2 py-1 rounded-full text-sm glass-dark transition-all hover:scale-105 active:scale-95`;
             btn.dataset.emo = emo;
             if (u && reactorUIDs.includes(u.uid)) {
-                btn.classList.add('reacted');
+                btn.classList.add('bg-white/20');
             }
             btn.innerHTML = `${emo} <span>${reactorUIDs.length}</span>`;
             reactionsContainer.appendChild(btn);
         });
     }
     const addBtn = document.createElement('button');
-    addBtn.className = 'addBtn';
-    addBtn.textContent = '➕';
+    addBtn.className = `addBtn flex items-center justify-center w-8 h-8 rounded-full text-lg glass-dark transition-all hover:scale-110 active:scale-95`;
+    addBtn.innerHTML = '➕';
     addBtn.title = 'Add Reaction';
     reactionsContainer.appendChild(addBtn);
 
     if (u && msgData.likedBy && msgData.likedBy[u.uid]) {
-        li.querySelector('.likeBtn').classList.add('liked');
+        li.querySelector('.likeBtn').classList.add('text-red-400');
     }
 
     if (msgData.replies) {
@@ -903,7 +725,6 @@
             repliesContainer.appendChild(renderMessage(replyData, true));
         });
     }
-
     return li;
   }
 
@@ -920,7 +741,7 @@
     if(sortMode==='liked') arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
     else arr.sort((a,b)=>b.time - a.time);
     if(!arr.length){
-      msgList.innerHTML = '<li style="font-style:italic; opacity:.7">No messages yet.</li>';
+      msgList.innerHTML = '<li class="italic opacity-70">No messages yet.</li>';
       return;
     }
     arr.forEach(msgData => {
@@ -929,28 +750,31 @@
     });
   }
 
-  // Event Listeners
+  // Event Listeners (using delegation)
   msgList.addEventListener('click', e => {
     const u = auth.currentUser;
+    const target = e.target;
+    
+    // Check if user is logged in for interactions
     if (!u || !u.emailVerified) {
-        const allowed = ['.avatarImg', '.username'];
-        if (!allowed.some(selector => e.target.matches(selector))) {
+        const allowed = ['img', '.username'];
+        if (!allowed.some(selector => target.closest(selector))) {
             return kcAlert('Log in and verify your email to interact.');
         }
     }
 
-    const target = e.target;
-    const messageLi = target.closest('.message, .reply');
+    const messageLi = target.closest('[data-path]');
     if (!messageLi) return;
 
     const path = messageLi.dataset.path;
 
-    if (target.closest('.avatarImg, .username')) {
-      showUserPopup(target.closest('[data-uid]').dataset.uid);
+    if (target.closest('img, .username')) {
+      const uid = target.closest('[data-uid]').dataset.uid;
+      showUserPopup(uid);
     } else if (target.closest('.likeBtn')) {
       db.ref(`${path}/likedBy/${u.uid}`).transaction(current => current ? null : true);
       db.ref(`${path}/likes`).transaction(current => {
-        const liked = messageLi.querySelector('.likeBtn').classList.contains('liked');
+        const liked = messageLi.querySelector('.likeBtn').classList.contains('text-red-400');
         return (current || 0) + (liked ? -1 : 1);
       });
     } else if (target.closest('.reactBtn')) {
@@ -962,17 +786,17 @@
         if (existingPicker) existingPicker.remove();
 
         const pickerPopover = document.createElement('div');
-        pickerPopover.className = 'popover reaction-picker-popover';
+        pickerPopover.className = 'popover reaction-picker-popover absolute z-50';
         pickerPopover.style.display = 'block';
         
         const emojiGrid = document.createElement('div');
-        emojiGrid.className = 'emoji-grid';
+        emojiGrid.className = 'grid grid-cols-6 gap-2';
         
         const availableEmojis = ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉','🤣','😭','🥹','🥰','👀','🫶','🔥','🙏'];
         
         availableEmojis.forEach(emo => {
             const emojiSpan = document.createElement('span');
-            emojiSpan.className = 'emoji';
+            emojiSpan.className = 'text-2xl p-2 rounded-lg cursor-pointer transition-all hover:scale-110 hover:bg-white/20';
             emojiSpan.textContent = emo;
             emojiSpan.onclick = (event) => {
                 event.stopPropagation();
@@ -987,7 +811,7 @@
 
         const btnRect = addBtn.getBoundingClientRect();
         pickerPopover.style.left = `${btnRect.left}px`;
-        pickerPopover.style.top = `${btnRect.bottom + window.scrollY}px`;
+        pickerPopover.style.top = `${btnRect.bottom + window.scrollY + 10}px`;
 
         const closePicker = (event) => {
             if (!pickerPopover.contains(event.target) && event.target !== addBtn) {
@@ -999,18 +823,18 @@
     } else if (target.closest('.replyBtn')) {
         const replyContainer = messageLi.querySelector('.reply-form-container');
         if (replyContainer.innerHTML !== '') {
-            replyContainer.innerHTML = ''; // Close if open
+            replyContainer.innerHTML = '';
         } else {
             const form = document.createElement('div');
-            form.className = 'reply-form';
+            form.className = 'flex flex-col gap-2 p-3 rounded-xl glass-dark';
             form.innerHTML = `
-              <div class="reply-input-group">
-                <input type="text" placeholder="Write a reply...">
-                <button>Reply</button>
+              <div class="flex gap-2">
+                <input type="text" placeholder="Write a reply..." class="flex-1 p-2 rounded-lg bg-white/10 text-white placeholder-gray-300 focus:outline-none"/>
+                <button class="px-4 py-2 rounded-lg text-white font-semibold brand-gradient transition-all hover:scale-105 active:scale-95">Reply</button>
               </div>
-              <div class="suggested-replies-container">
-                <button class="suggest-reply-btn">✨ Suggest Replies</button>
-                <div class="suggested-replies"></div>
+              <div class="suggested-replies-container flex items-center gap-2">
+                <button class="suggest-reply-btn px-3 py-1 rounded-full text-sm text-white glass-dark hover:scale-105">✨ Suggest Replies</button>
+                <div class="suggested-replies flex flex-wrap gap-2"></div>
               </div>
             `;
             replyContainer.appendChild(form);
@@ -1037,6 +861,7 @@
                         suggestionsContainer.innerHTML = '';
                         parsed.replies.slice(0, 3).forEach(suggestion => {
                             const btn = document.createElement('button');
+                            btn.className = 'px-3 py-1 rounded-full text-xs text-white glass-dark hover:scale-105';
                             btn.textContent = suggestion;
                             btn.onclick = () => {
                                 replyInput.value = suggestion;
@@ -1066,19 +891,43 @@
       kcConfirm('Delete this message and all its replies?', confirmed => {
         if (confirmed) db.ref(path).remove();
       });
+    } else if (target.closest('.reply-toggle-btn')) {
+        const repliesContainer = messageLi.querySelector('.replies');
+        const icon = target.closest('.reply-toggle-btn').querySelector('.icon');
+        const isHidden = repliesContainer.classList.contains('hidden');
+        if (isHidden) {
+            repliesContainer.classList.remove('hidden');
+            icon.textContent = '▲';
+        } else {
+            repliesContainer.classList.add('hidden');
+            icon.textContent = '▼';
+        }
     }
   });
 
+  // Re-factored mouseover/mouseout listeners for reaction tooltip to be more reliable
+  let tooltipTimeout;
+
   msgList.addEventListener('mouseover', e => {
     const reactBtn = e.target.closest('.reactBtn');
-    if (!reactBtn) return;
+    if (!reactBtn) { 
+        return; 
+    }
+    
+    // Clear any existing timeout to prevent the tooltip from being hidden
+    clearTimeout(tooltipTimeout);
+
     const path = reactBtn.closest('[data-path]').dataset.path + '/reactions/' + reactBtn.dataset.emo;
     const rect = reactBtn.getBoundingClientRect();
-    reactionTooltip.style.display = 'block';
+    
+    // Show and position the tooltip
+    reactionTooltip.classList.remove('hidden');
     reactionTooltip.style.left = `${rect.left + rect.width / 2}px`;
     reactionTooltip.style.top = `${rect.top}px`;
     reactionTooltip.style.transform = 'translate(-50%, -110%)';
     reactionTooltip.textContent = 'Loading...';
+    
+    // Fetch user names for the tooltip
     db.ref(path).once('value').then(snap => {
       const reactors = snap.val();
       if (!reactors) { reactionTooltip.textContent = 'No one yet!'; return; }
@@ -1088,15 +937,25 @@
       });
     });
   });
+  
   msgList.addEventListener('mouseout', e => {
-    if (e.target.closest('.reactBtn')) { reactionTooltip.style.display = 'none'; }
+    const reactBtn = e.target.closest('.reactBtn');
+    // If we're leaving a reaction button, start a timer to hide the tooltip
+    if (reactBtn) {
+        tooltipTimeout = setTimeout(() => {
+            reactionTooltip.classList.add('hidden');
+        }, 100); // Small delay to allow for cursor movement
+    }
   });
 
   magicComposeBtn.onclick = async () => {
     const currentText = messageInput.value.trim();
     if (!currentText) return kcAlert("Please write a short idea to expand upon.");
     const prompt = `Expand this short message into a friendly and engaging comment for a message board. Keep it concise (1-2 sentences): "${currentText}"`;
-    const result = await callGemini(prompt);
+    const schema = {
+        type: "STRING"
+    };
+    const result = await callGemini(prompt, schema);
     if (result) {
         messageInput.value = result.replace(/"/g, ''); // Remove quotes from response
     }
@@ -1132,23 +991,31 @@
         applyTheme(currentUserProfile.theme || 'light');
 
         const hasDiamond = currentUserProfile?.codesUnlocked?.diamond;
-        loginBar.style.display = 'none';
-        composerContainer.style.display = 'block';
-        gradientPickerBtn.style.display = hasDiamond ? 'none' : 'block';
+        loginBar.classList.add('hidden');
+        composerContainer.classList.remove('hidden');
+        // Correctly toggle the hidden class based on the diamond status
+        gradientPickerBtn.classList.toggle('hidden', !!hasDiamond);
+
+        // Update button active state
+        showLoginBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
+        showRegisterBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
+        
         if (!u.emailVerified) return;
         validatePost();
       });
     } else {
       currentUserProfile = null; 
-      applyTheme('light'); // Default to light mode when logged out
-      loginBar.style.display = 'block';
-      composerContainer.style.display = 'none';
+      applyTheme('light');
+      loginBar.classList.remove('hidden');
+      composerContainer.classList.add('hidden');
+      // Ensure the button is visible for non-logged-in users if needed
+      gradientPickerBtn.classList.remove('hidden');
       validatePost();
     }
   });
 
   document.getElementById('closeUserPopup').addEventListener('click', () => {
-    document.getElementById('userPopup').style.display = 'none';
+    document.getElementById('userPopup').classList.add('hidden');
   });
   
   const usernameEl = document.getElementById('popupUserName');
@@ -1164,17 +1031,17 @@
         icon = 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128';
         text = 'Emerald Member';
     } else { return; }
-    membershipTooltip.innerHTML = `<img src="${icon}" alt="${text} icon"><span>${text}</span>`;
+    membershipTooltip.innerHTML = `<img src="${icon}" alt="${text} icon" class="w-6 h-6"><span>${text}</span>`;
     const nameRect = usernameEl.getBoundingClientRect();
     const cardRect = document.getElementById('userPopupCard').getBoundingClientRect();
     membershipTooltip.style.top = `${nameRect.top - cardRect.top - membershipTooltip.offsetHeight - 8}px`;
     membershipTooltip.style.left = `${nameRect.left - cardRect.left + (nameRect.width / 2) - (membershipTooltip.offsetWidth / 2)}px`;
-    membershipTooltip.classList.add('visible');
+    membershipTooltip.classList.remove('hidden');
   });
   usernameEl.addEventListener('mouseleave', () => {
-      membershipTooltip.classList.remove('visible');
+      membershipTooltip.classList.add('hidden');
   });
-
+  
   </script>
 </body>
 </html>
