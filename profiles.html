@@ -1121,13 +1121,15 @@
                 const userData = snap.val() || {};
 
                 // === LAYOUT LOGIC ===
-                const isEligible =
+               const isEligible = !!(
   userData.codesUnlocked?.diamond ||
   userData.codesUnlocked?.emerald ||
-  userData.codesUnlocked?.content;
-                if (isEligible) {
-                    popupCard.classList.add('two-column');
-                    postsColumn.style.display = 'block';
+  userData.codesUnlocked?.content
+);
+
+if (isEligible) {
+  popupCard.classList.add('two-column');
+  postsColumn.style.display = 'block';
 
                     // Initial post container with navigation arrows
                     postsColumn.innerHTML = `
