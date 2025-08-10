@@ -6,26 +6,28 @@
   <title>KC Event Board w/ Glassmorphism UI</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <!-- Added Firebase Storage SDK for posts -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
       transition: background 0.5s ease, color 0.5s ease;
       overflow-x: hidden;
     }
-    
+
     .light-theme {
       background-image: transparent;
       color: #1a202c;
     }
-    
+
     .dark-theme {
       background-image: transparent;
       color: #e2e8f0;
     }
-    
+
     .glass {
       background: rgba(255, 255, 255, 0.15);
       backdrop-filter: blur(10px);
@@ -33,7 +35,7 @@
       box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
       transition: all 0.3s ease;
     }
-    
+
     .glass-dark {
       background: rgba(0, 0, 0, 0.2);
       backdrop-filter: blur(10px);
@@ -45,14 +47,14 @@
     .brand-gradient {
       background: linear-gradient(90deg, #1ee57c, #50b2fa);
     }
-    
+
     .brand-text {
       background-image: linear-gradient(90deg, #1ee57c, #50b2fa);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
     }
-    
+
     .member-diamond {
       background-image: linear-gradient(45deg, #A4C5FF, #717DFF);
       -webkit-background-clip: text;
@@ -71,7 +73,7 @@
       color: #3b82f6;
       text-decoration: underline;
     }
-    
+
     /* Popover styles */
     .popover {
       background: rgba(255, 255, 255, 0.2);
@@ -80,12 +82,12 @@
       border-radius: 12px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.2);
       padding: 1rem;
-      pointer-events: auto; /* Re-enable clicks on the popover */
+      pointer-events: auto;
       transform: translateY(10px);
       position: absolute;
-      z-index: 10003; /* Increased z-index to be sure it's on top */
+      z-index: 10003;
     }
-    
+
     .popover h4 {
         color: white;
     }
@@ -113,7 +115,295 @@
     .reactBtn {
         pointer-events: all;
     }
-    
+
+    /* === START OF CSS FROM PROFILES.HTML === */
+    /* User Popup Styles */
+    #userPopup {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        /* display: none; - REMOVED this rule from CSS */
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        font-family: 'Poppins', sans-serif;
+        animation: fadeInBg 0.3s ease;
+    }
+    @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
+    .user-popup-card {
+        width: 360px;
+        max-width: 95vw;
+        border-radius: 1.5rem; /* Match the grid cards */
+        overflow: hidden;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        position: relative;
+        background: #f1f3f5;
+    }
+    /* Adjusted width for desktop two-column layout */
+    @media (min-width: 768px) {
+        .user-popup-card.two-column {
+            width: 720px;
+            display: flex;
+        }
+    }
+    @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    .popup-banner {
+        height: 120px;
+        background-color: #ced4da;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        border-radius: 1.5rem 1.5rem 0 0;
+        position: relative;
+    }
+    /* Mobile-first: Banner is inside the left column, not the whole card */
+    @media (min-width: 768px) {
+        .user-popup-card.two-column .popup-banner {
+            border-radius: 1.5rem 0 0 0;
+        }
+    }
+    .popup-header {
+        padding: 0 16px;
+        position: relative;
+        height: 48px;
+    }
+    .popup-info-column {
+         /* New column for the existing profile info */
+         flex: 1;
+    }
+    .popup-posts-column {
+         /* New column for the posts feature */
+        flex: 1;
+        padding: 12px 16px 16px;
+        overflow-y: auto;
+        border-left: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    .popup-avatar {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        position: absolute;
+        top: -48px;
+        left: 16px;
+        border: 6px solid #fff;
+        background-color: #f1f3f5;
+        z-index: 10;
+    }
+
+    .popup-body {
+        padding: 12px 16px 16px;
+        margin-top: 48px;
+    }
+
+    .popup-username {
+        font-size: 1.5rem;
+        font-weight: 700;
+        text-align: left;
+        margin-bottom: 16px;
+    }
+
+    .popup-section {
+        background: rgba(255,255,255,0.5);
+        border-radius: 12px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+    .popup-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .popup-section-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 8px 0;
+        text-align: left;
+    }
+
+    .popup-about-me {
+        font-size: 0.95rem;
+        color: #374151;
+        line-height: 1.5;
+        word-break: break-word;
+        text-align: left;
+        white-space: pre-wrap;
+    }
+
+    .popup-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .popup-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: white;
+        background: #6b7280;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .popup-badge img, .popup-badge .emoji-icon {
+        width: 20px;
+        height: 20px;
+        font-size: 1.2rem;
+    }
+
+    .user-streak {
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .popup-close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(0,0,0,0.3);
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+        z-index: 15;
+    }
+    .popup-close-btn:hover {
+        background: rgba(0,0,0,0.5);
+    }
+    /* New post creation UI styles */
+    .add-post-btn {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(45deg, #a855f7, #6366f1);
+        color: white;
+        font-size: 2rem;
+        font-weight: 700;
+        border-radius: 9999px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .add-post-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+    }
+    .social-media-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 12px 24px;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: transform 0.2s, background-color 0.2s;
+        color: white;
+        width: 100%;
+    }
+    .social-media-btn:hover {
+        transform: translateY(-2px);
+    }
+    .social-media-btn svg {
+        width: 24px;
+        height: 24px;
+    }
+    /* New Post feature CSS */
+    .post-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    .post-tile {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 0.75rem;
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .post-media {
+        width: 100%;
+        height: auto;
+    }
+    .post-caption {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+        color: #f1f3f5;
+    }
+    .post-timestamp {
+        font-size: 0.75rem;
+        color: #adb5bd;
+        text-align: right;
+        padding: 0 0.5rem 0.5rem 0.5rem;
+    }
+    .delete-post-btn {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background: rgba(255, 0, 0, 0.6);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+        opacity: 0.8;
+    }
+    .delete-post-btn:hover {
+        opacity: 1;
+    }
+    .upload-error-message {
+        background-color: #f87171;
+        color: white;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        text-align: center;
+        animation: fadeIn 0.3s ease;
+    }
+    .spinner {
+        border: 4px solid rgba(255,255,255,0.1);
+        border-top: 4px solid #fde047;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .popup-info-column {
+      flex: 1;
+    }
+    .popup-posts-column {
+      flex: 1;
+      padding: 12px 16px 16px;
+      overflow-y: auto;
+      border-left: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    /* === END OF CSS FROM PROFILES.HTML === */
   </style>
 </head>
 <body class="h-full light-theme">
@@ -131,7 +421,7 @@
 
   <!-- Reaction Tooltip -->
   <div id="reactionTooltip" class="hidden fixed bg-black text-white p-3 rounded-lg shadow-lg text-sm font-semibold z-[10001] pointer-events-none"></div>
-  
+
   <!-- Gemini Loading Indicator -->
   <div id="geminiLoading" class="hidden fixed top-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-gray-800 text-white rounded-lg shadow-xl z-[10002] flex items-center gap-2 glass-dark">
     <div class="animate-spin h-4 w-4 rounded-full border-2 border-white border-t-transparent"></div>
@@ -205,36 +495,6 @@
     <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
   </div>
 
-  <!-- User Profile Popup -->
-  <div id="userPopup" class="hidden fixed inset-0 flex items-center justify-center z-[10000] p-4 bg-black bg-opacity-70 backdrop-blur-sm">
-      <div id="userPopupCard" class="w-full max-w-lg rounded-2xl glass overflow-hidden relative">
-          <div id="membershipTooltip" class="hidden absolute p-2 rounded-lg bg-gray-800 text-white text-sm font-semibold whitespace-nowrap"></div>
-          <div id="popupBanner" class="h-32 bg-gray-600 bg-cover bg-center"></div>
-          <div class="p-4 -mt-16">
-              <img id="popupAvatar" src="" class="w-28 h-28 rounded-full border-4 border-gray-800 object-cover shadow-lg">
-              <button id="closeUserPopup" class="absolute top-4 right-4 text-white text-2xl font-bold bg-black/30 rounded-full w-8 h-8 flex items-center justify-center transition-all hover:bg-black/50">&times;</button>
-          </div>
-          <div class="p-4 pt-0 text-white">
-              <div class="flex items-center gap-2 mb-4">
-                  <span id="popupUserName" class="text-3xl font-bold"></span>
-                  <span id="popupMemberIcon" class="hidden text-xl"></span>
-              </div>
-              <div class="bg-white/10 p-4 rounded-xl mb-4">
-                  <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">ABOUT ME</h4>
-                  <p id="popupAboutMe" class="text-base"></p>
-              </div>
-              <div class="bg-white/10 p-4 rounded-xl mb-4">
-                  <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">BADGES</h4>
-                  <div id="popupBadges" class="flex flex-wrap gap-2"></div>
-              </div>
-              <div id="streakSection" class="bg-white/10 p-4 rounded-xl hidden">
-                  <h4 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-2">STREAK</h4>
-                  <div id="popupStreak" class="text-xl font-bold text-orange-400"></div>
-              </div>
-          </div>
-      </div>
-  </div>
-
   <!-- The Popover is now a direct child of the body to fix z-index issues -->
   <div id="gradientPicker" class="popover hidden absolute top-0 left-0 z-[10003] mt-4 p-4 rounded-2xl glass">
     <h4 class="text-center font-bold mb-4">Pick a gradient</h4>
@@ -251,6 +511,44 @@
       <span class="grad w-10 h-10 rounded-lg cursor-pointer transition-all" data-grad="linear-gradient(45deg,#ffaf7b,#d76d77)" style="background:linear-gradient(45deg,#ffaf7b,#d76d77)"></span>
     </div>
   </div>
+
+  <!-- === START OF HTML FROM PROFILES.HTML === -->
+  <!-- USER PROFILE POPUP -->
+  <div id="userPopup" class="hidden">
+    <div class="user-popup-card" id="userPopupCard">
+        <!-- This container will hold the left and right columns -->
+        <div id="popupContentWrapper" class="flex flex-col md:flex-row">
+            <!-- Left column for profile info -->
+            <div id="popupInfoColumn" class="popup-info-column">
+                <div class="popup-banner" id="popupBanner"></div>
+                <div class="popup-header">
+                    <img id="popupAvatar" src="" class="popup-avatar">
+                    <button id="closeUserPopup" class="popup-close-btn">&times;</button>
+                </div>
+                <div class="popup-body">
+                    <div id="popupUserName" class="popup-username"></div>
+                    <div class="popup-section">
+                        <h4 class="popup-section-title">ABOUT ME</h4>
+                        <div id="popupAboutMe" class="popup-about-me"></div>
+                    </div>
+                    <div class="popup-section">
+                        <h4 class="popup-section-title">BADGES</h4>
+                        <div id="popupBadges" class="popup-badges"></div>
+                    </div>
+                    <div class="popup-section">
+                        <h4 class="popup-section-title">STREAK</h4>
+                        <div id="popupStreak" class="user-streak"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right column for posts (will be rendered dynamically) -->
+            <div id="popupPostsColumn" class="popup-posts-column">
+                <!-- Posts content will be inserted here -->
+            </div>
+        </div>
+    </div>
+  </div>
+  <!-- === END OF HTML FROM PROFILES.HTML === -->
 
 
   <script>
@@ -295,6 +593,7 @@
   firebase.initializeApp(cfg);
   const auth = firebase.auth(),
         db   = firebase.database(),
+        storage = firebase.storage(),
         msgs = db.ref('messages');
 
   const actionCodeSettings = {
@@ -337,21 +636,21 @@
   const registerForm = document.getElementById('registerForm');
   const showLoginBtn = document.getElementById('showLoginBtn');
   const showRegisterBtn = document.getElementById('showRegisterBtn');
-  
+
   const regName = document.getElementById('regName');
   const regEmail = document.getElementById('regEmail');
   const regPass = document.getElementById('regPass');
   const registerBtn = document.getElementById('registerBtn');
-  
+
   const loginEmail = document.getElementById('loginEmail');
   const loginPass = document.getElementById('loginPass');
   const loginBtn = document.getElementById('loginBtn');
-  
+
   const logoutBtn = document.getElementById('logoutBtn');
   const messageInput = document.getElementById('messageInput');
   const postBtn = document.getElementById('postBtn');
   const magicComposeBtn = document.getElementById('magicComposeBtn');
-  
+
   const sortSelect = document.getElementById('sortSelect');
   const msgList = document.getElementById('msgList');
   const reactionTooltip = document.getElementById('reactionTooltip');
@@ -363,10 +662,25 @@
   const themeSwitcher = document.getElementById('themeSwitcher');
   const geminiLoading = document.getElementById('geminiLoading');
 
+  // === POPUP UI REFS ===
+  const userPopup = document.getElementById('userPopup');
+  const closeUserPopup = document.getElementById('closeUserPopup');
+  const userPopupCard = document.getElementById('userPopupCard');
+  const bannerEl = document.getElementById('popupBanner');
+  const avatarEl = document.getElementById('popupAvatar');
+  const usernameEl = document.getElementById('popupUserName');
+  const aboutEl = document.getElementById('popupAboutMe');
+  const badgesContainer = document.getElementById('popupBadges');
+  const streakEl = document.getElementById('popupStreak');
+  const popupPostsColumn = document.getElementById('popupPostsColumn');
+
+
   let selectedGradient = null;
   let lastSnap = null;
   let sortMode = 'recent';
   let currentUserProfile = null;
+  let currentUserUid = null;
+  let profileOwnerUid = null;
 
   // --- Gemini API Logic ---
   const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
@@ -458,14 +772,14 @@
     }
   }
 
-  gradientPickerBtn.onclick = (e) => { 
-    e.stopPropagation(); 
+  gradientPickerBtn.onclick = (e) => {
+    e.stopPropagation();
     togglePopover(gradientPicker, gradientPickerBtn);
   };
-  
+
   document.addEventListener('click', (e) => {
-    if (!gradientPicker.contains(e.target) && !gradientPickerBtn.contains(e.target)) { 
-      gradientPicker.classList.add('hidden'); 
+    if (!gradientPicker.contains(e.target) && !gradientPickerBtn.contains(e.target)) {
+      gradientPicker.classList.add('hidden');
     }
   });
 
@@ -474,7 +788,7 @@
     const name  = regName.value.trim(), email = regEmail.value.trim(), pass  = regPass.value;
     if (!name || !email || !pass) return kcAlert('Fill all fields.');
     auth.createUserWithEmailAndPassword(email, pass)
-      .then(uCred => 
+      .then(uCred =>
         uCred.user.updateProfile({ displayName: name })
           .then(() => db.ref(`users/${uCred.user.uid}`).set({ displayName: name, email: email, verified: uCred.user.emailVerified, theme: 'light' }))
           .then(() => uCred.user.sendEmailVerification(actionCodeSettings))
@@ -534,123 +848,434 @@
     });
   }
 
-  function showUserPopup(uid) {
-    loadUserProfile(uid);
-    document.getElementById('userPopup').classList.remove('hidden');
-    document.getElementById('userPopup').classList.add('flex');
+  // --- New functions from profiles.html for the detailed user popup ---
+  const badgeIconMap = {
+      offence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',
+      defence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',
+      overall: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png',
+      verified: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png',
+      diamond: 'https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png',
+      emerald: 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128',
+  };
+
+  // Helper function to create the HTML for a single post
+  function createPostTile(post, isOwner) {
+      let mediaHtml = '';
+      if (post.type === 'image') {
+          mediaHtml = `<img src="${post.url}" class="post-media" alt="${post.caption}">`;
+      } else if (post.type === 'youtube') {
+           // Use the embed URL for consistent display
+          const embedUrl = `https://www.youtube.com/embed/${post.ytId}`;
+          mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+      } else if (post.type === 'tiktok') {
+          const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
+          mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+      }
+
+      // Format timestamp nicely
+      const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
+          year: 'numeric', month: 'short', day: 'numeric'
+      });
+
+      const deleteButton = isOwner ?
+          `<button class="delete-post-btn" data-post-id="${post.postId}">&times;</button>` : '';
+
+      return `
+          <div class="post-tile">
+              ${deleteButton}
+              ${mediaHtml}
+              <div class="post-caption">${post.caption}</div>
+              <div class="post-timestamp">${timestamp}</div>
+          </div>
+      `;
   }
 
-  function loadUserProfile(uid) {
-    const popupCard = document.getElementById('userPopupCard');
-    const bannerEl = document.getElementById('popupBanner');
-    const avatarEl = document.getElementById('popupAvatar');
-    const usernameEl = document.getElementById('popupUserName');
-    const aboutEl = document.getElementById('popupAboutMe');
-    const badgesContainer = document.getElementById('popupBadges');
-    const streakEl = document.getElementById('popupStreak');
-    const streakSection = document.getElementById('streakSection');
+  // Helper function to render the "Add Post" UI
+  function renderAddPostUI(ownerUid) {
+      const isOwner = currentUserUid === ownerUid;
+      if (!isOwner) return; // Only show UI for the owner
 
-    // Resetting UI
-    popupCard.style.background = '';
-    popupCard.classList.remove('glass');
-    popupCard.classList.add('bg-white/10'); // Default translucent background
+      const postsColumn = document.getElementById('popupPostsColumn');
+      // Create and append the new "Add Post" UI
+      postsColumn.innerHTML += `
+          <div id="addPostSection" class="popup-section flex flex-col items-center justify-center text-center">
+              <h4 class="popup-section-title mb-4">ADD NEW POST</h4>
+              <button id="addPostBtn" class="add-post-btn mb-4">+</button>
+              <div id="postTypeSelection" class="flex gap-4 mb-4 hidden">
+                <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
+                  <img src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/youtube-app-white-icon.png" alt="YouTube" class="h-5 w-5 mr-2 object-contain" width="20" height="20" loading="lazy"/>
+                  <span>YouTube</span>
+                </button>
+                <button id="tiktokBtn" class="social-media-btn bg-black hover:bg-gray-800">
+                  <img src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/tiktok-white-icon.png" alt="TikTok" class="h-5 w-5 mr-2 object-contain" width="20" height="20" loading="lazy"/>
+                  <span>TikTok</span>
+                </button>
+              </div>
+              <div id="urlInputContainer" class="w-full hidden">
+                <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300">
+                <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300"></textarea>
+                <button id="postButton" class="w-full p-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
+                <div id="uploadStatus" class="mt-2 text-sm text-gray-700 hidden"></div>
+              </div>
+          </div>
+      `;
+
+      const addPostBtn = document.getElementById('addPostBtn');
+      const postTypeSelection = document.getElementById('postTypeSelection');
+      const urlInputContainer = document.getElementById('urlInputContainer');
+      const youtubeBtn = document.getElementById('youtubeBtn');
+      const tiktokBtn = document.getElementById('tiktokBtn');
+      const postButton = document.getElementById('postButton');
+      const captionInput = document.getElementById('captionInput');
+      const urlInput = document.getElementById('urlInput');
+      const uploadStatus = document.getElementById('uploadStatus');
+
+      addPostBtn.addEventListener('click', () => {
+          addPostBtn.classList.add('hidden');
+          postTypeSelection.classList.remove('hidden');
+      });
+
+      let selectedPostType = null;
+      youtubeBtn.addEventListener('click', () => {
+          selectedPostType = 'youtube';
+          postTypeSelection.classList.add('hidden');
+          urlInputContainer.classList.remove('hidden');
+          urlInput.placeholder = 'Paste YouTube URL here...';
+          urlInput.value = '';
+          captionInput.value = '';
+      });
+
+      tiktokBtn.addEventListener('click', () => {
+          selectedPostType = 'tiktok';
+          postTypeSelection.classList.add('hidden');
+          urlInputContainer.classList.remove('hidden');
+          urlInput.placeholder = 'Paste TikTok URL here...';
+          urlInput.value = '';
+          captionInput.value = '';
+      });
+
+
+      postButton.addEventListener('click', async () => {
+          const url = urlInput.value;
+          const caption = captionInput.value;
+
+          postButton.disabled = true;
+
+          if (!url || !selectedPostType) {
+              kcAlert('Please enter a valid URL and select a post type.');
+              postButton.disabled = false;
+              return;
+          }
+
+          let postId = crypto.randomUUID();
+          let postData = null;
+
+          if (selectedPostType === 'youtube') {
+               const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+               if (!ytIdMatch) {
+                   kcAlert('Invalid YouTube URL.');
+                   postButton.disabled = false;
+                   return;
+               }
+               postData = {
+                   type: 'youtube',
+                   ytId: ytIdMatch[1],
+                   caption: caption,
+                   createdAt: firebase.database.ServerValue.TIMESTAMP,
+                   createdBy: ownerUid
+               };
+          } else if (selectedPostType === 'tiktok') {
+              const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
+              if (!ttIdMatch) {
+                  kcAlert('Invalid TikTok URL.');
+                  postButton.disabled = false;
+                  return;
+              }
+              postData = {
+                  type: 'tiktok',
+                  videoId: ttIdMatch[1],
+                  caption: caption,
+                  createdAt: firebase.database.ServerValue.TIMESTAMP,
+                  createdBy: ownerUid
+              };
+          }
+
+          try {
+              await db.ref(`users/${ownerUid}/posts/${postId}`).set(postData);
+              kcAlert('Post uploaded successfully!');
+          } catch (error) {
+              console.error('URL post failed:', error);
+              kcAlert(`Post failed: ${error.code || error.message}. Please try again.`);
+          }
+
+          postButton.disabled = false;
+          urlInputContainer.classList.add('hidden');
+          addPostBtn.classList.remove('hidden');
+          urlInput.value = '';
+          captionInput.value = '';
+      });
+  }
+
+  // Function to handle post deletion
+  function deletePost(ownerUid, postId) {
+      if (currentUserUid !== ownerUid) {
+          console.error("You are not authorized to delete this post.");
+          return;
+      }
+      kcConfirm('Are you sure you want to delete this post?', (confirmed) => {
+          if (confirmed) {
+              const postRef = db.ref(`users/${ownerUid}/posts/${postId}`);
+              postRef.once('value').then(snap => {
+                  const postData = snap.val();
+                  if (postData && postData.type === 'image') {
+                      const storageRef = storage.ref().child(`user_posts/${ownerUid}/${postId}`);
+                      storageRef.delete().then(() => {
+                          console.log("File deleted from storage.");
+                      }).catch(error => {
+                          console.warn("Could not delete file from storage (it might not exist):", error);
+                      });
+                  }
+              }).finally(() => {
+                  db.ref(`users/${ownerUid}/posts/${postId}`).remove().then(() => {
+                      console.log("Post deleted from database.");
+                  }).catch(error => {
+                      console.error("Error deleting post from database:", error);
+                  });
+              });
+          }
+      });
+  }
+
+  const postsPerPage = 12;
+  async function loadPosts(uid, startAt = null) {
+      const postsContainer = document.getElementById('postsContainer');
+      const isOwner = currentUserUid === uid;
+
+      if (!startAt) {
+          postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
+      }
+
+      try {
+          let postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').limitToLast(postsPerPage);
+          if (startAt) {
+              postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').endAt(startAt).limitToLast(postsPerPage + 1);
+          }
+
+          postsRef.on('value', snapshot => {
+              const posts = [];
+              snapshot.forEach(childSnap => {
+                  posts.push({
+                      postId: childSnap.key,
+                      ...childSnap.val()
+                  });
+              });
+
+              posts.sort((a, b) => b.createdAt - a.createdAt);
+
+              let postsToDisplay = posts;
+              if (startAt && posts.length > postsPerPage) {
+                  postsToDisplay = posts.slice(1);
+              }
+
+              if (postsToDisplay.length === 0) {
+                postsContainer.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
+              } else {
+                postsContainer.innerHTML = postsToDisplay.map(post => createPostTile(post, isOwner)).join('');
+                document.querySelectorAll('.delete-post-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const postId = e.target.dataset.postId;
+                        deletePost(uid, postId);
+                    });
+                });
+              }
+
+              const totalPostsCount = posts.length;
+              if (totalPostsCount > postsPerPage && postsToDisplay.length === postsPerPage) {
+                  const loadMoreButton = document.createElement('button');
+                  loadMoreButton.textContent = 'Load More';
+                  loadMoreButton.className = 'w-full p-2 rounded-lg bg-gray-700 text-white font-bold hover:bg-gray-600 transition mt-4';
+                  loadMoreButton.addEventListener('click', () => {
+                      const lastPostCreatedAt = postsToDisplay[postsToDisplay.length - 1].createdAt;
+                      loadPosts(uid, lastPostCreatedAt - 1);
+                  });
+                  postsContainer.appendChild(loadMoreButton);
+              }
+          });
+      } catch (error) {
+          console.error('Failed to load posts:', error);
+          postsContainer.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
+      }
+  }
+
+
+  function loadUserProfile(uid) {
+    profileOwnerUid = uid; // Set the global owner UID
+    // Reset to loading state and clear old content
+    userPopupCard.classList.remove('two-column');
+    popupPostsColumn.style.display = 'none';
+    popupPostsColumn.innerHTML = '';
+    userPopupCard.style.background = '#f1f3f5';
     bannerEl.style.backgroundImage = 'none';
-    bannerEl.style.backgroundColor = '#6b7280';
+    bannerEl.style.backgroundColor = '#ced4da';
     avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
     usernameEl.textContent = 'Loading...';
     aboutEl.textContent = 'Loading...';
     badgesContainer.innerHTML = 'Loading...';
-    streakSection.classList.add('hidden');
+    streakEl.style.display = 'none';
 
+    userPopup.classList.remove('hidden');
+    userPopup.classList.add('flex');
+
+    // Fetch user root
     db.ref(`users/${uid}`).once('value').then(snap => {
-      const userData = snap.val() || {};
-      usernameEl.textContent = userData.displayName || 'Anonymous User';
-      avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-      aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+        const userData = snap.val() || {};
 
-      if (userData.loginStreak > 0) {
-        streakEl.textContent = `🔥 ${userData.loginStreak} Day Streak`;
-        streakSection.classList.remove('hidden');
-      }
+        // === LAYOUT LOGIC ===
+        const isEligible = userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald;
+        if (isEligible) {
+            userPopupCard.classList.add('two-column');
+            popupPostsColumn.style.display = 'block';
+            popupPostsColumn.innerHTML = `<h4 class="popup-section-title text-center text-gray-800">POSTS</h4><div id="postsContainer" class="post-list"></div>`;
 
-      const custom = userData.profileCustomization || {};
-      const cardBg = custom.gradient || 'bg-white/10';
-      popupCard.classList.add('glass');
-      popupCard.classList.remove('bg-white/10');
-      popupCard.style.background = cardBg;
+            // Render the authoring UI for the owner
+            renderAddPostUI(uid);
 
-      // To show a banner, the 'banner' property must exist in the database, e.g.,
-      // db.ref(`users/${uid}/profileCustomization/banner`).set('https://url-to-your-image.png');
-      if (custom.banner) {
-          bannerEl.style.backgroundImage = `url('${custom.banner}')`;
-          bannerEl.style.backgroundColor = 'transparent'; // Use transparent if a banner image is set
-      }
+            // Load and render posts
+            loadPosts(uid);
+        }
 
-      const codes = userData.codesUnlocked || {};
-      if (codes.diamond) {
-          usernameEl.classList.add('member-diamond');
-          usernameEl.dataset.memberType = 'diamond';
-      } else if (codes.emerald) {
-          usernameEl.classList.add('member-emerald');
-          usernameEl.dataset.memberType = 'emerald';
-      } else {
-          usernameEl.classList.remove('member-diamond', 'member-emerald');
-          usernameEl.dataset.memberType = '';
-          usernameEl.style.color = '#fff';
-      }
+        usernameEl.textContent = userData.displayName || 'Anonymous User';
+        avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+        aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
 
-      Promise.all([
-          db.ref(`badges/${uid}`).once('value'),
-          db.ref(`users/${uid}/customBadges`).once('value')
-      ]).then(([bsnap, csnap]) => {
-          badgesContainer.innerHTML = '';
-          let hasAnyBadge = false;
-          const badgeSpecs = {
-              verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: 'linear-gradient(45deg, #2dd4bf, #1a9a8a)' },
-              offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: 'linear-gradient(45deg, #ff6b6b, #d9480f)' },
-              defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: 'linear-gradient(45deg, #74c0fc, #364fc7)' },
-              overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: 'linear-gradient(45deg, #f9c74f, #f08c00)' }
-          };
-          const addBadge = (spec, text) => {
-            hasAnyBadge = true;
-            const div = document.createElement('div');
-            div.className = 'flex items-center gap-2 p-2 rounded-lg text-white font-medium glass';
-            div.style.background = spec.bg;
-            div.innerHTML = `<img src="${spec.icon}" class="w-5 h-5"><span>${text}</span>`;
-            badgesContainer.appendChild(div);
-          };
-          if (userData.verified) addBadge(badgeSpecs.verified, 'Verified');
-          const baseBadges = bsnap.val() || {};
-          ['offence', 'defence', 'overall'].forEach(key => {
-              if (baseBadges[key] > 0) addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${baseBadges[key]}`);
-          });
-          const customBadges = csnap.val() || {};
-          Object.values(customBadges).forEach(badge => {
-              hasAnyBadge = true;
-              const div = document.createElement('div');
-              div.className = 'flex items-center gap-2 p-2 rounded-lg text-white font-medium glass';
-              div.style.background = badge.grad1 || '#495057';
-              div.innerHTML = `<span class="text-xl">${badge.icon}</span><span>${badge.name}</span>`;
-              badgesContainer.appendChild(div);
-          });
-          if (!hasAnyBadge) badgesContainer.textContent = 'No badges to display.';
-      });
+        const streakNum = typeof userData.loginStreak === 'number' ? userData.loginStreak : (parseInt(userData.loginStreak) || 0);
+        if (streakNum > 0) {
+            streakEl.textContent = `🔥 ${streakNum} Day Streak`;
+            streakEl.style.display = 'block';
+        } else {
+            streakEl.style.display = 'none';
+        }
+
+        const custom = userData.profileCustomization || {};
+        const hasCustomization = userData.codesUnlocked && userData.codesUnlocked.diamond;
+
+        if (hasCustomization && custom.gradient) {
+            userPopupCard.style.background = custom.gradient;
+        } else {
+            userPopupCard.style.background = '#f1f3f5';
+        }
+
+        if (hasCustomization && custom.nameColor) {
+            usernameEl.style.color = custom.nameColor;
+        } else {
+            usernameEl.style.color = '#111827';
+        }
+
+        if (hasCustomization && custom.banner) {
+            bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+            bannerEl.style.backgroundColor = 'transparent';
+        } else {
+            bannerEl.style.backgroundImage = 'none';
+            bannerEl.style.backgroundColor = '#ced4da';
+        }
+
+        // Now fetch badges + custom badges
+        Promise.all([
+            db.ref(`badges/${uid}`).once('value'),
+            db.ref(`users/${uid}/customBadges`).once('value')
+        ]).then(([bsnap, csnap]) => {
+            badgesContainer.innerHTML = '';
+            let hasAnyBadge = false;
+
+            const badgeSpecs = {
+                verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+                offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
+                defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
+                overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+            };
+
+            const addBadge = (spec, text, insertFirst = false) => {
+                hasAnyBadge = true;
+                const div = document.createElement('div');
+                div.className = 'popup-badge';
+                div.style.background = spec.bg;
+                div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
+                if (insertFirst && badgesContainer.firstChild) {
+                    badgesContainer.insertBefore(div, badgesContainer.firstChild);
+                } else if (insertFirst) {
+                    badgesContainer.appendChild(div); // first badge when empty
+                } else {
+                    badgesContainer.appendChild(div);
+                }
+            };
+
+            const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
+            const baseBadges = bsnap.val() || {};
+
+            const isVerified = toBool(userData.emailVerified);
+            if (isVerified) addBadge(badgeSpecs.verified, 'Verified', true);
+
+            ['offence', 'defence', 'overall'].forEach(key => {
+                const count = parseInt((baseBadges && baseBadges[key]) || 0) || 0;
+                if (count > 0) {
+                    addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${count}`);
+                }
+            });
+
+            // Add Diamond and Emerald badges from `codesUnlocked`
+            if (userData.codesUnlocked && userData.codesUnlocked.diamond) {
+                badgesContainer.innerHTML += `<div class="popup-badge" style="background:#55d9e5;color:#fff;">
+                    <img src="${badgeIconMap.diamond}" alt="Diamond"><span>Diamond User</span>
+                </div>`;
+                hasAnyBadge = true;
+            }
+            if (userData.codesUnlocked && userData.codesUnlocked.emerald) {
+                badgesContainer.innerHTML += `<div class="popup-badge" style="background:#22c55e;color:#fff;">
+                    <img src="${badgeIconMap.emerald}" alt="Emerald"><span>Emerald User</span>
+                </div>`;
+                hasAnyBadge = true;
+            }
+
+            const customBadges = csnap.val() || {};
+            Object.values(customBadges).forEach(badge => {
+                hasAnyBadge = true;
+                const div = document.createElement('div');
+                div.className = 'popup-badge';
+                div.style.background = `linear-gradient(90deg,${badge.grad1||'#6b7280'} 30%,${badge.grad2||'#6b7280'} 100%)`;
+                div.style.color = badge.textColor || 'white';
+                div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
+                badgesContainer.appendChild(div);
+            });
+
+            if (!hasAnyBadge) {
+                badgesContainer.textContent = 'No badges to display.';
+            }
+        }).catch(err => {
+            console.error('Badge load error:', err);
+            badgesContainer.textContent = 'Failed to load badges.';
+        });
+
+    }).catch(error => {
+        console.error('Error loading user profile:', error);
+        usernameEl.textContent = 'Error loading profile';
     });
   }
+
 
   function renderMessage(msgData, isReply = false) {
     const u = auth.currentUser;
     const d = new Date(msgData.time);
     const ts = `${d.toLocaleDateString()} at ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    
+
     const hasReplies = msgData.replies && Object.keys(msgData.replies).length > 0;
     const repliesCount = hasReplies ? Object.keys(msgData.replies).length : 0;
-    
+
     const li = document.createElement('li');
     li.className = `flex gap-4 items-start ${isReply ? 'ml-8' : 'border-b border-white/20 pb-4'}`;
     li.dataset.path = msgData.path;
     li.dataset.key = msgData.key;
-    
+
     li.innerHTML = `
       <img class="w-10 h-10 rounded-full object-cover cursor-pointer flex-shrink-0" data-uid="${msgData.uid}">
       <div class="flex-1 min-w-0">
@@ -691,7 +1316,7 @@
         nm.style.color = 'white';
         nm.style.backgroundImage = 'none';
     }
-    
+
     const reactionsContainer = li.querySelector('.reactions');
     if (msgData.reactions) {
         Object.entries(msgData.reactions).forEach(([emo, reactors]) => {
@@ -733,10 +1358,10 @@
     msgList.innerHTML = '';
     let arr = [];
     lastSnap.forEach(c => {
-      const v = c.val(); 
+      const v = c.val();
       v.key = c.key;
       v.path = `messages/${c.key}`;
-      arr.push(v); 
+      arr.push(v);
     });
     if(sortMode==='liked') arr.sort((a,b)=>(b.likes||0)-(a.likes||0));
     else arr.sort((a,b)=>b.time - a.time);
@@ -754,7 +1379,7 @@
   msgList.addEventListener('click', e => {
     const u = auth.currentUser;
     const target = e.target;
-    
+
     // Check if user is logged in for interactions
     if (!u || !u.emailVerified) {
         const allowed = ['img', '.username'];
@@ -770,7 +1395,7 @@
 
     if (target.closest('img, .username')) {
       const uid = target.closest('[data-uid]').dataset.uid;
-      showUserPopup(uid);
+      loadUserProfile(uid); // Use the new function here
     } else if (target.closest('.likeBtn')) {
       db.ref(`${path}/likedBy/${u.uid}`).transaction(current => current ? null : true);
       db.ref(`${path}/likes`).transaction(current => {
@@ -788,12 +1413,12 @@
         const pickerPopover = document.createElement('div');
         pickerPopover.className = 'popover reaction-picker-popover absolute z-50';
         pickerPopover.style.display = 'block';
-        
+
         const emojiGrid = document.createElement('div');
         emojiGrid.className = 'grid grid-cols-6 gap-2';
-        
+
         const availableEmojis = ['😀','😎','😂','😍','👍','🙌','😉','😁','😢','😮','😡','🎉','🤣','😭','🥹','🥰','👀','🫶','🔥','🙏'];
-        
+
         availableEmojis.forEach(emo => {
             const emojiSpan = document.createElement('span');
             emojiSpan.className = 'text-2xl p-2 rounded-lg cursor-pointer transition-all hover:scale-110 hover:bg-white/20';
@@ -872,7 +1497,7 @@
                     } catch (e) { console.error("Failed to parse suggestions:", e); }
                 }
             };
-            
+
             form.querySelector('button').onclick = () => {
                 const text = replyInput.value.trim();
                 if (!text) return;
@@ -910,23 +1535,23 @@
 
   msgList.addEventListener('mouseover', e => {
     const reactBtn = e.target.closest('.reactBtn');
-    if (!reactBtn) { 
-        return; 
+    if (!reactBtn) {
+        return;
     }
-    
+
     // Clear any existing timeout to prevent the tooltip from being hidden
     clearTimeout(tooltipTimeout);
 
     const path = reactBtn.closest('[data-path]').dataset.path + '/reactions/' + reactBtn.dataset.emo;
     const rect = reactBtn.getBoundingClientRect();
-    
+
     // Show and position the tooltip
     reactionTooltip.classList.remove('hidden');
     reactionTooltip.style.left = `${rect.left + rect.width / 2}px`;
     reactionTooltip.style.top = `${rect.top}px`;
     reactionTooltip.style.transform = 'translate(-50%, -110%)';
     reactionTooltip.textContent = 'Loading...';
-    
+
     // Fetch user names for the tooltip
     db.ref(path).once('value').then(snap => {
       const reactors = snap.val();
@@ -937,7 +1562,7 @@
       });
     });
   });
-  
+
   msgList.addEventListener('mouseout', e => {
     const reactBtn = e.target.closest('.reactBtn');
     // If we're leaving a reaction button, start a timer to hide the tooltip
@@ -966,7 +1591,7 @@
     if(!u || !u.emailVerified) return kcAlert('Log in and verify to post.');
     if(!txt) return kcAlert('Enter a message.');
     if(containsBadWord(txt)||containsBadWord(u.displayName)) return kcAlert('That word’s not allowed.');
-    
+
     let messageData = { user: u.displayName, uid: u.uid, text: txt, time: firebase.database.ServerValue.TIMESTAMP, likes: 0 };
     const hasDiamond = currentUserProfile?.codesUnlocked?.diamond;
     if (hasDiamond && currentUserProfile.profileCustomization) {
@@ -985,9 +1610,10 @@
 
   auth.onAuthStateChanged(u => {
     if (u) {
+      currentUserUid = u.uid;
       db.ref(`users/${u.uid}`).on('value', snap => {
         currentUserProfile = snap.val() || {};
-        
+
         applyTheme(currentUserProfile.theme || 'light');
 
         const hasDiamond = currentUserProfile?.codesUnlocked?.diamond;
@@ -999,12 +1625,13 @@
         // Update button active state
         showLoginBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
         showRegisterBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
-        
+
         if (!u.emailVerified) return;
         validatePost();
       });
     } else {
-      currentUserProfile = null; 
+      currentUserUid = null;
+      currentUserProfile = null;
       applyTheme('light');
       loginBar.classList.remove('hidden');
       composerContainer.classList.add('hidden');
@@ -1014,13 +1641,19 @@
     }
   });
 
-  document.getElementById('closeUserPopup').addEventListener('click', () => {
-    document.getElementById('userPopup').classList.add('hidden');
-  });
-  
-  const usernameEl = document.getElementById('popupUserName');
-  const membershipTooltip = document.getElementById('membershipTooltip');
+  closeUserPopup.onclick = () => {
+      userPopup.classList.add('hidden');
+  };
+
+  userPopup.onclick = (e) => {
+    if (e.target === userPopup) {
+        userPopup.classList.add('hidden');
+    }
+  };
+
+  // Re-enable the mouseenter/mouseleave for the profile popup username
   usernameEl.addEventListener('mouseenter', () => {
+    const membershipTooltip = document.getElementById('membershipTooltip');
     const memberType = usernameEl.dataset.memberType;
     if (!memberType) return;
     let icon = '', text = '';
@@ -1039,9 +1672,10 @@
     membershipTooltip.classList.remove('hidden');
   });
   usernameEl.addEventListener('mouseleave', () => {
-      membershipTooltip.classList.add('hidden');
+      document.getElementById('membershipTooltip').classList.add('hidden');
   });
-  
+
+
   </script>
 </body>
 </html>
