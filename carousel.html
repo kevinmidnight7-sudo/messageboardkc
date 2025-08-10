@@ -368,111 +368,132 @@
         }
     };
 
-    function loadUserProfile(uid) {
-      const popupCard = document.getElementById('userPopupCard');
-      const bannerEl = document.getElementById('popupBanner');
-      const avatarEl = document.getElementById('popupAvatar');
-      const usernameEl = document.getElementById('popupUserName');
-      const aboutEl = document.getElementById('popupAboutMe');
-      const badgesContainer = document.getElementById('popupBadges');
-      const streakEl = document.getElementById('popupStreak');
+   function loadUserProfile(uid) {
+  const popupCard = document.getElementById('userPopupCard');
+  const bannerEl = document.getElementById('popupBanner');
+  const avatarEl = document.getElementById('popupAvatar');
+  const usernameEl = document.getElementById('popupUserName');
+  const aboutEl = document.getElementById('popupAboutMe');
+  const badgesContainer = document.getElementById('popupBadges');
+  const streakEl = document.getElementById('popupStreak');
 
-      // Reset to loading state
-      popupCard.style.background = '#f1f3f5';
+  // Reset to loading state
+  popupCard.style.background = '#f1f3f5';
+  bannerEl.style.backgroundImage = 'none';
+  bannerEl.style.backgroundColor = '#ced4da';
+  avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+  usernameEl.textContent = 'Loading...';
+  aboutEl.textContent = 'Loading...';
+  badgesContainer.innerHTML = 'Loading...';
+  streakEl.style.display = 'none';
+
+  // Fetch user root
+  db.ref(`users/${uid}`).once('value').then(snap => {
+    const userData = snap.val() || {};
+
+    usernameEl.textContent = userData.displayName || 'Anonymous User';
+    avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+    aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+
+    const streakNum = typeof userData.loginStreak === 'number'
+      ? userData.loginStreak
+      : (parseInt(userData.loginStreak) || 0);
+    if (streakNum > 0) {
+      streakEl.textContent = `🔥 ${streakNum} Day Streak`;
+      streakEl.style.display = 'block';
+    } else {
+      streakEl.style.display = 'none';
+    }
+
+    const custom = userData.profileCustomization || {};
+    const defaultBg = '#f1f3f5';
+    const cardBg = custom.gradient || defaultBg;
+    popupCard.style.background = cardBg;
+    avatarEl.style.borderColor = cardBg;
+    usernameEl.style.color = custom.nameColor || '#111827';
+
+    if (custom.banner) {
+      bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+      bannerEl.style.backgroundColor = 'transparent';
+    } else {
       bannerEl.style.backgroundImage = 'none';
       bannerEl.style.backgroundColor = '#ced4da';
-      avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-      usernameEl.textContent = 'Loading...';
-      aboutEl.textContent = 'Loading...';
-      badgesContainer.innerHTML = 'Loading...';
-      streakEl.style.display = 'none';
-
-      // Fetch all user data
-      db.ref(`users/${uid}`).once('value').then(snap => {
-          const userData = snap.val() || {};
-          
-          usernameEl.textContent = userData.displayName || 'Anonymous User';
-          avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-          aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
-
-          if (userData.loginStreak > 0) {
-              streakEl.textContent = `🔥 ${userData.loginStreak} Day Streak`;
-              streakEl.style.display = 'block';
-          } else {
-              streakEl.style.display = 'none';
-          }
-
-          const custom = userData.profileCustomization || {};
-          const defaultBg = '#f1f3f5';
-          const cardBg = custom.gradient || defaultBg;
-          
-          popupCard.style.background = cardBg;
-          avatarEl.style.borderColor = cardBg;
-          usernameEl.style.color = custom.nameColor || '#111827';
-
-          if (custom.banner) {
-              bannerEl.style.backgroundImage = `url('${custom.banner}')`;
-              bannerEl.style.backgroundColor = 'transparent';
-          } else {
-              bannerEl.style.backgroundImage = 'none';
-              bannerEl.style.backgroundColor = '#ced4da';
-          }
-
-          // Fetch badge data
-          Promise.all([
-              db.ref(`badges/${uid}`).once('value'),
-              db.ref(`users/${uid}/customBadges`).once('value')
-          ]).then(([bsnap, csnap]) => {
-              badgesContainer.innerHTML = '';
-              let hasAnyBadge = false;
-              
-              const badgeSpecs = {
-                  verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
-                  offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
-                  defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
-                  overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
-              };
-
-              const addBadge = (spec, text) => {
-                hasAnyBadge = true;
-                const div = document.createElement('div');
-                div.className = 'popup-badge';
-                div.style.background = spec.bg;
-                div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
-                badgesContainer.appendChild(div);
-              }
-
-              if (userData.verified) {
-                  addBadge(badgeSpecs.verified, 'Verified');
-              }
-
-              const baseBadges = bsnap.val() || {};
-              ['offence', 'defence', 'overall'].forEach(key => {
-                  if (baseBadges[key] > 0) {
-                      addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${baseBadges[key]}`);
-                  }
-              });
-
-              const customBadges = csnap.val() || {};
-              Object.values(customBadges).forEach(badge => {
-                  hasAnyBadge = true;
-                  const div = document.createElement('div');
-                  div.className = 'popup-badge';
-                  div.style.background = badge.grad1 || '#6b7280';
-                  div.style.color = badge.textColor || 'white';
-                  div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
-                  badgesContainer.appendChild(div);
-              });
-
-              if (!hasAnyBadge) {
-                  badgesContainer.textContent = 'No badges to display.';
-              }
-          });
-      }).catch(error => {
-          console.error("Error loading user profile:", error);
-          usernameEl.textContent = 'Error loading profile';
-      });
     }
+
+    // Now fetch badges + custom badges
+    Promise.all([
+      db.ref(`badges/${uid}`).once('value'),
+      db.ref(`users/${uid}/customBadges`).once('value')
+    ]).then(([bsnap, csnap]) => {
+      badgesContainer.innerHTML = '';
+      let hasAnyBadge = false;
+
+      const badgeSpecs = {
+        verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+        offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
+        defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
+        overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+      };
+
+      const addBadge = (spec, text, insertFirst = false) => {
+        hasAnyBadge = true;
+        const div = document.createElement('div');
+        div.className = 'popup-badge';
+        div.style.background = spec.bg;
+        div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
+        if (insertFirst && badgesContainer.firstChild) {
+          badgesContainer.insertBefore(div, badgesContainer.firstChild);
+        } else if (insertFirst) {
+          badgesContainer.appendChild(div); // first badge when empty
+        } else {
+          badgesContainer.appendChild(div);
+        }
+      };
+
+      const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
+      const baseBadges = bsnap.val() || {};
+
+      // Accept verified from multiple places
+      const isVerified =
+        toBool(userData.verified) ||
+        toBool(userData.emailVerified) ||
+        toBool(baseBadges.verified);
+
+      // Always show verified as the left-most badge
+      if (isVerified) addBadge(badgeSpecs.verified, 'Verified', true);
+
+      ['offence', 'defence', 'overall'].forEach(key => {
+        const count = parseInt((baseBadges && baseBadges[key]) || 0) || 0;
+        if (count > 0) {
+          addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${count}`);
+        }
+      });
+
+      const customBadges = csnap.val() || {};
+      Object.values(customBadges).forEach(badge => {
+        hasAnyBadge = true;
+        const div = document.createElement('div');
+        div.className = 'popup-badge';
+        div.style.background = badge.grad1 || '#6b7280';
+        div.style.color = badge.textColor || 'white';
+        div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
+        badgesContainer.appendChild(div);
+      });
+
+      if (!hasAnyBadge) {
+        badgesContainer.textContent = 'No badges to display.';
+      }
+    }).catch(err => {
+      console.error('Badge load error:', err);
+      badgesContainer.textContent = 'Failed to load badges.';
+    });
+
+  }).catch(error => {
+    console.error('Error loading user profile:', error);
+    usernameEl.textContent = 'Error loading profile';
+  });
+}
+
 
     // --- LEADERBOARD LOGIC ---
     
