@@ -1121,7 +1121,10 @@
                 const userData = snap.val() || {};
 
                 // === LAYOUT LOGIC ===
-                const isEligible = userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald;
+                const isEligible =
+  userData.codesUnlocked?.diamond ||
+  userData.codesUnlocked?.emerald ||
+  userData.codesUnlocked?.content;
                 if (isEligible) {
                     popupCard.classList.add('two-column');
                     postsColumn.style.display = 'block';
