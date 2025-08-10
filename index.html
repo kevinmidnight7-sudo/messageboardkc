@@ -265,7 +265,7 @@
     font-size: 1rem;
     font-weight: 600;
     color: #fde047;
-      
+
     }
 
     .popup-close-btn {
@@ -930,7 +930,6 @@
       const postButton = document.getElementById('postButton');
       const captionInput = document.getElementById('captionInput');
       const urlInput = document.getElementById('urlInput');
-      const uploadStatus = document.getElementById('uploadStatus');
 
       addPostBtn.addEventListener('click', () => {
           addPostBtn.classList.add('hidden');
@@ -1048,62 +1047,74 @@
       });
   }
 
-  const postsPerPage = 12;
-  async function loadPosts(uid, startAt = null) {
-      const postsContainer = document.getElementById('postsContainer');
-      const isOwner = currentUserUid === uid;
+  // --- NEW PAGINATION VARIABLES & FUNCTIONS ---
+  let allPosts = []; // Will store all posts for the current profile
+  let postPageIndex = 0;
+  const postsPerPage = 2; // Show only 2 posts at a time
 
-      if (!startAt) {
-          postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
+  // Function to render the posts for the current page
+  function renderPosts() {
+      const postsContainer = document.getElementById('postsContainer');
+      const paginationContainer = document.getElementById('postPagination');
+      const prevPostBtn = document.getElementById('prevPostBtn');
+      const nextPostBtn = document.getElementById('nextPostBtn');
+
+      // Clear previous content
+      postsContainer.innerHTML = '';
+
+      if (allPosts.length === 0) {
+          postsContainer.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
+          if (paginationContainer) paginationContainer.classList.add('hidden');
+          return;
       }
 
-      try {
-          let postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').limitToLast(postsPerPage);
-          if (startAt) {
-              postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').endAt(startAt).limitToLast(postsPerPage + 1);
-          }
+      if (paginationContainer) paginationContainer.classList.remove('hidden');
 
-          postsRef.on('value', snapshot => {
-              const posts = [];
-              snapshot.forEach(childSnap => {
-                  posts.push({
-                      postId: childSnap.key,
-                      ...childSnap.val()
-                  });
-              });
+      const start = postPageIndex * postsPerPage;
+      const end = start + postsPerPage;
+      const postsToDisplay = allPosts.slice(start, end);
 
-              posts.sort((a, b) => b.createdAt - a.createdAt);
+      const isOwner = currentUserUid === profileOwnerUid;
+      postsToDisplay.forEach(post => {
+          postsContainer.innerHTML += createPostTile(post, isOwner);
+      });
 
-              let postsToDisplay = posts;
-              if (startAt && posts.length > postsPerPage) {
-                  postsToDisplay = posts.slice(1);
-              }
+      // Update button states
+      if (prevPostBtn) prevPostBtn.disabled = postPageIndex === 0;
+      if (nextPostBtn) nextPostBtn.disabled = end >= allPosts.length;
 
-              if (postsToDisplay.length === 0) {
-                postsContainer.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
-              } else {
-                postsContainer.innerHTML = postsToDisplay.map(post => createPostTile(post, isOwner)).join('');
-                document.querySelectorAll('.delete-post-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const postId = e.target.dataset.postId;
-                        deletePost(uid, postId);
-                    });
-                });
-              }
-
-              const totalPostsCount = posts.length;
-              if (totalPostsCount > postsPerPage && postsToDisplay.length === postsPerPage) {
-                  const loadMoreButton = document.createElement('button');
-                  loadMoreButton.textContent = 'Load More';
-                  loadMoreButton.className = 'w-full p-2 rounded-lg bg-gray-700 text-white font-bold hover:bg-gray-600 transition mt-4';
-                  loadMoreButton.addEventListener('click', () => {
-                      const lastPostCreatedAt = postsToDisplay[postsToDisplay.length - 1].createdAt;
-                      loadPosts(uid, lastPostCreatedAt - 1);
-                  });
-                  postsContainer.appendChild(loadMoreButton);
-              }
+      // Attach click handlers for delete buttons on the newly rendered posts
+      document.querySelectorAll('.delete-post-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const postId = e.target.dataset.postId;
+              deletePost(profileOwnerUid, postId);
           });
+      });
+  }
+
+  // Function to load all posts for a user and then render the first page
+  async function loadPosts(uid) {
+      const postsContainer = document.getElementById('postsContainer');
+
+      // Show a spinner while loading
+      postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
+
+      try {
+          // Fetch all posts for the user once
+          const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+          const posts = [];
+          snapshot.forEach(childSnap => {
+              posts.push({
+                  postId: childSnap.key,
+                  ...childSnap.val()
+              });
+          });
+
+          // Sort posts in descending order by createdAt
+          allPosts = posts.sort((a, b) => b.createdAt - a.createdAt);
+          postPageIndex = 0; // Reset to the first page
+          renderPosts();
       } catch (error) {
           console.error('Failed to load posts:', error);
           postsContainer.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
@@ -1138,13 +1149,41 @@
         if (isEligible) {
             userPopupCard.classList.add('two-column');
             popupPostsColumn.style.display = 'block';
-            popupPostsColumn.innerHTML = `<h4 class="popup-section-title text-center text-gray-800">POSTS</h4><div id="postsContainer" class="post-list"></div>`;
+
+            // Initial post container with navigation arrows
+            popupPostsColumn.innerHTML = `
+                <h4 class="popup-section-title text-center text-gray-800">POSTS</h4>
+                <div id="postsContainer" class="post-list"></div>
+                <div id="postPagination" class="flex justify-center items-center gap-4 mt-4">
+                    <button id="prevPostBtn" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 disabled:opacity-50">&leftarrow;</button>
+                    <button id="nextPostBtn" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 disabled:opacity-50">&rightarrow;</button>
+                </div>
+            `;
 
             // Render the authoring UI for the owner
             renderAddPostUI(uid);
 
-            // Load and render posts
+            // Load and render posts with new pagination logic
             loadPosts(uid);
+
+            // Attach event listeners for the post navigation buttons
+            const prevPostBtn = document.getElementById('prevPostBtn');
+            const nextPostBtn = document.getElementById('nextPostBtn');
+
+            prevPostBtn.addEventListener('click', () => {
+                if (postPageIndex > 0) {
+                    postPageIndex--;
+                    renderPosts();
+                }
+            });
+
+            nextPostBtn.addEventListener('click', () => {
+                const maxIndex = Math.floor((allPosts.length - 1) / postsPerPage);
+                if (postPageIndex < maxIndex) {
+                    postPageIndex++;
+                    renderPosts();
+                }
+            });
         }
 
         usernameEl.textContent = userData.displayName || 'Anonymous User';
