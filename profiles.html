@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KC Events User Directory</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <!-- Firebase SDKs - added Auth and Storage -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <style>
+        /* Custom CSS to match the glassmorphism aesthetic */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px) saturate(1.8);
+            -webkit-backdrop-filter: blur(10px) saturate(1.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 1.5rem;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .category-tab {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .category-tab.active {
+            color: #fde047;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(253, 224, 71, 0.3);
+            transform: scale(1.05);
+            border-bottom: 2px solid #fde047;
+        }
+
+        .badge-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 9999px; /* full rounded */
+            object-fit: cover;
+            border: 3px solid #fde047;
+            box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+            transition: all 0.3s ease-in-out;
+        }
+
+        .avatar.custom {
+             /* Dynamic border color will be set via JS */
+             border: 3px solid transparent; 
+        }
+        .avatar.custom.no-color {
+            border: 3px solid #fde047;
+            box-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+        }
+
+        .avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px #fde047;
+        }
+        .avatar.custom:hover {
+            transform: scale(1.1);
+            box-shadow: none; /* Let JS handle the custom hover glow */
+        }
+
+        /* User Popup Styles */
+        #userPopup {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            font-family: 'Poppins', sans-serif;
+            animation: fadeInBg 0.3s ease;
+        }
+        @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
+        .user-popup-card {
+            width: 360px;
+            max-width: 95vw;
+            border-radius: 1.5rem; /* Match the grid cards */
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            background: #f1f3f5;
+        }
+        /* Adjusted width for desktop two-column layout */
+        @media (min-width: 768px) {
+            .user-popup-card.two-column {
+                width: 720px;
+                display: flex;
+            }
+        }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .popup-banner {
+            height: 120px;
+            background-color: #ced4da;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 1.5rem 1.5rem 0 0;
+            position: relative;
+        }
+        /* Mobile-first: Banner is inside the left column, not the whole card */
+        @media (min-width: 768px) {
+            .user-popup-card.two-column .popup-banner {
+                border-radius: 1.5rem 0 0 0;
+            }
+        }
+        .popup-header {
+            padding: 0 16px;
+            position: relative;
+            height: 48px;
+        }
+        .popup-info-column {
+             /* New column for the existing profile info */
+             flex: 1;
+        }
+        .popup-posts-column {
+             /* New column for the posts feature */
+            flex: 1;
+            padding: 12px 16px 16px;
+            overflow-y: auto;
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .popup-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: absolute;
+            top: -48px;
+            left: 16px;
+            border: 6px solid #fff;
+            background-color: #f1f3f5;
+            z-index: 10;
+        }
+
+        .popup-body {
+            padding: 12px 16px 16px;
+            margin-top: 48px;
+        }
+
+        .popup-username {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: left;
+            margin-bottom: 16px;
+        }
+
+        .popup-section {
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .popup-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .popup-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 8px 0;
+            text-align: left;
+        }
+
+        .popup-about-me {
+            font-size: 0.95rem;
+            color: #374151;
+            line-height: 1.5;
+            word-break: break-word;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+
+        .popup-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .popup-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            background: #6b7280;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .popup-badge img, .popup-badge .emoji-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 1.2rem;
+        }
+
+        .user-streak {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .popup-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 15; /* Higher z-index to be on top of the banner */
+        }
+        .popup-close-btn:hover {
+            background: rgba(0,0,0,0.5);
+        }
+        /* New CSS for truncating bio text with ellipsis */
+        .bio-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Limit to 2 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+        /* Custom card styling for the grid view */
+        .custom-grid-card {
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+            border-radius: 1.5rem;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            display: flex; /* Use flexbox for centering */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 250px; /* Give it a fixed height to show the banner */
+        }
+        .custom-grid-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
+        }
+        /* The banner will be an inner div for easier positioning */
+        .card-banner-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 30%;
+            background-size: cover;
+            background-position: center;
+            border-radius: 1.5rem 1.5rem 0 0;
+        }
+        /* Gradient on the bottom 70% */
+        .card-content-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 70%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            text-align: center;
+            border-radius: 0 0 1.5rem 1.5rem;
+        }
+        /* This is a tricky bit to get the avatar centered over the boundary */
+        .custom-grid-card-inner {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1.5rem;
+            width: 100%;
+        }
+        /* New button styling */
+        .banner-button {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem 0;
+            text-transform: uppercase;
+            font-weight: 700;
+            font-size: 1.25rem;
+            border-radius: 9999px; /* A long rounded pill shape */
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            color: #ffffff;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+        .banner-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+        }
+        .banner-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(168, 85, 247, 0.2);
+        }
+        /* Style for icons in category tabs */
+        .category-tab-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            vertical-align: middle;
+            display: inline-block;
+        }
+        /* New Post feature CSS */
+        /* Changed from a grid to a simple column layout */
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .post-tile {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .post-media {
+            width: 100%;
+            height: auto;
+        }
+        .post-caption {
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            color: #f1f3f5;
+        }
+        .post-timestamp {
+            font-size: 0.75rem;
+            color: #adb5bd;
+            text-align: right;
+            padding: 0 0.5rem 0.5rem 0.5rem;
+        }
+        .delete-post-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .delete-post-btn:hover {
+            opacity: 1;
+        }
+        .drop-zone {
+            border: 2px dashed #adb5bd;
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            color: #adb5bd;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .drop-zone.dragover {
+            background: rgba(255,255,255,0.1);
+            border-color: #fde047;
+            color: #fde047;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #fde047;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* New error message styling */
+        .upload-error-message {
+            background-color: #f87171;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* New post creation UI styles */
+        .add-post-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #a855f7, #6366f1);
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .add-post-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+        }
+        .social-media-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.2s, background-color 0.2s;
+            color: white;
+            width: 100%;
+        }
+        .social-media-btn:hover {
+            transform: translateY(-2px);
+        }
+        .social-media-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-10">
+            <a href="https://kcevents.uk/#loginpage" class="banner-button">
+                View your profile
+            </a>
+        </header>
+
+        <!-- Category Tabs -->
+        <div class="flex flex-wrap justify-center gap-4 mb-8 text-lg md:text-xl font-medium">
+            <button class="category-tab active px-4 py-2" data-category="all">All Users</button>
+            <button class="category-tab px-4 py-2" data-category="verified">Verified Users</button>
+            <button class="category-tab px-4 py-2" data-category="skilled">Skilled Users</button>
+            <button class="category-tab px-4 py-2 flex items-center" data-category="diamond">
+                <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png" alt="Diamond Icon" class="category-tab-icon">
+                <span>Diamond Users</span>
+            </button>
+            <button class="category-tab px-4 py-2 flex items-center" data-category="emerald">
+                <img src="https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128" alt="Emerald Icon" class="category-tab-icon">
+                <span>Emerald Users</span>
+            </button>
+        </div>
+
+        <!-- User Search Input -->
+        <div class="flex justify-center mb-10">
+            <input type="text" id="userSearch" placeholder="Search users..." 
+                   class="w-full max-w-lg px-4 py-3 rounded-full bg-white bg-opacity-10 text-white placeholder-gray-400
+                          focus:outline-none focus:ring-2 focus:ring-yellow-400 border border-transparent focus:border-yellow-400
+                          transition-colors duration-200">
+        </div>
+
+        <!-- User Grid Container -->
+        <div id="userGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            <div class="text-center text-gray-400 py-10">Loading users from Firebase...</div>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="paginationContainer" class="flex justify-center items-center mt-8 gap-4">
+            <button id="prevPageBtn" class="px-4 py-2 rounded-lg bg-white bg-opacity-10 text-white hover:bg-opacity-20 transition-colors duration-200" disabled>Previous</button>
+            <span id="pageInfo" class="text-lg font-medium text-gray-300">Page 1 of 1</span>
+            <button id="nextPageBtn" class="px-4 py-2 rounded-lg bg-white bg-opacity-10 text-white hover:bg-opacity-20 transition-colors duration-200" disabled>Next</button>
+        </div>
+    </div>
+
+    <!-- USER PROFILE POPUP -->
+    <div id="userPopup">
+        <div class="user-popup-card" id="userPopupCard">
+            <!-- This container will hold the left and right columns -->
+            <div id="popupContentWrapper" class="flex flex-col md:flex-row">
+                <!-- Left column for profile info -->
+                <div id="popupInfoColumn" class="popup-info-column">
+                    <div class="popup-banner" id="popupBanner"></div>
+                    <div class="popup-header">
+                        <img id="popupAvatar" src="" class="popup-avatar">
+                        <button id="closeUserPopup" class="popup-close-btn">&times;</button>
+                    </div>
+                    <div class="popup-body">
+                        <div id="popupUserName" class="popup-username"></div>
+                        <div class="popup-section">
+                            <h4 class="popup-section-title">ABOUT ME</h4>
+                            <div id="popupAboutMe" class="popup-about-me"></div>
+                        </div>
+                        <div class="popup-section">
+                            <h4 class="popup-section-title">BADGES</h4>
+                            <div id="popupBadges" class="popup-badges"></div>
+                        </div>
+                        <div class="popup-section">
+                            <h4 class="popup-section-title">STREAK</h4>
+                            <div id="popupStreak" class="user-streak"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right column for posts (will be rendered dynamically) -->
+                <div id="popupPostsColumn" class="popup-posts-column">
+                    <!-- Posts content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Firebase setup from provided HTMLs
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+            authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+            databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kckillerscompany-ab1ec",
+            storageBucket: "kckillerscompany-ab1ec.appspot.com",
+            messagingSenderId: "198711213988",
+            appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+            measurementId: "G-4LKP2M3JXE"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+
+        // Global variables for the current user and profile owner
+        let currentUserUid = null;
+        let profileOwnerUid = null;
+
+        // Use onAuthStateChanged to get the current user's UID
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUserUid = user.uid;
+            } else {
+                currentUserUid = null;
+            }
+        });
+
+        // Badge icon map to render badges correctly.
+        const badgeIconMap = {
+            offence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',
+            defence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',
+            overall: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png',
+            verified: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png',
+            diamond: 'https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png',
+            emerald: 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128',
+        };
+
+        const userGrid = document.getElementById('userGrid');
+        const userSearch = document.getElementById('userSearch');
+        const prevPageBtn = document.getElementById('prevPageBtn');
+        const nextPageBtn = document.getElementById('nextPageBtn');
+        const pageInfo = document.getElementById('pageInfo');
+
+        let currentCategory = 'all';
+        let allUsers = []; // Store all users fetched from Firebase
+        let currentPage = 1;
+        const usersPerPage = 16; // 4x4 grid
+
+        // Function to create and return a single user card HTML string
+        function createUserCard(user) {
+            // Generate badge HTML dynamically
+            let badgesHtml = '';
+            
+            // Add Verified badge if applicable
+            if (user.isVerified) {
+                badgesHtml += `<img src="${badgeIconMap.verified}" alt="Verified" title="Verified" class="badge-icon">`;
+            }
+            // Add Skilled badges
+            if (user.badges.offence > 0) badgesHtml += `<img src="${badgeIconMap.offence}" alt="Best Offence" title="Best Offence x${user.badges.offence}" class="badge-icon">`;
+            if (user.badges.defence > 0) badgesHtml += `<img src="${badgeIconMap.defence}" alt="Best Defence" title="Best Defence x${user.badges.defence}" class="badge-icon">`;
+            if (user.badges.overall > 0) badgesHtml += `<img src="${badgeIconMap.overall}" alt="Overall Winner" title="Overall Winner x${user.badges.overall}" class="badge-icon">`;
+            // Add Diamond badge if applicable
+            if (user.codesUnlocked.diamond) {
+                 badgesHtml += `<img src="${badgeIconMap.diamond}" alt="Diamond User" title="Diamond User" class="badge-icon">`;
+            }
+            // Add Emerald badge if applicable
+            if (user.codesUnlocked.emerald) {
+                badgesHtml += `<img src="${badgeIconMap.emerald}" alt="Emerald User" title="Emerald User" class="badge-icon">`;
+            }
+
+            const hasCustomization = user.codesUnlocked.diamond;
+            const customColor = user.profileCustomization && user.profileCustomization.nameColor;
+            const customGradient = user.profileCustomization && user.profileCustomization.gradient;
+            const customBanner = user.profileCustomization && user.profileCustomization.banner;
+
+            const avatarClasses = ['avatar', hasCustomization ? 'custom' : '', !customColor && hasCustomization ? 'no-color' : ''].join(' ');
+            const avatarStyles = customColor ? `border-color: ${customColor}; box-shadow: 0 0 10px ${customColor}80;` : '';
+            const textColor = customColor || '#f8fafc';
+
+            if (hasCustomization) {
+                 return `
+                    <div class="custom-grid-card relative rounded-3xl overflow-hidden" data-uid="${user.uid}">
+                        <!-- Banner at the top 30% -->
+                        <div class="card-banner-top" style="background-image: url('${customBanner || ''}'); background-color: ${customBanner ? 'transparent' : '#ced4da'};"></div>
+
+                        <!-- Gradient on the bottom 70% -->
+                        <div class="card-content-bottom" style="background: ${customGradient || '#2b304f'};"></div>
+
+                        <!-- Main content centered over banner and gradient -->
+                        <div class="custom-grid-card-inner">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="${avatarClasses}" style="${avatarStyles}">
+                            <h2 class="text-xl font-bold mb-1" style="color: ${textColor};">${user.displayName}</h2>
+                            <p class="text-gray-400 text-sm mb-4 bio-text" style="color: ${textColor};">${user.aboutMe || 'No "About Me" set.'}</p>
+                            <div class="flex flex-wrap gap-2 justify-center">
+                                ${badgesHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="glass-card p-6 flex flex-col items-center text-center" data-uid="${user.uid}">
+                        <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="avatar">
+                        <h2 class="text-xl font-bold mb-1">${user.displayName}</h2>
+                        <p class="text-gray-400 text-sm mb-4 bio-text">${user.aboutMe || 'No "About Me" set.'}</p>
+                        <div class="flex flex-wrap gap-2 justify-center">
+                            ${badgesHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+
+        // Function to filter users based on the selected category and search query
+        function filterUsers(category, query) {
+            let filteredUsers = allUsers;
+            
+            // Filter by category
+            if (category === 'verified') {
+                filteredUsers = filteredUsers.filter(user => user.isVerified);
+            } else if (category === 'skilled') {
+                filteredUsers = filteredUsers.filter(user => 
+                    user.badges.offence > 0 || user.badges.defence > 0 || user.badges.overall > 0
+                );
+            } else if (category === 'diamond') {
+                filteredUsers = filteredUsers.filter(user => user.codesUnlocked.diamond);
+            } else if (category === 'emerald') {
+                filteredUsers = filteredUsers.filter(user => user.codesUnlocked.emerald);
+            }
+
+            // Filter by search query
+            if (query) {
+                const lowerCaseQuery = query.toLowerCase();
+                filteredUsers = filteredUsers.filter(user => 
+                    user.displayName.toLowerCase().includes(lowerCaseQuery) ||
+                    (user.aboutMe && user.aboutMe.toLowerCase().includes(lowerCaseQuery))
+                );
+            }
+            
+            return filteredUsers;
+        }
+
+        // Function to render the user grid
+        function renderUserGrid() {
+            const query = userSearch.value;
+            const filteredUsers = filterUsers(currentCategory, query);
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            
+            // Slice the users for the current page
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
+
+            userGrid.innerHTML = usersToDisplay.map(createUserCard).join('');
+            
+            // Update pagination controls
+            pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+            // Attach click listeners to the newly rendered cards
+            document.querySelectorAll('.glass-card, .custom-grid-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const uid = card.dataset.uid;
+                    if (uid) {
+                        loadUserProfile(uid);
+                        document.getElementById('userPopup').style.display = 'flex';
+                    }
+                });
+            });
+        }
+        
+        // Fetch all user and badge data from Firebase and then render the grid
+        db.ref('users').on('value', userSnap => {
+            db.ref('badges').once('value').then(badgeSnap => {
+                const users = [];
+                userSnap.forEach(userChild => {
+                    const userData = userChild.val();
+                    const userUid = userChild.key;
+                    const badgeData = badgeSnap.child(userUid).val() || {};
+
+                    users.push({
+                        uid: userUid,
+                        displayName: userData.displayName || 'Anonymous User',
+                        aboutMe: userData.aboutMe,
+                        avatar: userData.avatar,
+                        isVerified: !!userData.emailVerified,
+                        badges: badgeData,
+                        codesUnlocked: userData.codesUnlocked || {},
+                        profileCustomization: userData.profileCustomization || {},
+                        loginStreak: userData.loginStreak || 0
+                    });
+                });
+                allUsers = users;
+                currentPage = 1; // Reset to first page on data update
+                renderUserGrid();
+            });
+        });
+
+        // Event listener for category tabs
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentCategory = tab.dataset.category;
+                currentPage = 1; // Reset to first page when changing category
+                renderUserGrid();
+            });
+        });
+
+        // Event listener for search input
+        userSearch.addEventListener('input', () => {
+            currentPage = 1; // Reset to first page on search
+            renderUserGrid();
+        });
+
+        // Pagination event listeners
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderUserGrid();
+            }
+        });
+        nextPageBtn.addEventListener('click', () => {
+            const filteredUsers = filterUsers(currentCategory, userSearch.value);
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderUserGrid();
+            }
+        });
+
+        // --- POPUP LOGIC ---
+        const userPopup = document.getElementById('userPopup');
+        const closeUserPopup = document.getElementById('closeUserPopup');
+        
+        closeUserPopup.onclick = () => {
+            userPopup.style.display = 'none';
+        };
+        
+        userPopup.onclick = (e) => {
+            if (e.target === userPopup) {
+                userPopup.style.display = 'none';
+            }
+        };
+        
+        // Helper function to create the HTML for a single post
+        function createPostTile(post, isOwner) {
+            let mediaHtml = '';
+            if (post.type === 'image') {
+                mediaHtml = `<img src="${post.url}" class="post-media" alt="${post.caption}">`;
+            } else if (post.type === 'youtube') {
+                 // Use the embed URL for consistent display
+                const embedUrl = `https://www.youtube.com/embed/${post.ytId}`;
+                mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else if (post.type === 'tiktok') {
+                const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
+                mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            }
+
+            // Format timestamp nicely
+            const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+
+            const deleteButton = isOwner ? 
+                `<button class="delete-post-btn" data-post-id="${post.postId}">&times;</button>` : '';
+
+            return `
+                <div class="post-tile">
+                    ${deleteButton}
+                    ${mediaHtml}
+                    <div class="post-caption">${post.caption}</div>
+                    <div class="post-timestamp">${timestamp}</div>
+                </div>
+            `;
+        }
+        // Helper function to display a styled alert message
+        function showUploadStatus(message, isError = false) {
+            const uploadStatus = document.getElementById('uploadStatus');
+            uploadStatus.textContent = message;
+            uploadStatus.classList.remove('hidden', 'upload-error-message');
+            if (isError) {
+                uploadStatus.classList.add('upload-error-message');
+            } else {
+                uploadStatus.classList.remove('upload-error-message');
+            }
+            // Hide the message after 5 seconds
+            setTimeout(() => {
+                uploadStatus.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Helper function to render the "Add Post" UI
+        function renderAddPostUI(ownerUid) {
+            const isOwner = currentUserUid === ownerUid;
+            const postsColumn = document.getElementById('popupPostsColumn');
+
+            if (!isOwner) return; // Only show UI for the owner
+
+            // Create and append the new "Add Post" UI
+            postsColumn.innerHTML += `
+                <div id="addPostSection" class="popup-section flex flex-col items-center justify-center text-center">
+                    <h4 class="popup-section-title mb-4">ADD NEW POST</h4>
+                    <button id="addPostBtn" class="add-post-btn mb-4">+</button>
+                    <div id="postTypeSelection" class="flex gap-4 mb-4 hidden">
+  <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
+    <img
+      src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/youtube-app-white-icon.png"
+      alt="YouTube"
+      class="h-5 w-5 mr-2 object-contain"
+      width="20"
+      height="20"
+      loading="lazy"
+    />
+    <span>YouTube</span>
+  </button>
+
+  <button id="tiktokBtn" class="social-media-btn bg-black hover:bg-gray-800">
+    <img
+      src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/tiktok-white-icon.png"
+      alt="TikTok"
+      class="h-5 w-5 mr-2 object-contain"
+      width="20"
+      height="20"
+      loading="lazy"
+    />
+    <span>TikTok</span>
+  </button>
+</div>
+
+<div id="urlInputContainer" class="w-full hidden">
+  <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300">
+  <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300"></textarea>
+  <button id="postButton" class="w-full p-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
+  <div id="uploadStatus" class="mt-2 text-sm text-gray-700 hidden"></div>
+</div>
+
+            `;
+
+            // Add event listeners for the new UI elements
+            const addPostBtn = document.getElementById('addPostBtn');
+            const postTypeSelection = document.getElementById('postTypeSelection');
+            const urlInputContainer = document.getElementById('urlInputContainer');
+            const youtubeBtn = document.getElementById('youtubeBtn');
+            const tiktokBtn = document.getElementById('tiktokBtn');
+            const postButton = document.getElementById('postButton');
+            const captionInput = document.getElementById('captionInput');
+            const urlInput = document.getElementById('urlInput');
+            const uploadStatus = document.getElementById('uploadStatus');
+
+            addPostBtn.addEventListener('click', () => {
+                addPostBtn.classList.add('hidden');
+                postTypeSelection.classList.remove('hidden');
+            });
+            
+            let selectedPostType = null;
+            youtubeBtn.addEventListener('click', () => {
+                selectedPostType = 'youtube';
+                postTypeSelection.classList.add('hidden');
+                urlInputContainer.classList.remove('hidden');
+                urlInput.placeholder = 'Paste YouTube URL here...';
+                // Clear old inputs just in case
+                urlInput.value = '';
+                captionInput.value = '';
+            });
+
+            tiktokBtn.addEventListener('click', () => {
+                selectedPostType = 'tiktok';
+                postTypeSelection.classList.add('hidden');
+                urlInputContainer.classList.remove('hidden');
+                urlInput.placeholder = 'Paste TikTok URL here...';
+                // Clear old inputs just in case
+                urlInput.value = '';
+                captionInput.value = '';
+            });
+
+
+            postButton.addEventListener('click', async () => {
+                const url = urlInput.value;
+                const caption = captionInput.value;
+                
+                showUploadStatus('Creating post...', false);
+                postButton.disabled = true;
+
+                if (!url || !selectedPostType) {
+                    showUploadStatus('Please enter a valid URL and select a post type.', true);
+                    postButton.disabled = false;
+                    return;
+                }
+
+                let postId = crypto.randomUUID();
+                let postData = null;
+
+                if (selectedPostType === 'youtube') {
+                     const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+                     if (!ytIdMatch) {
+                         showUploadStatus('Invalid YouTube URL.', true);
+                         postButton.disabled = false;
+                         return;
+                     }
+                     postData = {
+                         type: 'youtube',
+                         ytId: ytIdMatch[1],
+                         caption: caption,
+                         createdAt: firebase.database.ServerValue.TIMESTAMP,
+                         createdBy: ownerUid
+                     };
+                } else if (selectedPostType === 'tiktok') {
+                    const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
+                    if (!ttIdMatch) {
+                        showUploadStatus('Invalid TikTok URL.', true);
+                        postButton.disabled = false;
+                        return;
+                    }
+                    postData = {
+                        type: 'tiktok',
+                        videoId: ttIdMatch[1],
+                        caption: caption,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP,
+                        createdBy: ownerUid
+                    };
+                }
+
+                try {
+                    await db.ref(`users/${ownerUid}/posts/${postId}`).set(postData);
+                    showUploadStatus('Post uploaded successfully!');
+                } catch (error) {
+                    console.error('URL post failed:', error);
+                    showUploadStatus(`Post failed: ${error.code || error.message}. Please try again.`, true);
+                }
+                
+                postButton.disabled = false;
+                // Reset UI
+                urlInputContainer.classList.add('hidden');
+                addPostBtn.classList.remove('hidden');
+                urlInput.value = '';
+                captionInput.value = '';
+            });
+        }
+        
+        // Function to handle post deletion
+        function deletePost(ownerUid, postId) {
+            if (currentUserUid !== ownerUid) {
+                console.error("You are not authorized to delete this post.");
+                return;
+            }
+
+            console.log(`User confirmed deletion of post ${postId}.`);
+            
+            // First, delete from Storage if it's an image.
+            const postRef = db.ref(`users/${ownerUid}/posts/${postId}`);
+            postRef.once('value').then(snap => {
+                const postData = snap.val();
+                if (postData && postData.type === 'image') {
+                    const storageRef = storage.ref().child(`user_posts/${ownerUid}/${postId}`);
+                    storageRef.delete().then(() => {
+                        console.log("File deleted from storage.");
+                    }).catch(error => {
+                        console.warn("Could not delete file from storage (it might not exist):", error);
+                    });
+                }
+            }).finally(() => {
+                // Then, delete from the Realtime Database
+                db.ref(`users/${ownerUid}/posts/${postId}`).remove().then(() => {
+                    console.log("Post deleted from database.");
+                }).catch(error => {
+                    console.error("Error deleting post from database:", error);
+                });
+            });
+        }
+
+
+        // Main function to load the user profile
+        function loadUserProfile(uid) {
+            profileOwnerUid = uid; // Set the global owner UID
+            const popupCard = document.getElementById('userPopupCard');
+            const popupInfoColumn = document.getElementById('popupInfoColumn');
+            const postsColumn = document.getElementById('popupPostsColumn');
+            const bannerEl = document.getElementById('popupBanner');
+            const avatarEl = document.getElementById('popupAvatar');
+            const usernameEl = document.getElementById('popupUserName');
+            const aboutEl = document.getElementById('popupAboutMe');
+            const badgesContainer = document.getElementById('popupBadges');
+            const streakEl = document.getElementById('popupStreak');
+            
+            // Reset to loading state and clear old content
+            popupCard.classList.remove('two-column');
+            postsColumn.style.display = 'none';
+            postsColumn.innerHTML = '';
+            popupCard.style.background = '#f1f3f5';
+            bannerEl.style.backgroundImage = 'none';
+            bannerEl.style.backgroundColor = '#ced4da';
+            avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+            usernameEl.textContent = 'Loading...';
+            aboutEl.textContent = 'Loading...';
+            badgesContainer.innerHTML = 'Loading...';
+            streakEl.style.display = 'none';
+            
+            // Fetch user root
+            db.ref(`users/${uid}`).once('value').then(snap => {
+                const userData = snap.val() || {};
+                
+                // === LAYOUT LOGIC ===
+                const isEligible = userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald;
+                if (isEligible) {
+                    popupCard.classList.add('two-column');
+                    postsColumn.style.display = 'block';
+                    // FIX: Changed post container class from post-grid to post-list for a scrollable list
+                    postsColumn.innerHTML = `<h4 class="popup-section-title text-center text-gray-800">POSTS</h4><div id="postsContainer" class="post-list"></div>`;
+                    
+                    // Render the authoring UI for the owner
+                    renderAddPostUI(uid);
+                    
+                    // Load and render posts
+                    loadPosts(uid);
+                }
+
+                usernameEl.textContent = userData.displayName || 'Anonymous User';
+                avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+                aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+
+                const streakNum = typeof userData.loginStreak === 'number' ? userData.loginStreak : (parseInt(userData.loginStreak) || 0);
+                if (streakNum > 0) {
+                    streakEl.textContent = `🔥 ${streakNum} Day Streak`;
+                    streakEl.style.display = 'block';
+                } else {
+                    streakEl.style.display = 'none';
+                }
+
+                const custom = userData.profileCustomization || {};
+                const hasCustomization = userData.codesUnlocked && userData.codesUnlocked.diamond;
+
+                if (hasCustomization && custom.gradient) {
+                    popupCard.style.background = custom.gradient;
+                } else {
+                    popupCard.style.background = '#f1f3f5';
+                }
+
+                if (hasCustomization && custom.nameColor) {
+                    usernameEl.style.color = custom.nameColor;
+                } else {
+                    usernameEl.style.color = '#111827';
+                }
+                
+                if (hasCustomization && custom.banner) {
+                    bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+                    bannerEl.style.backgroundColor = 'transparent';
+                } else {
+                    bannerEl.style.backgroundImage = 'none';
+                    bannerEl.style.backgroundColor = '#ced4da';
+                }
+
+                // Now fetch badges + custom badges
+                Promise.all([
+                    db.ref(`badges/${uid}`).once('value'),
+                    db.ref(`users/${uid}/customBadges`).once('value')
+                ]).then(([bsnap, csnap]) => {
+                    badgesContainer.innerHTML = '';
+                    let hasAnyBadge = false;
+
+                    const badgeSpecs = {
+                        verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+                        offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
+                        defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
+                        overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+                    };
+
+                    const addBadge = (spec, text, insertFirst = false) => {
+                        hasAnyBadge = true;
+                        const div = document.createElement('div');
+                        div.className = 'popup-badge';
+                        div.style.background = spec.bg;
+                        div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
+                        if (insertFirst && badgesContainer.firstChild) {
+                            badgesContainer.insertBefore(div, badgesContainer.firstChild);
+                        } else if (insertFirst) {
+                            badgesContainer.appendChild(div); // first badge when empty
+                        } else {
+                            badgesContainer.appendChild(div);
+                        }
+                    };
+
+                    const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
+                    const baseBadges = bsnap.val() || {};
+
+                    const isVerified = toBool(userData.emailVerified);
+                    if (isVerified) addBadge(badgeSpecs.verified, 'Verified', true);
+
+                    ['offence', 'defence', 'overall'].forEach(key => {
+                        const count = parseInt((baseBadges && baseBadges[key]) || 0) || 0;
+                        if (count > 0) {
+                            addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${count}`);
+                        }
+                    });
+
+                    // Add Diamond and Emerald badges from `codesUnlocked`
+                    if (userData.codesUnlocked && userData.codesUnlocked.diamond) {
+                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#55d9e5;color:#fff;">
+                            <img src="${badgeIconMap.diamond}" alt="Diamond"><span>Diamond User</span>
+                        </div>`;
+                        hasAnyBadge = true;
+                    }
+                    if (userData.codesUnlocked && userData.codesUnlocked.emerald) {
+                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#22c55e;color:#fff;">
+                            <img src="${badgeIconMap.emerald}" alt="Emerald"><span>Emerald User</span>
+                        </div>`;
+                        hasAnyBadge = true;
+                    }
+
+                    const customBadges = csnap.val() || {};
+                    Object.values(customBadges).forEach(badge => {
+                        hasAnyBadge = true;
+                        const div = document.createElement('div');
+                        div.className = 'popup-badge';
+                        div.style.background = `linear-gradient(90deg,${badge.grad1||'#6b7280'} 30%,${badge.grad2||'#6b7280'} 100%)`;
+                        div.style.color = badge.textColor || 'white';
+                        div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
+                        badgesContainer.appendChild(div);
+                    });
+
+                    if (!hasAnyBadge) {
+                        badgesContainer.textContent = 'No badges to display.';
+                    }
+                }).catch(err => {
+                    console.error('Badge load error:', err);
+                    badgesContainer.textContent = 'Failed to load badges.';
+                });
+
+            }).catch(error => {
+                console.error('Error loading user profile:', error);
+                usernameEl.textContent = 'Error loading profile';
+            });
+        }
+        
+        let lastPostSnapshot = null;
+        const postsPerPage = 12;
+
+        // Function to load posts for a user
+        async function loadPosts(uid, startAt = null) {
+            const postsContainer = document.getElementById('postsContainer');
+            const isOwner = currentUserUid === uid;
+            
+            // Show a spinner while loading
+            if (!startAt) {
+                postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
+            }
+
+            try {
+                let postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').limitToLast(postsPerPage);
+                if (startAt) {
+                    postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').endAt(startAt).limitToLast(postsPerPage + 1);
+                }
+
+                // Attach a listener to get real-time updates for posts
+                postsRef.on('value', snapshot => {
+                    const posts = [];
+                    snapshot.forEach(childSnap => {
+                        posts.push({
+                            postId: childSnap.key,
+                            ...childSnap.val()
+                        });
+                    });
+
+                    // Sort posts in descending order by createdAt
+                    posts.sort((a, b) => b.createdAt - a.createdAt);
+
+                    let postsToDisplay = posts;
+                    // If we have a startAt key, the first post is the last post from the previous page, so we remove it
+                    if (startAt && posts.length > postsPerPage) {
+                        postsToDisplay = posts.slice(1);
+                    }
+                    
+                    postsContainer.innerHTML = postsToDisplay.map(post => createPostTile(post, isOwner)).join('');
+                    
+                    // Attach click handlers to the new delete buttons
+                    document.querySelectorAll('.delete-post-btn').forEach(btn => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const postId = e.target.dataset.postId;
+                            deletePost(uid, postId);
+                        });
+                    });
+
+                    // Add "Load more" button if there are more posts
+                    const totalPostsCount = posts.length;
+                    if (totalPostsCount > postsPerPage && postsToDisplay.length === postsPerPage) {
+                        const loadMoreButton = document.createElement('button');
+                        loadMoreButton.textContent = 'Load More';
+                        loadMoreButton.className = 'w-full p-2 rounded-lg bg-gray-700 text-white font-bold hover:bg-gray-600 transition mt-4';
+                        loadMoreButton.addEventListener('click', () => {
+                            // Find the createdAt value of the last post to use as the starting point for the next query
+                            const lastPostCreatedAt = postsToDisplay[postsToDisplay.length - 1].createdAt;
+                            loadPosts(uid, lastPostCreatedAt - 1);
+                        });
+                        postsContainer.appendChild(loadMoreButton);
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load posts:', error);
+                postsContainer.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
+            }
+        }
+    </script>
+
+    <!--
+    TO FIX UPLOADING ISSUES, YOU NEED TO SET UP FIREBASE STORAGE SECURITY RULES.
+
+    1. Go to your Firebase project console.
+    2. Navigate to the "Storage" section.
+    3. Click on the "Rules" tab.
+    4. Replace the existing rules with the following code. This will secure your files and
+       allow logged-in users to upload to and read from their own folders.
+
+    ```
+    rules_version = '2';
+    service firebase.storage {
+      match /b/{bucket}/o {
+        match /user_posts/{uid}/{postId} {
+          allow read;
+          allow write: if request.auth != null && request.auth.uid == uid;
+        }
+      }
+    }
+    ```
+    -->
+
+</body>
+</html>
