@@ -1145,11 +1145,15 @@
         const userData = snap.val() || {};
 
         // === LAYOUT LOGIC ===
-        const isEligible = userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald;
-        if (isEligible) {
-            userPopupCard.classList.add('two-column');
-            popupPostsColumn.style.display = 'block';
+const isEligible = !!(
+  userData.codesUnlocked?.diamond ||
+  userData.codesUnlocked?.emerald ||
+  userData.codesUnlocked?.content
+);
 
+if (isEligible) {
+  popupCard.classList.add('two-column');
+  postsColumn.style.display = 'block';
             // Initial post container with navigation arrows
             popupPostsColumn.innerHTML = `
                 <h4 class="popup-section-title text-center text-gray-800">POSTS</h4>
