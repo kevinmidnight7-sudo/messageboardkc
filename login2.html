@@ -1,0 +1,3659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+  /* ────── Global & Layout ────── */
+  :root {
+    --glass-background: linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230, 236, 255, 0.38) 100%);
+    --glass-border: 1.5px solid rgba(255,255,255,0.22);
+    --glass-shadow: 0 8px 42px 0 #1e293b33, 0 2px 8px #b6c4ec29;
+    --glass-blur: blur(22px) saturate(1.5);
+    --button-glass-background: rgba(255,255,255,0.55);
+    --button-glass-border: 2.5px solid rgba(255,255,255,0.19);
+  }
+
+  html, body {
+    height:100%; margin:0; padding:0;
+    font-family:'Poppins',sans-serif; color:#222;
+    background:transparent;
+    display:flex; align-items:flex-start; justify-content:center;
+    min-height:100vh;
+    overflow-x: hidden; /* Prevent horizontal scrolling */
+  }
+  #main-wrapper {
+    width:100vw; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+    padding: 20px; /* Add overall padding */
+    box-sizing: border-box;
+  }
+  .kc-logo {
+    width:70px; margin:32px auto 0; display:block;
+  }
+  .kc-title {
+    font-size:2.3rem; font-weight:700; text-align:center;
+    margin:0 0 32px; color:#fff; letter-spacing:.02em;
+    text-shadow:0 2px 16px #2227,0 1px 2px #8885;
+  }
+  .flex-row {
+    display:flex; gap:2.5vw; align-items:flex-start; justify-content:center;
+    margin-bottom:32px;
+    width: 100%; /* Ensure flex row takes full width */
+    max-width: 1200px; /* Limit overall width for larger screens */
+  }
+  .card {
+    /* Frosted Glass Layout & Depth */
+    background: var(--glass-background);
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius:32px;
+    padding:36px;
+    min-width:350px;
+    max-width:390px;
+    min-height:520px;
+    display:flex; flex-direction:column; position:relative; margin-bottom:32px;
+    animation: glassCardIn 0.58s cubic-bezier(.7,1.2,.3,1.01); /* Micro-animation */
+  }
+  @keyframes glassCardIn {
+    from { opacity: 0; transform: translateY(38px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media(max-width:960px){
+    .flex-row{flex-direction:column;align-items:center;gap:32px;}
+    .card{width:95%;max-width:95vw;min-width:0;}
+  }
+
+  /* ────── Profile Card ────── */
+  .profile-title{font-size:1.3rem;font-weight:600;margin:0 0 16px; text-align: center;}
+  .profile-welcome{
+    font-size:1.08rem;font-weight:600;color:#17a589;
+    display:flex;align-items:center;gap:.38em;margin-bottom:.9rem;
+    word-break:break-word;
+    justify-content: center; /* Center welcome message */
+  }
+  .profile-counter{color:#669;font-size:1rem;margin-bottom:1.3rem; text-align: center;}
+  .profile-icon-bar{display:flex;gap:16px;margin-top:16px;justify-content:center; flex-wrap: wrap;}
+
+  /* Buttons & Icons (Glass/Neumorphic, Interactive) */
+  .profile-icon-btn{
+    background: var(--button-glass-background);
+    border-radius:50%;
+    border: var(--button-glass-border);
+    box-shadow: 0 2px 12px #21d0ff44; /* Default blue shadow */
+    transition: transform .18s, box-shadow .18s;
+    width: 58px; height: 58px; /* Larger size */
+    font-size:1.5rem;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    outline:none;
+  }
+  .profile-icon-btn:hover, .profile-icon-btn:focus {
+    transform: scale(1.13);
+    box-shadow: 0 6px 32px #24e07c99, 0 2px 18px #ffd966bb; /* Green/gold glow on hover */
+  }
+  .profile-icon-btn:active{transform:scale(.96);}
+
+  /* Specific button glows - adjusted to be more subtle and consistent with glass */
+  #avatarBtn:hover {
+    box-shadow: 0 6px 28px rgba(59,130,246,0.55), 0 2px 12px rgba(59,130,246,0.35);
+  }
+  #accountOptionsBtn:hover {
+    box-shadow: 0 6px 28px rgba(16,185,129,0.55), 0 2px 12px rgba(16,185,129,0.35);
+  }
+  #adminPortalBtn:hover {
+    box-shadow: 0 6px 28px rgba(139,92,246,0.55), 0 2px 12px rgba(139,92,246,0.35);
+  }
+  #editProfileBtn:hover {
+    box-shadow: 0 6px 28px rgba(236, 72, 153, 0.55), 0 2px 12px rgba(236, 72, 153, 0.35);
+  }
+  #codesBtn {
+    box-shadow: 0 2px 12px #ffd70044; /* Default gold shadow for codes */
+  }
+  #codesBtn:hover {
+    box-shadow: 0 6px 28px rgba(253, 214, 0, 0.55), 0 2px 12px rgba(253, 214, 0, 0.35);
+  }
+  .profile-icon-btn img {
+    width: 32px; /* Slightly larger icons */
+    height: 32px;
+    pointer-events: none;
+  }
+  #streakBtn img {
+    width: 32px;
+    height: 32px;
+    pointer-events: none;
+  }
+
+  /* === About Me Section === */
+  .about-me-box {
+    background: rgba(255,255,255,0.4);
+    backdrop-filter: blur(12px) saturate(1.6);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 18px;
+    position: relative;
+    color: #0f172a;
+    font-size: 1rem;
+    line-height: 1.25;
+    max-height: 120px;
+    overflow-y: auto;
+    transition: transform .18s ease, box-shadow .18s ease;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
+    word-break: break-word;
+    cursor:pointer;
+    border: 1px solid rgba(255,255,255,0.3); /* Soft border */
+  }
+  .about-me-box:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1), 0 3px 8px rgba(0,0,0,0.06);
+  }
+  .about-me-box .edit-icon {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity .18s;
+    pointer-events:none;
+  }
+  .about-me-box:hover .edit-icon {
+    opacity: 0.9;
+  }
+  .about-me-text {
+    white-space: pre-wrap;
+  }
+
+  /* Emoji button styling inside About Me modal */
+  .emoji-btn {
+    background: linear-gradient(90deg,#eab308 0%,#f59e0b 100%);
+    color:#0e1823;
+    border:none;
+    border-radius:12px;
+    font-size:1.4rem;
+    padding:6px 14px;
+    cursor:pointer;
+    box-shadow:0 3px 12px rgba(234,179,8,0.35);
+    transition:background .16s, box-shadow .16s, transform .12s;
+  }
+  .emoji-btn:hover {
+    background: linear-gradient(90deg,#d97706,#b45309);
+    box-shadow:0 5px 18px rgba(217,119,6,0.45);
+    transform: translateY(-2px);
+  }
+  /* Emoji picker container */
+  .emoji-picker {
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:center;
+    align-items:center;
+    max-width:260px;
+    padding:6px;
+  }
+  .emoji-picker span {
+    cursor:pointer;
+    font-size:1.4rem;
+    line-height:1;
+    transition: transform .15s;
+  }
+  .emoji-picker span:hover {
+    transform:scale(1.3);
+  }
+
+  /* ---------------------------------------------
+   * Badge creator modal (fancy) styling tweaks
+   * Make the panel match the light card aesthetic used
+   * throughout the rest of the application.  Switch
+   * from a dark, heavy palette to a soft, glassy
+   * appearance with subtle gradients, lighter fonts
+   * and spaced out form controls.  These rules
+   * override previous dark styles and should
+   * produce a modal that feels integrated with
+   * the surrounding UI rather than a bolt‑on.
+   *---------------------------------------------- */
+  #badgeCreatorModalFancy .carousel-content {
+    background: var(--glass-background) !important;
+    backdrop-filter: var(--glass-blur) !important;
+    border: var(--glass-border) !important;
+    box-shadow: var(--glass-shadow) !important;
+    border-radius: 24px !important;
+    color:#1c2431 !important;
+    padding-top:32px !important;
+    transform:none !important;
+    animation:none !important;
+  }
+  #badgeCreatorModalFancy h3 {
+    color:#1c2431;
+    margin-bottom:16px;
+  }
+  #badgeCreatorModalFancy label {
+    color:#34445b !important;
+    font-weight:600 !important;
+    display:block;
+    margin-bottom:4px;
+  }
+  #badgeCreatorModalFancy input[type="text"],
+  #badgeCreatorModalFancy input[type="color"] {
+    background:#fff !important;
+    border:1.5px solid #d0d7e2 !important;
+    border-radius:10px !important;
+    padding:8px 10px !important;
+    color:#1c2431 !important;
+    font-size:1.05rem !important;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05) inset !important;
+  }
+  #badgeCreatorModalFancy input[type="color"] {
+    cursor:pointer;
+    background:#fff !important;
+    border:1.5px solid #d0d7e2 !important;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05) inset !important;
+  }
+
+  /* Override any remaining generic input colour definitions inside the badge creator modal */
+  #badgeCreatorModalFancy input {
+    color:#1c2431 !important;
+  }
+
+  /* ======== New Badge Creator Wizard Styling ======== */
+  .badge-modal-header{
+    font-size:1.8rem;font-weight:700;margin-bottom:12px;text-align:center;
+    background:linear-gradient(90deg,#ffd54f,#ff9a9e,#a855f7,#3b82f6);
+    background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:badgeShimmer 5s linear infinite;
+  }
+  @keyframes badgeShimmer{
+    0%{background-position:0% 50%;}
+    100%{background-position:100% 50%;}
+  }
+  .badge-progress-bar{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:14px;font-size:.95rem;
+  }
+  .badge-progress-bar .badge-step{
+    flex:1;text-align:center;padding:6px 4px;border-bottom:2px solid #d1d5db;
+    position:relative;color:#6b7280;font-weight:600;
+  }
+  .badge-progress-bar .badge-step:after{
+    content:'➜';position:absolute;right:-12px;top:50%;transform:translateY(-50%);
+    color:#9ca3af;font-weight:400;
+  }
+  .badge-progress-bar .badge-step:last-child:after{content:'';}
+  .badge-progress-bar .badge-step.active{
+    color:#0f766e;border-color:#0f766e;
+  }
+  .badge-step-content{display:none;}
+  .badge-step-content.active{display:block;animation:fadeIn .3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .badge-preview-large{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    margin:10px auto 18px auto;padding:14px;border-radius:20px;
+    min-height:120px;font-size:2.4rem;font-weight:600;
+    box-shadow:0 4px 16px rgba(0,0,0,0.1),0 2px 6px rgba(0,0,0,0.05);
+  }
+  .badge-input{
+    width:100%;padding:8px 10px;border:none;border-bottom:2px solid #d1d5db;
+    font-size:1.1rem;outline:none;background:transparent;
+    transition:border-color .3s;
+  }
+  .badge-input:focus{border-color:#0ea5e9;}
+  .icon-carousel{
+    display:flex;overflow-x:auto;gap:12px;padding:8px 0;
+  }
+  .icon-carousel::-webkit-scrollbar{height:6px;}
+  .icon-carousel::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:3px;}
+  .icon-item{
+    flex:0 0 auto;background:#ffffff;border-radius:14px;padding:10px;
+    display:flex;align-items:center;justify-content:center;font-size:2rem;
+    cursor:pointer;transition:transform .2s,box-shadow .2s;
+    box-shadow:0 2px 8px rgba(0,0,0,0.05);
+  }
+  .icon-item:hover{transform:scale(1.15);box-shadow:0 4px 12px rgba(0,0,0,0.1);}  
+  .icon-item.selected{border:2px solid #0ea5e9;box-shadow:0 4px 12px rgba(14,165,233,0.3);}  
+  .gradient-options{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;
+  }
+  .gradient-box{
+    width:50px;height:50px;border-radius:10px;cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:transform .15s,box-shadow .15s;
+  }
+  .gradient-box:hover{transform:scale(1.1);box-shadow:0 4px 10px rgba(0,0,0,0.1);}  
+  .gradient-box.selected{outline:3px solid #0ea5e9;}
+  .color-swatches{
+    display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;
+  }
+  .color-swatch{
+    width:30px;height:30px;border-radius:50%;cursor:pointer;
+    border:2px solid transparent;transition:transform .15s,box-shadow .15s;
+  }
+  .color-swatch:hover{transform:scale(1.2);box-shadow:0 3px 8px rgba(0,0,0,0.15);}  
+  .color-swatch.selected{border-color:#0ea5e9;box-shadow:0 0 0 3px rgba(14,165,233,0.3);}  
+  .badge-action-buttons{
+    display:flex;justify-content:space-between;gap:10px;margin-top:20px;
+  }
+  .badge-action-buttons button{
+    flex:1;padding:10px 0;border:none;border-radius:12px;
+    font-size:1rem;font-weight:600;cursor:pointer;
+    transition:transform .18s,box-shadow .18s;
+  }
+  .badge-action-buttons button:hover{transform:scale(1.04);box-shadow:0 4px 12px rgba(0,0,0,0.08);}  
+  #badgeNextBtn, #profileNextBtn {background:linear-gradient(90deg,#a3e635,#65a30d);color:#0f2e0f;}  
+  #badgeBackBtn, #profileBackBtn {background:#e2e8f0;color:#1e293b;}  
+  #badgeCancelBtn{background:#f1f5f9;color:#1e293b;}  
+  #saveBadgeFancyBtn, #saveCustomizationBtn {
+    background:linear-gradient(90deg,#ffd54f,#ffb300);
+    color:#1f2937;
+    display:none;
+  }
+
+  /* ======== Improved Streak Rewards Styling ======== */
+  .streak-modal-title{
+    font-size:2.2rem;font-weight:700;color:#ff784f;text-align:center;
+    animation:pulseGlow 4s ease-in-out infinite;
+  }
+  @keyframes pulseGlow{
+    0%{text-shadow:0 0 6px #ff784f,0 0 12px #ff784f;}
+    50%{text-shadow:0 0 18px #ffaf55,0 0 30px #ffd700;}
+    100%{text-shadow:0 0 6px #ff784f,0 0 12px #ff784f;}
+  }
+  .streak-progress-bar{
+    height:12px;border-radius:12px;background:#2f3545;overflow:hidden;margin-bottom:20px;
+  }
+  .streak-progress-bar-fill{
+    height:100%;border-radius:12px;
+    background:linear-gradient(90deg,#fbbf24 0%,#fde047 50%,#34d399 100%);
+    width:0;transition:width .8s cubic-bezier(.4,0,.2,1);
+  }
+  .streak-progress{
+    display:flex;overflow-x:auto;gap:20px;padding-bottom:10px;
+  }
+  .streak-progress::-webkit-scrollbar{height:6px;}
+  .streak-progress::-webkit-scrollbar-thumb{background:#444;border-radius:3px;}
+  .streak-node{
+    min-width:100px;height:100px;border-radius:20px;
+    flex:0 0 auto;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;position:relative;
+    cursor:pointer;transition:transform .2s,box-shadow .2s;
+  }
+  .streak-node.unlocked{
+    background:linear-gradient(90deg,#fef3c7,#fbd38d);
+    box-shadow:0 0 16px rgba(251,191,36,0.6);
+  }
+  .streak-node.current{
+    background:linear-gradient(90deg,#fde68a,#f59e0b);
+    box-shadow:0 0 22px rgba(253,224,71,0.7);
+    animation:pulseBadge 1.2s infinite alternate;
+  }
+  @keyframes pulseBadge{
+    from{transform:scale(1);}to{transform:scale(1.08);}
+  }
+  .streak-node.locked{
+    background:linear-gradient(90deg,#374151,#1f2937);
+    color:#555;filter:grayscale(0.6);
+  }
+  .streak-node .reward-icon{
+    font-size:2.3rem;
+  }
+  .streak-node .node-label{
+    font-size:.8rem;margin-top:4px;font-weight:600;
+  }
+  .streak-node .node-status{
+    font-size:.65rem;margin-top:2px;
+  }
+  .streak-modal-desc{
+    margin-top:14px;color:#cbd5e1;font-size:.95rem;
+  }
+  .streak-footer{
+    margin-top:16px;color:#a7b8d2;font-size:.9rem;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy {
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:12px;
+    max-height:140px;
+    overflow-y:auto;
+    padding:4px 2px;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy > div {
+    background: #ffffff !important;
+    border-radius:14px !important;
+    padding:8px !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.07) !important;
+    cursor:pointer;
+    transition: background .15s, box-shadow .15s;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy > div.selected-icon {
+    background:#e7f1ff;
+    box-shadow:0 2px 8px rgba(59,130,246,0.4);
+  }
+  #badgeCreatorModalFancy #randGradientBtn {
+    background:linear-gradient(135deg,#d9d4ff 0%,#e0c7ff 100%);
+    border:none;
+    border-radius:10px;
+    padding:6px 14px;
+    color:#4c2e8d;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+    transition:box-shadow .15s, transform .15s;
+  }
+  #badgeCreatorModalFancy #randGradientBtn:hover {
+    transform:scale(1.05);
+    box-shadow:0 4px 12px rgba(0,0,0,0.12);
+  }
+  #badgeCreatorModalFancy #badgeLivePreview {
+    background:linear-gradient(90deg,#ffe066 30%, #e0aaff 100%) !important;
+    border-radius:18px !important;
+    min-height:80px;
+    padding:12px 18px;
+    box-shadow:0 2px 12px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04) inset !important;
+    color:#1c2431 !important;
+  }
+  #badgeCreatorModalFancy #saveBadgeFancyBtn {
+    background: linear-gradient(90deg,#ffd54f 0%,#ffb300 100%);
+    border:none;
+    border-radius:12px;
+    color:#1c2431;
+    padding:12px 0;
+    font-weight:700;
+    cursor:pointer;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow:0 3px 12px rgba(0,0,0,0.1);
+  }
+  #badgeCreatorModalFancy #saveBadgeFancyBtn:hover {
+    transform: translateY(-2px);
+    box-shadow:0 6px 18px rgba(0,0,0,0.15);
+  }
+
+  /* Override dark styles on the name input when editing a badge */
+  #badgeCreatorModalFancy input#badgeNameFancy {
+    background:#fff !important;
+    border:1.5px solid #d0d7e2 !important;
+    border-radius:10px !important;
+    color:#1c2431 !important;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05) inset !important;
+    padding:8px 10px !important;
+    width:80%;
+    margin:0 auto;
+  }
+
+  /* Arrange badge creator fields in a neat centred stack */
+  #badgeCreatorModalFancy .badge-field {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    width:100%;
+  }
+  #badgeCreatorModalFancy .badge-field label {
+    align-self:flex-start;
+    margin-left:10%;
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy {
+    justify:center;
+  }
+  #badgeCreatorModalFancy #gradCol1,
+  #badgeCreatorModalFancy #gradCol2 {
+    margin:0 4px;
+  }
+  #badgeCreatorModalFancy #badgeLivePreview {
+    margin:12px auto;
+    width:60%;
+  }
+  #badgeCreatorModalFancy #saveBadgeFancyBtn {
+    width:90%;
+    margin:0 auto;
+  }
+  /* text colour picker styling */
+  #badgeCreatorModalFancy #textColorPicker {
+    width:48px;
+    height:32px;
+    border-radius:8px;
+    border:1.5px solid #d0d7e2;
+    padding:0;
+  }
+
+  /* Edit and delete icons on custom badges */
+  .badge-item .edit-icon,
+  .badge-item .delete-icon {
+    position:absolute;
+    top:8px;
+    font-size:1.4em;
+    z-index:3;
+    user-select:none;
+  }
+  .badge-item .edit-icon {
+    right:10px;
+    color:rgba(59,130,246,0.92);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+    pointer-events:none;
+  }
+  .badge-item .delete-icon {
+    left:10px;
+    color:rgba(239,68,68,0.92);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+    cursor:pointer;
+  }
+
+  /* Account sidebar red button unified styling */
+  .sidebar .sidebar-btn-red {
+    font-size:1.12rem;
+    font-weight:600;
+    border:none;
+    border-radius:8px;
+    padding:12px;
+    width:100%;
+    background: linear-gradient(90deg,#f44336 0%, #e53935 100%);
+    color:#fff;
+    cursor:pointer;
+    transition: background .18s, box-shadow .18s;
+    box-shadow:0 2px 12px rgba(0,0,0,0.15);
+  }
+  .sidebar .sidebar-btn-red:hover {
+    background: linear-gradient(90deg,#e53935 0%, #d32f2f 100%);
+    box-shadow:0 3px 16px rgba(0,0,0,0.2);
+  }
+
+  /* Adjust spacing between progress bar and reward nodes to avoid overlap */
+  .streak-progress {
+    margin-top:20px;
+    margin-bottom:26px;
+  }
+  /* Profile Avatar & Banner (Modern, Dynamic) */
+  #avatarImg{
+    width:104px; height:104px; /* Large avatar */
+    border-radius:50%;
+    margin: -52px auto 12px auto; /* Overlap banner */
+    position: relative;
+    z-index: 2;
+    border: 4px solid #fff; /* White border */
+    box-shadow: 0 0 24px 6px #20c3ff55, 0 2px 18px #ffe06688; /* Strong drop-shadow, initial glow */
+    animation: avatarPulse 2.8s infinite alternate; /* Animated glow */
+    display: block; /* Ensure it's always block for centering */
+    object-fit: cover;
+  }
+  @keyframes avatarPulse {
+    0% { box-shadow: 0 0 24px 6px #20c3ff55; }
+    100% { box-shadow: 0 0 36px 14px #ffe066; }
+  }
+
+  /* ────── Badges Card ────── */
+  .badges-header{
+    font-size:1.55rem;font-weight:700;color:#e6b300;
+    margin:0 0 8px;text-align:center;
+    text-shadow:0 2px 20px #fff5,0 1px 2px #fb0a;
+  }
+  .badges-sub{
+    font-style:italic;color:#536082;margin-bottom:26px;
+    text-align:center;font-size:1.1rem;
+  }
+  .badges-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:26px;
+  }
+  /* Badges Panel (Modern Showcase, 3D Hover) */
+  .badge-item{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:20px; /* Softer rounded corners */
+    height:112px;
+    background:rgba(255,255,255,0.42); /* Glassy background */
+    backdrop-filter: blur(10px); /* Blur for glass effect */
+    border: 1px solid rgba(255,255,255,0.18); /* Soft border */
+    box-shadow:0 3px 18px #36ffd555; /* Soft shadow, default teal glow */
+    cursor:pointer;
+    position:relative;
+    transition:transform .15s, box-shadow .15s;
+    font-size:1.03rem;
+    perspective:600px; /* For 3D hover */
+  }
+  .badge-item.locked{
+    filter:grayscale(0.78) blur(0.5px); /* Glassy but grayscale */
+    opacity:0.45;
+    background:rgba(255,255,255,0.2); /* Lighter locked glass */
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Subtle shadow for locked */
+  }
+  .badge-item .lock-icon{
+    position:absolute;top:12px;right:18px;
+    font-size:1.4rem;color:#999;opacity:.9;
+  }
+  .badge-item .badge-mult{
+    position:absolute;top:12px;right:18px;
+    background:#fff;color:#333;border-radius:1.2em;
+    min-width:2em;min-height:1.8em;font-weight:700;font-size:1.1em;
+    box-shadow:0 1px 8px #9992;display:flex;align-items:center;justify-content:center;
+    padding:0 .55em;z-index:10;border:2px solid #fff;
+  }
+  .badge-item img{width:36px;height:36px;margin-bottom:5px;}
+  .badge-item .badge-label{
+    font-weight:600;font-size:1.07rem;letter-spacing:.01em;
+    margin-top:2px;text-align:center;
+  }
+  /* Add a hover glow and slight lift to all unlocked badge items */
+  .badge-item:not(.locked):hover {
+    transform: translateY(-4px) scale(1.09) rotate(-2deg); /* Rise and slight rotate */
+    box-shadow: 0 8px 32px #1ee57c66; /* Stronger default glow */
+  }
+
+  /* Colour-coded hover glows for core badges */
+  .badge-item.offence:not(.locked):hover {
+    box-shadow:0 8px 32px rgba(255,64,64,0.8),0 4px 18px rgba(255,64,64,0.55) !important; /* Red glow */
+  }
+  .badge-item.defence:not(.locked):hover {
+    box-shadow:0 8px 32px rgba(59,130,246,0.8),0 44px 18px rgba(59,130,246,0.55) !important; /* Blue glow */
+  }
+  .badge-item.overall:not(.locked):hover {
+    box-shadow:0 8px 32px rgba(234,179,8,0.8),0 4px 18px rgba(234,179,8,0.55) !important; /* Gold glow */
+  }
+
+  /* ────── KC Alert ────── */
+  .kc-alert{
+    position:fixed;top:32px;left:50%;transform:translateX(-50%);
+    background:#fff;color:#232f38;font-weight:600;font-size:1.13rem;
+    padding:13px 32px;border-radius:15px;box-shadow:0 2px 20px #2263;
+    z-index:2000;min-width:160px;max-width:96vw;
+    opacity:1;transition:opacity .16s;display:flex;align-items:center;gap:10px;
+  }
+  .kc-alert.hide{opacity:0;pointer-events:none;}
+
+  /* ────── Sidebars ────── */
+  .sidebar{
+    position:fixed;top:0;right:0;height:100%;width:340px;max-width:94vw;
+    background:var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border-left: var(--glass-border); /* Border on left side */
+    box-shadow:-4px 0 24px #0003;transform:translateX(110%);
+    transition:transform .28s cubic-bezier(.72,0,.26,1.03);
+    z-index:2100;padding:32px 18px 24px 30px;box-sizing:border-box;
+    display:flex;flex-direction:column;gap:16px;
+  }
+  .sidebar.open{transform:translateX(0);}
+  .sidebar h2{font-size:1.25rem;font-weight:700;margin:0 0 12px;}
+  .sidebar label{display:block;font-size:1.07rem;margin:0 0 4px 2px;}
+  .sidebar input,.sidebar select{
+    width:100%;margin:0 0 12px;font-size:1.05rem;
+    border-radius:8px;border:1px solid rgba(255,255,255,0.3); /* Softer border */
+    background:rgba(255,255,255,0.2); /* Semi-transparent background */
+    padding:8px 10px;outline:none;transition:border .16s;color:#253047;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05); /* Inner shadow */
+  }
+  .sidebar input:focus{border:1.5px solid #3899ff; box-shadow: 0 0 0 2px rgba(56,153,255,0.25);}
+  .sidebar .sidebar-btn{
+    font-size:1.12rem;font-weight:600;border:none;border-radius:8px;
+    padding:10px 0;margin-bottom:8px;width:100%;
+    background:linear-gradient(90deg,#13ce7c 0%,#44b0ef 100%);
+    color:#fff;cursor:pointer;transition:background .13s,box-shadow .13s;
+    box-shadow:0 2px 10px #6db8fb22;
+  }
+  .sidebar .sidebar-btn:hover,.sidebar .sidebar-btn:focus{
+    background:linear-gradient(90deg,#08d763 0%,#4183f8 100%);
+    box-shadow:0 3px 16px #338be955;
+  }
+  .sidebar .sidebar-btn-red{
+      background: linear-gradient(90deg,#ef4444 0%,#dc2626 100%);
+      color:#fff;
+      margin-top:6px;
+      border:none;
+      font-weight:600;
+      padding:10px 0;
+      width:100%;
+      border-radius:8px;
+      box-shadow:0 2px 10px rgba(220,38,38,0.35);
+      transition:background .18s, box-shadow .18s, transform .13s;
+  }
+  .sidebar .sidebar-btn-red:hover{
+      background: linear-gradient(90deg,#dc2626 0%,#b91c1c 100%);
+      box-shadow:0 4px 16px rgba(220,38,38,0.45);
+      transform:translateY(-2px);
+  }
+  .sidebar .close-btn{
+    position:absolute;top:22px;right:26px;
+    background:#f44336;color:#fff;border:none;
+    padding:7px 26px;border-radius:9px;font-weight:600;
+    cursor:pointer;box-shadow:0 2px 10px #dc535555;
+    transition:background .13s;
+  }
+  .sidebar .close-btn:hover{background:#d32f2f;}
+  .sidebar .delete-warning{
+    color:#e53935;font-weight:600;text-align:center;margin:16px 0 8px;
+    font-size:1.1rem;
+  }
+  .admin-users-list{
+    background:#f6f7fb;border-radius:9px;box-shadow:0 1px 8px #dde3ee88;
+    margin:0 0 16px;padding:6px 2px 6px 12px;max-height:240px;overflow-y:auto;
+    font-size:.99rem;
+  }
+  .admin-users-list ul{margin:0;padding:0;list-style:none;}
+  .admin-users-list li{
+    padding:6px 0;border-bottom:1px solid #eee;
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .admin-badge-list{display:flex;gap:7px;}
+  .admin-badge-count{
+    background:#eee;color:#234;font-weight:700;font-size:1em;
+    border-radius:9px;padding:2px 8px;margin-left:3px;
+    box-shadow:0 1px 3px #2222;
+  }
+
+  /* ────── Forms & Confirm ────── */
+  #authForms{display:flex;flex-direction:column;gap:1.3rem;align-items:center;min-width:320px;margin-top:18px;}
+  .form-section{display:flex;flex-direction:column;gap:.85rem; width: 100%;} /* Ensure forms take full width */
+  .form-section input{
+    padding:.75rem .9rem;border:none;border-radius:7px;
+    background:rgba(255,255,255,0.3); /* Semi-transparent */
+    color:#222;font-size:1.04rem;
+    outline:none;transition:background .18s;border:1.2px solid rgba(255,255,255,0.2);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .form-section input:focus{background:rgba(255,255,255,0.5);border-color:#53c4fa; box-shadow: 0 0 0 2px rgba(83,196,250,0.25), inset 0 1px 3px rgba(0,0,0,0.05);}
+  .form-section .form-btn{
+    padding:.68rem;border:none;border-radius:7px;
+    font-size:1.08rem;font-weight:700;color:#fff;
+    cursor:pointer;transition:background .18s;
+    background:linear-gradient(90deg,#1ee57c,#50b2fa);
+    box-shadow: 0 4px 12px rgba(30,229,124,0.3);
+  }
+
+  /* Give the avatar upload button a gold gradient like other primary actions */
+  #uploadAvatarModal #uploadAvatarBtn {
+    background: linear-gradient(90deg,#ffd54f 0%,#ffb300 100%);
+    color:#1c2431;
+    font-weight:700;
+    box-shadow:0 2px 12px rgba(0,0,0,0.1);
+    border-radius:12px;
+  }
+  #uploadAvatarModal #uploadAvatarBtn:hover {
+    background: linear-gradient(90deg,#ffb300 0%,#ff8f00 100%);
+    transform: translateY(-2px);
+    box-shadow:0 4px 16px rgba(0,0,0,0.15);
+  }
+  .form-section .form-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(30,229,124,0.4);}
+  .switch-link{font-size:.97rem;color:#318be9;cursor:pointer;text-decoration:underline;text-align:center;}
+
+  .confirm-overlay{
+    position:fixed;top:0;left:0;width:100vw;height:100vh;
+    background:rgba(45,65,80,.5);display:flex;align-items:center;justify-content:center;
+    z-index:5000;
+    backdrop-filter: blur(8px); /* Blur overlay */
+  }
+  .confirm-box{
+    background:var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow:var(--glass-shadow);
+    color:#1c2228;font-size:1.14rem;
+    padding:28px 42px 18px;border-radius:18px;
+    text-align:center;min-width:290px;
+  }
+  .confirm-box .confirm-btn{
+    margin:10px 8px 0;border:none;padding:10px 26px;border-radius:8px;
+    font-size:1.09rem;font-weight:600;cursor:pointer;
+    background:linear-gradient(90deg,#1ee57c,#50b2fa);color:#fff;
+    transition:background .14s;
+  }
+  .confirm-box .confirm-btn:hover{background:linear-gradient(90deg,#19df7e,#30a9f8);}  
+  .confirm-box .confirm-btn.cancel{background:#eee;color:#234;box-shadow:none;}
+
+  /* ========== Apple-Like Avatar Carousel ========== */
+  .apple-modal {
+    position:fixed; top:0; left:0; width:100vw; height:100vh;
+    background:rgba(30,38,45,.45);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2000; opacity:0; pointer-events:none; transition:opacity .26s;
+    backdrop-filter: blur(8px); /* Blur modal background */
+  }
+  .apple-modal.open { opacity:1; pointer-events:auto; }
+
+  .carousel-content {
+    background:var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow:var(--glass-shadow);
+    border-radius:28px;
+    padding:28px 32px 30px 32px;
+    position:relative;
+    min-width:330px;
+    min-height:230px;
+    max-width:98vw;
+  }
+
+  .carousel-content h3 {
+    font-size:1.35rem;
+    font-weight:700;
+    margin:0 0 24px 0;
+    letter-spacing:.01em;
+    color:#151d25;
+  }
+
+  /* Lighten the heading inside the badge creator modal */
+  #badgeCreatorModalFancy .carousel-content h3 {
+    color:#f3f4f6;
+    text-shadow:0 2px 4px rgba(0,0,0,0.5);
+  }
+
+  .carousel-arrows {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    width:100%;
+    margin-top:8px;
+  }
+
+  .arrow-btn {
+    background:var(--button-glass-background); /* Glass button */
+    border:var(--button-glass-border);
+    border-radius:50%;
+    width:58px; height:58px; /* Larger size */
+    font-size:1.8rem; color:#3899ff;
+    box-shadow:0 2px 12px #21d0ff44; /* Blue shadow */
+    cursor:pointer; transition:transform .18s, box-shadow .18s;
+    outline:none;
+    z-index:2;
+    user-select:none;
+  }
+  .arrow-btn:hover {
+    transform: scale(1.13);
+    box-shadow: 0 6px 32px #24e07c99, 0 2px 18px #ffd966bb;
+  }
+  .arrow-btn:active { transform:scale(.92); }
+
+  .avatar-carousel {
+    display:flex;
+    overflow-x:auto;
+    gap:18px;
+    padding:14px 10px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width:thin;
+    background:rgba(235,240,245,0.45);
+    border-radius:20px;
+    min-width:240px;
+    max-width:calc(85vw - 120px);
+  }
+  .avatar-carousel::-webkit-scrollbar {
+    height:9px; background:rgba(220,220,250,0.08);
+  }
+  .avatar-carousel::-webkit-scrollbar-thumb {
+    background:rgba(140,180,255,0.28); border-radius:12px;
+  }
+  .avatar-carousel .avatar-item {
+    scroll-snap-align:center;
+    flex:0 0 92px;
+    width:92px; height:92px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    border-radius:50%;
+    background:rgba(255,255,255,0.66);
+    box-shadow:0 3px 18px #a0c8fa19,0 1.5px 8px #3fa8e022;
+    position:relative;
+    transition:transform .19s cubic-bezier(.5,1.7,.7,1.01), box-shadow .15s;
+  }
+  .avatar-carousel .avatar-item img {
+    width:76px; height:76px; object-fit:cover; border-radius:50%;
+    box-shadow:0 2px 10px #b0cdfc12;
+    transition:box-shadow .18s, border .16s;
+    border:3px solid transparent;
+    background:#f6f9fc;
+  }
+  .avatar-carousel .avatar-item:hover,
+  .avatar-carousel .avatar-item.selected {
+    transform:scale(1.14);
+    box-shadow:0 8px 32px #b3deff99,0 1.5px 18px #8dc8ff45;
+    z-index:1;
+  }
+  .avatar-carousel .avatar-item.selected img {
+    border-color:#3899ff;
+    box-shadow:0 2px 18px #7cdbfa44;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 18px;
+    right: 22px;
+    background: var(--button-glass-background); /* Glass button */
+    border: var(--button-glass-border);
+    color: #232f38;
+    padding: 8px 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1.04rem;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #dbeafe44;
+    transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+    outline: none;
+    z-index: 2;
+  }
+  .close-btn:hover, .close-btn:focus {
+    background: #f44336;
+    color: #fff;
+    box-shadow: 0 4px 16px #f4433644;
+  }
+  .avatar-upload-unlocked {
+    /* redesigned upload-your-own badge: gold gradient circle with plus */
+    background: linear-gradient(135deg,#ffd24b 0%,#fbc02d 45%,#ffe066 100%) !important;
+    color:#fff !important;
+    border: 2.5px solid #fffbe7;
+    box-shadow:0 0 22px #ffe06699, 0 2px 8px #ffd96666;
+    font-weight:700;
+    position:relative;
+  }
+  .avatar-upload-unlocked span.plus-icon {
+    font-size:2.6em;
+    color:#fff;
+  }
+  .avatar-upload-unlocked div.upload-label {
+    font-size:0.68em;
+    margin-top:4px;
+    color:#fff;
+  }
+  @keyframes shine {
+    0% { box-shadow:0 0 20px #ffe06677,0 2px 8px #e0aaff33; }
+    60% { box-shadow:0 0 50px #ffe066cc,0 2px 14px #e0aaff66; }
+    100% { box-shadow:0 0 20px #ffe06677,0 2px 8px #e0aaff33; }
+  }
+
+  /* --- Fancy Streak Button (fixed in profile card) --- */
+  #streakBtn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 5;
+    background: linear-gradient(100deg, #fff3 60%, #ffcc40 100%);
+    border: 2.5px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 3px 18px #ffdf5299, 0 1.5px 8px #ffa500cc;
+    width: 53px; height: 53px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.1rem;
+    cursor: pointer;
+    transition: box-shadow .22s, transform .17s, background .15s;
+    animation: streak-glow 1.9s infinite alternate;
+  }
+  #streakBtn:hover {
+    box-shadow: 0 6px 34px #ffbb0099, 0 1.5px 16px #ffe271cc;
+    transform: scale(1.11) rotate(-7deg);
+    background: linear-gradient(90deg, #ffcc40 0%, #fff3 100%);
+  }
+  @keyframes streak-glow {
+    0% { box-shadow: 0 3px 18px #ffdf5277; }
+    100% { box-shadow: 0 6px 34px #ffd700bb, 0 1.5px 16px #ffe271; }
+  }
+
+  /* --- Streak Modal (futuristic, 3D pop) --- */
+  #streakRewardsModal {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(15,18,24,0.84);
+    z-index: 4000; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity .3s;
+    backdrop-filter: blur(12px); /* Blur overlay */
+  }
+  #streakRewardsModal.open { opacity: 1; pointer-events: auto; }
+  .streak-modal-content {
+    background: linear-gradient(135deg, #191c23 90%, #232b39 100%);
+    border-radius: 2.2em;
+    box-shadow: 0 12px 50px #0008, 0 4px 32px #ffe08344;
+    padding: 40px 50px 34px 50px;
+    min-width: 390px; max-width: 92vw; text-align: center;
+    transform: scale(0.97) rotateY(12deg);
+    animation: streak-pop-in .6s cubic-bezier(.6,2,.5,1.1) 1;
+    border: 1.5px solid rgba(255,255,255,0.1); /* Subtle border */
+  }
+  @keyframes streak-pop-in {
+    from { transform: scale(0.7) rotateY(50deg); opacity: 0; }
+    to   { transform: scale(0.97) rotateY(12deg); opacity: 1; }
+  }
+  .streak-modal-title {
+    font-size: 2.1rem; font-weight: 700; color: #ffd000;
+    letter-spacing: 0.01em; margin-bottom: 24px;
+    text-shadow: 0 2px 16px #ffd50090, 0 1px 2px #fff7;
+  }
+  .streak-progress {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 1.6rem; margin-bottom: 22px; margin-top: 12px;
+  }
+  .streak-node {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #242832 70%, #323b4d 100%);
+    box-shadow: 0 2px 12px #0004;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; font-size: 1.6rem; position: relative;
+    border: 3px solid #3e485a;
+    transition: box-shadow .21s, border .14s;
+    overflow:hidden;
+    text-align:center;
+  }
+  .streak-node.current {
+    background: linear-gradient(90deg, #fffd7c 10%, #ffd000 100%);
+    box-shadow: 0 0 18px #ffd500cc, 0 2px 18px #ffd70055;
+    border-color: #ffd70099;
+    animation: streak-current-glow 1.3s infinite alternate;
+    /* When a node is current, switch the label colour to dark so it remains readable
+       on the bright yellow background */
+    color: #3b3200;
+  }
+  @keyframes streak-current-glow {
+    0% { box-shadow: 0 0 20px #ffe47c66; }
+    100% { box-shadow: 0 0 35px #ffe47cbb; }
+  }
+  .streak-node .node-label {
+    font-size: .88em;
+    font-weight: 600;
+    color: #ffd000;
+    text-shadow: 0 1px 4px #0008;
+    margin-top: 0;
+    width:100%;
+    text-align:center;
+    line-height:1;
+  }
+  .streak-node.locked {
+    opacity: 0.42;
+    filter: grayscale(1) blur(.5px);
+  }
+  .streak-modal-close {
+    position: absolute; top: 25px; right: 36px; font-size: 1.7rem;
+    background: none; border: none; color: #fffde0;
+    cursor: pointer; opacity: .68; transition: opacity .14s;
+  }
+  .streak-modal-close:hover { opacity: 1; color: #ffd000; }
+
+  .streak-modal-desc {
+    margin-top: 18px;
+    font-size: 1.15rem;
+    color: #fff9c0;
+    text-shadow: 0 2px 12px #3336;
+    letter-spacing: .01em;
+  }
+
+  .streak-progress-bar {
+    width: 90%; height: 10px; background: #444;
+    margin: 0 auto 18px auto; border-radius: 6px; position: relative;
+    overflow: hidden;
+  }
+  .streak-progress-bar-fill {
+    height: 100%; border-radius: 6px;
+    background: linear-gradient(90deg, #ffd700 20%, #ffbb00 100%);
+    transition: width .5s cubic-bezier(.7,1.5,.3,1);
+  }
+
+  .streak-reward-mini {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 1.01rem; background: #fffbdb26; color: #ffd000;
+    border-radius: 9px; padding: 4px 11px; margin: 0 6px 0 0;
+    box-shadow: 0 1px 8px #ffd50022;
+    font-weight: 600;
+  }
+
+  /* === Upload Modal Enhancements === */
+  #uploadAvatarModal .carousel-content {
+    background: var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius:28px;
+    transform: rotateX(-8deg) scale(0.92);
+    animation: modal-pop-in .7s cubic-bezier(.65,1.9,.35,1) forwards;
+  }
+  @keyframes modal-pop-in {
+    from { transform: rotateX(-50deg) scale(0.7); opacity: 0; }
+    to { transform: rotateX(-8deg) scale(0.92); opacity: 1; }
+  }
+  /* Primary action button within the upload avatar modal */
+  #uploadAvatarModal .form-btn {
+    background: linear-gradient(90deg,#eab308 0%,#f59e0b 100%);
+    box-shadow:0 4px 12px rgba(234,179,8,0.35);
+    font-weight:700;
+    border:none;
+    border-radius:14px;
+    color:#0e1823;
+    padding:0.75rem 1.5rem;
+    transition:background .18s, box-shadow .18s, transform .12s;
+  }
+  #uploadAvatarModal .form-btn:hover {
+    background: linear-gradient(90deg,#d97706,#b45309);
+    box-shadow:0 6px 20px rgba(217,119,6,0.45);
+    transform: translateY(-2px);
+  }
+  #uploadAvatarModal input[type="file"] {
+    display:none;
+  }
+  /* custom styled file input */
+  .upload-file-label {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    background: linear-gradient(90deg,#3b82f6 0%,#6366f1 100%);
+    color:#f9fafb;
+    padding:12px 24px;
+    border-radius:16px;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.08);
+    transition:background .18s,box-shadow .18s,transform .12s;
+  }
+  .upload-file-label:hover {
+    transform:translateY(-2px);
+    box-shadow:0 8px 22px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,255,255,0.1);
+  }
+  .upload-preview {
+    margin-top:12px;
+    font-size:0.92rem;
+    color:#94a3b8;
+    text-align:center;
+  }
+
+  /* === Fancy Badge Creator Modal Enhancements === */
+  #badgeCreatorModalFancy .carousel-content {
+    background: var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius:28px;
+    transform: rotateX(-8deg) scale(0.94);
+    animation: modal-pop-in .7s cubic-bezier(.65,1.9,.35,1) forwards;
+  }
+  #badgeCreatorModalFancy input#badgeNameFancy {
+    padding:10px 14px;
+    width:80%;
+    font-size:1.12em;
+    margin:6px 0 14px;
+    border-radius:12px;
+    border:1.5px solid rgba(255,255,255,0.3); /* Glassy border */
+    background:rgba(255,255,255,0.2); /* Glassy background */
+    color:#e5e7eb;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.1);
+    transition:border .18s, box-shadow .18s, background .18s;
+  }
+  #badgeCreatorModalFancy input#badgeNameFancy:focus {
+    border-color:#6366f1;
+    box-shadow:0 0 0 3px rgba(99,102,241,0.35);
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy div {
+    background:rgba(255,255,255,0.3); /* Glassy icon background */
+    border-radius:14px;
+    padding:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:48px; height:48px;
+    font-size:2.1em;
+    cursor:pointer;
+    transition:background .18s, transform .15s, box-shadow .15s;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,0.05), 0 2px 4px rgba(0,0,0,0.1);
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy div:hover {
+    transform:translateY(-2px);
+    box-shadow:inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.2);
+  }
+  /* Highlight selected icon in badge creator */
+  #badgeCreatorModalFancy #badgeIconRowFancy div.selected-icon {
+    background:rgba(255,255,255,0.5); /* More opaque when selected */
+    box-shadow:0 0 0 3px rgba(99,102,241,0.6), inset 0 1px 3px rgba(255,255,255,0.1);
+  }
+  #badgeCreatorModalFancy #badgeIconRowFancy div[style*="background: #e3e8ff"] {
+    /* highlight selected icon differently */
+    box-shadow:0 0 0 3px rgba(99,102,241,0.6), inset 0 1px 3px rgba(255,255,255,0.1);
+  }
+
+  /* Ensure the icon container wraps its items neatly and adds vertical scroll if needed */
+  #badgeCreatorModalFancy #badgeIconRowFancy {
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    justify-content:center;
+    max-height:140px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:4px;
+  }
+  #badgeCreatorModalFancy #gradCol1,
+  #badgeCreatorModalFancy #gradCol2 {
+    width:46px;
+    height:36px;
+    border:1px solid rgba(255,255,255,0.3); /* Glassy border */
+    border-radius:8px;
+    box-shadow:inset 0 1px 2px rgba(255,255,255,0.08), 0 2px 4px rgba(0,0,0,0.1);
+    cursor:pointer;
+  }
+  #badgeCreatorModalFancy #gradCol1 { margin-right:6px; }
+  #badgeCreatorModalFancy #randGradientBtn {
+    background: linear-gradient(90deg,#6366f1,#8b5cf6);
+    color:#f3f4f6;
+    border:none;
+    border-radius:10px;
+    padding:6px 12px;
+    cursor:pointer;
+    transition:background .18s, box-shadow .18s;
+  }
+  #badgeCreatorModalFancy #randGradientBtn:hover {
+    background: linear-gradient(90deg,#4f46e5,#7c3aed);
+    box-shadow:0 3px 8px rgba(99,102,241,0.4);
+  }
+  #badgeCreatorModalFancy #badgeLivePreview {
+    height:80px;
+    width:170px;
+    border-radius:20px;
+    box-shadow:inset 0 1px 3px rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.2);
+    font-size:1.1em;
+  }
+
+  /* Improve readability of labels and inputs inside the badge creator modal */
+  #badgeCreatorModalFancy label {
+    color:#e5e7eb;
+    font-weight:600;
+    margin-bottom:2px;
+  }
+  #badgeCreatorModalFancy input {
+    color:#f3f4f6;
+  }
+  #badgeCreatorModalFancy .badge-field {
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  #badgeCreatorModalFancy .form-btn {
+    width:90%;
+    margin:12px auto 0 auto;
+    background: linear-gradient(90deg,#f0c808,#fcd34d);
+    box-shadow:0 4px 12px rgba(255,206,74,0.45);
+    border-radius:12px;
+    padding:10px;
+    font-weight:700;
+    transition:background .18s, box-shadow .18s, transform .13s;
+    display:block;
+  }
+  #badgeCreatorModalFancy .form-btn:hover {
+    background: linear-gradient(90deg,#eeb304,#f4c21c);
+    box-shadow:0 6px 18px rgba(255,206,74,0.55);
+    transform: translateY(-2px);
+  }
+  /* Edit pencil styling for custom badges */
+  .edit-icon {
+    pointer-events:none;
+    font-size:1.3em;
+    color:rgba(255,255,255,0.85);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+  .delete-icon {
+    font-size:1.3em;
+    color:rgba(239,68,68,0.9);
+    text-shadow:0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  /* Ensure upload tile uses gold gradient instead of default avatar item background */
+  .avatar-carousel .avatar-upload-unlocked {
+    background: linear-gradient(135deg,#ffd24b 0%,#fbc02d 45%,#ffe066 100%) !important;
+    color:#fff !important;
+    border: 2.5px solid #fffbe7;
+    box-shadow:0 0 22px #ffe06699, 0 2px 8px #ffd96666;
+    font-weight:700;
+  }
+
+  /* ======== Username Modal Styling ======== */
+  #usernameModal .carousel-content {
+    background: var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius:28px;
+    transform: rotateX(-8deg) scale(0.92);
+    animation: modal-pop-in .7s cubic-bezier(.65,1.9,.35,1) forwards;
+  }
+  #usernameModal .carousel-content h3 {
+  color: #fff;
+  text-shadow: 0 0 14px #fff, 0 2px 12px #1992d4, 0 1px 2px #2228;
+}
+
+  #usernameModal input {
+    padding:10px 14px;
+    width:80%;
+    font-size:1.12em;
+    margin:8px 0 16px;
+    border-radius:12px;
+    border:1.5px solid rgba(255,255,255,0.3); /* Glassy border */
+    background:rgba(255,255,255,0.2); /* Glassy background */
+    color:#e5e7eb;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.1);
+    transition:border .18s, box-shadow .18s, background .18s;
+  }
+  #usernameModal input:focus {
+    border-color:#6366f1;
+    box-shadow:0 0 0 3px rgba(99,102,241,0.35);
+  }
+  #usernameModal .form-btn {
+    background: linear-gradient(90deg,#eab308 0%,#f59e0b 100%);
+    box-shadow:0 4px 12px rgba(234,179,8,0.35);
+    color:#0e1823;
+    border:none;
+    border-radius:14px;
+    padding:10px;
+    font-weight:700;
+    transition:background .18s, box-shadow .18s, transform .12s;
+    width:80%;
+    margin-bottom:8px;
+  }
+  #usernameModal .form-btn:hover {
+    background: linear-gradient(90deg,#d97706,#b45309);
+    box-shadow:0 6px 20px rgba(217,119,6,0.45);
+    transform: translateY(-2px);
+  }
+  /* Hover pencil styling for username in welcome message */
+  .profile-welcome .username-container {
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    cursor:pointer;
+    position:relative;
+  }
+  .profile-welcome .username-container .username-text {
+    color:#1992d4;
+  }
+  .profile-welcome .username-container .edit-icon {
+    display:none;
+    font-size:1rem;
+    margin-left:4px;
+    color:#17a589;
+  }
+  .profile-welcome .username-container:hover .edit-icon {
+    display:inline-block;
+  }
+.profile-icon-btn img, #streakBtn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: none;
+}
+.profile-icon-btn, #streakBtn {
+  width: 55px;
+  height: 55px;
+  padding: 0;
+  margin: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  box-shadow: 0 2px 10px #3332;
+  border: none;
+  cursor: pointer;
+}
+
+/* ======== TASK 1: New "Enter Your Code" Modal UI ======== */
+#codesModal.apple-modal {
+    background: rgba(15, 23, 42, 0.6); /* Soft dark overlay */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+#codesModal .carousel-content {
+    background: rgba(255, 255, 255, 0.85); /* Frosted glass */
+    backdrop-filter: blur(15px) saturate(1.5);
+    -webkit-backdrop-filter: blur(15px) saturate(1.5);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: code-modal-pop-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+@keyframes code-modal-pop-in {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+#codesModal h3 {
+    color: #1e293b;
+    font-weight: 700;
+}
+#codesModal h3 img {
+    animation: icon-pulse 2.5s infinite ease-in-out;
+}
+@keyframes icon-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+}
+#codesModal #codeInput {
+    background: #f1f5f9;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    color: #0f172a;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    transition: all 0.2s ease-in-out;
+}
+#codesModal #codeInput::placeholder {
+    color: #94a3b8;
+}
+#codesModal #codeInput:hover {
+    background: #e2e8f0;
+}
+#codesModal #codeInput:focus {
+    background: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), inset 0 2px 4px rgba(0,0,0,0.06);
+}
+#codesModal #submitCodeBtn {
+    background: linear-gradient(45deg, #22c55e, #10b981);
+    border-radius: 999px; /* Capsule shape */
+    color: white;
+    font-weight: 700;
+    border: none;
+    padding: 12px 0;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+    transition: all 0.2s ease-in-out;
+}
+#codesModal #submitCodeBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+}
+#codesModal #closeCodesModal {
+    background: rgba(0,0,0,0.1);
+    color: #475569;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    padding: 0;
+    display: flex; align-items: center; justify-content: center;
+    top: 16px; right: 16px;
+    box-shadow: none;
+}
+#codesModal #closeCodesModal:hover {
+    background: rgba(0,0,0,0.2);
+    color: #1e293b;
+}
+/* Feedback animations */
+@keyframes shake-horizontal {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+#codeInput.error {
+    animation: shake-horizontal 0.5s ease-in-out;
+    border-color: #ef4444;
+    background: #fef2f2;
+}
+#codeInput.success {
+    border-color: #22c55e;
+    background: #f0fdf4;
+}
+#codeMsg.success { color: #16a34a; }
+#codeMsg.error { color: #dc2626; }
+
+/* ======== TASK 2: Profile Customization Wizard ======== */
+#profileCustomizationModal .carousel-content {
+    background: var(--glass-background); /* Glass effect */
+    backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    color: #0f172a;
+    width: 420px;
+    max-width: 95vw;
+    animation: code-modal-pop-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+#profileCustomizationModal .badge-modal-header {
+    font-size: 1.5rem;
+    background: linear-gradient(90deg,#a855f7,#3b82f6, #ec4899);
+    background-size:300% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:badgeShimmer 5s linear infinite;
+}
+
+/* Live Preview Area */
+.profile-preview-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: rgba(255,255,255,0.3); /* Lighter glass background for preview */
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+}
+.card-preview {
+    width: 250px;
+    min-height: 150px;
+    border-radius: 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    padding: 18px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%); /* Frosted glass for preview card */
+    backdrop-filter: blur(15px) saturate(1.5);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s ease;
+}
+.profile-banner-preview {
+    width: calc(100% + 36px);
+    height: 60px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 20px 20px 0 0;
+    margin: -18px -18px 8px -18px;
+    background-color: #cbd5e1;
+    transition: background-image 0.3s ease-in-out;
+}
+.avatar-preview {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    margin: -32px auto 8px auto;
+    position: relative;
+    z-index: 2;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: block;
+}
+.welcome-preview {
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    color: #475569;
+}
+.username-preview {
+    color: #1992d4;
+    transition: color 0.3s ease;
+}
+
+.customization-section h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 12px;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.banner-grid, .gradient-grid, .color-grid {
+    display: grid;
+    gap: 12px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 8px;
+    background: rgba(255,255,255,0.2); /* Light glass background for grids */
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.banner-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); }
+.gradient-grid { grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); }
+.color-grid { grid-template-columns: repeat(auto-fill, minmax(35px, 1fr)); }
+
+
+.banner-item, .gradient-item, .color-item {
+    border-radius: 8px;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.2s, transform 0.2s;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Subtle shadow */
+}
+.banner-item { aspect-ratio: 16 / 9; }
+.gradient-item { aspect-ratio: 1 / 1; }
+.color-item {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+}
+
+.banner-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.banner-item:hover, .gradient-item:hover, .color-item:hover {
+    transform: scale(1.05);
+}
+.banner-item.selected, .gradient-item.selected, .color-item.selected {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px #3b82f644; /* Blue glow on selection */
+}
+
+#suggestColorBtn, #suggestGradientBtn {
+    background: linear-gradient(45deg, #a855f7, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+#suggestColorBtn:hover, #suggestGradientBtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+#suggestColorBtn:disabled, #suggestGradientBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* New CSS for the profile banner (above avatar) */
+.profile-banner {
+    width: calc(100% + 72px); /* Span across padding */
+    height: 120px; /* Taller banner */
+    background-size: cover;
+    background-position: center;
+    border-radius: 32px 32px 0 0;
+    margin: -36px -36px 16px -36px; /* Bleed to the edges */
+    background-color: #e2e8f0;
+    transition: background-image 0.3s ease-in-out;
+    /* Glassy banner effect */
+    background-image: linear-gradient(100deg, #36ffd5 60%, #1ee57c 100%); /* Default branded gradient */
+    backdrop-filter: blur(10px) saturate(1.5);
+    border-bottom: 1.5px solid rgba(255,255,255,0.22);
+    box-shadow: inset 0 -4px 12px rgba(0,0,0,0.1);
+}
+/* Ensure profile info and version are positioned correctly */
+.profile-info {
+    text-align: center;
+    margin-top: 10px; /* Adjust margin to prevent overlap with avatar */
+    color: #669;
+    font-size: 0.9rem;
+}
+.join-badge {
+    margin-bottom: 5px;
+}
+.version {
+    font-style: italic;
+}
+/* Back button specific styling */
+.back-button-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+.back-button {
+    background: var(--button-glass-background);
+    border: var(--button-glass-border);
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 1.04rem;
+    color: #232f38;
+    cursor: pointer;
+    text-decoration: none;
+    box-shadow: 0 2px 8px #dbeafe44;
+    transition: background 0.14s, color 0.14s, box-shadow 0.14s;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.back-button:hover, .back-button:focus {
+    background: #f1f5f9;
+    box-shadow: 0 4px 16px #dbeafe66;
+}
+.back-button:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 4px #dbeafe66;
+}
+.back-arrow {
+    font-size: 1.5em;
+    line-height: 1;
+}
+
+  </style>
+</head>
+<body>
+  <div class="back-button-container">
+    <a href="https://kevinmidnight7-sudo.github.io/messageboardkc/profiles.html" class="back-button">
+      <span class="back-arrow">←</span> Back
+    </a>
+  </div>
+  <div id="main-wrapper">
+    <!-- Removed KC logo and title from here -->
+    <div class="flex-row" id="mainContent">
+      <!-- PROFILE CARD -->
+      <div class="card" id="profileCard">
+        <!-- LOGGED OUT -->
+        <div id="authForms">
+          <div class="form-section" id="registerForm">
+            <input id="regName" placeholder="Display Name"/>
+            <input id="regEmail" type="email" placeholder="Email"/>
+            <input id="regPass" type="password" placeholder="Password"/>
+            <button id="registerBtn" class="form-btn">Register</button>
+            <div class="switch-link" id="toLogin">Already have an account? Log In</div>
+          </div>
+          <div class="form-section" id="loginForm" style="display:none">
+            <input id="loginEmail" type="email" placeholder="Email"/>
+            <input id="loginPass" type="password" placeholder="Password"/>
+            <button id="loginBtn" class="form-btn">Log In</button>
+            <div class="switch-link" id="toRegister">No account? Register</div>
+          </div>
+        </div>
+        <!-- LOGGED IN -->
+        <div id="profileUI" style="display:none">
+          <div id="profileBanner" class="profile-banner"></div>
+          <img id="avatarImg" src="" alt="Your Avatar"/>
+          <div class="profile-title">Profile:</div>
+          <div class="profile-welcome" id="welcomeUser"></div>
+          <div class="profile-counter" id="userCounter"></div>
+          <!-- About Me section -->
+          <div id="aboutMeContainer" class="about-me-box">
+            <span class="about-me-text" id="aboutMeDisplay">Click to add about me</span>
+            <span class="edit-icon">✏️</span>
+          </div>
+          <div class="profile-info">
+            <div id="joinBadge" class="join-badge"></div>
+            <div class="version">KC Events V1.5</div>
+          </div>
+          <div class="profile-icon-bar">
+            <button id="avatarBtn" class="profile-icon-btn" title="Choose Avatar">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Avatar.png" alt="Avatar"/>
+            </button>
+            <button id="accountOptionsBtn" class="profile-icon-btn" title="Account Options">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Settings.png" alt="Settings"/>
+            </button>
+            <button id="adminPortalBtn" class="profile-icon-btn" title="Admin Portal">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Admin.png" alt="Admin"/>
+            </button>
+            <!-- Codes button opens exclusive features panel -->
+            <button id="codesBtn" class="profile-icon-btn" title="Codes">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Codes.png" alt="Codes"/>
+            </button>
+             <!-- Streak fire button (fixed in card) -->
+            <button id="streakBtn" title="View your streak rewards">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Streak.png" alt="Streak"/>
+            </button>
+            <!-- Edit Profile Button (Task 2) - initially hidden -->
+            <button id="editProfileBtn" class="profile-icon-btn" title="Customize Profile" style="display: none;">
+              <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png" alt="Edit Profile"/>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- BADGES CARD -->
+      <div class="card" id="badgesCard" style="min-width:320px;">
+        <div class="badges-header">Badges <span style="font-size:1.08em;">🏅</span></div>
+        <div class="badges-sub">Your Progress</div>
+        <div class="badges-grid" id="badgeList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Avatar Picker Modal -->
+  <div id="avatarModal" class="apple-modal">
+    <div class="carousel-content">
+      <button class="close-btn" id="closeAvatarModal">Close</button>
+      <h3>Select Your Avatar</h3>
+      <div class="carousel-arrows">
+        <button id="carouselLeft" class="arrow-btn" tabindex="-1">&lt;</button>
+        <div class="avatar-carousel" id="avatarCarousel">
+          <!-- JS will fill in avatars here -->
+        </div>
+        <button id="carouselRight" class="arrow-btn" tabindex="-1">&gt;</button>
+      </div>
+    </div>
+  </div>
+  <!-- LOGIN STREAK POPUP -->
+  <div id="streakModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;">
+      <button class="close-btn" id="closeStreakModal">Close</button>
+      <h3>🔥 Login Streak!</h3>
+      <div style="font-size:3.2rem;font-weight:700;margin-bottom:8px;color:#f84;">
+        <span id="streakCount"></span> days
+      </div>
+      <div id="streakRewardMsg" style="font-size:1.18rem;color:#3899ff;"></div>
+    </div>
+  </div>
+
+  <!-- AVATAR UPLOAD MODAL (shown only if streak >= 10) -->
+  <div id="uploadAvatarModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:300px;">
+      <button class="close-btn" id="closeUploadAvatarModal">Close</button>
+      <h3>Upload Your Own Avatar</h3>
+      <!-- Styled file input: clicking the label triggers the hidden input -->
+      <label for="avatarFile" class="upload-file-label">Choose File 📂</label>
+      <input type="file" id="avatarFile" accept="image/*"/>
+      <div id="fileNameDisplay" class="upload-preview">No file chosen</div>
+      <div id="avatarUploadMsg" style="font-size:1.05rem;color:#1992d4;margin-bottom:8px;"></div>
+      <button id="uploadAvatarBtn" class="form-btn" style="width:80%;">Upload</button>
+    </div>
+  </div>
+
+  <!-- BADGE CREATOR MODAL (streak >= 50) -->
+  <div id="badgeCreatorModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:320px;">
+      <button class="close-btn" id="closeBadgeCreatorModal">Close</button>
+      <h3>Create Your Own Badge</h3>
+      <input id="customBadgeName" placeholder="Badge Name" maxlength="15" style="padding:10px;width:70%;font-size:1.05rem;margin-bottom:12px;"/>
+      <div style="margin-bottom:8px;">Choose an icon:</div>
+      <div id="badgeIconRow" style="display:flex;gap:13px;justify-content:center;margin-bottom:15px;">
+        <!-- icons filled by JS -->
+      </div>
+      <button id="saveBadgeBtn" class="form-btn" style="width:80%;">Save Badge</button>
+      <div id="badgeCreateMsg" style="margin-top:10px;font-size:1.07rem;"></div>
+    </div>
+  </div>
+  <!-- Streak Rewards Modal -->
+  <div id="streakRewardsModal">
+    <div class="streak-modal-content">
+      <button class="streak-modal-close" id="closeStreakModal2">&times;</button>
+      <div class="streak-modal-title">🔥 Streak Rewards 🔥</div>
+      <div id="streakProgressBar" class="streak-progress-bar">
+        <div id="streakProgressBarFill" class="streak-progress-bar-fill" style="width:0"></div>
+      </div>
+      <div class="streak-progress" id="streakProgressNodes">
+        <!-- JS will render streak milestones here -->
+      </div>
+      <div class="streak-modal-desc" id="streakModalDesc"></div>
+      <div class="streak-footer" id="streakFooterMsg"></div>
+    </div>
+  </div>
+  <!-- Fancy Badge Creator Modal with gradient picker -->
+  <div id="badgeCreatorModalFancy" class="apple-modal">
+    <div class="carousel-content" style="min-width:360px;animation:badge-pop-in .7s cubic-bezier(.8,2,.4,1.1) 1;">
+      <button class="close-btn" id="closeBadgeCreatorModalFancy">×</button>
+      <div class="badge-modal-header">✨ Create Your Own Badge ✨</div>
+      <div class="badge-progress-bar">
+        <div class="badge-step active" data-step="1">Name</div>
+        <div class="badge-step" data-step="2">Icon</div>
+        <div class="badge-step" data-step="3">Style</div>
+        <div class="badge-step" data-step="4">Confirm</div>
+      </div>
+      <div id="badgePreviewLarge" class="badge-preview-large"></div>
+      <div id="badgeStep1" class="badge-step-content active">
+        <label for="badgeNameFancy">Badge Name:</label>
+        <input id="badgeNameFancy" class="badge-input" maxlength="15" placeholder="Enter badge name" />
+      </div>
+      <div id="badgeStep2" class="badge-step-content">
+        <label>Pick an icon:</label>
+        <div id="badgeIconRowFancy" class="icon-carousel">
+          <!-- icons filled by JS -->
+        </div>
+      </div>
+      <div id="badgeStep3" class="badge-step-content">
+        <label>Gradient:</label>
+        <div id="gradOptions" class="gradient-options"></div>
+        <!-- Hidden inputs to store selected gradient colours for logic -->
+        <input type="color" id="gradCol1" value="#ffe066" style="display:none;" />
+        <input type="color" id="gradCol2" value="#e0aaff" style="display:none;" />
+        <button id="randGradientBtn" title="Random gradient" style="margin-top:8px;">🎲 Random</button>
+        <label style="margin-top:14px;">Text Colour:</label>
+        <div id="textColorSwatches" class="color-swatches"></div>
+        <!-- hidden native colour input for custom colours -->
+        <input type="color" id="textColorPicker" value="#ffffff" style="margin-top:8px;width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;" />
+      </div>
+      <div id="badgeStep4" class="badge-step-content">
+        <div id="badgeLivePreview" style="margin-bottom:16px;padding:12px;border-radius:16px;font-size:1.5rem;display:flex;align-items:center;justify-content:center;gap:8px;"></div>
+        <div id="badgeConfirmText" style="font-size:0.95rem;color:#475569;text-align:center;">Review your badge above. If you're happy with it, click Save Badge to finish.</div>
+      </div>
+      <div class="badge-action-buttons">
+        <button id="badgeBackBtn">Back</button>
+        <button id="badgeNextBtn">Next</button>
+        <button id="badgeCancelBtn">Cancel</button>
+        <button id="saveBadgeFancyBtn">Save Badge</button>
+      </div>
+      <div id="badgeCreateMsgFancy" style="margin-top:8px;text-align:center;"></div>
+    </div>
+  </div>
+
+  <!-- Username Modal -->
+  <div id="usernameModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:300px;">
+      <button class="close-btn" id="closeUsernameModal">Close</button>
+      <h3>Choose Username</h3>
+      <input id="usernameInput" type="text" maxlength="20" placeholder="Enter username"/>
+      <button id="saveUsernameBtn" class="form-btn">Save</button>
+      <div id="usernameMsg" style="font-size:1rem;color:#7f9db5;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- About Me Modal -->
+  <div id="aboutMeModal" class="apple-modal">
+    <div class="carousel-content" style="text-align:center;min-width:300px;">
+      <button class="close-btn" id="closeAboutMeModal">Close</button>
+      <h3>Edit About Me</h3>
+      <textarea id="aboutMeInput" maxlength="300" rows="4" placeholder="Tell us about yourself (max 300 characters)" style="width:80%;padding:10px;margin-bottom:10px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.2);color:#e5e7eb;box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 2px 6px rgba(0,0,0,0.1);resize:none;"></textarea>
+      <div style="display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:12px;">
+        <button id="emojiBtn" class="emoji-btn" title="Add Emoji">😊</button>
+        <div id="emojiPicker" class="emoji-picker"></div>
+      </div>
+      <button id="saveAboutMeBtn" class="form-btn">Save</button>
+      <div id="aboutMeMsg" style="font-size:1rem;color:#7f9db5;margin-top:6px;"></div>
+    </div>
+  </div>
+
+  <!-- Codes Modal for entering exclusive codes (Task 1) -->
+  <div id="codesModal" class="apple-modal">
+    <div class="carousel-content">
+      <button class="close-btn" id="closeCodesModal">&times;</button>
+      <h3 style="display:flex;align-items:center;justify-content:center;gap:8px;">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/Codes.png" alt="Codes" style="width:28px;height:28px;"/>
+        Enter your code!
+      </h3>
+      <input id="codeInput" type="text" placeholder="Enter your exclusive code..."/>
+      <button id="submitCodeBtn" class="form-btn">Submit Code</button>
+      <div id="codeMsg" style="font-size:1rem;color:#7f9db5;margin-top:12px;font-weight:600;"></div>
+    </div>
+  </div>
+
+  <!-- Profile Customization Modal (Wizard) -->
+  <div id="profileCustomizationModal" class="apple-modal">
+    <div class="carousel-content" style="width: 420px; max-width: 95vw;">
+        <button class="close-btn" id="closeCustomizationModal">&times;</button>
+        <div class="badge-modal-header">💎 Diamond Profile Customizer 💎</div>
+
+        <!-- Progress Bar -->
+        <div id="profileCustomizationProgressBar" class="badge-progress-bar">
+            <div class="badge-step active" data-step="1">Banner</div>
+            <div class="badge-step" data-step="2">Theme</div>
+            <div class="badge-step" data-step="3">Color</div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="profile-preview-area">
+             <div id="cardPreview" class="card-preview">
+                 <div id="profileBannerPreview" class="profile-banner-preview"></div>
+                 <img id="avatarPreview" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png" class="avatar-preview" alt="Avatar Preview"/>
+                 <div class="welcome-preview">
+                     👋 <span id="usernamePreview" class="username-preview">Username</span>
+                 </div>
+             </div>
+        </div>
+
+        <!-- Step Content -->
+        <div id="customizationStep1" class="badge-step-content active">
+            <h4>Profile Banner</h4>
+            <div id="bannerSelectionGrid" class="banner-grid"></div>
+        </div>
+
+        <div id="customizationStep2" class="badge-step-content">
+            <h4>
+                <span>Profile Card Theme</span>
+                <button id="suggestGradientBtn" title="Suggest gradients with AI">✨ Suggest with AI</button>
+            </h4>
+            <div id="gradientSelectionGrid" class="gradient-grid"></div>
+        </div>
+
+        <div id="customizationStep3" class="badge-step-content">
+             <h4>
+                <span>Username Color</span>
+                <button id="suggestColorBtn" title="Suggest colors with AI">✨ Suggest with AI</button>
+            </h4>
+            <div id="nameColorSelectionGrid" class="color-grid"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="badge-action-buttons">
+            <button id="profileBackBtn">Back</button>
+            <button id="profileNextBtn">Next</button>
+            <button id="saveCustomizationBtn">Save Profile</button>
+        </div>
+    </div>
+  </div>
+
+  <!-- Suggest Gradient Modal -->
+  <div id="suggestGradientModal" class="apple-modal">
+      <div class="carousel-content" style="text-align:center;min-width:300px;">
+          <button class="close-btn" id="closeSuggestGradientModal">&times;</button>
+          <h3>🎨 Gradient Suggestion</h3>
+          <p style="margin-bottom:12px;">Enter a word, e.g., "sunset", "forest", or "neon".</p>
+          <input id="gradientInput" type="text" maxlength="20" placeholder="Enter a word"/>
+          <button id="getGradientBtn" class="form-btn" style="width:80%;">Get Gradient</button>
+          <div id="gradientMsg" style="font-size:1rem;color:#7f9db5;margin-top:12px;"></div>
+      </div>
+  </div>
+
+  <!-- KC Alert -->
+  <div id="kcAlert" class="kc-alert" style="display:none"></div>
+
+  <!-- Account Sidebar -->
+  <div id="accountSidebar" class="sidebar">
+    <div class="sidebar-header">
+      <h2>Account Options</h2>
+      <button class="close-btn" id="closeAccountSidebar">Close</button>
+    </div>
+    <button id="signOutBtn"    class="sidebar-btn">Sign Out</button>
+    <button id="resetPassBtn"  class="sidebar-btn">Reset Password</button>
+    <button id="deleteAcctBtn" class="sidebar-btn-red">Delete Account</button>
+  </div>
+
+  <!-- Admin Sidebar -->
+  <div id="adminSidebar" class="sidebar">
+    <div class="sidebar-header">
+      <h2>Admin Portal</h2>
+      <button class="close-btn" id="closeAdminSidebar">Close</button>
+    </div>
+    <div id="adminAuthSection">
+      <label>Admin Password</label>
+      <input id="adminPass" type="password" placeholder="Password"/>
+      <button id="adminLoginBtn" class="sidebar-btn">Enter</button>
+    </div>
+    <div id="adminContent" style="display:none">
+      <label>Edit Badges For User:</label>
+      <select id="userSelect"></select>
+      <div style="display:flex;gap:7px;margin:12px 0;">
+        <button data-badge="offence" class="sidebar-btn" id="addOffence">+ Offence</button>
+        <button data-badge="defence" class="sidebar-btn" id="addDefence">+ Defence</button>
+        <button data-badge="overall" class="sidebar-btn" id="addOverall">+ Overall</button>
+      </div>
+      <label>Set Login Streak Days:</label>
+      <div style="display:flex;gap:10px;margin-bottom:12px;">
+        <input id="adminStreakInput" type="number" min="0" max="999" style="padding:6px;width:70px;">
+        <button id="setStreakBtn" class="sidebar-btn">Set Streak</button>
+      </div>
+      <div style="display:flex;gap:7px;margin-bottom:12px;">
+        <button data-badge="offence" class="sidebar-btn-red" id="remOffence">- Offence</button>
+        <button data-badge="defence" class="sidebar-btn-red" id="remDefence">- Defence</button>
+        <button data-badge="overall" class="sidebar-btn-red" id="remOverall">- Overall</button>
+      </div>
+      <button id="saveAdmin" class="sidebar-btn">Save Changes</button>
+      <label style="margin-top:16px;">All Users & Badges:</label>
+      <div class="admin-users-list" id="adminUsersList"><ul></ul></div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Dialog -->
+  <div id="confirmOverlay" class="confirm-overlay" style="display:none;">
+    <div class="confirm-box">
+      <div id="confirmMsg">Are you sure you want to delete your account?</div>
+      <button class="confirm-btn" id="confirmYesBtn">Yes</button>
+      <button class="confirm-btn cancel" id="confirmNoBtn">No</button>
+    </div>
+  </div>
+
+  <script>
+// ========== FIREBASE INIT ==========
+const cfg = {
+  apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+  authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+  databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "kckillerscompany-ab1ec",
+  storageBucket: "kckillerscompany-ab1ec.appspot.com",
+  messagingSenderId: "198711213988",
+  appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+  measurementId: "G-4LKP2M3JXE"
+};
+firebase.initializeApp(cfg);
+const auth = firebase.auth(), db = firebase.database();
+const actionCodeSettings = { url: window.location.origin + "/?mode=verifyEmail", handleCodeInApp:true };
+
+// ========== Profanity Filter Setup ==========
+let bannedWords = [];
+fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
+  .then(r => r.ok ? r.json() : [])
+  .then(list => { bannedWords = (list||[]).map(w => w.toLowerCase()); })
+  .catch(() => { bannedWords = []; });
+function containsProfane(str){
+  if(!bannedWords || bannedWords.length===0) return false;
+  const lower = (str || '').toLowerCase();
+  return bannedWords.some(w => lower.includes(w));
+}
+
+// ================== CODES CONFIGURATION ==================
+const codesConfig = {
+  "D1//\\0ND-S70N3": {
+    key: "diamond",
+    alert: "Diamond Exclusives Introduced",
+    icon: "https://cdn.discordapp.com/emojis/1381097369474695178.webp?size=128",
+    customBonus: 2,
+    avatarUnlock: true,
+    profileCustomization: true // New flag to unlock profile customization
+  },
+  "3M-R@LD_GR33N": {
+    key: "emerald",
+    alert: "Emerald Exclusives Introduced",
+    icon: "https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128",
+    customBonus: 1,
+    avatarUnlock: true
+  }
+};
+
+// ========== UI REFS ==========
+const authForms    = document.getElementById("authForms"),
+      registerForm = document.getElementById("registerForm"),
+      loginForm    = document.getElementById("loginForm"),
+      regName      = document.getElementById("regName"),
+      regEmail     = document.getElementById("regEmail"),
+      regPass      = document.getElementById("regPass"),
+      registerBtn  = document.getElementById("registerBtn"),
+      loginEmail   = document.getElementById("loginEmail"),
+      loginPass    = document.getElementById("loginPass"),
+      loginBtn     = document.getElementById("loginBtn"),
+      toLogin      = document.getElementById("toLogin"),
+      toRegister   = document.getElementById("toRegister"),
+      profileUI    = document.getElementById("profileUI"),
+      welcomeUser  = document.getElementById("welcomeUser"),
+      userCounter  = document.getElementById("userCounter"),
+      badgeList    = document.getElementById("badgeList"),
+      joinBadge    = document.getElementById("joinBadge"),
+      badgesCard   = document.getElementById("badgesCard"),
+      avatarBtn    = document.getElementById("avatarBtn"),
+      avatarImg    = document.getElementById("avatarImg"),
+      accountBtn   = document.getElementById("accountOptionsBtn"),
+      adminBtn     = document.getElementById("adminPortalBtn"),
+      accountSidebar   = document.getElementById("accountSidebar"),
+      adminSidebar     = document.getElementById("adminSidebar"),
+      closeAccountSidebar = document.getElementById("closeAccountSidebar"),
+      closeAdminSidebar   = document.getElementById("closeAdminSidebar"),
+      kcAlertDiv   = document.getElementById("kcAlert");
+
+// Codes UI references
+const codesBtn        = document.getElementById("codesBtn"),
+      codesModal      = document.getElementById("codesModal"),
+      closeCodesModal = document.getElementById("closeCodesModal"),
+      submitCodeBtn   = document.getElementById("submitCodeBtn"),
+      codeInput       = document.getElementById("codeInput"),
+      codeMsg         = document.getElementById("codeMsg");
+
+// References for username modal and controls
+const usernameModal    = document.getElementById("usernameModal"),
+      closeUsernameModal = document.getElementById("closeUsernameModal"),
+      saveUsernameBtn  = document.getElementById("saveUsernameBtn"),
+      usernameInput    = document.getElementById("usernameInput"),
+      usernameMsg      = document.getElementById("usernameMsg");
+
+// Profile Customization UI Refs
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileCustomizationModal = document.getElementById('profileCustomizationModal');
+const closeCustomizationModal = document.getElementById('closeCustomizationModal');
+const bannerSelectionGrid = document.getElementById('bannerSelectionGrid');
+const gradientSelectionGrid = document.getElementById('gradientSelectionGrid');
+const nameColorSelectionGrid = document.getElementById('nameColorSelectionGrid');
+const saveCustomizationBtn = document.getElementById('saveCustomizationBtn');
+const profileBanner = document.getElementById('profileBanner');
+const suggestColorBtn = document.getElementById('suggestColorBtn');
+const profileNextBtn = document.getElementById('profileNextBtn');
+const profileBackBtn = document.getElementById('profileBackBtn');
+
+// New Gradient Suggestion UI Refs
+const suggestGradientBtn = document.getElementById('suggestGradientBtn');
+const suggestGradientModal = document.getElementById('suggestGradientModal');
+const closeSuggestGradientModal = document.getElementById('closeSuggestGradientModal');
+const gradientInput = document.getElementById('gradientInput');
+const getGradientBtn = document.getElementById('getGradientBtn');
+const gradientMsg = document.getElementById('gradientMsg');
+
+
+// ========== KC ALERT ==========
+let alertTimeout;
+function kcAlert(txt, timeout=2350, iconURL=null){
+  if(iconURL){
+    kcAlertDiv.innerHTML = `<img src="${iconURL}" alt="icon" style="width:22px;height:22px;"> <span>${txt}</span>`;
+  } else {
+    kcAlertDiv.textContent = txt;
+  }
+  kcAlertDiv.style.display = "flex";
+  kcAlertDiv.classList.remove("hide");
+  if(alertTimeout) clearTimeout(alertTimeout);
+  alertTimeout = setTimeout(()=>kcAlertDiv.classList.add("hide"), timeout);
+}
+
+// ========== UTILS ==========
+function pad2(x){return x<10?"0"+x:x;}
+function getToday(){
+  const d=new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+}
+
+// ========== SIDEBAR CONTROLS ==========
+accountBtn.onclick = ()=>accountSidebar.classList.add("open");
+closeAccountSidebar.onclick = ()=>accountSidebar.classList.remove("open");
+adminBtn.onclick = ()=>adminSidebar.classList.add("open");
+closeAdminSidebar.onclick = ()=>adminSidebar.classList.remove("open");
+document.addEventListener("mousedown", e=>{
+  if(!accountSidebar.contains(e.target)&&e.target!==accountBtn) accountSidebar.classList.remove("open");
+  if(!adminSidebar.contains(e.target)&&e.target!==adminBtn) adminSidebar.classList.remove("open");
+});
+
+// ========== CODES FEATURE ==========
+codesBtn.onclick = () => {
+    codesModal.classList.add("open");
+};
+closeCodesModal.onclick = () => {
+    codesModal.classList.remove("open");
+    codeInput.value = "";
+    codeMsg.textContent = "";
+    codeInput.className = "";
+};
+codesModal.addEventListener("mousedown", e => {
+    if (!e.target.closest(".carousel-content")) {
+        closeCodesModal.onclick();
+    }
+});
+submitCodeBtn.onclick = async () => {
+    const code = codeInput.value.trim();
+    const user = auth.currentUser;
+
+    codeInput.classList.remove('success', 'error');
+    codeMsg.classList.remove('success', 'error');
+    codeMsg.textContent = '';
+
+    if (!code) {
+        codeMsg.textContent = "Please enter a code!";
+        codeInput.classList.add('error');
+        codeMsg.classList.add('error');
+        setTimeout(() => { codeInput.classList.remove('error'); codeMsg.textContent = ''; }, 1500);
+        return;
+    }
+    const conf = codesConfig[code];
+    if (!conf) {
+        codeMsg.textContent = "Invalid code!";
+        codeInput.classList.add('error');
+        codeMsg.classList.add('error');
+        setTimeout(() => { codeInput.classList.remove('error'); codeMsg.textContent = ''; }, 1500);
+        return;
+    }
+    if (!user) {
+        closeCodesModal.onclick();
+        kcAlert("Please log in first!", 2500);
+        return;
+    }
+    const uid = user.uid;
+    const redeemedSnap = await db.ref(`users/${uid}/codesUnlocked/${conf.key}`).once('value');
+    if (redeemedSnap.val()) {
+        codeMsg.textContent = "Code already redeemed!";
+        codeInput.classList.add('error');
+        codeMsg.classList.add('error');
+        setTimeout(() => closeCodesModal.onclick(), 1500);
+        return;
+    }
+
+    const updates = {};
+    updates[`users/${uid}/codesUnlocked/${conf.key}`] = true;
+    if (conf.avatarUnlock) {
+        updates[`users/${uid}/avatarUnlocked`] = true;
+    }
+    if (conf.profileCustomization) {
+        updates[`users/${uid}/profileCustomizationUnlocked`] = true;
+    }
+    const bonusSnap = await db.ref(`users/${uid}/customBonus`).once('value');
+    const existingBonus = bonusSnap.val() || 0;
+    updates[`users/${uid}/customBonus`] = existingBonus + (conf.customBonus || 0);
+
+    await db.ref().update(updates);
+    
+    codeMsg.textContent = "Success!";
+    codeInput.classList.add('success');
+    codeMsg.classList.add('success');
+    
+    setTimeout(() => {
+        closeCodesModal.onclick();
+        loadBadges(uid, user.emailVerified); // Reload badges and check for customization unlock
+        kcAlert(conf.alert, 2500, conf.icon);
+    }, 1200);
+};
+
+
+// ========== TOGGLE FORMS ==========
+toLogin.onclick = ()=>{
+  registerForm.style.display="none";
+  loginForm.style.display="flex";
+  kcAlertDiv.style.display="none";
+};
+toRegister.onclick = ()=>{
+  loginForm.style.display="none";
+  registerForm.style.display="flex";
+  kcAlertDiv.style.display="none";
+};
+
+// ========== AUTH LOGIC ==========
+registerBtn.onclick = ()=>{
+  const name=regName.value.trim(), email=regEmail.value.trim(), pass=regPass.value;
+  if(!name||!email||!pass) return kcAlert("Fill all fields.");
+  auth.createUserWithEmailAndPassword(email,pass)
+    .then(u=>u.user.updateProfile({displayName:name}).then(()=>u.user))
+    .then(u=>db.ref(`users/${u.uid}`).set({displayName:name,email,joined:firebase.database.ServerValue.TIMESTAMP}).then(()=>u))
+    .then(u=>u.sendEmailVerification(actionCodeSettings))
+    .then(()=>kcAlert("Verification email sent!"))
+    .catch(e=>kcAlert(e.message));
+};
+loginBtn.onclick = ()=>{
+  const email=loginEmail.value.trim(), pass=loginPass.value;
+  if(!email||!pass) return kcAlert("Enter email and password!");
+  auth.signInWithEmailAndPassword(email,pass)
+    .then(res=>{
+      // Allow login even if email is not verified, so user can see the badge and resend
+      if(!res.user.emailVerified){
+        kcAlert("Your email is not verified. Please verify it to unlock all features.", 3500);
+      }
+      // No signOut or throw here, allow the user to proceed
+    })
+    .catch(e=>kcAlert(e.message));
+};
+
+// ========== ACCOUNT ACTIONS ==========
+document.getElementById("signOutBtn").onclick = ()=>auth.signOut().then(()=>kcAlert("Signed out"));
+document.getElementById("resetPassBtn").onclick = ()=>{
+  const u=auth.currentUser; if(!u) return kcAlert("Not signed in");
+  auth.sendPasswordResetEmail(u.email,{url:window.location.origin+"/?mode=resetPassword",handleCodeInApp:true})
+    .then(()=>kcAlert("Password reset email sent"))
+    .catch(e=>kcAlert(e.message));
+};
+document.getElementById("deleteAcctBtn").onclick = ()=>{
+  document.getElementById("confirmMsg").textContent="Are you sure you want to delete your account? This action cannot be undone.";
+  document.getElementById("confirmOverlay").style.display="flex";
+  document.getElementById("confirmYesBtn").onclick = ()=>{
+    const u=auth.currentUser; if(!u) return;
+    u.delete()
+     .then(()=>{
+       document.getElementById("confirmOverlay").style.display="none";
+       kcAlert("Account deleted");
+     })
+     .catch(err=>{
+       document.getElementById("confirmOverlay").style.display="none";
+       if(err.code==="auth/requires-recent-login")
+         kcAlert("Please sign out and back in before deleting.");
+       else kcAlert(err.message);
+     });
+  };
+  document.getElementById("confirmNoBtn").onclick = ()=>{
+    document.getElementById("confirmOverlay").style.display="none";
+  };
+};
+
+// ========== ADMIN PORTAL ==========
+let adminAuthenticated=false;
+document.getElementById("adminLoginBtn").onclick = ()=>{
+  if(document.getElementById("adminPass").value==="events2025KC"){
+    adminAuthenticated=true;
+    document.getElementById("adminAuthSection").style.display="none";
+    document.getElementById("adminContent").style.display="block";
+    kcAlert("Admin authenticated");
+    loadAllUsersToAdmin();
+    refreshUserSelect();
+  } else kcAlert("Wrong admin password");
+};
+function ensureAdmin(){return adminAuthenticated;}
+function refreshUserSelect(){
+  db.ref("users").once("value").then(snap=>{
+    const sel=document.getElementById("userSelect");
+    sel.innerHTML="";
+    snap.forEach(u=>{
+      const o=document.createElement("option");
+      o.value=u.key; o.textContent=u.val().displayName;
+      sel.appendChild(o);
+    });
+  });
+}
+function loadAllUsersToAdmin(){
+  Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
+    .then(([us,bad])=>{
+      let html="<ul>";
+      us.forEach(u=>{
+        const b=bad.child(u.key).val()||{};
+        html+=`<li><b>${u.val().displayName}</b>
+          <span class="admin-badge-list">
+            <span>🏆<span class="admin-badge-count">${b.overall||0}</span></span>
+            <span>🔥<span class="admin-badge-count">${b.offence||0}</span></span>
+            <span>🛡️<span class="admin-badge-count">${b.defence||0}</span></span>
+          </span></li>`;
+      });
+      html+="</ul>";
+      document.getElementById("adminUsersList").innerHTML=html;
+    });
+}
+["Offence","Defence","Overall"].forEach(type=>{
+  document.getElementById("add"+type).onclick = ()=>{
+    if(!ensureAdmin()) return;
+    badgeChanges[type.toLowerCase()]++;
+    kcAlert(`+1 ${type} staged (Save to apply)`);
+  };
+  document.getElementById("rem"+type).onclick = ()=>{
+    if(!ensureAdmin()) return;
+    badgeChanges[type.toLowerCase()]--;
+    kcAlert(`-1 ${type} staged (Save to apply)`);
+  };
+});
+let badgeChanges={offence:0,defence:0,overall:0};
+document.getElementById("saveAdmin").onclick = ()=>{
+  if(!ensureAdmin()) return;
+  const uid=document.getElementById("userSelect").value;
+  db.ref("badges/"+uid).get().then(snap=>{
+    const cur=snap.val()||{};
+    const upd={};
+    ["offence","defence","overall"].forEach(k=>{
+      upd[k]=Math.max(0,(cur[k]||0)+badgeChanges[k]);
+    });
+    db.ref("badges/"+uid).set(upd).then(()=>{
+      badgeChanges={offence:0,defence:0,overall:0};
+      kcAlert("Badges updated");
+      loadAllUsersToAdmin();
+      if(auth.currentUser&&auth.currentUser.uid===uid)
+        loadBadges(uid,auth.currentUser.emailVerified);
+    });
+  });
+};
+// Admin set login streak
+document.getElementById("setStreakBtn").onclick = ()=>{
+  const uid = document.getElementById("userSelect").value;
+  const days = parseInt(document.getElementById("adminStreakInput").value, 10);
+  if(!uid || isNaN(days)) return kcAlert("Select user and days!");
+  const today = getToday();
+  db.ref(`users/${uid}`).update({
+    loginStreak: days,
+    lastLoginDate: today
+  }).then(() => {
+    kcAlert(`Set streak to ${days} for user!`, 2500);
+    loadAllUsersToAdmin(); // Refresh admin list
+    if(auth.currentUser && auth.currentUser.uid === uid) {
+      loadBadges(uid, auth.currentUser.emailVerified);
+    }
+    document.getElementById("adminStreakInput").value = "";
+  }).catch(err => {
+    kcAlert("Failed to set streak: " + err.message, 3000);
+  });
+};
+
+// ========== STREAK LOGIC (NEW FANCY MODAL) ==========
+const streakBtn = document.getElementById('streakBtn');
+const streakRewardsModal = document.getElementById('streakRewardsModal');
+const closeStreakModal2 = document.getElementById('closeStreakModal2');
+const streakProgressBarFill = document.getElementById('streakProgressBarFill');
+const streakProgressNodes = document.getElementById('streakProgressNodes');
+const streakModalDesc = document.getElementById('streakModalDesc');
+
+const streakMilestones = [
+  { days: 10, label: "10 Days", rewardIcon: "✨", rewardText: "Custom Profile Picture!" },
+  { days: 50, label: "50 Days", rewardIcon: "🎨", rewardText: "Profile Customization" },
+  { days: 100, label: "100 Days", rewardIcon: "", rewardText: "2 Custom Badges" }
+];
+
+streakBtn.onclick = ()=>{
+  db.ref(`users/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
+    const streak = snap.val()||0;
+    renderStreakModal(streak);
+    streakRewardsModal.classList.add('open');
+  });
+};
+closeStreakModal2.onclick = ()=>streakRewardsModal.classList.remove('open');
+streakRewardsModal.addEventListener('mousedown', e=>{
+  if(!e.target.closest('.streak-modal-content')) streakRewardsModal.classList.remove('open');
+});
+
+function renderStreakModal(streak){
+  const maxMilestone = streakMilestones[streakMilestones.length-1].days;
+  const progress = Math.min(100, (streak / maxMilestone) * 100);
+  streakProgressBarFill.style.width = `${progress}%`;
+  let unlockedIndex = -1;
+  streakMilestones.forEach((ms,i)=>{ if(streak >= ms.days) unlockedIndex = i; });
+  const currentIndex = Math.min(unlockedIndex + 1, streakMilestones.length - 1);
+  streakProgressNodes.innerHTML = "";
+  streakMilestones.forEach((ms,i)=>{
+    const node = document.createElement("div");
+    let state;
+    if(i <= unlockedIndex) state = 'unlocked';
+    else if(i === unlockedIndex + 1) state = 'current';
+    else state = 'locked';
+    node.className = `streak-node ${state}`;
+    const iconChar = state === 'locked' ? '🔒' : (ms.rewardIcon || '');
+    const statusLabel = state === 'unlocked' ? 'Unlocked' : (state === 'current' ? 'Current' : 'Upcoming');
+    node.innerHTML = `<span class="reward-icon">${iconChar}</span>
+      <div class="node-label">${ms.label}</div>
+      <div class="node-status">${statusLabel}</div>`;
+    node.onclick = function(){
+      if(state === 'locked'){
+        kcAlert('Reach ' + ms.days + ' days to unlock this reward!');
+      }
+    };
+    streakProgressNodes.appendChild(node);
+  });
+  let desc="";
+  if(streak < streakMilestones[0].days) desc = `Log in daily to unlock your first reward at ${streakMilestones[0].days} days.`;
+  else if(streak < streakMilestones[1].days) desc = `Great job! Next reward at ${streakMilestones[1].days} days.`;
+  else if(streak < streakMilestones[2].days) desc = `Awesome! Next reward at ${streakMilestones[2].days} days.`;
+  else desc = "Legend! You've unlocked all current streak rewards.";
+  desc += " More streak rewards coming in the next update.";
+  streakModalDesc.textContent = desc;
+  const footer = document.getElementById('streakFooterMsg');
+  if(footer){
+    const nextMs = streakMilestones.find(ms => ms.days > streak);
+    if(nextMs){
+      footer.textContent = `🚀 You're doing great! Next reward at ${nextMs.days} days. More exciting rewards coming soon!`;
+    } else {
+      footer.textContent = `🎉 You've unlocked all rewards! More exciting rewards coming soon!`;
+    }
+  }
+}
+
+function handleStreak(uid){
+  const today=getToday();
+  db.ref(`users/${uid}`).once("value").then(snap=>{
+    let {lastLoginDate,loginStreak} = snap.val() || {};
+    loginStreak = loginStreak || 0;
+    if(lastLoginDate===today) return;
+    let yesterday = new Date();
+    yesterday.setDate(yesterday.getDate()-1);
+    let ystr = `${yesterday.getFullYear()}-${pad2(yesterday.getMonth()+1)}-${pad2(yesterday.getDate())}`;
+    if(lastLoginDate===ystr){
+      loginStreak += 1;
+    } else {
+      loginStreak = Math.max(loginStreak, 1);
+    }
+    db.ref(`users/${uid}/lastLoginDate`).set(today);
+    db.ref(`users/${uid}/loginStreak`).set(loginStreak);
+  });
+}
+
+// ========== USERNAME LOGIC ==========
+function displayUsername(name, color = '#1992d4'){
+  const usernameText = `<span class="username-text" style="color: ${color};">${name}</span>`;
+  const html = `👋 <span class="username-container" id="usernameContainer">${usernameText}<span class="edit-icon">✏️</span></span>`;
+  welcomeUser.innerHTML = html;
+  const container = document.getElementById('usernameContainer');
+  if(container){
+    container.onclick = function(){
+      openUsernameModal(false);
+      usernameInput.value = name;
+      usernameMsg.textContent = '';
+    };
+  }
+}
+let currentAboutMe = '';
+function openUsernameModal(isFirstTime = false){
+  usernameModal.classList.add('open');
+  if(isFirstTime){
+    usernameInput.value = '';
+    usernameMsg.textContent = '';
+    closeUsernameModal.style.display = 'none';
+    usernameModal.dataset.firstTime = '1';
+  } else {
+    closeUsernameModal.style.display = '';
+    usernameModal.dataset.firstTime = '';
+  }
+}
+usernameModal.addEventListener('mousedown', function(e){
+  if(e.target === usernameModal && usernameModal.dataset.firstTime !== '1'){
+    usernameModal.classList.remove('open');
+  }
+});
+closeUsernameModal.onclick = function(){
+  if(usernameModal.dataset.firstTime !== '1'){
+    usernameModal.classList.remove('open');
+  }
+};
+saveUsernameBtn.onclick = function(){
+  const val = usernameInput.value.trim();
+  if(!val){
+    usernameMsg.textContent = 'Please enter a username.';
+    return;
+  }
+  if(containsProfane(val)){
+    usernameMsg.textContent = 'Please choose a different username.';
+    return;
+  }
+  const u = auth.currentUser;
+  if(!u){
+    usernameMsg.textContent = 'Not logged in.';
+    return;
+  }
+  db.ref(`users/${u.uid}`).update({username: val, displayName: val}).then(()=>{
+    u.updateProfile({displayName: val}).catch(()=>{});
+    db.ref(`users/${u.uid}/profileCustomization/nameColor`).once('value').then(snap => {
+        displayUsername(val, snap.val() || '#1992d4');
+    });
+    usernameModal.classList.remove('open');
+    usernameModal.dataset.firstTime = '';
+    closeUsernameModal.style.display = '';
+    kcAlert('Username updated!');
+  });
+};
+
+// ========== AUTH STATE & INIT AVATAR ==========
+auth.onAuthStateChanged(u => {
+  if (u) {
+    authForms.style.display = "none";
+    profileUI.style.display = "block";
+    handleStreak(u.uid);
+    badgesCard.style.display = "flex";
+    
+    db.ref(`users/${u.uid}`).once('value').then(snap => {
+      const userData = snap.val() || {};
+      const nameToDisplay = userData.username || u.displayName || u.email;
+      const custom = userData.profileCustomization || {};
+      
+      displayUsername(nameToDisplay, custom.nameColor);
+
+      if(!userData.username){
+        openUsernameModal(true);
+      }
+
+      // Apply profile card theme AND banner
+      const profileCard = document.getElementById('profileCard');
+      if (custom.gradient) {
+          profileCard.style.background = custom.gradient;
+      } else {
+          profileCard.style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+      }
+      if (profileBanner) {
+          if (custom.banner) {
+              profileBanner.style.backgroundImage = `url('${custom.banner}')`;
+          } else {
+              // Default branded banner if no custom banner is set
+              profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
+          }
+      }
+       avatarImg.src = userData.avatar || "https://kevinmidnight7-sudo.github.io/messageboardkc/1.png";
+       avatarImg.style.display = "block";
+       displayAboutMe(userData.aboutMe || '');
+    });
+
+    db.ref("users").once("value").then(s => userCounter.textContent = `There are now ${s.numChildren()} users registered!`);
+    loadBadges(u.uid, u.emailVerified);
+    
+  } else {
+    authForms.style.display = "flex";
+    profileUI.style.display = "none";
+    badgesCard.style.display = "none";
+    avatarImg.style.display = "none";
+    editProfileBtn.style.display = 'none';
+    document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+    if(profileBanner) {
+      profileBanner.style.backgroundImage = 'none';
+    }
+  }
+});
+
+// ========== AVATAR CAROUSEL LOGIC ==========
+const avatarImgs = [
+  "1.png","2.png","3.png","4.png","5.png","6.png","7.png","13.png","9.png","10.png","11.png","12.png"
+].map(n => `https://kevinmidnight7-sudo.github.io/messageboardkc/${n}`);
+const avatarCarousel = document.getElementById("avatarCarousel");
+function renderAvatars(selectedUrl) {
+  avatarCarousel.innerHTML = "";
+  avatarImgs.forEach(url => {
+    const div = document.createElement("div");
+    div.className = "avatar-item";
+    div.innerHTML = `<img src="${url}" alt="Avatar">`;
+    if (url === selectedUrl) div.classList.add('selected');
+    div.onclick = function() {
+      document.querySelectorAll('.avatar-carousel .avatar-item').forEach(el=>el.classList.remove('selected'));
+      div.classList.add('selected');
+      const user = auth.currentUser;
+      if(user) {
+        db.ref(`users/${user.uid}/avatar`).set(url)
+          .then(()=>{
+            avatarImg.src = url;
+            avatarImg.style.display = "block";
+            kcAlert("Avatar updated!");
+            setTimeout(()=>avatarModal.classList.remove("open"),450);
+          });
+      } else kcAlert("Please log in to set an avatar.");
+    };
+    avatarCarousel.appendChild(div);
+  });
+}
+function renderAvatarsWithUpload(user){
+  avatarCarousel.innerHTML = "";
+  const div = document.createElement("div");
+  div.className = "avatar-item avatar-upload-unlocked";
+  div.innerHTML = `<span class="plus-icon">+</span><div class="upload-label">Upload</div>`;
+  div.onclick = function(){
+    avatarModal.classList.remove("open");
+    document.getElementById("uploadAvatarModal").classList.add("open");
+  };
+  avatarCarousel.appendChild(div);
+  avatarImgs.forEach(url => {
+    const adiv = document.createElement("div");
+    adiv.className = "avatar-item";
+    adiv.innerHTML = `<img src="${url}" alt="Avatar">`;
+    db.ref(`users/${user.uid}/avatar`).once("value").then(snap=>{
+      if (url === snap.val()) adiv.classList.add('selected');
+    });
+    adiv.onclick = function() {
+      document.querySelectorAll('.avatar-carousel .avatar-item').forEach(el=>el.classList.remove('selected'));
+      adiv.classList.add('selected');
+      db.ref(`users/${user.uid}/avatar`).set(url)
+        .then(()=>{
+          avatarImg.src = url;
+          avatarImg.style.display = "block";
+          kcAlert("Avatar updated!");
+          setTimeout(()=>avatarModal.classList.remove("open"),450);
+        });
+    };
+    avatarCarousel.appendChild(adiv);
+  });
+}
+avatarBtn.onclick = ()=> {
+  const user = auth.currentUser;
+  if(!user) return;
+  const uid = user.uid;
+  Promise.all([
+    db.ref(`users/${uid}/loginStreak`).once("value"),
+    db.ref(`users/${uid}/avatarUnlocked`).once("value")
+  ]).then(([streakSnap, unlockSnap]) => {
+    const streak  = (streakSnap.val() || 0);
+    const unlocked = !!unlockSnap.val();
+    if(streak >= 10 || unlocked){
+      renderAvatarsWithUpload(user);
+    } else {
+      renderAvatars(null);
+    }
+    avatarModal.classList.add("open");
+    setTimeout(() => {
+      const selected = document.querySelector('.avatar-carousel .avatar-item.selected');
+      if(selected) selected.scrollIntoView({inline:"center",behavior:"smooth"});
+    }, 50);
+  });
+};
+document.getElementById("closeUploadAvatarModal").onclick = function(){
+  document.getElementById("uploadAvatarModal").classList.remove("open");
+  document.getElementById("avatarUploadMsg").textContent = "";
+};
+document.getElementById("uploadAvatarBtn").onclick = function(){
+  const file = document.getElementById("avatarFile").files[0];
+  if(!file) return document.getElementById("avatarUploadMsg").textContent = "Select a file!";
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const url = e.target.result;
+    db.ref(`users/${auth.currentUser.uid}/avatar`).set(url).then(()=>{
+      avatarImg.src = url;
+      avatarImg.style.display = "block";
+      document.getElementById("avatarUploadMsg").textContent = "Avatar uploaded!";
+      setTimeout(()=>{
+        document.getElementById("uploadAvatarModal").classList.remove("open");
+        avatarModal.classList.remove("open");
+      },650);
+    });
+  };
+  reader.readAsDataURL(file);
+};
+document.getElementById("avatarFile").addEventListener('change',function(){
+  const file = this.files[0];
+  document.getElementById('fileNameDisplay').textContent = file ? file.name : 'No file chosen';
+});
+closeAvatarModal.onclick = ()=>avatarModal.classList.remove("open");
+avatarModal.addEventListener("mousedown",e=>{
+  if(!e.target.closest(".carousel-content"))
+    avatarModal.classList.remove("open");
+});
+document.getElementById('carouselLeft').onclick = ()=>{
+  avatarCarousel.scrollBy({left:-110,behavior:'smooth'});
+};
+document.getElementById('carouselRight').onclick = ()=>{
+  avatarCarousel.scrollBy({left:110,behavior:'smooth'});
+};
+let startX=0, scrollLeft=0, isDown=false;
+avatarCarousel.addEventListener('pointerdown', e=>{
+  isDown=true; startX=e.pageX; scrollLeft=avatarCarousel.scrollLeft;
+});
+avatarCarousel.addEventListener('pointerup', ()=>isDown=false);
+avatarCarousel.addEventListener('pointerleave', ()=>isDown=false);
+avatarCarousel.addEventListener('pointermove', e=>{
+  if(!isDown) return;
+  e.preventDefault();
+  const walk = (e.pageX-startX)*1.2;
+  avatarCarousel.scrollLeft = scrollLeft - walk;
+});
+
+// ========== BADGES LOGIC ==========
+let editingBadgeId = null;
+async function loadBadges(uid, verified){
+  badgeList.innerHTML="";
+  joinBadge.innerHTML="";
+  const verifiedBox=document.createElement("div");
+  verifiedBox.className="badge-item verified";
+  verifiedBox.tabIndex=0;
+  if(verified){
+    verifiedBox.innerHTML=`
+      <span style="font-size:2.2em;color:#fff;margin-bottom:3px;">✔️</span>
+      <span class="badge-label">VERIFIED</span>`;
+    verifiedBox.style.background="linear-gradient(90deg,#10b981 70%,#22e67b 120%)";
+    verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 18px #18e178cc,0 4px 14px #18e17844";verifiedBox.style.transform="translateY(-3px) scale(1.045)";};
+    verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";verifiedBox.style.transform="";};
+  } else {
+    verifiedBox.classList.add("locked");
+    verifiedBox.innerHTML=`
+      <span style="font-size:2.2em;color:#aaa;margin-bottom:3px;">❌</span>
+      <span class="badge-label">Not Verified</span>
+      <span class="lock-icon">🔒</span>`;
+    verifiedBox.style.background="linear-gradient(90deg,#cfd8dc 65%,#eceff1 120%)";
+    verifiedBox.onmouseover=()=>{verifiedBox.style.boxShadow="0 0 12px #aaa8,0 1px 6px #aaa4";};
+    verifiedBox.onmouseleave=()=>{verifiedBox.style.boxShadow="";};
+    verifiedBox.onclick=()=>{
+      auth.currentUser.sendEmailVerification(actionCodeSettings)
+        .then(()=>kcAlert("Verification email resent!"))
+        .catch(e=>kcAlert(e.message));
+    };
+  }
+  badgeList.appendChild(verifiedBox);
+  const specs={
+    offence:{label:"Best Offence", icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/red.png", cls:"offence", grad:"linear-gradient(90deg,#fa5252 80%,#fbba34 120%)", glow: "#ff6b6bcc"},
+    defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)", glow: "rgba(59,130,246,0.9)"},
+    overall:{label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)", glow: "rgba(234,179,8,0.9)"}
+  };
+  const countsSnap = await db.ref(`badges/${uid}`).once('value');
+  const counts = countsSnap.val() || {};
+  for(const [k,s] of Object.entries(specs)){
+    const cnt=counts[k]||0;
+    const el=document.createElement("div");
+    el.className=`badge-item ${s.cls}${cnt?"":" locked"}`;
+    el.tabIndex=0;
+    el.innerHTML=`<img src="${s.icon}" alt="${s.label}"/><span class="badge-label">${s.label}</span>`;
+    if(cnt){
+      el.innerHTML+=`<span class="badge-mult">x${cnt}</span>`;
+      el.style.background=s.grad;
+      el.onmouseover=()=>{
+        el.style.boxShadow=`0 0 18px ${s.glow},0 4px 14px ${s.glow}77`;
+        el.style.transform="translateY(-3px) scale(1.045)";
+      };
+      el.onmouseleave=()=>{
+        el.style.boxShadow="";
+        el.style.transform="";
+      };
+    } else {
+      el.innerHTML+=`<span class="lock-icon">🔒</span>`;
+      el.onmouseover=()=>{el.style.boxShadow="0 0 12px #aaa8,0 1px 6px #aaa4";};
+      el.onmouseleave=()=>{el.style.boxShadow="";};
+    }
+    badgeList.appendChild(el);
+  }
+  const userSnap = await db.ref(`users/${uid}`).once('value');
+  const userData = userSnap.val() || {};
+  const streak = userData.loginStreak || 0;
+  const customBadges = userData.customBadges || {};
+  const customKeys = Object.keys(customBadges);
+  const customCount = customKeys.length;
+  
+  const baseMax = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
+  
+  const codesUnlocked = userData.codesUnlocked || {};
+  let bonus = 0;
+  if(codesUnlocked.diamond) bonus += 2;
+  if(codesUnlocked.emerald) bonus += 1;
+  const maxCustom = baseMax + bonus;
+  
+  const allowCustom = (streak >= 50) || (bonus > 0);
+  
+  // Check if profile customization is unlocked and show the button
+  const profileCustomizationUnlocked = userData.profileCustomizationUnlocked || false;
+  
+  if (profileCustomizationUnlocked) {
+    editProfileBtn.style.display = 'flex';
+  } else {
+    editProfileBtn.style.display = 'none';
+  }
+
+  if(allowCustom && customCount < maxCustom){
+    const addDiv=document.createElement("div");
+    addDiv.className="badge-item";
+    addDiv.style.background="linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%)";
+    addDiv.innerHTML=`<span style="font-size:2.3em;">➕</span><span class="badge-label">Create Badge</span>`;
+    addDiv.onmouseover=()=>{
+      addDiv.style.boxShadow="0 0 18px #fdd835aa,0 4px 14px #fdd83555";
+      addDiv.style.transform="translateY(-3px) scale(1.045)";
+    };
+    addDiv.onmouseleave=()=>{
+      addDiv.style.boxShadow="";
+      addDiv.style.transform="";
+    };
+    addDiv.onclick = function(){
+      editingBadgeId = null;
+      document.getElementById('badgeNameFancy').value = '';
+      document.getElementById('gradCol1').value = '#ffe066';
+      document.getElementById('gradCol2').value = '#e0aaff';
+      const tInput = document.getElementById('textColorPicker');
+      if(tInput) tInput.value = '#ffffff';
+      const iconRow = document.getElementById('badgeIconRowFancy');
+      if(iconRow){
+        iconRow.querySelectorAll('.icon-item').forEach(el => el.classList.remove('selected'));
+      }
+      const gradContainer = document.getElementById('gradOptions');
+      if(gradContainer) gradContainer.querySelectorAll('.gradient-box').forEach(el => el.classList.remove('selected'));
+      const colourContainer = document.getElementById('textColorSwatches');
+      if(colourContainer) colourContainer.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
+      updateBadgePreview();
+      if(typeof showBadgeStep === 'function') showBadgeStep(1);
+      document.getElementById("badgeCreatorModalFancy").classList.add("open");
+    };
+    badgeList.appendChild(addDiv);
+  }
+  customKeys.forEach(key=>{
+    const badge = customBadges[key];
+    const cdiv = document.createElement("div");
+    cdiv.className = "badge-item";
+    cdiv.style.background = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
+    cdiv.innerHTML = `<span style="font-size:2.2em;">${badge.icon}</span>
+      <span class="badge-label" style="color:${badge.textColor||'#e5e7eb'};">${badge.name}</span>`;
+    const editIcon=document.createElement('span');
+    editIcon.textContent='✏️';
+    editIcon.className='edit-icon';
+    editIcon.style.position='absolute';
+    editIcon.style.top='8px';
+    editIcon.style.right='12px';
+    editIcon.style.fontSize='1.2em';
+    editIcon.style.opacity='0.8';
+    editIcon.style.pointerEvents='none';
+    cdiv.appendChild(editIcon);
+    const delIcon=document.createElement('span');
+    delIcon.textContent='🗑️';
+    delIcon.className='delete-icon';
+    delIcon.style.position='absolute';
+    delIcon.style.top='8px';
+    delIcon.style.left='12px';
+    delIcon.style.fontSize='1.2em';
+    delIcon.style.opacity='0.8';
+    delIcon.style.cursor='pointer';
+    delIcon.onclick = function(e){
+      e.stopPropagation();
+      db.ref(`users/${uid}/customBadges/${key}`).remove().then(()=>{
+        kcAlert('Badge deleted');
+        loadBadges(uid,auth.currentUser.emailVerified);
+      });
+    };
+    cdiv.appendChild(delIcon);
+    function hexToRgb(h){
+      let r=0,g=0,b=0;
+      if(h.length===4){r=parseInt(h[1]+h[1],16);g=parseInt(h[2]+h[2],16);b=parseInt(h[3]+h[3],16);} 
+      else if(h.length===7){r=parseInt(h.substring(1,3),16);g=parseInt(h.substring(3,5),16);b=parseInt(h.substring(5,7),16);} 
+      return {r,g,b};
+    }
+    function lighten(col,amt){
+      const {r,g,b}=hexToRgb(col);
+      const lr = Math.min(255, Math.floor(r + (255-r)*amt));
+      const lg = Math.min(255, Math.floor(g + (255-g)*amt));
+      const lb = Math.min(255, Math.floor(b + (255-b)*amt));
+      return `rgba(${lr},${lg},${lb},0.85)`;
+    }
+    const glowColor = lighten(badge.grad2||badge.grad1||'#e0aaff',0.4);
+    cdiv.onmouseover=()=>{
+      cdiv.style.boxShadow=`0 0 18px ${glowColor},0 4px 14px ${glowColor}77`;
+      cdiv.style.transform="translateY(-3px) scale(1.045)";
+    };
+    cdiv.onmouseleave=()=>{
+      cdiv.style.boxShadow="";
+      cdiv.style.transform="";
+    };
+    cdiv.onclick = function(){
+      editingBadgeId = key;
+      document.getElementById('badgeNameFancy').value = badge.name;
+      const g1 = badge.grad1 || '#ffe066';
+      const g2 = badge.grad2 || '#e0aaff';
+      document.getElementById('gradCol1').value = g1;
+      document.getElementById('gradCol2').value = g2;
+      const tcol = badge.textColor || '#ffffff';
+      const tInput = document.getElementById('textColorPicker');
+      if(tInput) tInput.value = tcol;
+      const iconRow2 = document.getElementById('badgeIconRowFancy');
+      if(iconRow2){
+        iconRow2.querySelectorAll('.icon-item').forEach(el => {
+          el.classList.remove('selected');
+          if(el.innerText.trim() === badge.icon) el.classList.add('selected');
+        });
+      }
+      const gradContainer2 = document.getElementById('gradOptions');
+      if(gradContainer2){
+        gradContainer2.querySelectorAll('.gradient-box').forEach(el => {
+          el.classList.remove('selected');
+          if(el.dataset.c1 === g1 && el.dataset.c2 === g2) el.classList.add('selected');
+        });
+      }
+      const colourContainer2 = document.getElementById('textColorSwatches');
+      if(colourContainer2){
+        colourContainer2.querySelectorAll('.color-swatch').forEach(el => {
+          el.classList.remove('selected');
+          if(el.dataset.col && el.dataset.col.toLowerCase() === tcol.toLowerCase()) el.classList.add('selected');
+        });
+      }
+      updateBadgePreview();
+      if(typeof showBadgeStep === 'function') showBadgeStep(1);
+      document.getElementById("badgeCreatorModalFancy").classList.add("open");
+    };
+    badgeList.appendChild(cdiv);
+  });
+}
+
+// ========== FANCY BADGE CREATOR LOGIC ==========
+const badgeIcons = ["🏆","🔥","💎","⭐","🐍","👑","🎯","🛡️"];
+const badgeIconRowFancy = document.getElementById("badgeIconRowFancy");
+badgeIcons.forEach(icon=>{
+  const b = document.createElement("div");
+  b.className = "icon-item";
+  b.innerHTML = `<span>${icon}</span>`;
+  b.onclick = function(){
+    badgeIconRowFancy.querySelectorAll('.icon-item').forEach(el=>el.classList.remove('selected'));
+    b.classList.add('selected');
+    updateBadgePreview();
+  };
+  badgeIconRowFancy.appendChild(b);
+});
+function getSelectedBadgeIcon(){
+  const row = document.getElementById('badgeIconRowFancy');
+  if(!row) return null;
+  const iconDiv = Array.from(row.children).find(el => el.classList.contains('selected'));
+  return iconDiv ? iconDiv.innerText.trim() : null;
+}
+function updateBadgePreview(){
+  const name = document.getElementById("badgeNameFancy").value.trim() || "Custom Badge";
+  const icon = getSelectedBadgeIcon() || "🏆";
+  const c1 = document.getElementById("gradCol1").value;
+  const c2 = document.getElementById("gradCol2").value;
+  const textColPicker = document.getElementById("textColorPicker");
+  const textCol = textColPicker ? textColPicker.value : '#ffffff';
+  const prevSmall = document.getElementById("badgeLivePreview");
+  if(prevSmall){
+    prevSmall.innerHTML = `<span style="font-size:2.2em;">${icon}</span><span style="font-weight:600;font-size:1.07rem;margin-left:9px;color:${textCol};">${name}</span>`;
+    prevSmall.style.background = `linear-gradient(90deg,${c1} 30%,${c2} 100%)`;
+  }
+  const prevLarge = document.getElementById("badgePreviewLarge");
+  if(prevLarge){
+    prevLarge.innerHTML = `<span style="font-size:2.4rem;">${icon}</span><span style="font-weight:600;font-size:1.3rem;margin-left:9px;color:${textCol};">${name}</span>`;
+    prevLarge.style.background = `linear-gradient(90deg,${c1} 30%,${c2} 100%)`;
+  }
+}
+
+/* ----- Badge Creator Wizard Setup ----- */
+let currentBadgeStep = 1;
+function showBadgeStep(step){
+  currentBadgeStep = step;
+  const stepContents = document.querySelectorAll('#badgeCreatorModalFancy .badge-step-content');
+  stepContents.forEach(el=>el.classList.remove('active'));
+  const target = document.getElementById('badgeStep'+step);
+  if(target) target.classList.add('active');
+  const steps = document.querySelectorAll('#badgeCreatorModalFancy .badge-progress-bar .badge-step');
+  steps.forEach((el,idx)=>{
+    if(idx < step){
+      el.classList.add('active');
+    } else {
+      el.classList.remove('active');
+    }
+  });
+  const backBtn = document.getElementById('badgeBackBtn');
+  const nextBtn = document.getElementById('badgeNextBtn');
+  const saveBtn = document.getElementById('saveBadgeFancyBtn');
+  if(backBtn && nextBtn && saveBtn){
+    if(step === 1){
+      backBtn.style.display = 'none';
+      nextBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+    } else if(step === 4){
+      backBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'none';
+      saveBtn.style.display = 'inline-block';
+    } else {
+      backBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'inline-block';
+      saveBtn.style.display = 'none';
+    }
+  }
+  updateBadgePreview();
+}
+if(document.getElementById('badgeNextBtn')){
+  document.getElementById('badgeNextBtn').onclick = function(){
+    if(currentBadgeStep < 4) showBadgeStep(currentBadgeStep + 1);
+  };
+}
+if(document.getElementById('badgeBackBtn')){
+  document.getElementById('badgeBackBtn').onclick = function(){
+    if(currentBadgeStep > 1) showBadgeStep(currentBadgeStep - 1);
+  };
+}
+if(document.getElementById('badgeCancelBtn')){
+  document.getElementById('badgeCancelBtn').onclick = function(){
+    document.getElementById('badgeCreatorModalFancy').classList.remove('open');
+    document.getElementById('badgeCreateMsgFancy').textContent = '';
+    editingBadgeId = null;
+    showBadgeStep(1);
+  };
+}
+
+/* ----- Gradient and Colour Options ----- */
+const gradPresets = [
+  ['#ff9a9e','#fad0c4'],
+  ['#a1c4fd','#c2e9fb'],
+  ['#f6d365','#fda085'],
+  ['#a8edea','#fed6e3'],
+  ['#f093fb','#f5576c'],
+  ['#6ee7b7','#3b82f6']
+];
+const gradContEl = document.getElementById('gradOptions');
+if(gradContEl){
+  gradPresets.forEach(pair=>{
+    const box=document.createElement('div');
+    box.className='gradient-box';
+    box.style.background=`linear-gradient(90deg,${pair[0]} 30%,${pair[1]} 100%)`;
+    box.dataset.c1=pair[0];
+    box.dataset.c2=pair[1];
+    box.onclick=function(){
+      gradContEl.querySelectorAll('.gradient-box').forEach(el=>el.classList.remove('selected'));
+      box.classList.add('selected');
+      document.getElementById('gradCol1').value=pair[0];
+      document.getElementById('gradCol2').value=pair[1];
+      updateBadgePreview();
+    };
+    gradContEl.appendChild(box);
+  });
+  if(gradContEl.firstElementChild){ gradContEl.firstElementChild.classList.add('selected'); }
+}
+const textColours = ['#ffffff','#facc15','#22d3ee','#4ade80','#f472b6','#a78bfa','#f97316','#0f172a'];
+const swatchEl = document.getElementById('textColorSwatches');
+if(swatchEl){
+  textColours.forEach(col=>{
+    const sw=document.createElement('div');
+    sw.className='color-swatch';
+    sw.style.background=col;
+    sw.dataset.col=col;
+    sw.onclick=function(){
+      swatchEl.querySelectorAll('.color-swatch').forEach(el=>el.classList.remove('selected'));
+      sw.classList.add('selected');
+      const tPicker=document.getElementById('textColorPicker');
+      if(tPicker) tPicker.value=col;
+      updateBadgePreview();
+    };
+    swatchEl.appendChild(sw);
+  });
+  if(swatchEl.firstElementChild){ swatchEl.firstElementChild.classList.add('selected'); }
+}
+["badgeNameFancy","gradCol1","gradCol2","textColorPicker"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.oninput=updateBadgePreview;
+});
+document.getElementById("randGradientBtn").onclick = function(){
+  function randCol(){ return "#"+Math.floor(Math.random()*16777215).toString(16).padStart(6,"0"); }
+  document.getElementById("gradCol1").value = randCol();
+  document.getElementById("gradCol2").value = randCol();
+  updateBadgePreview();
+};
+document.getElementById("closeBadgeCreatorModalFancy").onclick = function(){
+  document.getElementById("badgeCreatorModalFancy").classList.remove("open");
+  document.getElementById("badgeCreateMsgFancy").textContent = "";
+  editingBadgeId = null;
+  if(typeof showBadgeStep === 'function') showBadgeStep(1);
+};
+document.getElementById("saveBadgeFancyBtn").onclick = function(){
+  const name = document.getElementById("badgeNameFancy").value.trim();
+  const icon = getSelectedBadgeIcon();
+  const c1 = document.getElementById("gradCol1").value;
+  const c2 = document.getElementById("gradCol2").value;
+  const tcolInput = document.getElementById("textColorPicker");
+  const textColor = tcolInput ? tcolInput.value : '#ffffff';
+  if(!name || !icon) {
+    document.getElementById("badgeCreateMsgFancy").textContent = "Pick a name and icon!";
+    return;
+  }
+  if(containsProfane(name)){
+    document.getElementById("badgeCreateMsgFancy").textContent = "Please choose a different name.";
+    return;
+  }
+  const uid = auth.currentUser.uid;
+  if(editingBadgeId){
+    db.ref(`users/${uid}/customBadges/${editingBadgeId}`).set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
+      document.getElementById("badgeCreateMsgFancy").textContent = "Badge updated!";
+      setTimeout(()=>{
+        document.getElementById("badgeCreatorModalFancy").classList.remove("open");
+        document.getElementById("badgeCreateMsgFancy").textContent = "";
+        editingBadgeId=null;
+      }, 800);
+      loadBadges(uid,auth.currentUser.emailVerified);
+    });
+  } else {
+    const newRef = db.ref(`users/${uid}/customBadges`).push();
+    newRef.set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
+      document.getElementById("badgeCreateMsgFancy").textContent = "Badge saved!";
+      setTimeout(()=>{
+        document.getElementById("badgeCreatorModalFancy").classList.remove("open");
+        document.getElementById("badgeCreateMsgFancy").textContent = "";
+      }, 800);
+      loadBadges(uid,auth.currentUser.emailVerified);
+    });
+  }
+};
+updateBadgePreview();
+
+/* ========== ABOUT ME LOGIC ========== */
+function displayAboutMe(text){
+  currentAboutMe = text || '';
+  const el = document.getElementById('aboutMeDisplay');
+  if(el){
+    if(currentAboutMe && currentAboutMe.trim()){
+      el.textContent = currentAboutMe;
+    } else {
+      el.textContent = 'Click to add about me';
+    }
+  }
+}
+function openAboutMeModal(){
+  const modal = document.getElementById('aboutMeModal');
+  if(modal){
+    modal.classList.add('open');
+    const input = document.getElementById('aboutMeInput');
+    if(input) input.value = currentAboutMe || '';
+    const msg = document.getElementById('aboutMeMsg');
+    if(msg) msg.textContent = '';
+    const picker = document.getElementById('emojiPicker');
+    if(picker) picker.style.display = 'none';
+  }
+}
+function closeAboutMeModal(){
+  const modal = document.getElementById('aboutMeModal');
+  if(modal) modal.classList.remove('open');
+}
+document.addEventListener('DOMContentLoaded', function(){
+  const aboutBox = document.getElementById('aboutMeContainer');
+  if(aboutBox) aboutBox.onclick = function(){ openAboutMeModal(); };
+  const closeBtn = document.getElementById('closeAboutMeModal');
+  if(closeBtn) closeBtn.onclick = function(){ closeAboutMeModal(); };
+  const modal = document.getElementById('aboutMeModal');
+  if(modal) modal.addEventListener('mousedown', function(e){
+    if(e.target === modal) closeAboutMeModal();
+  });
+  const emojiBtn = document.getElementById('emojiBtn');
+  const emojiPicker = document.getElementById('emojiPicker');
+  if(emojiPicker){
+    const emojiList = ['😊','😂','😍','🎉','😎','👍','💖','🙏','🤔','🥳','🌟','🎶','🚀','🥰','😇','😅','💯','🔥'];
+    emojiPicker.innerHTML = emojiList.map(e=>`<span>${e}</span>`).join('');
+    emojiPicker.querySelectorAll('span').forEach(sp=>{
+      sp.onclick = function(){
+        const input = document.getElementById('aboutMeInput');
+        if(!input) return;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const text = input.value;
+        input.value = text.slice(0,start) + this.textContent + text.slice(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + this.textContent.length;
+      };
+    });
+  }
+  if(emojiBtn) emojiBtn.onclick = function(){
+    if(emojiPicker){
+      emojiPicker.style.display = (emojiPicker.style.display === 'none' || emojiPicker.style.display === '') ? 'flex' : 'none';
+    }
+  };
+  const saveBtn = document.getElementById('saveAboutMeBtn');
+  if(saveBtn) saveBtn.onclick = function(){
+    const input = document.getElementById('aboutMeInput');
+    const msg = document.getElementById('aboutMeMsg');
+    if(!input) return;
+    const val = input.value.trim();
+    if(val.length > 300){
+      if(msg) msg.textContent = 'About me is too long.';
+      return;
+    }
+    if(containsProfane(val)){
+      if(msg) msg.textContent = 'Please remove profane words.';
+      return;
+    }
+    const user = auth.currentUser;
+    if(!user){
+      if(msg) msg.textContent = 'Not logged in.';
+      return;
+    }
+    db.ref('users/' + user.uid + '/aboutMe').set(val).then(()=>{
+      displayAboutMe(val);
+      closeAboutMeModal();
+      kcAlert('About me updated!');
+    }).catch(err=>{
+      if(msg) msg.textContent = (err && err.message) || 'Error saving.';
+    });
+  };
+});
+
+// ========== PROFILE CUSTOMIZATION WIZARD LOGIC ==========
+let currentProfileStep = 1;
+
+const bannerOptions = [
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/cyberpunk.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/sea.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/fire.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/car.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/slither.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/city.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/slither2.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/slither3.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/hexagon.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/kcbanner.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/forest.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/lambo.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/cats.png',
+    'https://kevinmidnight7-sudo.github.io/messageboardkc/dogs.png',
+];
+    
+const gradientOptions = [
+     'linear-gradient(135deg, rgb(246, 211, 101) 0%, rgb(253, 160, 133) 100%)', // Warm golden sunset
+  'linear-gradient(135deg, rgb(161, 196, 253) 0%, rgb(194, 233, 251) 100%)', // Light blue sky
+  'linear-gradient(135deg, rgb(255, 154, 158) 0%, rgb(254, 207, 239) 100%)', // Pink pastel
+  'linear-gradient(135deg, rgb(132, 250, 176) 0%, rgb(143, 211, 244) 100%)', // Green & teal
+  'linear-gradient(135deg, rgb(212, 252, 121) 0%, rgb(150, 230, 161) 100%)', // Soft green lemon
+  'linear-gradient(135deg, rgb(137, 247, 254) 0%, rgb(102, 166, 255) 100%)', // Aqua blue
+  'linear-gradient(135deg, rgb(254, 225, 64) 0%, rgb(250, 112, 154) 100%)',  // Peach sunrise
+  'linear-gradient(135deg, rgb(255, 222, 233) 0%, rgb(185, 233, 221) 100%)', // Blush & mint
+  'linear-gradient(135deg, rgb(131, 164, 212) 0%, rgb(182, 251, 255) 100%)', // Frosted blue
+  'linear-gradient(135deg, rgb(186, 255, 201) 0%, rgb(83, 201, 255) 100%)',  // Mint to blue
+  'linear-gradient(135deg, rgb(255, 221, 225) 0%, rgb(255, 247, 174) 100%)', // Pastel blush
+  'linear-gradient(135deg, rgb(252, 234, 187) 0%, rgb(248, 181, 0) 100%)',   // Yellow gold
+  'linear-gradient(135deg, rgb(238, 174, 202) 0%, rgb(148, 187, 233) 100%)', // Pink & periwinkle
+  'linear-gradient(135deg, rgb(255, 175, 189) 0%, rgb(255, 195, 160) 100%)', // Peach pastel
+  'linear-gradient(135deg, rgb(120, 115, 245) 0%, rgb(236, 72, 153) 100%)',  // Deep purple to pink (cyberpunk)
+  'linear-gradient(135deg, rgb(255, 234, 167) 0%, rgb(255, 161, 127) 100%)', // Apricot gold
+  'linear-gradient(135deg, rgb(187, 210, 197) 0%, rgb(255, 170, 165) 100%)', // Subtle vintage
+  'linear-gradient(135deg, rgb(216, 180, 254) 0%, rgb(134, 182, 246) 100%)', // Lavender blue
+  'linear-gradient(135deg, rgb(247, 151, 30) 0%, rgb(255, 210, 63) 100%)',   // Bright orange
+  'linear-gradient(135deg, rgb(221, 214, 243) 0%, rgb(250, 172, 168) 100%)', // Soft lavender & rose
+  'linear-gradient(135deg, rgb(0, 210, 255) 0%, rgb(58, 123, 213) 100%)',    // Electric blue
+  'linear-gradient(135deg, rgb(255, 0, 204) 0%, rgb(51, 0, 102) 100%)',      // Neon pink & purple
+  'linear-gradient(135deg, rgb(72, 85, 99) 0%, rgb(41, 50, 60) 100%)',       // Dark slate
+  'linear-gradient(135deg, rgb(17, 153, 142) 0%, rgb(56, 239, 125) 100%)',   // Emerald green
+  'linear-gradient(135deg, rgb(255, 48, 48) 0%, rgb(255, 200, 55) 100%)',    // Red to gold
+  'linear-gradient(135deg, rgb(238, 119, 82) 0%, rgb(231, 60, 126) 100%)',   // Sunset fire
+  'linear-gradient(135deg, rgb(29, 67, 80) 0%, rgb(106, 17, 203) 100%)',     // Deep night blue/purple
+  'linear-gradient(135deg, rgb(0, 242, 96) 0%, rgb(5, 117, 230) 100%)',      // Vibrant green-blue
+  'linear-gradient(135deg, rgb(255, 87, 34) 0%, rgb(255, 255, 0) 100%)',     // Neon orange-yellow
+  'linear-gradient(135deg, rgb(67, 198, 172) 0%, rgb(248, 255, 174) 100%)'  
+];
+const defaultNameColorOptions = [
+  '#18181b', '#f3f4f6', '#ffffff', '#f59e42', '#f43f5e', '#fbbf24', '#14b8a6', 
+  '#6366f1', '#38bdf8', '#84cc16', '#ef4444', '#3f3f46'
+];
+
+function updateProfilePreview() {
+    const bannerPreview = document.getElementById('profileBannerPreview');
+    const cardPreview = document.getElementById('cardPreview');
+    const usernamePreview = document.getElementById('usernamePreview');
+
+    const selectedBannerEl = bannerSelectionGrid.querySelector('.banner-item.selected img');
+    const selectedGradientEl = gradientSelectionGrid.querySelector('.gradient-item.selected');
+    const selectedColorEl = nameColorSelectionGrid.querySelector('.color-item.selected');
+
+    if (bannerPreview) {
+        bannerPreview.style.backgroundImage = selectedBannerEl ? `url('${selectedBannerEl.src}')` : 'none';
+    }
+    if (cardPreview) {
+        cardPreview.style.background = selectedGradientEl ? selectedGradientEl.style.background : 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
+    }
+    if (usernamePreview) {
+        usernamePreview.style.color = selectedColorEl ? selectedColorEl.style.backgroundColor : '#1992d4';
+    }
+}
+
+function showProfileStep(step) {
+    currentProfileStep = step;
+    document.querySelectorAll('#profileCustomizationModal .badge-step-content').forEach(el => el.classList.remove('active'));
+    document.querySelector(`#customizationStep${step}`).classList.add('active');
+
+    const steps = document.querySelectorAll('#profileCustomizationProgressBar .badge-step');
+    steps.forEach((el, idx) => {
+        el.classList.toggle('active', idx < step);
+    });
+
+    profileBackBtn.style.display = (step === 1) ? 'none' : 'inline-block';
+    profileNextBtn.style.display = (step === 3) ? 'none' : 'inline-block';
+    saveCustomizationBtn.style.display = (step === 3) ? 'inline-block' : 'none';
+}
+
+function updateColorSwatches(colors, currentNameColor) {
+    nameColorSelectionGrid.innerHTML = '';
+    colors.forEach(color => {
+        const item = document.createElement('div');
+        item.className = 'color-item';
+        if (color === currentNameColor) item.classList.add('selected');
+        item.style.background = color;
+        item.onclick = () => {
+            nameColorSelectionGrid.querySelectorAll('.color-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            updateProfilePreview();
+        };
+        nameColorSelectionGrid.appendChild(item);
+    });
+}
+
+function updateGradientSwatches(gradients, currentGradient) {
+    gradientSelectionGrid.innerHTML = '';
+    gradients.forEach(gradient => {
+        const item = document.createElement('div');
+        item.className = 'gradient-item';
+        if (gradient === currentGradient) item.classList.add('selected');
+        item.style.background = gradient;
+        item.onclick = () => {
+            gradientSelectionGrid.querySelectorAll('.gradient-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            updateProfilePreview();
+        };
+        gradientSelectionGrid.appendChild(item);
+    });
+}
+
+
+function populateCustomizationModal(current) {
+    bannerSelectionGrid.innerHTML = '';
+    bannerOptions.forEach(url => {
+        const item = document.createElement('div');
+        item.className = 'banner-item';
+        if (url === current.banner) item.classList.add('selected');
+        item.innerHTML = `<img src="${url}" alt="Banner Preview">`;
+        item.onclick = () => {
+            bannerSelectionGrid.querySelectorAll('.banner-item').forEach(el => el.classList.remove('selected'));
+            item.classList.add('selected');
+            updateProfilePreview();
+        };
+        bannerSelectionGrid.appendChild(item);
+    });
+
+    updateGradientSwatches(gradientOptions, current.gradient);
+    updateColorSwatches(defaultNameColorOptions, current.nameColor);
+}
+
+editProfileBtn.onclick = () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    db.ref(`users/${user.uid}`).once('value').then(snap => {
+        const userData = snap.val() || {};
+        const current = userData.profileCustomization || {};
+        
+        // Populate preview with current user data
+        document.getElementById('avatarPreview').src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+        document.getElementById('usernamePreview').textContent = userData.username || 'Username';
+
+        populateCustomizationModal(current);
+        updateProfilePreview();
+        showProfileStep(1);
+        profileCustomizationModal.classList.add('open');
+    });
+};
+
+closeCustomizationModal.onclick = () => {
+    profileCustomizationModal.classList.remove('open');
+    // Restore the actual profile view from DB, in case user cancelled changes
+    const user = auth.currentUser;
+    if(user) {
+        db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
+            const custom = snap.val() || {};
+            if(custom.banner) profileBanner.style.backgroundImage = `url('${custom.banner}')`;
+            else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)'; // Restore default branded banner
+
+            if(custom.gradient) document.getElementById('profileCard').style.background = custom.gradient;
+            else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+
+            const usernameText = document.querySelector('#welcomeUser .username-text');
+            if(usernameText) usernameText.style.color = custom.nameColor || '#1992d4';
+        });
+    }
+};
+
+profileCustomizationModal.addEventListener('mousedown', e => {
+    if (!e.target.closest('.carousel-content')) {
+        closeCustomizationModal.onclick();
+    }
+});
+
+profileNextBtn.onclick = () => showProfileStep(currentProfileStep + 1);
+profileBackBtn.onclick = () => showProfileStep(currentProfileStep - 1);
+
+saveCustomizationBtn.onclick = () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const selectedBannerEl = bannerSelectionGrid.querySelector('.banner-item.selected img');
+    const selectedGradientEl = gradientSelectionGrid.querySelector('.gradient-item.selected');
+    const selectedColorEl = nameColorSelectionGrid.querySelector('.color-item.selected');
+
+    const updates = {
+        banner: selectedBannerEl ? selectedBannerEl.src : null,
+        gradient: selectedGradientEl ? selectedGradientEl.style.background : null,
+        nameColor: selectedColorEl ? selectedColorEl.style.backgroundColor : null
+    };
+
+    db.ref(`users/${user.uid}/profileCustomization`).update(updates).then(() => {
+        kcAlert('Profile customization saved!');
+        profileCustomizationModal.classList.remove('open');
+        // The onAuthStateChanged listener will re-apply the saved styles automatically on next load,
+        // but we can apply them immediately for a better UX.
+        if(updates.banner) profileBanner.style.backgroundImage = `url('${updates.banner}')`;
+        else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)'; // Apply default branded banner
+        if(updates.gradient) document.getElementById('profileCard').style.background = updates.gradient;
+        else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+        const usernameText = document.querySelector('#welcomeUser .username-text');
+        if(usernameText) usernameText.style.color = updates.nameColor || '#1992d4';
+
+    }).catch(err => {
+        kcAlert('Error saving: ' + err.message);
+    });
+};
+
+// Gemini API call for color suggestions
+suggestColorBtn.onclick = async () => {
+    suggestColorBtn.disabled = true;
+    suggestColorBtn.textContent = 'Thinking...';
+    
+    try {
+        const prompt = "Generate a JSON object with a single key 'colors' which is an array of 7 unique, modern, and appealing hex color codes for a user profile username.";
+        const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+        const payload = {
+            contents: chatHistory,
+            generationConfig: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: "OBJECT",
+                    properties: {
+                        "colors": {
+                            type: "ARRAY",
+                            items: { "type": "STRING" }
+                        }
+                    }
+                }
+            }
+        };
+        const apiKey = "AIzaSyB59Lt9zuqpMpe3_18R9DGkmJBGAx75O9w"; // If you want to use models other than gemini-2.5-flash-preview-05-20 or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        const text = result.candidates[0].content.parts[0].text;
+        const parsedJson = JSON.parse(text);
+
+        if (parsedJson.colors && Array.isArray(parsedJson.colors)) {
+            const currentSelected = nameColorSelectionGrid.querySelector('.color-item.selected');
+            const currentColor = currentSelected ? currentSelected.style.backgroundColor : null;
+            updateColorSwatches(parsedJson.colors, currentColor);
+            kcAlert("Here are some new colors!");
+        } else {
+            throw new Error("Invalid format from AI.");
+        }
+
+    } catch (error) {
+        console.error("Gemini API error:", error);
+        kcAlert("Sorry, couldn't get suggestions from AI right now.");
+    } finally {
+        suggestColorBtn.disabled = false;
+        suggestColorBtn.textContent = '✨ Suggest with AI';
+    }
+};
+
+// New Gemini API call for gradient suggestions
+suggestGradientBtn.onclick = () => {
+    suggestGradientModal.classList.add("open");
+    gradientInput.value = "";
+    gradientMsg.textContent = "";
+};
+
+closeSuggestGradientModal.onclick = () => {
+    suggestGradientModal.classList.remove("open");
+    gradientInput.value = "";
+    gradientMsg.textContent = "";
+};
+
+suggestGradientModal.addEventListener("mousedown", e => {
+    if (!e.target.closest(".carousel-content")) {
+        closeSuggestGradientModal.onclick();
+    }
+});
+
+getGradientBtn.onclick = async () => {
+    const word = gradientInput.value.trim();
+    gradientMsg.textContent = '';
+
+    if (!word) {
+        gradientMsg.textContent = "Please enter a word!";
+        return;
+    }
+
+    getGradientBtn.disabled = true;
+    getGradientBtn.textContent = 'Generating...';
+
+    try {
+        const prompt = `Generate a CSS linear-gradient string based on the word "${word}". The gradient should be visually appealing and represent the essence of the word. Provide only the CSS gradient string, without any additional text or JSON formatting. Example: for "sunset", output "linear-gradient(to right, #ff7e5f, #feb47b)".`;
+        const chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+        const payload = {
+            contents: chatHistory,
+            generationConfig: {
+                responseMimeType: "text/plain" // Requesting plain text response
+            }
+        };
+        const apiKey = "AIzaSyB59Lt9zuqpMpe3_18R9DGkmJBGAx75O9w"; // If you want to use models other than gemini-2.5-flash-preview-05-20 or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+        const gradientString = result.candidates[0].content.parts[0].text.trim();
+
+        if (gradientString.startsWith('linear-gradient(') && gradientString.endsWith(')')) {
+            // Add the new gradient to the selectable options
+            const currentSelected = gradientSelectionGrid.querySelector('.gradient-item.selected');
+            const currentGradient = currentSelected ? currentSelected.style.background : null;
+
+            // Prepend the new gradient to the existing options
+            const updatedGradients = [gradientString, ...gradientOptions];
+            updateGradientSwatches(updatedGradients, gradientString); // Select the newly added gradient
+
+            kcAlert("Here's your suggested gradient!");
+            suggestGradientModal.classList.remove("open");
+        } else {
+            throw new Error("Invalid gradient format from AI.");
+        }
+
+    } catch (error) {
+        console.error("Gemini API error:", error);
+        gradientMsg.textContent = "Sorry, couldn't generate a gradient. Try a different word.";
+    } finally {
+        getGradientBtn.disabled = false;
+        getGradientBtn.textContent = 'Get Gradient';
+    }
+};
+
+
+  </script>
+</body>
+</html>
