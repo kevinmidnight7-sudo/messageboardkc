@@ -31,7 +31,7 @@
             transition: all 0.2s ease-in-out;
             cursor: pointer;
         }
-        
+
         .glass-card:hover {
             transform: translateY(-5px) scale(1.02);
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.2);
@@ -70,7 +70,7 @@
 
         .avatar.custom {
              /* Dynamic border color will be set via JS */
-             border: 3px solid transparent; 
+             border: 3px solid transparent;
         }
         .avatar.custom.no-color {
             border: 3px solid #fde047;
@@ -230,10 +230,10 @@
             font-size: 1.2rem;
         }
 
-.user-streak {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #fde047; /* This is a nice yellow color */
+        .user-streak {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fde047; /* This is a nice yellow color */
         }
 
         .popup-close-btn {
@@ -515,7 +515,7 @@
 
         <!-- User Search Input -->
         <div class="flex justify-center mb-10">
-            <input type="text" id="userSearch" placeholder="Search users..." 
+            <input type="text" id="userSearch" placeholder="Search users..."
                    class="w-full max-w-lg px-4 py-3 rounded-full bg-white bg-opacity-10 text-white placeholder-gray-400
                           focus:outline-none focus:ring-2 focus:ring-yellow-400 border border-transparent focus:border-yellow-400
                           transition-colors duration-200">
@@ -569,7 +569,7 @@
             </div>
         </div>
     </div>
-    
+
     <script>
         // Firebase setup from provided HTMLs
         const firebaseConfig = {
@@ -625,7 +625,7 @@
         function createUserCard(user) {
             // Generate badge HTML dynamically
             let badgesHtml = '';
-            
+
             // Add Verified badge if applicable
             if (user.isVerified) {
                 badgesHtml += `<img src="${badgeIconMap.verified}" alt="Verified" title="Verified" class="badge-icon">`;
@@ -690,12 +690,12 @@
         // Function to filter users based on the selected category and search query
         function filterUsers(category, query) {
             let filteredUsers = allUsers;
-            
+
             // Filter by category
             if (category === 'verified') {
                 filteredUsers = filteredUsers.filter(user => user.isVerified);
             } else if (category === 'skilled') {
-                filteredUsers = filteredUsers.filter(user => 
+                filteredUsers = filteredUsers.filter(user =>
                     user.badges.offence > 0 || user.badges.defence > 0 || user.badges.overall > 0
                 );
             } else if (category === 'diamond') {
@@ -707,12 +707,12 @@
             // Filter by search query
             if (query) {
                 const lowerCaseQuery = query.toLowerCase();
-                filteredUsers = filteredUsers.filter(user => 
+                filteredUsers = filteredUsers.filter(user =>
                     user.displayName.toLowerCase().includes(lowerCaseQuery) ||
                     (user.aboutMe && user.aboutMe.toLowerCase().includes(lowerCaseQuery))
                 );
             }
-            
+
             return filteredUsers;
         }
 
@@ -721,14 +721,14 @@
             const query = userSearch.value;
             const filteredUsers = filterUsers(currentCategory, query);
             const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-            
+
             // Slice the users for the current page
             const startIndex = (currentPage - 1) * usersPerPage;
             const endIndex = startIndex + usersPerPage;
             const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
 
             userGrid.innerHTML = usersToDisplay.map(createUserCard).join('');
-            
+
             // Update pagination controls
             pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
             prevPageBtn.disabled = currentPage === 1;
@@ -745,7 +745,7 @@
                 });
             });
         }
-        
+
         // Fetch all user and badge data from Firebase and then render the grid
         db.ref('users').on('value', userSnap => {
             db.ref('badges').once('value').then(badgeSnap => {
@@ -809,17 +809,17 @@
         // --- POPUP LOGIC ---
         const userPopup = document.getElementById('userPopup');
         const closeUserPopup = document.getElementById('closeUserPopup');
-        
+
         closeUserPopup.onclick = () => {
             userPopup.style.display = 'none';
         };
-        
+
         userPopup.onclick = (e) => {
             if (e.target === userPopup) {
                 userPopup.style.display = 'none';
             }
         };
-        
+
         // Helper function to create the HTML for a single post
         function createPostTile(post, isOwner) {
             let mediaHtml = '';
@@ -839,7 +839,7 @@
                 year: 'numeric', month: 'short', day: 'numeric'
             });
 
-            const deleteButton = isOwner ? 
+            const deleteButton = isOwner ?
                 `<button class="delete-post-btn" data-post-id="${post.postId}">&times;</button>` : '';
 
             return `
@@ -880,38 +880,38 @@
                     <h4 class="popup-section-title mb-4">ADD NEW POST</h4>
                     <button id="addPostBtn" class="add-post-btn mb-4">+</button>
                     <div id="postTypeSelection" class="flex gap-4 mb-4 hidden">
-  <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
-    <img
-      src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/youtube-app-white-icon.png"
-      alt="YouTube"
-      class="h-5 w-5 mr-2 object-contain"
-      width="20"
-      height="20"
-      loading="lazy"
-    />
-    <span>YouTube</span>
-  </button>
+                      <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
+                        <img
+                          src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/youtube-app-white-icon.png"
+                          alt="YouTube"
+                          class="h-5 w-5 mr-2 object-contain"
+                          width="20"
+                          height="20"
+                          loading="lazy"
+                        />
+                        <span>YouTube</span>
+                      </button>
 
-  <button id="tiktokBtn" class="social-media-btn bg-black hover:bg-gray-800">
-    <img
-      src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/tiktok-white-icon.png"
-      alt="TikTok"
-      class="h-5 w-5 mr-2 object-contain"
-      width="20"
-      height="20"
-      loading="lazy"
-    />
-    <span>TikTok</span>
-  </button>
-</div>
+                      <button id="tiktokBtn" class="social-media-btn bg-black hover:bg-gray-800">
+                        <img
+                          src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/tiktok-white-icon.png"
+                          alt="TikTok"
+                          class="h-5 w-5 mr-2 object-contain"
+                          width="20"
+                          height="20"
+                          loading="lazy"
+                        />
+                        <span>TikTok</span>
+                      </button>
+                    </div>
 
-<div id="urlInputContainer" class="w-full hidden">
-  <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300">
-  <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300"></textarea>
-  <button id="postButton" class="w-full p-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
-  <div id="uploadStatus" class="mt-2 text-sm text-gray-700 hidden"></div>
-</div>
-
+                    <div id="urlInputContainer" class="w-full hidden">
+                      <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300">
+                      <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-2 rounded-lg bg-gray-100 text-gray-800 border border-gray-300"></textarea>
+                      <button id="postButton" class="w-full p-2 rounded-lg bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
+                      <div id="uploadStatus" class="mt-2 text-sm text-gray-700 hidden"></div>
+                    </div>
+                </div>
             `;
 
             // Add event listeners for the new UI elements
@@ -923,13 +923,12 @@
             const postButton = document.getElementById('postButton');
             const captionInput = document.getElementById('captionInput');
             const urlInput = document.getElementById('urlInput');
-            const uploadStatus = document.getElementById('uploadStatus');
 
             addPostBtn.addEventListener('click', () => {
                 addPostBtn.classList.add('hidden');
                 postTypeSelection.classList.remove('hidden');
             });
-            
+
             let selectedPostType = null;
             youtubeBtn.addEventListener('click', () => {
                 selectedPostType = 'youtube';
@@ -951,11 +950,10 @@
                 captionInput.value = '';
             });
 
-
             postButton.addEventListener('click', async () => {
                 const url = urlInput.value;
                 const caption = captionInput.value;
-                
+
                 showUploadStatus('Creating post...', false);
                 postButton.disabled = true;
 
@@ -1005,7 +1003,7 @@
                     console.error('URL post failed:', error);
                     showUploadStatus(`Post failed: ${error.code || error.message}. Please try again.`, true);
                 }
-                
+
                 postButton.disabled = false;
                 // Reset UI
                 urlInputContainer.classList.add('hidden');
@@ -1014,7 +1012,7 @@
                 captionInput.value = '';
             });
         }
-        
+
         // Function to handle post deletion
         function deletePost(ownerUid, postId) {
             if (currentUserUid !== ownerUid) {
@@ -1023,7 +1021,7 @@
             }
 
             console.log(`User confirmed deletion of post ${postId}.`);
-            
+
             // First, delete from Storage if it's an image.
             const postRef = db.ref(`users/${ownerUid}/posts/${postId}`);
             postRef.once('value').then(snap => {
@@ -1046,6 +1044,51 @@
             });
         }
 
+        // --- NEW PAGINATION VARIABLES & FUNCTIONS ---
+        let allPosts = []; // Will store all posts for the current profile
+        let postPageIndex = 0;
+        const postsPerPage = 2; // Show only 2 posts at a time
+
+        // Function to render the posts for the current page
+        function renderPosts() {
+            const postsContainer = document.getElementById('postsContainer');
+            const paginationContainer = document.getElementById('postPagination');
+            const prevPostBtn = document.getElementById('prevPostBtn');
+            const nextPostBtn = document.getElementById('nextPostBtn');
+
+            // Clear previous content
+            postsContainer.innerHTML = '';
+            
+            if (allPosts.length === 0) {
+                postsContainer.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
+                if (paginationContainer) paginationContainer.classList.add('hidden');
+                return;
+            }
+
+            if (paginationContainer) paginationContainer.classList.remove('hidden');
+
+            const start = postPageIndex * postsPerPage;
+            const end = start + postsPerPage;
+            const postsToDisplay = allPosts.slice(start, end);
+
+            const isOwner = currentUserUid === profileOwnerUid;
+            postsToDisplay.forEach(post => {
+                postsContainer.innerHTML += createPostTile(post, isOwner);
+            });
+
+            // Update button states
+            if (prevPostBtn) prevPostBtn.disabled = postPageIndex === 0;
+            if (nextPostBtn) nextPostBtn.disabled = end >= allPosts.length;
+
+            // Attach click handlers for delete buttons on the newly rendered posts
+            document.querySelectorAll('.delete-post-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const postId = e.target.dataset.postId;
+                    deletePost(profileOwnerUid, postId);
+                });
+            });
+        }
 
         // Main function to load the user profile
         function loadUserProfile(uid) {
@@ -1059,7 +1102,7 @@
             const aboutEl = document.getElementById('popupAboutMe');
             const badgesContainer = document.getElementById('popupBadges');
             const streakEl = document.getElementById('popupStreak');
-            
+
             // Reset to loading state and clear old content
             popupCard.classList.remove('two-column');
             postsColumn.style.display = 'none';
@@ -1076,20 +1119,47 @@
             // Fetch user root
             db.ref(`users/${uid}`).once('value').then(snap => {
                 const userData = snap.val() || {};
-                
+
                 // === LAYOUT LOGIC ===
                 const isEligible = userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald;
                 if (isEligible) {
                     popupCard.classList.add('two-column');
                     postsColumn.style.display = 'block';
-                    // FIX: Changed post container class from post-grid to post-list for a scrollable list
-                    postsColumn.innerHTML = `<h4 class="popup-section-title text-center text-gray-800">POSTS</h4><div id="postsContainer" class="post-list"></div>`;
-                    
+
+                    // Initial post container with navigation arrows
+                    postsColumn.innerHTML = `
+                        <h4 class="popup-section-title text-center text-gray-800">POSTS</h4>
+                        <div id="postsContainer" class="post-list"></div>
+                        <div id="postPagination" class="flex justify-center items-center gap-4 mt-4">
+                            <button id="prevPostBtn" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 disabled:opacity-50">&leftarrow;</button>
+                            <button id="nextPostBtn" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 disabled:opacity-50">&rightarrow;</button>
+                        </div>
+                    `;
+
                     // Render the authoring UI for the owner
                     renderAddPostUI(uid);
-                    
-                    // Load and render posts
+
+                    // Load and render posts with new pagination logic
                     loadPosts(uid);
+
+                    // Attach event listeners for the post navigation buttons
+                    const prevPostBtn = document.getElementById('prevPostBtn');
+                    const nextPostBtn = document.getElementById('nextPostBtn');
+
+                    prevPostBtn.addEventListener('click', () => {
+                        if (postPageIndex > 0) {
+                            postPageIndex--;
+                            renderPosts();
+                        }
+                    });
+
+                    nextPostBtn.addEventListener('click', () => {
+                        const maxIndex = Math.floor((allPosts.length - 1) / postsPerPage);
+                        if (postPageIndex < maxIndex) {
+                            postPageIndex++;
+                            renderPosts();
+                        }
+                    });
                 }
 
                 usernameEl.textContent = userData.displayName || 'Anonymous User';
@@ -1118,7 +1188,7 @@
                 } else {
                     usernameEl.style.color = '#111827';
                 }
-                
+
                 if (hasCustomization && custom.banner) {
                     bannerEl.style.backgroundImage = `url('${custom.banner}')`;
                     bannerEl.style.backgroundColor = 'transparent';
@@ -1208,70 +1278,29 @@
                 usernameEl.textContent = 'Error loading profile';
             });
         }
-        
-        let lastPostSnapshot = null;
-        const postsPerPage = 12;
 
-        // Function to load posts for a user
-        async function loadPosts(uid, startAt = null) {
+        // Function to load all posts for a user and then render the first page
+        async function loadPosts(uid) {
             const postsContainer = document.getElementById('postsContainer');
-            const isOwner = currentUserUid === uid;
-            
+
             // Show a spinner while loading
-            if (!startAt) {
-                postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
-            }
+            postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
 
             try {
-                let postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').limitToLast(postsPerPage);
-                if (startAt) {
-                    postsRef = db.ref(`users/${uid}/posts`).orderByChild('createdAt').endAt(startAt).limitToLast(postsPerPage + 1);
-                }
-
-                // Attach a listener to get real-time updates for posts
-                postsRef.on('value', snapshot => {
-                    const posts = [];
-                    snapshot.forEach(childSnap => {
-                        posts.push({
-                            postId: childSnap.key,
-                            ...childSnap.val()
-                        });
+                // Fetch all posts for the user once
+                const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+                const posts = [];
+                snapshot.forEach(childSnap => {
+                    posts.push({
+                        postId: childSnap.key,
+                        ...childSnap.val()
                     });
-
-                    // Sort posts in descending order by createdAt
-                    posts.sort((a, b) => b.createdAt - a.createdAt);
-
-                    let postsToDisplay = posts;
-                    // If we have a startAt key, the first post is the last post from the previous page, so we remove it
-                    if (startAt && posts.length > postsPerPage) {
-                        postsToDisplay = posts.slice(1);
-                    }
-                    
-                    postsContainer.innerHTML = postsToDisplay.map(post => createPostTile(post, isOwner)).join('');
-                    
-                    // Attach click handlers to the new delete buttons
-                    document.querySelectorAll('.delete-post-btn').forEach(btn => {
-                        btn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const postId = e.target.dataset.postId;
-                            deletePost(uid, postId);
-                        });
-                    });
-
-                    // Add "Load more" button if there are more posts
-                    const totalPostsCount = posts.length;
-                    if (totalPostsCount > postsPerPage && postsToDisplay.length === postsPerPage) {
-                        const loadMoreButton = document.createElement('button');
-                        loadMoreButton.textContent = 'Load More';
-                        loadMoreButton.className = 'w-full p-2 rounded-lg bg-gray-700 text-white font-bold hover:bg-gray-600 transition mt-4';
-                        loadMoreButton.addEventListener('click', () => {
-                            // Find the createdAt value of the last post to use as the starting point for the next query
-                            const lastPostCreatedAt = postsToDisplay[postsToDisplay.length - 1].createdAt;
-                            loadPosts(uid, lastPostCreatedAt - 1);
-                        });
-                        postsContainer.appendChild(loadMoreButton);
-                    }
                 });
+
+                // Sort posts in descending order by createdAt
+                allPosts = posts.sort((a, b) => b.createdAt - a.createdAt);
+                postPageIndex = 0; // Reset to the first page
+                renderPosts();
             } catch (error) {
                 console.error('Failed to load posts:', error);
                 postsContainer.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
@@ -1300,6 +1329,5 @@
     }
     ```
     -->
-
 </body>
 </html>
