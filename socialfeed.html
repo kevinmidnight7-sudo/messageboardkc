@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KC Events Social Feed</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" xintegrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2zU98+Wp74vHq0c3aM6p4yT/h4yqK2u+I5uA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1f2937, #111827);
+            min-height: 100vh;
+            color: #e5e7eb;
+            overflow-x: hidden;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 1.5rem;
+        }
+        /* New styling to handle the custom gradient border */
+        .diamond-border {
+            position: relative;
+            z-index: 1;
+        }
+        .diamond-border::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 9999px; /* For full circle */
+            border: 3px solid transparent;
+            /* Use a CSS variable for the custom gradient */
+            background: var(--gradient, linear-gradient(45deg, #a4c5ff, #717dff)) border-box;
+            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            z-index: -1;
+        }
+        .diamond-text {
+            background-image: linear-gradient(45deg, #A4C5FF, #717DFF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .tab-btn.active {
+            color: #717dff;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(113, 125, 255, 0.3);
+            border-bottom: 2px solid #717dff;
+        }
+        .post-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .post-card:hover {
+            transform: translateY(-5px) scale(1.01);
+        }
+        .profile-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 9999px;
+            object-fit: cover;
+            /* Default white border for all users */
+            border: 2px solid #ffffff;
+            position: relative;
+        }
+        /* Class to remove border when a gradient border is applied to the parent */
+        .profile-avatar-no-border {
+            border-color: transparent !important;
+        }
+        .post-media {
+            width: 100%;
+            height: auto;
+            border-radius: 1.5rem;
+            object-fit: cover;
+            aspect-ratio: 16/9; /* Maintain aspect ratio for videos */
+        }
+        .post-comment-btn,
+        .post-like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        /* Mobile adjustments */
+        @media (max-width: 640px) {
+            .grid-cols-3 {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+        }
+        /* User Popup Styles */
+        #userPopup {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            font-family: 'Poppins', sans-serif;
+            animation: fadeInBg 0.3s ease;
+            overflow-y: auto;
+        }
+        @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+
+        .user-popup-card {
+            width: 360px;
+            max-width: 95vw;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+            position: relative;
+            background: #f1f3f5;
+        }
+        @media (min-width: 768px) {
+            .user-popup-card.two-column {
+                width: 720px;
+                display: flex;
+            }
+        }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .popup-banner {
+            height: 120px;
+            background-color: #ced4da;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            border-radius: 1.5rem 1.5rem 0 0;
+            position: relative;
+        }
+        @media (min-width: 768px) {
+            .user-popup-card.two-column .popup-banner {
+                border-radius: 1.5rem 0 0 0;
+            }
+        }
+        .popup-header {
+            padding: 0 16px;
+            position: relative;
+            height: 48px;
+        }
+        .popup-info-column {
+            flex: 1;
+        }
+        .popup-posts-column {
+            flex: 1;
+            padding: 12px 16px 16px;
+            overflow-y: auto;
+            border-left: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .popup-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: absolute;
+            top: -48px;
+            left: 16px;
+            border: 6px solid #fff;
+            background-color: #f1f3f5;
+            z-index: 10;
+        }
+        .popup-body {
+            padding: 12px 16px 16px;
+            margin-top: 48px;
+        }
+        .popup-username {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: left;
+            margin-bottom: 16px;
+        }
+        .popup-section {
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .popup-section:last-child {
+            margin-bottom: 0;
+        }
+        .popup-section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 8px 0;
+            text-align: left;
+        }
+        .popup-about-me {
+            font-size: 0.95rem;
+            color: #374151;
+            line-height: 1.5;
+            word-break: break-word;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+        .popup-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .popup-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: white;
+            background: #6b7280;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .popup-badge img, .popup-badge .emoji-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 1.2rem;
+        }
+        .user-streak {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fde047;
+        }
+        .popup-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            z-index: 15;
+        }
+        .popup-close-btn:hover {
+            background: rgba(0,0,0,0.5);
+        }
+        .add-post-btn {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #a855f7, #6366f1);
+            color: white;
+            font-size: 2rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .add-post-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+        }
+        .social-media-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 12px 24px;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: transform 0.2s, background-color 0.2s;
+            color: white;
+            width: 100%;
+        }
+        .social-media-btn:hover {
+            transform: translateY(-2px);
+        }
+        .social-media-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .post-tile {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .post-caption {
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            color: #f1f3f5;
+        }
+        .post-timestamp {
+            font-size: 0.75rem;
+            color: #adb5bd;
+            text-align: right;
+            padding: 0 0.5rem 0.5rem 0.5rem;
+        }
+        .delete-post-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(255, 0, 0, 0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            opacity: 0.8;
+        }
+        .delete-post-btn:hover {
+            opacity: 1;
+        }
+        .upload-error-message {
+            background-color: #f87171;
+            color: white;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            animation: fadeIn 0.3s ease;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid #fde047;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .reactions-tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            z-index: 10001;
+            font-size: 0.875rem;
+            pointer-events: none;
+            white-space: pre-wrap;
+            transform: translate(-50%, -110%);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+        <!-- Conditional Header/Post Button -->
+        <header id="mainHeader" class="text-center mb-8">
+        </header>
+
+        <!-- Social Media Tabs -->
+        <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 text-lg md:text-xl font-medium border-b border-gray-600">
+            <button class="tab-btn active px-4 py-2" data-tab="popular">Popular</button>
+            <button class="tab-btn px-4 py-2" data-tab="youtube">YouTube</button>
+            <button class="tab-btn px-4 py-2" data-tab="tiktok">TikTok</button>
+        </div>
+
+        <!-- Posts Container -->
+        <div id="postsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
+            <div class="col-span-full text-center text-gray-400 py-10">
+                Loading posts...
+                <div class="flex justify-center mt-4">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- POST CREATION POPUP -->
+    <div id="postCreatorPopup" class="fixed inset-0 flex items-center justify-center z-[1000] bg-black/50 hidden">
+        <div class="glass p-6 rounded-3xl w-full max-w-lg mx-4">
+            <h2 class="text-3xl font-bold text-center mb-6">Create a new post</h2>
+            <div class="flex flex-col items-center">
+                <div id="postTypeSelection" class="flex gap-4 mb-4">
+                    <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
+                        <i class="fab fa-youtube"></i>
+                        <span>YouTube</span>
+                    </button>
+                    <button id="tiktokBtn" class="social-media-btn bg-black hover:bg-gray-800">
+                        <i class="fab fa-tiktok"></i>
+                        <span>TikTok</span>
+                    </button>
+                </div>
+                <div id="urlInputContainer" class="w-full hidden">
+                    <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"></textarea>
+                    <button id="postButton" class="w-full p-4 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
+                    <div id="uploadStatus" class="mt-2 text-sm text-center text-gray-400 hidden"></div>
+                </div>
+                <button id="closePostCreatorBtn" class="mt-4 p-2 w-1/2 rounded-full bg-gray-600 hover:bg-gray-700 text-white font-semibold">Cancel</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- USER PROFILE POPUP -->
+    <div id="userPopup">
+        <div class="user-popup-card" id="userPopupCard">
+            <div id="popupContentWrapper" class="flex flex-col md:flex-row">
+                <div id="popupInfoColumn" class="popup-info-column">
+                    <div class="popup-banner" id="popupBanner"></div>
+                    <div class="popup-header">
+                        <img id="popupAvatar" src="" class="popup-avatar">
+                        <button id="closeUserPopup" class="popup-close-btn">&times;</button>
+                    </div>
+                    <div class="popup-body">
+                        <div id="popupUserName" class="popup-username"></div>
+                        <div class="popup-section">
+                            <h4 class="popup-section-title">ABOUT ME</h4>
+                            <div id="popupAboutMe" class="popup-about-me"></div>
+                        </div>
+                        <div class="popup-section">
+                            <h4 class="popup-section-title">BADGES</h4>
+                            <div id="popupBadges" class="popup-badges"></div>
+                        </div>
+                        <div class="popup-section">
+                            <h4 class="popup-section-title">STREAK</h4>
+                            <div id="popupStreak" class="user-streak"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="popupPostsColumn" class="popup-posts-column">
+                    <!-- Posts content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Box / Alert Modal -->
+    <div id="messageBox" class="fixed inset-0 z-[10040] hidden flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="relative w-full max-w-sm rounded-xl bg-white p-6 text-center text-gray-900 shadow-2xl">
+            <div id="messageBoxText" class="mb-4"></div>
+            <div class="flex justify-center gap-2">
+                <button id="messageBoxOk" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">OK</button>
+                <button id="messageBoxCancel" class="px-4 py-2 rounded-lg bg-gray-200 font-semibold hidden">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === POST DETAILS OVERLAY === -->
+    <div id="postOverlay" class="fixed inset-0 z-[10020] hidden">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="postOverlayBg"></div>
+      <div class="relative mx-auto my-6 w-[95vw] max-w-3xl rounded-2xl bg-white text-gray-900 overflow-hidden shadow-2xl">
+        <div class="flex justify-between items-center px-4 py-3 border-b">
+          <div class="flex items-center gap-3">
+            <img id="poAvatar" class="w-10 h-10 rounded-full object-cover" alt="avatar">
+            <div class="leading-tight">
+              <div id="poUsername" class="font-semibold"></div>
+              <div id="poTimestamp" class="text-xs text-gray-500"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="poEditBtn" class="hidden px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold">Edit</button>
+            <button id="poDeleteBtn" class="hidden px-3 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-semibold">Delete</button>
+            <button id="postOverlayClose" class="w-9 h-9 rounded-full bg-gray-900/80 text-white">✕</button>
+          </div>
+        </div>
+
+        <div id="poMedia" class="w-full bg-black"></div>
+
+        <div class="px-4 py-3 space-y-3">
+          <div class="flex items-start gap-3">
+            <div class="font-semibold mt-1">Description:</div>
+            <div class="flex-1">
+              <div id="poCaptionText" class="whitespace-pre-wrap break-words"></div>
+              <div id="poCaptionEdit" class="hidden">
+                <textarea id="poCaptionInput" rows="3" class="w-full p-2 rounded-lg border border-gray-300"></textarea>
+                <div class="mt-2 flex gap-2">
+                  <button id="poSaveCaption" class="px-3 py-1 rounded-lg bg-blue-600 text-white">Save</button>
+                  <button id="poCancelCaption" class="px-3 py-1 rounded-lg bg-gray-200">Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reactions row -->
+          <div id="poReactions" class="flex flex-wrap items-center gap-2"></div>
+
+          <!-- Comments -->
+          <div class="border-t pt-3">
+            <div class="font-semibold mb-2">Comments</div>
+            <ul id="poComments" class="space-y-3"></ul>
+
+            <!-- New comment composer -->
+            <div class="mt-3 flex gap-2">
+              <input id="poCommentInput" class="flex-1 p-2 rounded-lg border border-gray-300" placeholder="Write a comment...">
+              <button id="poCommentSend" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === ADMIN FLOATING BUTTON + PANEL === -->
+    <button id="adminBtn" title="Admin" class="fixed bottom-6 left-6 z-[10010] rounded-full shadow-lg">
+      <img src="https://raw.githubusercontent.com/kevinmidnight7-sudo/messageboardkc/main/Admin.png" alt="Admin" class="w-12 h-12"/>
+    </button>
+
+    <div id="adminPanel" class="fixed inset-0 z-[10030] hidden">
+      <div class="absolute inset-0 bg-black/60" id="adminBg"></div>
+      <div class="relative mx-auto my-8 max-w-md w-[92vw] rounded-2xl bg-white text-gray-900 p-5 shadow-2xl">
+        <div class="flex justify-between items-center mb-3">
+          <div class="text-lg font-bold">Admin Controls</div>
+          <button id="adminClose" class="w-9 h-9 rounded-full bg-gray-900/80 text-white">✕</button>
+        </div>
+
+        <div id="adminLogin">
+          <label class="text-sm">Password</label>
+          <input id="adminPass" type="password" class="mt-1 w-full p-2 rounded-lg border border-gray-300" placeholder="Enter password"/>
+          <button id="adminLoginBtn" class="mt-3 w-full px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Login</button>
+          <div id="adminErr" class="hidden mt-2 text-sm text-red-600">Incorrect password.</div>
+        </div>
+
+        <div id="adminControls" class="hidden space-y-3">
+          <div class="p-3 rounded-lg bg-gray-100 flex items-center justify-between">
+            <div>
+              <div class="font-semibold">New Posts</div>
+              <div id="adminPostsState" class="text-sm text-gray-600">Loading...</div>
+            </div>
+            <div class="flex gap-2">
+              <button id="adminStopPosts" class="px-3 py-1 rounded-lg bg-red-600 text-white">Stop</button>
+              <button id="adminResumePosts" class="px-3 py-1 rounded-lg bg-green-600 text-white">Resume</button>
+            </div>
+          </div>
+          <div class="text-sm text-gray-600">While logged in, delete buttons are enabled on all posts.</div>
+          <button id="adminLogout" class="w-full px-4 py-2 rounded-lg bg-gray-800 text-white">Log out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POST POPUP FOR DETAILS AND COMMENTS (Old, removed) -->
+    <!-- Removed to use the new Post Details Overlay -->
+    
+    <script>
+        // Firebase setup from provided HTMLs
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+            authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+            databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kckillerscompany-ab1ec",
+            storageBucket: "kckillerscompany-ab1ec.appspot.com",
+            messagingSenderId: "198711213988",
+            appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+            measurementId: "G-4LKP2M3JXE"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+        const storage = firebase.storage();
+
+        // Global variables for user data and posts
+        let currentUserUid = null;
+        let currentUserProfile = null;
+        let allPosts = [];
+        let currentTab = 'popular';
+        let userProfiles = {}; // Cache user profiles
+        let profileOwnerUid = null; // Used for the user popup
+
+        // Badge icon map to render badges correctly.
+        const badgeIconMap = {
+            offence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',
+            defence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',
+            overall: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png',
+            verified: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png',
+            diamond: 'https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png',
+            emerald: 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128',
+        };
+        
+        const postsContainer = document.getElementById('postsContainer');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const userPopup = document.getElementById('userPopup');
+        const closeUserPopup = document.getElementById('closeUserPopup');
+        const mainHeader = document.getElementById('mainHeader');
+        
+        // Post Creator Popup elements
+        const postCreatorPopup = document.getElementById('postCreatorPopup');
+        const closePostCreatorBtn = document.getElementById('closePostCreatorBtn');
+        const postButton = document.getElementById('postButton');
+        const urlInput = document.getElementById('urlInput');
+        const captionInput = document.getElementById('captionInput');
+        const postTypeSelection = document.getElementById('postTypeSelection');
+        const youtubeBtn = document.getElementById('youtubeBtn');
+        const tiktokBtn = document.getElementById('tiktokBtn');
+        let selectedPostType = null;
+        
+        // Message Box elements
+        const messageBox = document.getElementById('messageBox');
+        const messageBoxText = document.getElementById('messageBoxText');
+        const messageBoxOk = document.getElementById('messageBoxOk');
+        const messageBoxCancel = document.getElementById('messageBoxCancel');
+
+        // Reusable message box function
+        function showMessageBox(text, isConfirm = false) {
+          return new Promise((resolve) => {
+            messageBoxText.textContent = text;
+            messageBoxCancel.classList.toggle('hidden', !isConfirm);
+            messageBox.classList.remove('hidden');
+
+            const onOk = () => {
+              messageBox.classList.add('hidden');
+              messageBoxOk.removeEventListener('click', onOk);
+              messageBoxCancel.removeEventListener('click', onCancel);
+              resolve(true);
+            };
+
+            const onCancel = () => {
+              messageBox.classList.add('hidden');
+              messageBoxOk.removeEventListener('click', onOk);
+              messageBoxCancel.removeEventListener('click', onCancel);
+              resolve(false);
+            };
+
+            messageBoxOk.addEventListener('click', onOk);
+            messageBoxCancel.addEventListener('click', onCancel);
+          });
+        }
+        
+        // D) Wire-up Code (additions from fix pack)
+        // ==== GLOBALS FOR POSTS/ADMIN/PROFANITY ====
+        let adminMode = false;
+        let badWords = [];
+        const postsDisabledRef = firebase.database().ref('config/postsDisabled');
+
+        function containsBadWord(s=''){
+          try {
+            const lower = (s||'').toLowerCase();
+            return badWords.some(w => new RegExp('\\b'+w+'\\b','i').test(lower));
+          } catch(_) { return false; }
+        }
+
+        // Load profanity list once
+        fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
+          .then(r => r.json()).then(list => badWords = list || [])
+          .catch(() => console.warn('Profanity list failed to load.'));
+
+        // Observe global "stop posts" flag
+        let postsDisabled = false;
+        postsDisabledRef.on('value', snap => postsDisabled = !!snap.val());
+        
+        // Add Post Overlay element refs and core API:
+        const postOverlay = document.getElementById('postOverlay');
+        const postOverlayBg = document.getElementById('postOverlayBg');
+        const postOverlayClose = document.getElementById('postOverlayClose');
+        const poAvatar = document.getElementById('poAvatar');
+        const poUsername = document.getElementById('poUsername');
+        const poTimestamp = document.getElementById('poTimestamp');
+        const poMedia = document.getElementById('poMedia');
+        const poCaptionText = document.getElementById('poCaptionText');
+        const poCaptionEdit = document.getElementById('poCaptionEdit');
+        const poCaptionInput = document.getElementById('poCaptionInput');
+        const poSaveCaption = document.getElementById('poSaveCaption');
+        const poCancelCaption = document.getElementById('poCancelCaption');
+        const poReactions = document.getElementById('poReactions');
+        const poComments = document.getElementById('poComments');
+        const poCommentInput = document.getElementById('poCommentInput');
+        const poCommentSend = document.getElementById('poCommentSend');
+        const poEditBtn = document.getElementById('poEditBtn');
+        const poDeleteBtn = document.getElementById('poDeleteBtn');
+
+        let openPostCtx = null; // {ownerUid, postId, postPath}
+
+        function showPostOverlay(){ postOverlay.classList.remove('hidden'); }
+        function hidePostOverlay(){
+            // Detach listeners before hiding the overlay
+            if (openPostCtx) {
+                firebase.database().ref(`${openPostCtx.postPath}/reactions`).off();
+                firebase.database().ref(`${openPostCtx.postPath}/comments`).off();
+            }
+            postOverlay.classList.add('hidden');
+            openPostCtx=null;
+            fetchAllData(); // Refresh main feed
+        }
+        postOverlayBg.onclick = hidePostOverlay;
+        postOverlayClose.onclick = hidePostOverlay;
+        document.addEventListener('keydown', e => { if(e.key==='Escape') hidePostOverlay(); });
+        
+        // Add Admin panel wiring:
+        const adminBtn = document.getElementById('adminBtn');
+        const adminPanel = document.getElementById('adminPanel');
+        const adminBg = document.getElementById('adminBg');
+        const adminClose = document.getElementById('adminClose');
+        const adminLogin = document.getElementById('adminLogin');
+        const adminControls = document.getElementById('adminControls');
+        const adminPass = document.getElementById('adminPass');
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const adminErr = document.getElementById('adminErr');
+        const adminPostsState = document.getElementById('adminPostsState');
+        const adminStopPosts = document.getElementById('adminStopPosts');
+        const adminResumePosts = document.getElementById('adminResumePosts');
+        const adminLogout = document.getElementById('adminLogout');
+
+        function showAdmin(){ adminPanel.classList.remove('hidden'); }
+        function hideAdmin(){ adminPanel.classList.add('hidden'); adminErr.classList.add('hidden'); }
+        // Admin button is now handled by the renderHeader function
+        if (adminBtn) adminBtn.onclick = showAdmin;
+        if (adminBg) adminBg.onclick = hideAdmin;
+        if (adminClose) adminClose.onclick = hideAdmin;
+        document.addEventListener('keydown', e => { if(e.key==='Escape') hideAdmin(); });
+
+        function refreshAdminState(){
+          postsDisabledRef.once('value').then(snap=>{
+            const disabled = !!snap.val();
+            adminPostsState.textContent = disabled ? 'Posting is DISABLED' : 'Posting is ENABLED';
+          });
+        }
+
+        if (adminLoginBtn) {
+            adminLoginBtn.onclick = ()=>{
+              if (adminPass.value === 'events2025KC'){
+                adminMode = true;
+                adminLogin.classList.add('hidden');
+                adminControls.classList.remove('hidden');
+                refreshAdminState();
+              } else {
+                adminErr.classList.remove('hidden');
+              }
+            };
+        }
+
+        if (adminStopPosts) {
+            adminStopPosts.onclick = ()=>{
+              if (!adminMode) return;
+              postsDisabledRef.set(true).then(refreshAdminState);
+            };
+        }
+        if (adminResumePosts) {
+            adminResumePosts.onclick = ()=>{
+              if (!adminMode) return;
+              postsDisabledRef.set(false).then(refreshAdminState);
+            };
+        }
+        if (adminLogout) {
+            adminLogout.onclick = ()=>{
+              adminMode = false;
+              adminControls.classList.add('hidden');
+              adminLogin.classList.remove('hidden');
+              adminPass.value='';
+              hideAdmin();
+            };
+        }
+
+        // G) Reactions renderer + toggle
+        const POST_EMOJIS = ['👍','❤️','😂','😮','🔥','👎'];
+
+        async function renderPostReactions(snap){
+          const data = snap.val() || {};
+          // build counts and whether current user reacted
+          const u = firebase.auth().currentUser;
+          poReactions.innerHTML = '';
+          
+          const usersRef = firebase.database().ref('users');
+          const allUserProfiles = {};
+          
+          const usersSnap = await usersRef.once('value');
+          usersSnap.forEach(childSnap => {
+              allUserProfiles[childSnap.key] = childSnap.val();
+          });
+
+          POST_EMOJIS.forEach(emo => {
+            const reactors = data[emo] ? Object.keys(data[emo]) : [];
+            const count = reactors.length;
+            const userReacted = u && data[emo] && data[emo][u.uid];
+            const btn = document.createElement('button');
+            btn.className = 'px-2 py-1 rounded-full border text-sm flex items-center gap-1 ' + (userReacted ? 'bg-blue-600 text-white' : 'bg-gray-100');
+            btn.textContent = `${emo} ${count||''}`.trim();
+            btn.onclick = ()=> togglePostReaction(emo);
+            
+            // Create the tooltip content
+            const reactorNames = reactors.map(reactorUid => {
+                const userProfile = allUserProfiles[reactorUid] || {};
+                return userProfile.displayName || 'Anonymous';
+            });
+            btn.title = reactorNames.join(', ');
+
+            poReactions.appendChild(btn);
+          });
+        }
+
+        function togglePostReaction(emo){
+          const u = firebase.auth().currentUser;
+          if (!u) return showMessageBox('Please log in to react.');
+          if (!openPostCtx) return;
+          const ref = firebase.database().ref(`${openPostCtx.postPath}/reactions/${emo}/${u.uid}`);
+          ref.transaction(curr => curr ? null : true);
+        }
+        
+        // H) Comments + replies renderer
+        function renderPostComments(snap){
+          const data = snap.val() || {};
+          poComments.innerHTML = '';
+          const entries = Object.entries(data).sort((a,b)=> (a[1].time||0) - (b[1].time||0));
+          entries.forEach(([cid, c]) => {
+            const li = document.createElement('li');
+            li.dataset.cid = cid;
+            li.className = 'p-2 rounded-lg bg-gray-50 border';
+
+            const header = document.createElement('div');
+            header.className = 'text-sm text-gray-600 mb-1';
+            header.textContent = '';
+            // fetch name for each comment
+            firebase.database().ref(`users/${c.uid}/displayName`).once('value').then(ns => {
+              header.textContent = (ns.val()||'Anonymous') + ' • ' + new Date(c.time||Date.now()).toLocaleString();
+            });
+            li.appendChild(header);
+
+            const text = document.createElement('div');
+            text.className = 'whitespace-pre-wrap break-words';
+            text.textContent = c.text || '';
+            li.appendChild(text);
+
+            // Replies
+            const repliesUl = document.createElement('ul');
+            repliesUl.className = 'mt-2 ml-4 space-y-2';
+            const replies = c.replies || {};
+            Object.entries(replies).sort((a,b)=> (a[1].time||0) - (b[1].time||0)).forEach(([rid, r])=>{
+              const rLi = document.createElement('li');
+              rLi.className = 'p-2 rounded-md bg-white border';
+              const meta = document.createElement('div');
+              meta.className = 'text-xs text-gray-600 mb-1';
+              firebase.database().ref(`users/${r.uid}/displayName`).once('value').then(ns => {
+                meta.textContent = (ns.val()||'Anonymous') + ' • ' + new Date(r.time||Date.now()).toLocaleString();
+              });
+              const body = document.createElement('div');
+              body.textContent = r.text || '';
+              rLi.appendChild(meta);
+              rLi.appendChild(body);
+              repliesUl.appendChild(rLi);
+            });
+            li.appendChild(repliesUl);
+
+            // Reply composer
+            const row = document.createElement('div');
+            row.className = 'mt-2 flex gap-2';
+            row.innerHTML = '<input class="flex-1 p-2 rounded-lg border border-gray-300 replyText" placeholder="Reply..."><button class="px-3 py-1 rounded-lg bg-gray-800 text-white text-sm replySend">Send</button>';
+            li.appendChild(row);
+
+            row.querySelector('.replySend').onclick = ()=>{
+              const u = firebase.auth().currentUser;
+              if (!u) return showMessageBox('Please log in to reply.');
+              if (postsDisabled) return showMessageBox('Posting is currently disabled.');
+              const text = row.querySelector('.replyText').value.trim();
+              if (!text) return;
+              if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
+              firebase.database().ref(`${openPostCtx.postPath}/comments/${cid}/replies`).push({
+                uid: u.uid, text, time: firebase.database.ServerValue.TIMESTAMP
+              });
+              row.querySelector('.replyText').value = '';
+            };
+
+            poComments.appendChild(li);
+          });
+        }
+
+        // --- AUTH & CONFIG LOGIC ---
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUserUid = user.uid;
+                db.ref(`users/${user.uid}`).on('value', snap => {
+                    currentUserProfile = snap.val() || {};
+                    renderHeader();
+                    fetchAllData();
+                });
+            } else {
+                currentUserUid = null;
+                currentUserProfile = null;
+                renderHeader();
+                fetchAllData();
+            }
+        });
+        
+        db.ref('config/postsDisabled').on('value', snap => {
+            postsDisabled = !!snap.val();
+            // Old admin modal logic removed, this is handled by the new admin panel
+            renderHeader(); // Rerender header to show/hide post button based on status
+        });
+
+        // --- POST CREATION LOGIC ---
+        function renderHeader() {
+            const hasPostPermissions = currentUserProfile && currentUserProfile.codesUnlocked && (currentUserProfile.codesUnlocked.emerald || currentUserProfile.codesUnlocked.diamond || currentUserProfile.codesUnlocked.content);
+            
+            if (hasPostPermissions) {
+                mainHeader.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <h1 class="text-4xl md:text-5xl font-bold">Slither Clips</h1>
+                        <div class="flex-1 flex justify-end">
+                            <button id="addPostBtn" class="p-3 bg-blue-500 rounded-full text-white text-lg hover:bg-blue-600 transition-colors ${!postsDisabled ? '' : 'hidden'}">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('addPostBtn').addEventListener('click', () => {
+                    postCreatorPopup.classList.remove('hidden');
+                    postTypeSelection.classList.remove('hidden');
+                    urlInputContainer.classList.add('hidden');
+                    selectedPostType = null;
+                    urlInput.value = '';
+                    captionInput.value = '';
+                });
+            } else {
+                mainHeader.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <h1 class="text-4xl md:text-5xl font-bold">Slither Clips</h1>
+                        <div class="flex-1"></div>
+                    </div>
+                `;
+            }
+        }
+        
+        closePostCreatorBtn.addEventListener('click', () => {
+            postCreatorPopup.classList.add('hidden');
+        });
+        
+        youtubeBtn.addEventListener('click', () => {
+            selectedPostType = 'youtube';
+            postTypeSelection.classList.add('hidden');
+            urlInputContainer.classList.remove('hidden');
+            urlInput.placeholder = 'Paste YouTube URL here...';
+        });
+
+        tiktokBtn.addEventListener('click', () => {
+            selectedPostType = 'tiktok';
+            postTypeSelection.classList.add('hidden');
+            urlInputContainer.classList.remove('hidden');
+            urlInput.placeholder = 'Paste TikTok URL here...';
+        });
+        
+        postButton.addEventListener('click', async () => {
+            const url = urlInput.value;
+            const caption = captionInput.value;
+
+            if (!url || !selectedPostType) {
+                return;
+            }
+            if (postsDisabled) {
+                showMessageBox('Posting is currently disabled.');
+                return;
+            }
+            if (containsBadWord(caption)) {
+                showMessageBox('Post contains profanity. Please edit.');
+                return;
+            }
+
+            let postId = crypto.randomUUID();
+            let postData = null;
+            let uploadStatus = document.getElementById('uploadStatus');
+
+            if (selectedPostType === 'youtube') {
+                 const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+                 if (!ytIdMatch) {
+                     uploadStatus.textContent = 'Invalid YouTube URL.';
+                     uploadStatus.classList.remove('hidden');
+                     return;
+                 }
+                 postData = {
+                     type: 'youtube',
+                     ytId: ytIdMatch[1],
+                     caption: caption,
+                     createdAt: firebase.database.ServerValue.TIMESTAMP,
+                     createdBy: currentUserUid
+                 };
+            } else if (selectedPostType === 'tiktok') {
+                const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
+                if (!ttIdMatch) {
+                    uploadStatus.textContent = 'Invalid TikTok URL.';
+                    uploadStatus.classList.remove('hidden');
+                    return;
+                }
+                postData = {
+                    type: 'tiktok',
+                    videoId: ttIdMatch[1],
+                    caption: caption,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    createdBy: currentUserUid
+                };
+            }
+
+            try {
+                await db.ref(`users/${currentUserUid}/posts/${postId}`).set(postData);
+                postCreatorPopup.classList.add('hidden');
+                fetchAllData(); // Refresh the feed
+            } catch (error) {
+                console.error('URL post failed:', error);
+                uploadStatus.textContent = `Post failed: ${error.message}.`;
+                uploadStatus.classList.remove('hidden');
+            }
+        });
+
+        // --- MAIN FEED LOGIC ---
+        function createPostTile(post, ownerUid) {
+            const user = userProfiles[ownerUid] || {};
+            
+            const hasCustomization = !!(user.codesUnlocked?.diamond || user.codesUnlocked?.emerald);
+            let nameColor = hasCustomization && user.profileCustomization?.nameColor ? user.profileCustomization.nameColor : '#ffffff';
+            
+            let avatarWrapperClass = '';
+            let avatarWrapperStyle = '';
+            let avatarImgClass = '';
+            let avatarImgStyle = '';
+
+            if (hasCustomization) {
+                if (user.profileCustomization?.gradient) {
+                    // Apply the gradient class and style to the wrapper div
+                    avatarWrapperClass = 'diamond-border';
+                    avatarWrapperStyle = `--gradient: ${user.profileCustomization.gradient};`;
+                    // Hide the img's border to show the gradient from the pseudo-element
+                    avatarImgClass = 'profile-avatar-no-border';
+                } else if (user.profileCustomization?.nameColor) {
+                    // Apply the solid color directly to the img border
+                    avatarImgStyle = `border-color: ${user.profileCustomization.nameColor};`;
+                }
+            }
+            // For non-customized users, the default white border on .profile-avatar will be used.
+
+            const nameStyles = `style="color: ${nameColor};"`;
+
+            let mediaHtml = '';
+            if (post.type === 'image' && post.url) {
+                mediaHtml = `<img src="${post.url}" alt="${post.caption}" class="post-media rounded-xl">`;
+            } else if (post.type === 'youtube' && post.ytId) {
+                const embedUrl = `https://www.youtube.com/embed/${post.ytId}`;
+                mediaHtml = `<iframe class="post-media rounded-xl w-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else if (post.type === 'tiktok' && post.videoId) {
+                const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
+                mediaHtml = `<iframe class="post-media rounded-xl w-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            } else {
+                mediaHtml = `<div class="post-media rounded-xl bg-gray-800 text-center text-gray-400 flex items-center justify-center">No Media</div>`;
+            }
+
+            const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric', month: 'short', day: 'numeric'
+            });
+
+            const isOwner = currentUserUid === ownerUid;
+            const deleteButton = (isOwner || adminMode) ? `<button class="delete-post-btn" onclick="event.stopPropagation(); deletePostFromFeed('${ownerUid}', '${post.postId}');">✕</button>` : '';
+            
+            let cardBg = '', textColor = '';
+            if (hasCustomization) {
+                cardBg = user.profileCustomization?.gradient || '';
+                textColor = user.profileCustomization?.nameColor || '';
+            }
+            const cardBgStyle = cardBg ? `style="background: ${cardBg};"` : '';
+            const captionTextStyle = textColor ? `style="color: ${textColor};"` : '';
+            const nameColorClass = textColor ? '' : 'text-gray-300';
+            const captionColorClass = textColor ? '' : 'text-gray-300';
+
+            return `
+              <div class="post-tile post-card" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" ${cardBgStyle}>
+                <div class="p-4 flex flex-col gap-4">
+                  <div class="flex items-center gap-3 cursor-pointer user-details" data-uid="${ownerUid}">
+                    <div class="relative ${avatarWrapperClass}" style="${avatarWrapperStyle}">
+                        <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="profile-avatar ${avatarImgClass}" style="${avatarImgStyle}">
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lg ${nameColorClass}" ${nameStyles}>${user.displayName || 'Anonymous User'}</span>
+                        <span class="text-sm text-gray-500">${timestamp}</span>
+                    </div>
+                  </div>
+                </div>
+                ${deleteButton}
+                ${mediaHtml}
+                <div class="post-footer p-4 bg-black/20 cursor-pointer">
+                  <div class="post-caption text-sm ${captionColorClass}" ${captionTextStyle}>${post.caption || ''}</div>
+                </div>
+              </div>
+            `;
+        }
+
+        // F) Implement openPostDetails() and loaders
+        async function openPostDetails(ownerUid, postId){
+          const postPath = `users/${ownerUid}/posts/${postId}`;
+          openPostCtx = { ownerUid, postId, postPath };
+
+          // Snapshot post
+          const snap = await firebase.database().ref(postPath).once('value');
+          const post = snap.val();
+          if (!post){ return; }
+
+          // Header + avatar/name
+          const [nameSnap, avatarSnap] = await Promise.all([
+            firebase.database().ref(`users/${ownerUid}/displayName`).once('value'),
+            firebase.database().ref(`users/${ownerUid}/avatar`).once('value')
+          ]);
+          const displayName = nameSnap.val() || 'Anonymous';
+          const avatarUrl = avatarSnap.val() || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+
+          poAvatar.src = avatarUrl;
+          poUsername.textContent = displayName;
+          poTimestamp.textContent = new Date(post.createdAt || Date.now()).toLocaleString();
+
+          // Media
+          poMedia.innerHTML = ''; // Clear existing content
+          if (post.type === 'image' && post.storagePath){
+            const url = await firebase.storage().ref(post.storagePath).getDownloadURL().catch(()=>null);
+            poMedia.innerHTML = url ? `<img src="${url}" class="w-full h-auto">` : '<div class="p-6 text-white">Image not available.</div>';
+          } else if (post.type === 'youtube' && post.ytId){
+            poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+          } else if (post.type === 'tiktok' && post.videoId){
+            poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+          } else {
+            poMedia.innerHTML = '<div class="p-6 text-white">No media.</div>';
+          }
+
+          // Caption + owner edit controls
+          poCaptionText.textContent = post.caption || '';
+          const currentUid = (firebase.auth().currentUser || {}).uid;
+          const isOwner = currentUid && currentUid === ownerUid;
+          poEditBtn.classList.toggle('hidden', !isOwner);
+          poDeleteBtn.classList.toggle('hidden', !(isOwner || adminMode));
+
+          poEditBtn.onclick = ()=>{
+            poCaptionInput.value = post.caption || '';
+            poCaptionText.classList.add('hidden');
+            poCaptionEdit.classList.remove('hidden');
+          };
+          poCancelCaption.onclick = ()=>{
+            poCaptionEdit.classList.add('hidden');
+            poCaptionText.classList.remove('hidden');
+          };
+          poSaveCaption.onclick = async ()=>{
+            const newCap = (poCaptionInput.value || '').trim();
+            if (containsBadWord(newCap)) { showMessageBox('That description contains banned words.'); return; }
+            await firebase.database().ref(`${postPath}/caption`).set(newCap);
+            poCaptionText.textContent = newCap;
+            poCaptionEdit.classList.add('hidden');
+            poCaptionText.classList.remove('hidden');
+          };
+          poDeleteBtn.onclick = async ()=>{
+            const doDelete = await showMessageBox('Delete this post?', true);
+            if (!doDelete) return;
+            // if it was an image, try to delete the file too (best-effort)
+            if (post.type === 'image' && post.storagePath){
+              firebase.storage().ref(post.storagePath).delete().catch(()=>{});
+            }
+            firebase.database().ref(postPath).remove().then(hidePostOverlay);
+          };
+
+          // Reactions (live)
+          firebase.database().ref(`${postPath}/reactions`).off();
+          firebase.database().ref(`${postPath}/reactions`).on('value', renderPostReactions);
+
+          // Comments (live)
+          firebase.database().ref(`${postPath}/comments`).off();
+          firebase.database().ref(`${postPath}/comments`).on('value', renderPostComments);
+
+          // New comment
+          poCommentSend.onclick = ()=>{
+            const u = firebase.auth().currentUser;
+            if (!u) return showMessageBox('Please log in to comment.');
+            if (postsDisabled) return showMessageBox('Posting is currently disabled.');
+            const text = (poCommentInput.value || '').trim();
+            if (!text) return;
+            if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
+
+            const cRef = firebase.database().ref(`${postPath}/comments`).push();
+            cRef.set({ uid: u.uid, text, time: firebase.database.ServerValue.TIMESTAMP });
+            poCommentInput.value = '';
+          };
+          
+          showPostOverlay();
+        }
+
+        async function fetchAllData() {
+            try {
+                const usersRef = db.ref('users');
+                const usersSnapshot = await usersRef.once('value');
+                const users = usersSnapshot.val();
+                
+                let combinedPosts = [];
+
+                if (users) {
+                    userProfiles = users;
+                    
+                    for (const uid in users) {
+                        if (users[uid].posts) {
+                            for (const postId in users[uid].posts) {
+                                combinedPosts.push({
+                                    postId: postId,
+                                    ...users[uid].posts[postId],
+                                    createdBy: uid,
+                                });
+                            }
+                        }
+                    }
+                }
+                
+                allPosts = combinedPosts.sort((a, b) => b.createdAt - a.createdAt);
+                renderPosts();
+            } catch (error) {
+                console.error("Failed to fetch all data:", error);
+                postsContainer.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Failed to load posts.</div>`;
+            }
+        }
+        
+        function renderPosts() {
+            const filteredPosts = filterPosts(allPosts, currentTab);
+            
+            if (filteredPosts.length === 0) {
+                postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">No posts found for this category.</div>`;
+                return;
+            }
+            
+            postsContainer.innerHTML = filteredPosts.map(post => createPostTile(post, post.createdBy)).join('');
+        }
+        
+        function filterPosts(posts, tab) {
+            if (tab === 'popular') {
+                return posts.sort((a, b) => {
+                    const aReactions = b.reactions ? Object.values(b.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
+                    const bReactions = a.reactions ? Object.values(a.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
+                    const aComments = b.comments ? Object.keys(b.comments).length : 0;
+                    const bComments = a.comments ? Object.keys(a.comments).length : 0;
+                    return (aReactions + aComments) - (bReactions + bComments);
+                });
+            } else if (tab === 'youtube') {
+                return posts.filter(post => post.type === 'youtube');
+            } else if (tab === 'tiktok') {
+                return posts.filter(post => post.type === 'tiktok');
+            }
+            return posts;
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentTab = button.dataset.tab;
+                renderPosts();
+            });
+        });
+
+        // Event delegation for opening the post popup and interacting with its content
+        postsContainer.addEventListener('click', (e)=>{
+          const tile = e.target.closest('.post-tile');
+          if (!tile) return;
+          const ownerUid = tile.dataset.ownerUid;
+          const postId = tile.dataset.postId;
+          // Bottom (footer) opens details; top (media) opens profile
+          if (e.target.closest('.post-footer')) {
+            openPostDetails(ownerUid, postId);
+          } else {
+            // Open profile card
+            loadUserProfile(ownerUid);
+          }
+        });
+
+        // --- USER POPUP LOGIC (from old file) ---
+        let allProfilePosts = [];
+        let postPageIndex = 0;
+        const postsPerPage = 2;
+
+        function renderProfilePosts() {
+            const postsContainerEl = document.getElementById('popupPostsColumn');
+            postsContainerEl.innerHTML = '';
+            if (allProfilePosts.length === 0) {
+                postsContainerEl.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
+                return;
+            }
+            const start = postPageIndex * postsPerPage;
+            const end = start + postsPerPage;
+            const postsToDisplay = allProfilePosts.slice(start, end);
+            postsToDisplay.forEach(post => {
+                 let mediaHtml = '';
+                if (post.type === 'image' && post.storagePath) {
+                    firebase.storage().ref(post.storagePath).getDownloadURL().then(url => {
+                        postsContainerEl.querySelector(`[data-post-id="${post.postId}"] .post-media`).src = url;
+                    });
+                } else if (post.type === 'youtube') {
+                    const embedUrl = `https://www.youtube.com/embed/${post.ytId}`;
+                    mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                } else if (post.type === 'tiktok') {
+                    const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
+                    mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                }
+                const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                });
+                
+                postsContainerEl.innerHTML += `
+                    <div class="post-tile bg-gray-700/20 rounded-lg p-4" data-post-id="${post.postId}">
+                        ${mediaHtml || '<img class="post-media w-full" src="">'}
+                        <div class="mt-2 text-gray-300">${post.caption}</div>
+                        <div class="mt-1 text-xs text-gray-500">${timestamp}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        async function loadProfilePosts(uid) {
+            try {
+                const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+                const posts = [];
+                snapshot.forEach(childSnap => {
+                    posts.push({
+                        postId: childSnap.key,
+                        ...childSnap.val()
+                    });
+                });
+                allProfilePosts = posts.sort((a, b) => b.createdAt - a.createdAt);
+                postPageIndex = 0;
+                renderProfilePosts();
+            } catch (error) {
+                console.error('Failed to load posts for profile popup:', error);
+                const postsContainerEl = document.getElementById('popupPostsColumn');
+                postsContainerEl.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
+            }
+        }
+        
+        window.loadUserProfile = (uid) => {
+            profileOwnerUid = uid;
+            
+            const popupCard = document.getElementById('userPopupCard');
+            const postsColumn = document.getElementById('popupPostsColumn');
+            const bannerEl = document.getElementById('popupBanner');
+            const avatarEl = document.getElementById('popupAvatar');
+            const usernameEl = document.getElementById('popupUserName');
+            const aboutEl = document.getElementById('popupAboutMe');
+            const badgesContainer = document.getElementById('popupBadges');
+            const streakEl = document.getElementById('popupStreak');
+
+            popupCard.classList.remove('two-column');
+            postsColumn.style.display = 'none';
+            postsColumn.innerHTML = '';
+            
+            db.ref(`users/${uid}`).once('value').then(snap => {
+                const userData = snap.val() || {};
+                const isEligible = !!(userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald);
+
+                if (isEligible) {
+                    popupCard.classList.add('two-column');
+                    postsColumn.style.display = 'block';
+                    postsColumn.innerHTML = `
+                        <h4 class="popup-section-title text-center text-gray-800">POSTS</h4>
+                        <div id="postsContainer" class="post-list"></div>
+                    `;
+                    loadProfilePosts(uid);
+                }
+
+                usernameEl.textContent = userData.displayName || 'Anonymous User';
+                avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+                aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+
+                const streakNum = typeof userData.loginStreak === 'number' ? userData.loginStreak : (parseInt(userData.loginStreak) || 0);
+                if (streakNum > 0) {
+                    streakEl.textContent = `🔥 ${streakNum} Day Streak`;
+                    streakEl.style.display = 'block';
+                } else {
+                    streakEl.style.display = 'none';
+                }
+
+                const custom = userData.profileCustomization || {};
+                const hasCustomization = userData.codesUnlocked?.diamond;
+
+                if (hasCustomization && custom.gradient) {
+                    popupCard.style.background = custom.gradient;
+                } else {
+                    popupCard.style.background = '#f1f3f5';
+                }
+
+                if (hasCustomization && custom.nameColor) {
+                    usernameEl.style.color = custom.nameColor;
+                } else {
+                    usernameEl.style.color = '#111827';
+                }
+
+                if (hasCustomization && custom.banner) {
+                    bannerEl.style.backgroundImage = `url('${custom.banner}')`;
+                    bannerEl.style.backgroundColor = 'transparent';
+                } else {
+                    bannerEl.style.backgroundImage = 'none';
+                    bannerEl.style.backgroundColor = '#ced4da';
+                }
+
+                Promise.all([
+                    db.ref(`badges/${uid}`).once('value'),
+                    db.ref(`users/${uid}/customBadges`).once('value')
+                ]).then(([bsnap, csnap]) => {
+                    badgesContainer.innerHTML = '';
+                    let hasAnyBadge = false;
+
+                    const badgeSpecs = {
+                        verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+                        offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
+                        defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
+                        overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+                    };
+
+                    const addBadge = (spec, text, insertFirst = false) => {
+                        hasAnyBadge = true;
+                        const div = document.createElement('div');
+                        div.className = 'popup-badge';
+                        div.style.background = spec.bg;
+                        div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
+                        if (insertFirst && badgesContainer.firstChild) {
+                            badgesContainer.insertBefore(div, badgesContainer.firstChild);
+                        } else if (insertFirst) {
+                            badgesContainer.appendChild(div);
+                        } else {
+                            badgesContainer.appendChild(div);
+                        }
+                    };
+
+                    const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
+                    const baseBadges = bsnap.val() || {};
+
+                    const isVerified = toBool(userData.emailVerified);
+                    if (isVerified) addBadge(badgeSpecs.verified, 'Verified', true);
+
+                    ['offence', 'defence', 'overall'].forEach(key => {
+                        const count = parseInt((baseBadges && baseBadges[key]) || 0) || 0;
+                        if (count > 0) {
+                            addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${count}`);
+                        }
+                    });
+
+                    if (userData.codesUnlocked?.diamond) {
+                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#55d9e5;color:#fff;">
+                            <img src="${badgeIconMap.diamond}" alt="Diamond"><span>Diamond User</span>
+                        </div>`;
+                        hasAnyBadge = true;
+                    }
+                    if (userData.codesUnlocked?.emerald) {
+                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#22c55e;color:#fff;">
+                            <img src="${badgeIconMap.emerald}" alt="Emerald"><span>Emerald User</span>
+                        </div>`;
+                        hasAnyBadge = true;
+                    }
+
+                    const customBadges = csnap.val() || {};
+                    Object.values(customBadges).forEach(badge => {
+                        hasAnyBadge = true;
+                        const div = document.createElement('div');
+                        div.className = 'popup-badge';
+                        div.style.background = `linear-gradient(90deg,${badge.grad1||'#6b7280'} 30%,${badge.grad2||'#6b7280'} 100%)`;
+                        div.style.color = badge.textColor || 'white';
+                        div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
+                        badgesContainer.appendChild(div);
+                    });
+
+                    if (!hasAnyBadge) {
+                        badgesContainer.textContent = 'No badges to display.';
+                    }
+                }).catch(err => {
+                    console.error('Badge load error:', err);
+                    badgesContainer.textContent = 'Failed to load badges.';
+                });
+
+            }).catch(error => {
+                console.error('Error loading user profile:', error);
+                usernameEl.textContent = 'Error loading profile';
+            });
+            userPopup.style.display = 'flex';
+        };
+
+        closeUserPopup.onclick = () => {
+            userPopup.style.display = 'none';
+        };
+        userPopup.onclick = (e) => {
+            if (e.target === userPopup) {
+                userPopup.style.display = 'none';
+            }
+        };
+        
+        // Function to handle post deletion from the main feed
+        async function deletePostFromFeed(uid, postId) {
+            if (!currentUserUid || (currentUserUid !== uid && !adminMode)) return;
+            const doDelete = await showMessageBox('Are you sure you want to delete this post?', true);
+            if (!doDelete) return;
+
+            const postRef = db.ref(`users/${uid}/posts/${postId}`);
+            const postSnap = await postRef.once('value');
+            const post = postSnap.val();
+            
+            if (post && post.type === 'image' && post.storagePath){
+              firebase.storage().ref(post.storagePath).delete().catch(()=>{});
+            }
+
+            postRef.remove().then(() => {
+                fetchAllData();
+            }).catch(error => {
+                console.error("Error deleting post:", error);
+            });
+        }
+
+        // Initial data fetch on page load
+        fetchAllData();
+    </script>
+</body>
+</html>
