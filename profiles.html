@@ -494,7 +494,7 @@
 <body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
         <header class="text-center mb-10">
-            <a href="https://kevinmidnight7-sudo.github.io/messageboardkc/login2.html" class="banner-button">
+            <a href="https://kcevents.uk/#loginpage" class="banner-button">
                 View your profile
             </a>
         </header>
@@ -514,12 +514,19 @@
             </button>
         </div>
 
-        <!-- User Search Input -->
-        <div class="flex justify-center mb-10">
+        <!-- User Search and Sort Controls -->
+        <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-10">
             <input type="text" id="userSearch" placeholder="Search users..."
-                   class="w-full max-w-lg px-4 py-3 rounded-full bg-white bg-opacity-10 text-white placeholder-gray-400
+                   class="w-full md:w-1/2 px-4 py-3 rounded-full bg-white bg-opacity-10 text-white placeholder-gray-400
                           focus:outline-none focus:ring-2 focus:ring-yellow-400 border border-transparent focus:border-yellow-400
                           transition-colors duration-200">
+            <select id="userSort" class="w-full md:w-1/4 px-4 py-3 rounded-full bg-white bg-opacity-10 text-white
+                                         focus:outline-none focus:ring-2 focus:ring-yellow-400 border border-transparent focus:border-yellow-400
+                                         transition-colors duration-200 cursor-pointer">
+                <option value="joinDate" class="bg-[#1e293b] text-white">Sort by Join Date (Newest)</option>
+                <option value="alphabetical" class="bg-[#1e293b] text-white">Sort by Name (A-Z)</option>
+                <option value="streak" class="bg-[#1e293b] text-white">Sort by Highest Streak</option>
+            </select>
         </div>
 
         <!-- User Grid Container -->
@@ -617,11 +624,13 @@
 
         const userGrid = document.getElementById('userGrid');
         const userSearch = document.getElementById('userSearch');
+        const userSort = document.getElementById('userSort'); // Get the new sort dropdown
         const prevPageBtn = document.getElementById('prevPageBtn');
         const nextPageBtn = document.getElementById('nextPageBtn');
         const pageInfo = document.getElementById('pageInfo');
 
         let currentCategory = 'all';
+        let currentSort = 'joinDate'; // Default sort order
         let allUsers = []; // Store all users fetched from Firebase
         let currentPage = 1;
         const usersPerPage = 16; // 4x4 grid
@@ -691,6 +700,19 @@
             }
         }
 
+        // Function to sort the users based on the selected criteria
+        function sortUsers(users, sortBy) {
+            switch (sortBy) {
+                case 'alphabetical':
+                    return users.sort((a, b) => a.displayName.localeCompare(b.displayName));
+                case 'streak':
+                    return users.sort((a, b) => b.loginStreak - a.loginStreak);
+                case 'joinDate':
+                default:
+                    // Firebase UIDs are lexicographically sortable by creation time
+                    return users.sort((a, b) => b.uid.localeCompare(a.uid));
+            }
+        }
 
         // Function to filter users based on the selected category and search query
         function filterUsers(category, query) {
@@ -724,13 +746,17 @@
         // Function to render the user grid
         function renderUserGrid() {
             const query = userSearch.value;
-            const filteredUsers = filterUsers(currentCategory, query);
-            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            let filteredAndSortedUsers = filterUsers(currentCategory, query);
+            
+            // Apply sorting to the filtered list
+            filteredAndSortedUsers = sortUsers(filteredAndSortedUsers, currentSort);
+
+            const totalPages = Math.ceil(filteredAndSortedUsers.length / usersPerPage);
 
             // Slice the users for the current page
             const startIndex = (currentPage - 1) * usersPerPage;
             const endIndex = startIndex + usersPerPage;
-            const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
+            const usersToDisplay = filteredAndSortedUsers.slice(startIndex, endIndex);
 
             userGrid.innerHTML = usersToDisplay.map(createUserCard).join('');
 
@@ -795,6 +821,13 @@
         // Event listener for search input
         userSearch.addEventListener('input', () => {
             currentPage = 1; // Reset to first page on search
+            renderUserGrid();
+        });
+
+        // Event listener for sorting dropdown
+        userSort.addEventListener('change', (event) => {
+            currentSort = event.target.value;
+            currentPage = 1; // Reset to first page when changing sort order
             renderUserGrid();
         });
 
