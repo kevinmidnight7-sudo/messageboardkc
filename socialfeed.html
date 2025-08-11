@@ -17,7 +17,7 @@
     <style>
         body {
             font-family: 'Poppins', sans-serif;
-            background: transparent;
+            background: linear-gradient(135deg, #1f2937, #111827);
             min-height: 100vh;
             color: #e5e7eb;
             overflow-x: hidden;
@@ -370,18 +370,72 @@
             100% { transform: rotate(360deg); }
         }
         
-        .reactions-tooltip {
-            position: fixed;
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            padding: 8px 12px;
-            border-radius: 8px;
-            z-index: 10001;
-            font-size: 0.875rem;
-            pointer-events: none;
-            white-space: pre-wrap;
-            transform: translate(-50%, -110%);
+        /* === START OF NEW CSS UTILITIES === */
+        /* Skeleton loader */
+        .skeleton {
+          position: relative;
+          overflow: hidden;
+          background: rgba(255,255,255,0.08);
         }
+        .skeleton::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          transform: translateX(-100%);
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
+          animation: shine 1.2s infinite;
+        }
+        @keyframes shine { 100% { transform: translateX(100%); } }
+        
+        /* Confetti (emoji pop) */
+        .confetti-piece {
+          position: fixed;
+          pointer-events: none;
+          font-size: 18px;
+          z-index: 11000;
+          animation: confetti-fall 900ms cubic-bezier(.07,.84,.19,1.01) forwards;
+        }
+        @keyframes confetti-fall {
+          0% { opacity: 0; transform: translate(0,0) scale(.8) rotate(0deg); }
+          50% { opacity: 1; }
+          100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(var(--rot)); }
+        }
+        
+        /* Reduced motion: tone down transforms */
+        @media (prefers-reduced-motion: reduce) {
+          .post-card:hover { transform: none !important; }
+          .add-post-btn:hover { transform: none !important; }
+          .confetti-piece { animation-duration: 0ms !important; }
+        }
+        
+        /* Tooltip for reactions */
+        .reactions-tooltip { position: fixed; background: rgba(0,0,0,.75); color:#fff; padding:8px 12px; border-radius:8px; z-index:11000; font-size:.875rem; pointer-events:none; transform: translate(-50%, -110%); white-space:pre-wrap; }
+        
+        /* Accessible focus */
+        .post-tile:focus { outline: 3px solid rgba(113,125,255,.6); outline-offset: 3px; }
+        
+        /* Lazy-embed placeholder */
+        .embed-placeholder { position: relative; background:#0f172a; border-radius: 1rem; overflow: hidden; }
+        .embed-placeholder img { width:100%; height:auto; display:block; }
+        .embed-play {
+          position:absolute; inset:auto 0 0 0; top:50%; left:50%; transform:translate(-50%,-50%);
+          width:72px; height:72px; border-radius:9999px; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; color:#fff; font-size:32px;
+          border:2px solid rgba(255,255,255,.4);
+        }
+        
+        /* Poll styling */
+        .poll-option { display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:.75rem; border:1px solid rgba(255,255,255,.12); cursor:pointer; }
+        .poll-bar { height:8px; border-radius:9999px; background:rgba(255,255,255,.15); overflow:hidden; }
+        .poll-fill { height:100%; background:linear-gradient(90deg,#a855f7,#6366f1); }
+        
+        /* Hashtag/mention */
+        .caption a.tag-link { color:#93c5fd; text-decoration: none; }
+        .caption a.mention-link { color:#fda4af; text-decoration: none; }
+        
+        /* Subtle pop on add */
+        @keyframes popIn { 0%{ transform:scale(.96); opacity:.0 } 100%{ transform:scale(1); opacity:1 } }
+        .post-card.pop { animation: popIn .22s ease-out; }
+        /* === END OF NEW CSS UTILITIES === */
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -395,6 +449,8 @@
             <button class="tab-btn active px-4 py-2" data-tab="popular">Popular</button>
             <button class="tab-btn px-4 py-2" data-tab="youtube">YouTube</button>
             <button class="tab-btn px-4 py-2" data-tab="tiktok">TikTok</button>
+            <!-- NEW: Saved Posts Tab -->
+            <button class="tab-btn px-4 py-2" data-tab="saved">Saved</button>
         </div>
 
         <!-- Posts Container -->
@@ -410,7 +466,8 @@
 
     <!-- POST CREATION POPUP -->
     <div id="postCreatorPopup" class="fixed inset-0 flex items-center justify-center z-[1000] bg-black/50 hidden">
-        <div class="glass p-6 rounded-3xl w-full max-w-lg mx-4">
+        <!-- MODIFIED: Added max-h-[90vh] overflow-y-auto for mobile scrollability -->
+        <div class="glass p-6 rounded-3xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <h2 class="text-3xl font-bold text-center mb-6">Create a new post</h2>
             <div class="flex flex-col items-center">
                 <div id="postTypeSelection" class="flex gap-4 mb-4">
@@ -422,10 +479,31 @@
                         <i class="fab fa-tiktok"></i>
                         <span>TikTok</span>
                     </button>
+                    <!-- NEW: Poll Post Button -->
+                    <button id="pollBtn" class="social-media-btn bg-purple-600 hover:bg-purple-700">
+                        <i class="fa-solid fa-square-poll-vertical"></i><span>Poll</span>
+                    </button>
                 </div>
                 <div id="urlInputContainer" class="w-full hidden">
                     <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"></textarea>
+                    
+                    <!-- NEW: Draft & Schedule Fields -->
+                    <div class="w-full mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <label class="flex items-center gap-2 text-sm"><input id="draftToggle" type="checkbox" class="form-checkbox"> Save as draft</label>
+                        <label class="flex items-center gap-2 text-sm">Schedule: <input id="scheduleAt" type="datetime-local" class="p-2 rounded bg-white/10 text-white"></label>
+                    </div>
+
+                    <!-- NEW: Poll Fields -->
+                    <div id="pollFields" class="w-full hidden">
+                      <input id="pollQuestion" class="w-full mb-3 p-3 rounded-xl bg-white/10 text-white" placeholder="Poll question">
+                      <div id="pollOptions" class="space-y-2">
+                        <input class="pollOpt w-full p-3 rounded-xl bg-white/10 text-white" placeholder="Option 1">
+                        <input class="pollOpt w-full p-3 rounded-xl bg-white/10 text-white" placeholder="Option 2">
+                      </div>
+                      <button id="addPollOption" class="mt-2 px-3 py-1 rounded bg-gray-700 text-white text-sm">Add option</button>
+                    </div>
+
                     <button id="postButton" class="w-full p-4 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
                     <div id="uploadStatus" class="mt-2 text-sm text-center text-gray-400 hidden"></div>
                 </div>
@@ -482,7 +560,8 @@
     <!-- === POST DETAILS OVERLAY === -->
     <div id="postOverlay" class="fixed inset-0 z-[10020] hidden">
       <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="postOverlayBg"></div>
-      <div class="relative mx-auto my-6 w-[95vw] max-w-3xl rounded-2xl bg-white text-gray-900 overflow-hidden shadow-2xl">
+      <!-- MODIFIED: Added max-h-[90vh] overflow-y-auto for mobile scrollability -->
+      <div class="relative mx-auto my-6 w-[95vw] max-w-3xl rounded-2xl bg-white text-gray-900 max-h-[90vh] overflow-y-auto shadow-2xl">
         <div class="flex justify-between items-center px-4 py-3 border-b">
           <div class="flex items-center gap-3">
             <img id="poAvatar" class="w-10 h-10 rounded-full object-cover" alt="avatar">
@@ -492,6 +571,9 @@
             </div>
           </div>
           <div class="flex items-center gap-2">
+            <!-- MODIFIED: Share button now copies a fixed URL -->
+            <button id="poShareBtn" class="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold">Share</button>
+            <!-- REMOVED: Report button has been deleted -->
             <button id="poEditBtn" class="hidden px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold">Edit</button>
             <button id="poDeleteBtn" class="hidden px-3 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-semibold">Delete</button>
             <button id="postOverlayClose" class="w-9 h-9 rounded-full bg-gray-900/80 text-white">✕</button>
@@ -570,8 +652,11 @@
       </div>
     </div>
 
-    <!-- POST POPUP FOR DETAILS AND COMMENTS (Old, removed) -->
-    <!-- Removed to use the new Post Details Overlay -->
+    <!-- NEW: Mini Profile Popup -->
+    <div id="miniProfile" class="fixed z-[10005] hidden rounded-xl bg-white text-gray-900 shadow-xl p-3 w-64"></div>
+    <!-- NEW: Reaction Tooltip -->
+    <div class="reactions-tooltip hidden"></div>
+
     
     <script>
         // Firebase setup from provided HTMLs
@@ -623,7 +708,17 @@
         const postTypeSelection = document.getElementById('postTypeSelection');
         const youtubeBtn = document.getElementById('youtubeBtn');
         const tiktokBtn = document.getElementById('tiktokBtn');
+        // NEW: Poll button and fields
+        const pollBtn = document.getElementById('pollBtn');
+        const pollFields = document.getElementById('pollFields');
+        const pollQuestion = document.getElementById('pollQuestion');
+        const pollOptions = document.getElementById('pollOptions');
+        // NEW: Draft and Schedule fields
+        const draftToggle = document.getElementById('draftToggle');
+        const scheduleAt = document.getElementById('scheduleAt');
         let selectedPostType = null;
+        const urlInputContainer = document.getElementById('urlInputContainer');
+        const uploadStatus = document.getElementById('uploadStatus');
         
         // Message Box elements
         const messageBox = document.getElementById('messageBox');
@@ -662,6 +757,16 @@
         let adminMode = false;
         let badWords = [];
         const postsDisabledRef = firebase.database().ref('config/postsDisabled');
+        // NEW: Globals for infinite scroll
+        let RENDER_PAGE = 12;      // items per chunk
+        let renderIndex = 0;       // how many already rendered
+        let io = null;             // IntersectionObserver
+        let sentinel = null;       // sentinel element
+        // NEW: Global for caption formatting
+        let activeTag = null;
+        // NEW: Global for mentions
+        const nameToUid = {};
+
 
         function containsBadWord(s=''){
           try {
@@ -669,6 +774,61 @@
             return badWords.some(w => new RegExp('\\b'+w+'\\b','i').test(lower));
           } catch(_) { return false; }
         }
+        
+        // NEW: Caption formatting helpers
+        function escapeHtml(s=''){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+        function formatCaption(raw=''){
+          const safe = escapeHtml(raw);
+          let out = safe
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/`(.+?)`/g, '<code class="px-1 rounded bg-black/30">$1</code>');
+          // links
+          out = out.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" class="underline decoration-dotted">$1</a>');
+          // hashtags
+          out = out.replace(/(^|\s)#([a-zA-Z0-9_]{2,24})/g, '$1<a class="tag-link" data-tag="$2">#$2</a>');
+          // mentions
+          out = out.replace(/(^|\s)@([\w\.\-\[\]]{2,24})/g, '$1<a class="mention-link" data-name="$2">@$2</a>');
+          return out;
+        }
+
+        // NEW: Rate limiting helpers
+        const RATE = { post: 20_000, comment: 6_000 }; // ms
+        function canDo(key){ const now=Date.now(); const t=+localStorage.getItem(key)||0; if (now-t<RATE[key.split(':')[0]]) return false; localStorage.setItem(key, now); return true; }
+
+        // NEW: Confetti helper
+        function confettiBurst(x, y){
+          const EMOJIS = ['✨','🎉','💥','🔥','⭐','💫'];
+          for (let i=0;i<12;i++){
+            const el = document.createElement('div');
+            el.className = 'confetti-piece';
+            el.textContent = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+            el.style.left = x+'px'; el.style.top = y+'px';
+            el.style.setProperty('--dx', (Math.random()*160-80)+'px');
+            el.style.setProperty('--dy', (80 + Math.random()*140)+'px');
+            el.style.setProperty('--rot', (Math.random()*360-180)+'deg');
+            document.body.appendChild(el);
+            setTimeout(()=> el.remove(), 950);
+          }
+        }
+
+        // NEW: Skeleton loader helpers
+        function showSkeletons(n=6){
+          const skels = Array.from({length:n}).map(()=>`
+            <div class="post-card p-4 rounded-2xl skeleton">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-full bg-white/10"></div>
+                <div class="flex-1">
+                  <div class="h-4 w-40 bg-white/10 mb-2"></div>
+                  <div class="h-3 w-24 bg-white/10"></div>
+                </div>
+              </div>
+              <div class="w-full aspect-video bg-white/10 rounded-xl"></div>
+              <div class="mt-3 h-4 w-3/4 bg-white/10 rounded"></div>
+            </div>`).join('');
+          postsContainer.innerHTML = skels;
+        }
+        function clearSkeletons(){ /* no-op; next render replaces content */ }
 
         // Load profanity list once
         fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
@@ -698,6 +858,11 @@
         const poCommentSend = document.getElementById('poCommentSend');
         const poEditBtn = document.getElementById('poEditBtn');
         const poDeleteBtn = document.getElementById('poDeleteBtn');
+        // MODIFIED: poShareBtn still exists
+        const poShareBtn = document.getElementById('poShareBtn');
+        // REMOVED: poReportBtn and its JS handler
+        // NEW: Reaction tooltip
+        const reactTip = document.querySelector('.reactions-tooltip');
 
         let openPostCtx = null; // {ownerUid, postId, postPath}
 
@@ -786,7 +951,6 @@
 
         async function renderPostReactions(snap){
           const data = snap.val() || {};
-          // build counts and whether current user reacted
           const u = firebase.auth().currentUser;
           poReactions.innerHTML = '';
           
@@ -805,20 +969,29 @@
             const btn = document.createElement('button');
             btn.className = 'px-2 py-1 rounded-full border text-sm flex items-center gap-1 ' + (userReacted ? 'bg-blue-600 text-white' : 'bg-gray-100');
             btn.textContent = `${emo} ${count||''}`.trim();
-            btn.onclick = ()=> togglePostReaction(emo);
+            // MODIFIED: Pass event to confettiBurst
+            btn.onclick = (ev)=>{
+              const wasReacted = !!userReacted;
+              togglePostReaction(emo, ev);
+              if (!wasReacted) { const r = ev.target.getBoundingClientRect(); confettiBurst(r.left + r.width/2, r.top); }
+            };
             
-            // Create the tooltip content
-            const reactorNames = reactors.map(reactorUid => {
-                const userProfile = allUserProfiles[reactorUid] || {};
-                return userProfile.displayName || 'Anonymous';
+            // MODIFIED: Reaction tooltip hover listeners now use cached userProfiles
+            btn.addEventListener('mouseenter', (ev)=>{
+              const rect = ev.target.getBoundingClientRect();
+              reactTip.style.left = (rect.left + rect.width/2)+'px';
+              reactTip.style.top = (rect.top - 8)+'px';
+              const names = reactors.slice(0,25).map(uid => (userProfiles[uid]?.displayName) || 'User');
+              reactTip.textContent = names.length ? names.join(', ') : 'No reactions yet';
+              reactTip.classList.remove('hidden');
             });
-            btn.title = reactorNames.join(', ');
+            btn.addEventListener('mouseleave', ()=>{ reactTip.classList.add('hidden'); });
 
             poReactions.appendChild(btn);
           });
         }
-
-        function togglePostReaction(emo){
+        // MODIFIED: togglePostReaction now accepts an event argument
+        function togglePostReaction(emo, ev){
           const u = firebase.auth().currentUser;
           if (!u) return showMessageBox('Please log in to react.');
           if (!openPostCtx) return;
@@ -826,7 +999,7 @@
           ref.transaction(curr => curr ? null : true);
         }
         
-        // H) Comments + replies renderer
+        // MODIFIED: Replaced the entire renderPostComments function to include avatars
         function renderPostComments(snap){
           const data = snap.val() || {};
           poComments.innerHTML = '';
@@ -834,21 +1007,28 @@
           entries.forEach(([cid, c]) => {
             const li = document.createElement('li');
             li.dataset.cid = cid;
-            li.className = 'p-2 rounded-lg bg-gray-50 border';
+            li.className = 'p-2 rounded-lg bg-gray-50 border flex gap-3';
+
+            const avatar = document.createElement('img');
+            const u = userProfiles[c.uid] || {};
+            avatar.src = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+            avatar.className = 'w-8 h-8 rounded-full object-cover mt-0.5';
+            avatar.alt = 'avatar';
+
+            const body = document.createElement('div');
+            body.className = 'flex-1';
 
             const header = document.createElement('div');
             header.className = 'text-sm text-gray-600 mb-1';
-            header.textContent = '';
-            // fetch name for each comment
-            firebase.database().ref(`users/${c.uid}/displayName`).once('value').then(ns => {
-              header.textContent = (ns.val()||'Anonymous') + ' • ' + new Date(c.time||Date.now()).toLocaleString();
-            });
-            li.appendChild(header);
+            const name = (u.displayName || 'Anonymous');
+            header.textContent = name + ' • ' + new Date(c.time||Date.now()).toLocaleString();
 
             const text = document.createElement('div');
             text.className = 'whitespace-pre-wrap break-words';
             text.textContent = c.text || '';
-            li.appendChild(text);
+
+            body.appendChild(header);
+            body.appendChild(text);
 
             // Replies
             const repliesUl = document.createElement('ul');
@@ -856,39 +1036,46 @@
             const replies = c.replies || {};
             Object.entries(replies).sort((a,b)=> (a[1].time||0) - (b[1].time||0)).forEach(([rid, r])=>{
               const rLi = document.createElement('li');
-              rLi.className = 'p-2 rounded-md bg-white border';
+              rLi.className = 'p-2 rounded-md bg-white border flex gap-2';
+              const rAv = document.createElement('img');
+              const ru = userProfiles[r.uid] || {};
+              rAv.src = ru.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+              rAv.className = 'w-6 h-6 rounded-full object-cover mt-0.5';
+              const metaWrap = document.createElement('div');
+              metaWrap.className = 'flex-1';
               const meta = document.createElement('div');
               meta.className = 'text-xs text-gray-600 mb-1';
-              firebase.database().ref(`users/${r.uid}/displayName`).once('value').then(ns => {
-                meta.textContent = (ns.val()||'Anonymous') + ' • ' + new Date(r.time||Date.now()).toLocaleString();
-              });
-              const body = document.createElement('div');
-              body.textContent = r.text || '';
-              rLi.appendChild(meta);
-              rLi.appendChild(body);
+              meta.textContent = (ru.displayName || 'Anonymous') + ' • ' + new Date(r.time||Date.now()).toLocaleString();
+              const bodyTxt = document.createElement('div');
+              bodyTxt.textContent = r.text || '';
+              metaWrap.appendChild(meta);
+              metaWrap.appendChild(bodyTxt);
+
+              rLi.appendChild(rAv);
+              rLi.appendChild(metaWrap);
               repliesUl.appendChild(rLi);
             });
-            li.appendChild(repliesUl);
+            body.appendChild(repliesUl);
 
             // Reply composer
             const row = document.createElement('div');
             row.className = 'mt-2 flex gap-2';
             row.innerHTML = '<input class="flex-1 p-2 rounded-lg border border-gray-300 replyText" placeholder="Reply..."><button class="px-3 py-1 rounded-lg bg-gray-800 text-white text-sm replySend">Send</button>';
-            li.appendChild(row);
-
             row.querySelector('.replySend').onclick = ()=>{
-              const u = firebase.auth().currentUser;
-              if (!u) return showMessageBox('Please log in to reply.');
+              const uu = firebase.auth().currentUser;
+              if (!uu) return showMessageBox('Please log in to reply.');
               if (postsDisabled) return showMessageBox('Posting is currently disabled.');
               const text = row.querySelector('.replyText').value.trim();
               if (!text) return;
               if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
               firebase.database().ref(`${openPostCtx.postPath}/comments/${cid}/replies`).push({
-                uid: u.uid, text, time: firebase.database.ServerValue.TIMESTAMP
+                uid: uu.uid, text, time: firebase.database.ServerValue.TIMESTAMP
               });
               row.querySelector('.replyText').value = '';
             };
 
+            li.appendChild(avatar);
+            li.appendChild(body);
             poComments.appendChild(li);
           });
         }
@@ -935,9 +1122,13 @@
                     postCreatorPopup.classList.remove('hidden');
                     postTypeSelection.classList.remove('hidden');
                     urlInputContainer.classList.add('hidden');
+                    pollFields.classList.add('hidden'); // NEW: Hide poll fields
                     selectedPostType = null;
                     urlInput.value = '';
                     captionInput.value = '';
+                    // Reset drafts/schedule
+                    draftToggle.checked = false;
+                    scheduleAt.value = '';
                 });
             } else {
                 mainHeader.innerHTML = `
@@ -958,6 +1149,9 @@
             postTypeSelection.classList.add('hidden');
             urlInputContainer.classList.remove('hidden');
             urlInput.placeholder = 'Paste YouTube URL here...';
+            // NEW: Hide poll fields
+            pollFields.classList.add('hidden');
+            document.getElementById('urlInput').parentElement.classList.remove('hidden');
         });
 
         tiktokBtn.addEventListener('click', () => {
@@ -965,59 +1159,100 @@
             postTypeSelection.classList.add('hidden');
             urlInputContainer.classList.remove('hidden');
             urlInput.placeholder = 'Paste TikTok URL here...';
+            // NEW: Hide poll fields
+            pollFields.classList.add('hidden');
+            document.getElementById('urlInput').parentElement.classList.remove('hidden');
         });
+
+        // NEW: Poll button listener
+        pollBtn.addEventListener('click', ()=>{
+          selectedPostType = 'poll';
+          postTypeSelection.classList.add('hidden');
+          urlInputContainer.classList.remove('hidden');
+          document.getElementById('urlInput').parentElement.classList.add('hidden'); // hide URL field for polls
+          pollFields.classList.remove('hidden');
+        });
+        document.getElementById('addPollOption').onclick = ()=>{
+          if (pollOptions.querySelectorAll('.pollOpt').length >= 5) return;
+          const i = document.createElement('input');
+          i.className = 'pollOpt w-full p-3 rounded-xl bg-white/10 text-white'; i.placeholder = `Option ${pollOptions.children.length+1}`;
+          pollOptions.appendChild(i);
+        };
         
         postButton.addEventListener('click', async () => {
-            const url = urlInput.value;
-            const caption = captionInput.value;
-
-            if (!url || !selectedPostType) {
+            if (!currentUserUid) {
+                showMessageBox('Please log in to post.');
                 return;
             }
             if (postsDisabled) {
                 showMessageBox('Posting is currently disabled.');
                 return;
             }
+            if (!canDo('post:'+currentUserUid)) return showMessageBox('Slow down a bit 🙂');
+
+            const caption = captionInput.value;
+            let postData = null;
+
+            // NEW: Handle poll posts
+            if (selectedPostType === 'poll') {
+                const q = (pollQuestion.value||'').trim();
+                const opts = [...pollOptions.querySelectorAll('.pollOpt')].map(i=>i.value.trim()).filter(Boolean);
+                if (!q || opts.length < 2) { uploadStatus.textContent='Enter a question + 2+ options.'; uploadStatus.classList.remove('hidden'); return; }
+                const optionMap = {}; opts.forEach((t,idx)=> optionMap['o'+idx] = { text:t });
+                postData = { type:'poll', question:q, options: optionMap, votes: {}, caption: caption, createdAt: firebase.database.ServerValue.TIMESTAMP, createdBy: currentUserUid };
+            } else {
+                const url = urlInput.value;
+                if (!url || !selectedPostType) {
+                    uploadStatus.textContent = 'URL or post type missing.';
+                    uploadStatus.classList.remove('hidden');
+                    return;
+                }
+                if (selectedPostType === 'youtube') {
+                     const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+                     if (!ytIdMatch) {
+                         uploadStatus.textContent = 'Invalid YouTube URL.';
+                         uploadStatus.classList.remove('hidden');
+                         return;
+                     }
+                     postData = {
+                         type: 'youtube',
+                         ytId: ytIdMatch[1],
+                         caption: caption,
+                         createdAt: firebase.database.ServerValue.TIMESTAMP,
+                         createdBy: currentUserUid
+                     };
+                } else if (selectedPostType === 'tiktok') {
+                    const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
+                    if (!ttIdMatch) {
+                        uploadStatus.textContent = 'Invalid TikTok URL.';
+                        uploadStatus.classList.remove('hidden');
+                        return;
+                    }
+                    postData = {
+                        type: 'tiktok',
+                        videoId: ttIdMatch[1],
+                        caption: caption,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP,
+                        createdBy: currentUserUid
+                    };
+                }
+            }
+
             if (containsBadWord(caption)) {
                 showMessageBox('Post contains profanity. Please edit.');
                 return;
             }
 
-            let postId = crypto.randomUUID();
-            let postData = null;
-            let uploadStatus = document.getElementById('uploadStatus');
-
-            if (selectedPostType === 'youtube') {
-                 const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
-                 if (!ytIdMatch) {
-                     uploadStatus.textContent = 'Invalid YouTube URL.';
-                     uploadStatus.classList.remove('hidden');
-                     return;
-                 }
-                 postData = {
-                     type: 'youtube',
-                     ytId: ytIdMatch[1],
-                     caption: caption,
-                     createdAt: firebase.database.ServerValue.TIMESTAMP,
-                     createdBy: currentUserUid
-                 };
-            } else if (selectedPostType === 'tiktok') {
-                const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
-                if (!ttIdMatch) {
-                    uploadStatus.textContent = 'Invalid TikTok URL.';
-                    uploadStatus.classList.remove('hidden');
-                    return;
-                }
-                postData = {
-                    type: 'tiktok',
-                    videoId: ttIdMatch[1],
-                    caption: caption,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    createdBy: currentUserUid
-                };
+            // NEW: Add drafts and scheduling logic
+            const isDraft = draftToggle.checked;
+            const scheduleVal = scheduleAt.value;
+            const publishAt = scheduleVal ? new Date(scheduleVal).getTime() : null;
+            if (postData) {
+              postData = { ...postData, draft: !!isDraft, publishAt: publishAt || null };
             }
 
             try {
+                const postId = crypto.randomUUID();
                 await db.ref(`users/${currentUserUid}/posts/${postId}`).set(postData);
                 postCreatorPopup.classList.add('hidden');
                 fetchAllData(); // Refresh the feed
@@ -1032,39 +1267,53 @@
         function createPostTile(post, ownerUid) {
             const user = userProfiles[ownerUid] || {};
             
-            const hasCustomization = !!(user.codesUnlocked?.diamond || user.codesUnlocked?.emerald);
-            let nameColor = hasCustomization && user.profileCustomization?.nameColor ? user.profileCustomization.nameColor : '#ffffff';
-            
-            let avatarWrapperClass = '';
-            let avatarWrapperStyle = '';
-            let avatarImgClass = '';
-            let avatarImgStyle = '';
+            // NEW: Profile Customization
+            const hasCustomization = !!(user.codesUnlocked && (user.codesUnlocked.diamond || user.codesUnlocked.emerald));
+            const nameColor = hasCustomization ? (user.profileCustomization?.nameColor || '#fff') : '#fff';
+            const cardBg = hasCustomization ? (user.profileCustomization?.gradient || '') : '';
+            const ringColor = nameColor;
+            // MODIFIED: Saved state check for button label
+            const saveKey = `${ownerUid}__${post.postId}`;
+            const isSaved = !!(currentUserProfile && currentUserProfile.saved && currentUserProfile.saved[saveKey]);
 
-            if (hasCustomization) {
-                if (user.profileCustomization?.gradient) {
-                    // Apply the gradient class and style to the wrapper div
-                    avatarWrapperClass = 'diamond-border';
-                    avatarWrapperStyle = `--gradient: ${user.profileCustomization.gradient};`;
-                    // Hide the img's border to show the gradient from the pseudo-element
-                    avatarImgClass = 'profile-avatar-no-border';
-                } else if (user.profileCustomization?.nameColor) {
-                    // Apply the solid color directly to the img border
-                    avatarImgStyle = `border-color: ${user.profileCustomization.nameColor};`;
-                }
-            }
-            // For non-customized users, the default white border on .profile-avatar will be used.
-
-            const nameStyles = `style="color: ${nameColor};"`;
+            // Apply customizations directly as inline styles
+            const postCardStyle = cardBg ? `style="background:${cardBg}"` : '';
+            const usernameStyle = `style="color:${nameColor}"`;
+            const avatarRingStyle = `box-shadow:0 0 0 2px ${ringColor}`;
 
             let mediaHtml = '';
+            // NEW: Lazy-load YouTube/TikTok embeds
             if (post.type === 'image' && post.url) {
-                mediaHtml = `<img src="${post.url}" alt="${post.caption}" class="post-media rounded-xl">`;
+                mediaHtml = `<img src="${post.url}" alt="${post.caption}" class="post-media rounded-xl" loading="lazy">`;
             } else if (post.type === 'youtube' && post.ytId) {
-                const embedUrl = `https://www.youtube.com/embed/${post.ytId}`;
-                mediaHtml = `<iframe class="post-media rounded-xl w-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                const thumb = `https://i.ytimg.com/vi/${post.ytId}/hqdefault.jpg`;
+                mediaHtml = `
+                  <div class="embed-placeholder aspect-video" data-yt="${post.ytId}">
+                    <img src="${thumb}" alt="YouTube preview"/>
+                    <div class="embed-play">▶</div>
+                  </div>`;
             } else if (post.type === 'tiktok' && post.videoId) {
-                const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
-                mediaHtml = `<iframe class="post-media rounded-xl w-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                mediaHtml = `
+                  <div class="embed-placeholder aspect-video" data-tt="${post.videoId}">
+                    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/tiktok_placeholder.png" alt="TikTok preview"/>
+                    <div class="embed-play">▶</div>
+                  </div>`;
+            } else if (post.type === 'poll') {
+                const options = post.options || {};
+                const votes = post.votes || {};
+                const total = Object.values(votes).length || 0;
+                mediaHtml = `<div class="p-4 space-y-2">` +
+                  Object.entries(options).map(([oid, o])=>{
+                    const count = Object.values(votes).filter(v=>v===oid).length;
+                    const pct = total ? Math.round(100*count/total) : 0;
+                    return `<div class="poll-option" data-oid="${oid}" data-owner="${ownerUid}" data-post="${post.postId}">
+                      <div class="flex-1">
+                        <div class="font-semibold">${escapeHtml(o.text||'')}</div>
+                        <div class="poll-bar mt-1"><div class="poll-fill" style="width:${pct}%"></div></div>
+                      </div>
+                      <div class="text-xs opacity-70 w-10 text-right">${pct}%</div>
+                    </div>`;
+                  }).join('') + `</div>`;
             } else {
                 mediaHtml = `<div class="post-media rounded-xl bg-gray-800 text-center text-gray-400 flex items-center justify-center">No Media</div>`;
             }
@@ -1076,37 +1325,254 @@
             const isOwner = currentUserUid === ownerUid;
             const deleteButton = (isOwner || adminMode) ? `<button class="delete-post-btn" onclick="event.stopPropagation(); deletePostFromFeed('${ownerUid}', '${post.postId}');">✕</button>` : '';
             
-            let cardBg = '', textColor = '';
-            if (hasCustomization) {
-                cardBg = user.profileCustomization?.gradient || '';
-                textColor = user.profileCustomization?.nameColor || '';
-            }
-            const cardBgStyle = cardBg ? `style="background: ${cardBg};"` : '';
-            const captionTextStyle = textColor ? `style="color: ${textColor};"` : '';
-            const nameColorClass = textColor ? '' : 'text-gray-300';
-            const captionColorClass = textColor ? '' : 'text-gray-300';
+            const captionContent = formatCaption(post.caption || '');
 
             return `
-              <div class="post-tile post-card" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" ${cardBgStyle}>
-                <div class="p-4 flex flex-col gap-4">
-                  <div class="flex items-center gap-3 cursor-pointer user-details" data-uid="${ownerUid}">
-                    <div class="relative ${avatarWrapperClass}" style="${avatarWrapperStyle}">
-                        <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="profile-avatar ${avatarImgClass}" style="${avatarImgStyle}">
-                    </div>
-                    <div class="flex flex-col">
-                        <span class="font-bold text-lg ${nameColorClass}" ${nameStyles}>${user.displayName || 'Anonymous User'}</span>
-                        <span class="text-sm text-gray-500">${timestamp}</span>
-                    </div>
+              <div class="post-tile post-card p-4 rounded-2xl" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" ${postCardStyle}>
+                  <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
+                      <div class="relative w-12 h-12 rounded-full overflow-hidden" style="${avatarRingStyle}">
+                          <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-full h-full object-cover" loading="lazy">
+                      </div>
+                      <div class="flex flex-col">
+                          <span class="font-bold text-lg" ${usernameStyle}>${user.displayName || 'Anonymous User'}</span>
+                          <span class="text-sm text-gray-500">${timestamp}</span>
+                      </div>
                   </div>
-                </div>
-                ${deleteButton}
-                ${mediaHtml}
-                <div class="post-footer p-4 bg-black/20 cursor-pointer">
-                  <div class="post-caption text-sm ${captionColorClass}" ${captionTextStyle}>${post.caption || ''}</div>
-                </div>
+                  ${deleteButton}
+                  ${mediaHtml}
+                  <div class="post-footer mt-4">
+                      <!-- MODIFIED: Caption color matches username color if customized -->
+                      <div class="post-caption text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${captionContent}</div>
+                      <!-- MODIFIED: Save button label is now dynamic based on saved state -->
+                      <div class="mt-2 flex justify-end">
+                        <button class="ml-3 px-3 py-1 rounded-lg bg-gray-700/60 text-white text-xs save-btn" data-owner="${ownerUid}" data-post="${post.postId}">${isSaved ? 'Unsave' : 'Save'}</button>
+                      </div>
+                  </div>
               </div>
             `;
         }
+
+        // NEW: Replaced with paged renderer
+        function renderPosts(reset=true){
+          const filtered = filterPosts(allPosts, currentTab);
+          if (reset){
+            postsContainer.innerHTML = '';
+            renderIndex = 0;
+          }
+          const slice = filtered.slice(renderIndex, renderIndex + RENDER_PAGE);
+          const html = slice.map(post => createPostTile(post, post.createdBy)).join('');
+          postsContainer.insertAdjacentHTML('beforeend', html);
+          renderIndex += slice.length;
+
+          // keep DOM light: cap at ~60 nodes
+          const tiles = postsContainer.querySelectorAll('.post-tile');
+          if (tiles.length > 60){
+            for (let i=0;i<tiles.length-60;i++) tiles[i].remove();
+          }
+
+          // sentinel for more
+          if (sentinel) sentinel.remove();
+          sentinel = document.createElement('div');
+          sentinel.id = 'feed-sentinel';
+          sentinel.className = 'py-4 text-center text-gray-500';
+          sentinel.textContent = (renderIndex < filtered.length) ? 'Loading more…' : '— End —';
+          postsContainer.appendChild(sentinel);
+
+          if (io) io.disconnect();
+          if (renderIndex < filtered.length){
+            io = new IntersectionObserver((entries)=>{
+              if (entries[0].isIntersecting){
+                io.disconnect();
+                renderPosts(false);
+              }
+            }, {rootMargin: '400px'});
+            io.observe(sentinel);
+          }
+        }
+        
+        function filterPosts(posts, tab) {
+            // NEW: Shadowban filter
+            const now = Date.now();
+            const filteredByVisibility = posts.filter(post => {
+              const visibleAt = post.publishAt || post.createdAt;
+              return !post.draft && (!visibleAt || visibleAt <= now);
+            });
+
+            // NEW: Shadowban filter logic
+            const visiblePosts = filteredByVisibility.filter(post => {
+              const shadowed = !!userProfiles[post.createdBy]?.shadowbanned;
+              const isMe = currentUserUid && post.createdBy === currentUserUid;
+              return !shadowed || isMe;
+            });
+            
+            let finalPosts = visiblePosts;
+
+            if (tab === 'popular') {
+                finalPosts = visiblePosts.sort((a, b) => {
+                    const aReactions = b.reactions ? Object.values(b.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
+                    const bReactions = a.reactions ? Object.values(a.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
+                    const aComments = b.comments ? Object.keys(b.comments).length : 0;
+                    const bComments = a.comments ? Object.keys(a.comments).length : 0;
+                    return (aReactions + aComments) - (bReactions + bComments);
+                });
+            } else if (tab === 'youtube') {
+                finalPosts = visiblePosts.filter(post => post.type === 'youtube');
+            } else if (tab === 'tiktok') {
+                finalPosts = visiblePosts.filter(post => post.type === 'tiktok');
+            } else if (tab === 'saved') { // NEW: Saved tab filter
+              const u = (firebase.auth().currentUser||{}).uid;
+              if (!u) return [];
+              const saved = (currentUserProfile && currentUserProfile.saved) ? Object.keys(currentUserProfile.saved) : [];
+              finalPosts = visiblePosts.filter(p => saved.includes(`${p.createdBy}__${p.postId}`));
+            }
+
+            // NEW: Hashtag filter
+            if (activeTag){
+              finalPosts = finalPosts.filter(p=> (p.caption||'').toLowerCase().includes('#'+activeTag));
+            }
+            
+            return finalPosts;
+        }
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                currentTab = button.dataset.tab;
+                // NEW: Reset infinite scroll on tab change
+                renderPosts(true);
+            });
+        });
+
+        // Event delegation for opening the post popup and interacting with its content
+        postsContainer.addEventListener('click', (e)=>{
+          const tile = e.target.closest('.post-tile');
+          if (!tile) return;
+          const ownerUid = tile.dataset.ownerUid;
+          const postId = tile.dataset.postId;
+          // NEW: Only open post details if the user clicks the footer
+          if (e.target.closest('.post-footer')) {
+            openPostDetails(ownerUid, postId);
+          } else if (e.target.closest('.user-details')) {
+             // NEW: Open profile card on clicking user details
+             loadUserProfile(ownerUid);
+          } else {
+            // NEW: For poll votes
+            const opt = e.target.closest('.poll-option'); if (!opt) return;
+            e.stopPropagation();
+            const u = (firebase.auth().currentUser||{}).uid; if (!u) return showMessageBox('Log in to vote.');
+            const { owner, post, oid } = { owner: opt.dataset.owner, post: opt.dataset.post, oid: opt.dataset.oid };
+            const ref = firebase.database().ref(`users/${owner}/posts/${post}/votes/${u}`);
+            ref.set(oid);
+            // optimistic UI
+            const card = opt.closest('.post-tile'); if (card) card.classList.add('pop');
+          }
+        });
+
+        // NEW: Lazy-load embeds click handler
+        postsContainer.addEventListener('click', (e)=>{
+          const ph = e.target.closest('.embed-placeholder');
+          if (!ph) return;
+          e.stopPropagation();
+          if (ph.dataset.yt){
+            const id = ph.dataset.yt;
+            ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+          } else if (ph.dataset.tt){
+            const id = ph.dataset.tt;
+            ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${id}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+          }
+        }, true);
+        
+        // NEW: Long-press handler
+        let pressTimer = null;
+        postsContainer.addEventListener('touchstart', (e)=>{
+          const tile = e.target.closest('.post-tile');
+          if (!tile) return;
+          pressTimer = setTimeout(()=>{
+            const ownerUid = tile.dataset.ownerUid;
+            const postId = tile.dataset.postId;
+            openPostDetails(ownerUid, postId);
+          }, 420);
+        }, {passive:true});
+        ['touchend','touchmove','touchcancel'].forEach(evt => postsContainer.addEventListener(evt,()=> clearTimeout(pressTimer), {passive:true}));
+
+        // NEW: Hashtag click handler
+        postsContainer.addEventListener('click', (e)=>{
+          const t = e.target.closest('.tag-link'); if (!t) return;
+          e.preventDefault();
+          activeTag = (t.dataset.tag||'').toLowerCase();
+          currentTab = 'popular';
+          document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+          document.querySelector('.tab-btn[data-tab="popular"]').classList.add('active');
+          renderPosts(true);
+        });
+
+        // NEW: Mention click handler
+        postsContainer.addEventListener('click', (e)=>{
+          const m = e.target.closest('.mention-link'); if (!m) return;
+          e.preventDefault();
+          const uid = nameToUid[(m.dataset.name||'').toLowerCase()];
+          if (uid) loadUserProfile(uid);
+        });
+
+        // MODIFIED: Save button click handler now toggles text
+        postsContainer.addEventListener('click', (e)=>{
+          const b = e.target.closest('.save-btn'); if (!b) return;
+          e.stopPropagation();
+          const u = (firebase.auth().currentUser||{}).uid;
+          if (!u) return showMessageBox('Please log in to save posts.');
+          const key = `${b.dataset.owner}__${b.dataset.post}`;
+          const ref = firebase.database().ref(`users/${u}/saved/${key}`);
+          const currentlyUnsave = (b.textContent.trim().toLowerCase() === 'unsave');
+          if (currentlyUnsave){
+            ref.remove();
+            b.textContent = 'Save';
+          } else {
+            ref.set(true);
+            b.textContent = 'Unsave';
+          }
+        });
+        
+        // NEW: Keyboard handler for accessibility
+        postsContainer.addEventListener('keydown', (e)=>{
+          if (e.key !== 'Enter') return;
+          const tile = e.target.closest('.post-tile'); if (!tile) return;
+          openPostDetails(tile.dataset.ownerUid, tile.dataset.postId);
+        });
+
+        // NEW: Mini Profile Hover
+        const mini = document.getElementById('miniProfile');
+        let miniTimer = null;
+        postsContainer.addEventListener('mouseenter', (e)=>{
+          const userEl = e.target.closest('.user-details'); if (!userEl) return;
+          const uid = userEl.dataset.uid; if (!uid) return;
+          clearTimeout(miniTimer);
+          const rect = userEl.getBoundingClientRect();
+          mini.style.left = (rect.left)+'px'; mini.style.top = (rect.bottom+8)+'px';
+          const u = userProfiles[uid] || {};
+          mini.innerHTML = `
+            <div class="flex items-center gap-2">
+              <img src="${u.avatar||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
+              <div class="font-semibold">${escapeHtml(u.displayName||'Anonymous')}</div>
+            </div>
+            <div class="text-xs text-gray-600 mt-1">${escapeHtml(u.aboutMe||'')}</div>
+            <div class="mt-2 flex gap-2">
+              <button class="px-2 py-1 rounded bg-gray-900 text-white text-xs" data-open="${uid}">View</button>
+            </div>`;
+          mini.classList.remove('hidden');
+        }, true);
+        postsContainer.addEventListener('mouseleave', (e)=>{
+          if (!e.relatedTarget || !mini.contains(e.relatedTarget)){
+            miniTimer = setTimeout(()=> mini.classList.add('hidden'), 120);
+          }
+        }, true);
+        mini.addEventListener('mouseenter', ()=> clearTimeout(miniTimer));
+        mini.addEventListener('mouseleave', ()=> mini.classList.add('hidden'));
+        mini.addEventListener('click', (e)=>{
+          const b = e.target.closest('[data-open]'); if (!b) return;
+          loadUserProfile(b.dataset.open);
+          mini.classList.add('hidden');
+        });
 
         // F) Implement openPostDetails() and loaders
         async function openPostDetails(ownerUid, postId){
@@ -1139,16 +1605,26 @@
             poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else if (post.type === 'tiktok' && post.videoId){
             poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+          } else if (post.type === 'poll') {
+              // This is a simplified poll view in the overlay, we can just show the question
+              poMedia.innerHTML = `<div class="p-6 text-white">Poll: ${escapeHtml(post.question||'')}</div>`;
           } else {
             poMedia.innerHTML = '<div class="p-6 text-white">No media.</div>';
           }
 
           // Caption + owner edit controls
-          poCaptionText.textContent = post.caption || '';
+          // MODIFIED: Use formatCaption() for overlay
+          poCaptionText.innerHTML = formatCaption(post.caption || '');
           const currentUid = (firebase.auth().currentUser || {}).uid;
           const isOwner = currentUid && currentUid === ownerUid;
           poEditBtn.classList.toggle('hidden', !isOwner);
           poDeleteBtn.classList.toggle('hidden', !(isOwner || adminMode));
+          
+          // MODIFIED: Also set caption color if user has customization
+          firebase.database().ref(`users/${ownerUid}/profileCustomization/nameColor`).once('value').then(s=>{
+            const c = s.val();
+            if (c) poCaptionText.style.color = c;
+          });
 
           poEditBtn.onclick = ()=>{
             poCaptionInput.value = post.caption || '';
@@ -1163,7 +1639,7 @@
             const newCap = (poCaptionInput.value || '').trim();
             if (containsBadWord(newCap)) { showMessageBox('That description contains banned words.'); return; }
             await firebase.database().ref(`${postPath}/caption`).set(newCap);
-            poCaptionText.textContent = newCap;
+            poCaptionText.innerHTML = formatCaption(newCap); // NEW: use formatCaption()
             poCaptionEdit.classList.add('hidden');
             poCaptionText.classList.remove('hidden');
           };
@@ -1176,6 +1652,12 @@
             }
             firebase.database().ref(postPath).remove().then(hidePostOverlay);
           };
+          // MODIFIED: Share button handler now uses fixed URL
+          poShareBtn.onclick = ()=>{
+            const link = "https://kcevents.uk/#socialfeed";
+            navigator.clipboard.writeText(link).then(()=> showMessageBox('Link copied!'));
+          };
+          // REMOVED: Report button handler has been deleted.
 
           // Reactions (live)
           firebase.database().ref(`${postPath}/reactions`).off();
@@ -1192,6 +1674,7 @@
             if (postsDisabled) return showMessageBox('Posting is currently disabled.');
             const text = (poCommentInput.value || '').trim();
             if (!text) return;
+            if (!canDo('comment:'+u.uid)) return showMessageBox('Please wait a moment before commenting again.');
             if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
 
             const cRef = firebase.database().ref(`${postPath}/comments`).push();
@@ -1204,6 +1687,8 @@
 
         async function fetchAllData() {
             try {
+                // NEW: Show skeletons before fetching
+                showSkeletons(6);
                 const usersRef = db.ref('users');
                 const usersSnapshot = await usersRef.once('value');
                 const users = usersSnapshot.val();
@@ -1212,13 +1697,27 @@
 
                 if (users) {
                     userProfiles = users;
+                    // NEW: Build nameToUid index for mentions
+                    Object.entries(users).forEach(([uid, u]) => { if (u.displayName) nameToUid[u.displayName.toLowerCase()] = uid; });
                     
                     for (const uid in users) {
+                        // NEW: Shadowban filter
+                        const shadowed = !!users[uid].shadowbanned;
+                        const isMe = currentUserUid && uid===currentUserUid;
+                        if (shadowed && !isMe) continue;
+
                         if (users[uid].posts) {
                             for (const postId in users[uid].posts) {
+                                const post = users[uid].posts[postId];
+                                // NEW: Visibility logic for drafts and scheduled posts
+                                const now = Date.now();
+                                const visibleAt = post.publishAt || post.createdAt;
+                                const isVisible = !post.draft && (!visibleAt || visibleAt <= now);
+                                if (!isVisible) continue;
+
                                 combinedPosts.push({
                                     postId: postId,
-                                    ...users[uid].posts[postId],
+                                    ...post,
                                     createdBy: uid,
                                 });
                             }
@@ -1234,57 +1733,32 @@
             }
         }
         
-        function renderPosts() {
-            const filteredPosts = filterPosts(allPosts, currentTab);
-            
-            if (filteredPosts.length === 0) {
-                postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">No posts found for this category.</div>`;
-                return;
-            }
-            
-            postsContainer.innerHTML = filteredPosts.map(post => createPostTile(post, post.createdBy)).join('');
-        }
+        // NEW: The old renderPosts is replaced by the new paged one, but we keep the call here.
+        // renderPosts() is now defined after this block.
         
-        function filterPosts(posts, tab) {
-            if (tab === 'popular') {
-                return posts.sort((a, b) => {
-                    const aReactions = b.reactions ? Object.values(b.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
-                    const bReactions = a.reactions ? Object.values(a.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
-                    const aComments = b.comments ? Object.keys(b.comments).length : 0;
-                    const bComments = a.comments ? Object.keys(a.comments).length : 0;
-                    return (aReactions + aComments) - (bReactions + bComments);
-                });
-            } else if (tab === 'youtube') {
-                return posts.filter(post => post.type === 'youtube');
-            } else if (tab === 'tiktok') {
-                return posts.filter(post => post.type === 'tiktok');
-            }
-            return posts;
-        }
+        // OLD CODE, NOT USED.
+        // function renderPosts() {
+        //     const filteredPosts = filterPosts(allPosts, currentTab);
+            
+        //     if (filteredPosts.length === 0) {
+        //         postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">No posts found for this category.</div>`;
+        //         return;
+        //     }
+            
+        //     postsContainer.innerHTML = filteredPosts.map(post => createPostTile(post, post.createdBy)).join('');
+        // }
+        // The new paged `renderPosts` function is defined below
 
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                currentTab = button.dataset.tab;
-                renderPosts();
-            });
-        });
+        // OLD CODE, NOT USED.
+        // tabButtons.forEach(button => {
+        //     button.addEventListener('click', () => {
+        //         tabButtons.forEach(btn => btn.classList.remove('active'));
+        //         button.classList.add('active');
+        //         currentTab = button.dataset.tab;
+        //         renderPosts();
+        //     });
+        // });
 
-        // Event delegation for opening the post popup and interacting with its content
-        postsContainer.addEventListener('click', (e)=>{
-          const tile = e.target.closest('.post-tile');
-          if (!tile) return;
-          const ownerUid = tile.dataset.ownerUid;
-          const postId = tile.dataset.postId;
-          // Bottom (footer) opens details; top (media) opens profile
-          if (e.target.closest('.post-footer')) {
-            openPostDetails(ownerUid, postId);
-          } else {
-            // Open profile card
-            loadUserProfile(ownerUid);
-          }
-        });
 
         // --- USER POPUP LOGIC (from old file) ---
         let allProfilePosts = [];
@@ -1313,6 +1787,9 @@
                 } else if (post.type === 'tiktok') {
                     const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
                     mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                } else if (post.type === 'poll') {
+                     // NEW: Poll rendering in profile popup
+                     mediaHtml = `<div class="p-4 text-gray-900">Poll: ${escapeHtml(post.question||'')}</div>`;
                 }
                 const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric', month: 'short', day: 'numeric'
@@ -1333,9 +1810,15 @@
                 const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
                 const posts = [];
                 snapshot.forEach(childSnap => {
+                    const post = childSnap.val();
+                    // NEW: Filter drafts/scheduled posts for profile owner
+                    const now = Date.now();
+                    const visibleAt = post.publishAt || post.createdAt;
+                    if (post.draft || (visibleAt && visibleAt > now)) return;
+
                     posts.push({
                         postId: childSnap.key,
-                        ...childSnap.val()
+                        ...post
                     });
                 });
                 allProfilePosts = posts.sort((a, b) => b.createdAt - a.createdAt);
@@ -1523,9 +2006,16 @@
                 console.error("Error deleting post:", error);
             });
         }
+        
+        // NEW: Check for deep link hash on load
+        (function(){
+          const h = location.hash.match(/post=([^:]+):(.+)/);
+          if (h){ openPostDetails(h[1], h[2]); }
+        })();
 
         // Initial data fetch on page load
         fetchAllData();
     </script>
 </body>
 </html>
+
