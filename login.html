@@ -1665,7 +1665,23 @@
 .version {
     font-style: italic;
 }
-
+/* New style for the "I've Verified" button */
+#iVerifiedBtn {
+  background: linear-gradient(90deg, #3b82f6 0%, #17a589 100%);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+#iVerifiedBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
   </style>
 </head>
 <body>
@@ -1689,6 +1705,8 @@
             <input id="loginPass" type="password" placeholder="Password"/>
             <button id="loginBtn" class="form-btn">Log In</button>
             <div class="switch-link" id="toRegister">No account? Register</div>
+            <!-- "I've Verified" button added here -->
+            <button id="iVerifiedBtn" style="display: none;">I've Verified My Email</button>
           </div>
         </div>
         <!-- LOGGED IN -->
@@ -2276,18 +2294,29 @@ registerBtn.onclick = ()=>{
     .then(()=>kcAlert("Verification email sent!"))
     .catch(e=>kcAlert(e.message));
 };
-loginBtn.onclick = ()=>{
+loginBtn.onclick = async ()=>{
   const email=loginEmail.value.trim(), pass=loginPass.value;
   if(!email||!pass) return kcAlert("Enter email and password!");
-  auth.signInWithEmailAndPassword(email,pass)
-    .then(res=>{
-      // Allow login even if email is not verified, so user can see the badge and resend
-      if(!res.user.emailVerified){
-        kcAlert("Your email is not verified. Please verify it to unlock all features.", 3500);
-      }
-      // No signOut or throw here, allow the user to proceed
-    })
-    .catch(e=>kcAlert(e.message));
+  try {
+    const res = await auth.signInWithEmailAndPassword(email,pass);
+    const user = res.user;
+
+    // After successful sign-in, update the emailVerified flag
+    if (user) {
+        await user.reload();
+        await writeEmailVerified(user.uid, user.emailVerified);
+    }
+    
+    if(!user.emailVerified){
+      kcAlert("Your email is not verified. Please verify it to unlock all features.", 3500);
+      document.getElementById('iVerifiedBtn').style.display = 'block';
+    } else {
+      document.getElementById('iVerifiedBtn').style.display = 'none';
+    }
+
+  } catch(e) {
+      kcAlert(e.message);
+  }
 };
 
 // ========== ACCOUNT ACTIONS ==========
@@ -2567,11 +2596,36 @@ saveUsernameBtn.onclick = function(){
   });
 };
 
+// ========== HELPER FUNCTION TO SYNC VERIFIED STATUS ==========
+function writeEmailVerified(uid, emailVerified) {
+  return firebase.database()
+    .ref(`users/${uid}/emailVerified`)
+    .set(!!emailVerified)
+    .catch(err => console.error('Failed to write emailVerified:', err));
+}
+
+
 // ========== AUTH STATE & INIT AVATAR ==========
-auth.onAuthStateChanged(u => {
+auth.onAuthStateChanged(async (u) => {
   if (u) {
     authForms.style.display = "none";
     profileUI.style.display = "block";
+    
+    // Sync the emailVerified status on every auth state change
+    try {
+        await u.reload(); // fetch latest from server (important after verification)
+        await writeEmailVerified(u.uid, u.emailVerified);
+    } catch (e) {
+        console.error('Auth state sync failed:', e);
+    }
+
+    // Show or hide the "I've Verified" button based on verification status
+    if (u && !u.emailVerified) {
+        document.getElementById('iVerifiedBtn').style.display = 'block';
+    } else {
+        document.getElementById('iVerifiedBtn').style.display = 'none';
+    }
+
     handleStreak(u.uid);
     badgesCard.style.display = "flex";
     document.querySelector(".kc-title").textContent = "KC Events";
@@ -2621,8 +2675,26 @@ auth.onAuthStateChanged(u => {
     if(profileBanner) {
       profileBanner.style.backgroundImage = 'none';
     }
+    // Hide the "I've Verified" button when logged out
+    document.getElementById('iVerifiedBtn').style.display = 'none';
   }
 });
+
+// ========== "I've Verified" Button Event Listener ==========
+document.getElementById('iVerifiedBtn')?.addEventListener('click', async () => {
+    const user = firebase.auth().currentUser;
+    if (!user) return;
+    await user.reload();
+    await writeEmailVerified(user.uid, user.emailVerified);
+    if(user.emailVerified) {
+        kcAlert("Email verification synced! Reloading badges...");
+        loadBadges(user.uid, user.emailVerified);
+        document.getElementById('iVerifiedBtn').style.display = 'none';
+    } else {
+        kcAlert("Your email still shows as unverified. Please check your email and try again.");
+    }
+});
+
 
 // ========== AVATAR CAROUSEL LOGIC ==========
 const avatarImgs = [
