@@ -129,6 +129,7 @@
         z-index: 10000;
         font-family: 'Poppins', sans-serif;
         animation: fadeInBg 0.3s ease;
+        overflow-y: auto; /* Make it scrollable */
     }
     @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
 
@@ -514,7 +515,7 @@
   </div>
 
   <!-- USER PROFILE POPUP -->
-  <div id="userPopup" class="hidden">
+  <div id="userPopup" class="hidden flex">
     <div class="user-popup-card" id="userPopupCard">
         <!-- This container will hold the left and right columns -->
         <div id="popupContentWrapper" class="flex flex-col md:flex-row">
