@@ -592,14 +592,18 @@
         let currentUserUid = null;
         let profileOwnerUid = null;
 
-        // Use onAuthStateChanged to get the current user's UID
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUserUid = user.uid;
-            } else {
-                currentUserUid = null;
+        /** Keeps the current user's emailVerified mirrored in the DB */
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) return;
+            try {
+                await user.reload(); // Pull fresh verification from server
+                await db.ref(`users/${user.uid}/emailVerified`).set(!!user.emailVerified);
+                currentUserUid = user.uid; // Also set the current user UID here
+            } catch (e) {
+                console.error('Profiles: failed to sync emailVerified for current user', e);
             }
         });
+
 
         // Badge icon map to render badges correctly.
         const badgeIconMap = {
@@ -755,13 +759,16 @@
                     const userData = userChild.val();
                     const userUid = userChild.key;
                     const badgeData = badgeSnap.child(userUid).val() || {};
+                    
+                    // NEW PERMISSIVE CHECK FOR 'isVerified'
+                    const isVerified = !!(userData.emailVerified === true || (userData.badges && userData.badges.verified === true));
 
                     users.push({
                         uid: userUid,
                         displayName: userData.displayName || 'Anonymous User',
                         aboutMe: userData.aboutMe,
                         avatar: userData.avatar,
-                        isVerified: !!userData.emailVerified,
+                        isVerified: isVerified, // Use the new permissive check
                         badges: badgeData,
                         codesUnlocked: userData.codesUnlocked || {},
                         profileCustomization: userData.profileCustomization || {},
@@ -1235,10 +1242,10 @@ if (isEligible) {
                         }
                     };
 
+                    // NEW PERMISSIVE CHECK FOR 'isVerified'
                     const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
                     const baseBadges = bsnap.val() || {};
-
-                    const isVerified = toBool(userData.emailVerified);
+                    const isVerified = !!(userData.emailVerified === true || (userData.badges && userData.badges.verified === true));
                     if (isVerified) addBadge(badgeSpecs.verified, 'Verified', true);
 
                     ['offence', 'defence', 'overall'].forEach(key => {
