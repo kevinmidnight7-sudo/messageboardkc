@@ -479,10 +479,7 @@
                         <i class="fab fa-tiktok"></i>
                         <span>TikTok</span>
                     </button>
-                    <!-- NEW: Poll Post Button -->
-                    <button id="pollBtn" class="social-media-btn bg-purple-600 hover:bg-purple-700">
-                        <i class="fa-solid fa-square-poll-vertical"></i><span>Poll</span>
-                    </button>
+                    <!-- REMOVED: Poll Post Button -->
                 </div>
                 <div id="urlInputContainer" class="w-full hidden">
                     <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -494,7 +491,7 @@
                         <label class="flex items-center gap-2 text-sm">Schedule: <input id="scheduleAt" type="datetime-local" class="p-2 rounded bg-white/10 text-white"></label>
                     </div>
 
-                    <!-- NEW: Poll Fields -->
+                    <!-- REMOVED: Poll Fields -->
                     <div id="pollFields" class="w-full hidden">
                       <input id="pollQuestion" class="w-full mb-3 p-3 rounded-xl bg-white/10 text-white" placeholder="Poll question">
                       <div id="pollOptions" class="space-y-2">
@@ -708,12 +705,7 @@
         const postTypeSelection = document.getElementById('postTypeSelection');
         const youtubeBtn = document.getElementById('youtubeBtn');
         const tiktokBtn = document.getElementById('tiktokBtn');
-        // NEW: Poll button and fields
-        const pollBtn = document.getElementById('pollBtn');
-        const pollFields = document.getElementById('pollFields');
-        const pollQuestion = document.getElementById('pollQuestion');
-        const pollOptions = document.getElementById('pollOptions');
-        // NEW: Draft and Schedule fields
+        // REMOVED: Poll button and fields
         const draftToggle = document.getElementById('draftToggle');
         const scheduleAt = document.getElementById('scheduleAt');
         let selectedPostType = null;
@@ -1122,7 +1114,7 @@
                     postCreatorPopup.classList.remove('hidden');
                     postTypeSelection.classList.remove('hidden');
                     urlInputContainer.classList.add('hidden');
-                    pollFields.classList.add('hidden'); // NEW: Hide poll fields
+                    // REMOVED: Hide poll fields
                     selectedPostType = null;
                     urlInput.value = '';
                     captionInput.value = '';
@@ -1149,8 +1141,7 @@
             postTypeSelection.classList.add('hidden');
             urlInputContainer.classList.remove('hidden');
             urlInput.placeholder = 'Paste YouTube URL here...';
-            // NEW: Hide poll fields
-            pollFields.classList.add('hidden');
+            // REMOVED: Hide poll fields
             document.getElementById('urlInput').parentElement.classList.remove('hidden');
         });
 
@@ -1159,25 +1150,11 @@
             postTypeSelection.classList.add('hidden');
             urlInputContainer.classList.remove('hidden');
             urlInput.placeholder = 'Paste TikTok URL here...';
-            // NEW: Hide poll fields
-            pollFields.classList.add('hidden');
+            // REMOVED: Hide poll fields
             document.getElementById('urlInput').parentElement.classList.remove('hidden');
         });
 
-        // NEW: Poll button listener
-        pollBtn.addEventListener('click', ()=>{
-          selectedPostType = 'poll';
-          postTypeSelection.classList.add('hidden');
-          urlInputContainer.classList.remove('hidden');
-          document.getElementById('urlInput').parentElement.classList.add('hidden'); // hide URL field for polls
-          pollFields.classList.remove('hidden');
-        });
-        document.getElementById('addPollOption').onclick = ()=>{
-          if (pollOptions.querySelectorAll('.pollOpt').length >= 5) return;
-          const i = document.createElement('input');
-          i.className = 'pollOpt w-full p-3 rounded-xl bg-white/10 text-white'; i.placeholder = `Option ${pollOptions.children.length+1}`;
-          pollOptions.appendChild(i);
-        };
+        // REMOVED: Poll button listener
         
         postButton.addEventListener('click', async () => {
             if (!currentUserUid) {
@@ -1193,49 +1170,41 @@
             const caption = captionInput.value;
             let postData = null;
 
-            // NEW: Handle poll posts
-            if (selectedPostType === 'poll') {
-                const q = (pollQuestion.value||'').trim();
-                const opts = [...pollOptions.querySelectorAll('.pollOpt')].map(i=>i.value.trim()).filter(Boolean);
-                if (!q || opts.length < 2) { uploadStatus.textContent='Enter a question + 2+ options.'; uploadStatus.classList.remove('hidden'); return; }
-                const optionMap = {}; opts.forEach((t,idx)=> optionMap['o'+idx] = { text:t });
-                postData = { type:'poll', question:q, options: optionMap, votes: {}, caption: caption, createdAt: firebase.database.ServerValue.TIMESTAMP, createdBy: currentUserUid };
-            } else {
-                const url = urlInput.value;
-                if (!url || !selectedPostType) {
-                    uploadStatus.textContent = 'URL or post type missing.';
+            // REMOVED: Handle poll posts
+            const url = urlInput.value;
+            if (!url || !selectedPostType) {
+                uploadStatus.textContent = 'URL or post type missing.';
+                uploadStatus.classList.remove('hidden');
+                return;
+            }
+            if (selectedPostType === 'youtube') {
+                 const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+                 if (!ytIdMatch) {
+                     uploadStatus.textContent = 'Invalid YouTube URL.';
+                     uploadStatus.classList.remove('hidden');
+                     return;
+                 }
+                 postData = {
+                     type: 'youtube',
+                     ytId: ytIdMatch[1],
+                     caption: caption,
+                     createdAt: firebase.database.ServerValue.TIMESTAMP,
+                     createdBy: currentUserUid
+                 };
+            } else if (selectedPostType === 'tiktok') {
+                const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
+                if (!ttIdMatch) {
+                    uploadStatus.textContent = 'Invalid TikTok URL.';
                     uploadStatus.classList.remove('hidden');
                     return;
                 }
-                if (selectedPostType === 'youtube') {
-                     const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
-                     if (!ytIdMatch) {
-                         uploadStatus.textContent = 'Invalid YouTube URL.';
-                         uploadStatus.classList.remove('hidden');
-                         return;
-                     }
-                     postData = {
-                         type: 'youtube',
-                         ytId: ytIdMatch[1],
-                         caption: caption,
-                         createdAt: firebase.database.ServerValue.TIMESTAMP,
-                         createdBy: currentUserUid
-                     };
-                } else if (selectedPostType === 'tiktok') {
-                    const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
-                    if (!ttIdMatch) {
-                        uploadStatus.textContent = 'Invalid TikTok URL.';
-                        uploadStatus.classList.remove('hidden');
-                        return;
-                    }
-                    postData = {
-                        type: 'tiktok',
-                        videoId: ttIdMatch[1],
-                        caption: caption,
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        createdBy: currentUserUid
-                    };
-                }
+                postData = {
+                    type: 'tiktok',
+                    videoId: ttIdMatch[1],
+                    caption: caption,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    createdBy: currentUserUid
+                };
             }
 
             if (containsBadWord(caption)) {
@@ -1298,22 +1267,6 @@
                     <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/tiktok_placeholder.png" alt="TikTok preview"/>
                     <div class="embed-play">▶</div>
                   </div>`;
-            } else if (post.type === 'poll') {
-                const options = post.options || {};
-                const votes = post.votes || {};
-                const total = Object.values(votes).length || 0;
-                mediaHtml = `<div class="p-4 space-y-2">` +
-                  Object.entries(options).map(([oid, o])=>{
-                    const count = Object.values(votes).filter(v=>v===oid).length;
-                    const pct = total ? Math.round(100*count/total) : 0;
-                    return `<div class="poll-option" data-oid="${oid}" data-owner="${ownerUid}" data-post="${post.postId}">
-                      <div class="flex-1">
-                        <div class="font-semibold">${escapeHtml(o.text||'')}</div>
-                        <div class="poll-bar mt-1"><div class="poll-fill" style="width:${pct}%"></div></div>
-                      </div>
-                      <div class="text-xs opacity-70 w-10 text-right">${pct}%</div>
-                    </div>`;
-                  }).join('') + `</div>`;
             } else {
                 mediaHtml = `<div class="post-media rounded-xl bg-gray-800 text-center text-gray-400 flex items-center justify-center">No Media</div>`;
             }
@@ -1457,15 +1410,7 @@
              // NEW: Open profile card on clicking user details
              loadUserProfile(ownerUid);
           } else {
-            // NEW: For poll votes
-            const opt = e.target.closest('.poll-option'); if (!opt) return;
-            e.stopPropagation();
-            const u = (firebase.auth().currentUser||{}).uid; if (!u) return showMessageBox('Log in to vote.');
-            const { owner, post, oid } = { owner: opt.dataset.owner, post: opt.dataset.post, oid: opt.dataset.oid };
-            const ref = firebase.database().ref(`users/${owner}/posts/${post}/votes/${u}`);
-            ref.set(oid);
-            // optimistic UI
-            const card = opt.closest('.post-tile'); if (card) card.classList.add('pop');
+            // REMOVED: For poll votes
           }
         });
 
@@ -1605,9 +1550,6 @@
             poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else if (post.type === 'tiktok' && post.videoId){
             poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-          } else if (post.type === 'poll') {
-              // This is a simplified poll view in the overlay, we can just show the question
-              poMedia.innerHTML = `<div class="p-6 text-white">Poll: ${escapeHtml(post.question||'')}</div>`;
           } else {
             poMedia.innerHTML = '<div class="p-6 text-white">No media.</div>';
           }
@@ -1787,9 +1729,8 @@
                 } else if (post.type === 'tiktok') {
                     const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
                     mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-                } else if (post.type === 'poll') {
-                     // NEW: Poll rendering in profile popup
-                     mediaHtml = `<div class="p-4 text-gray-900">Poll: ${escapeHtml(post.question||'')}</div>`;
+                } else {
+                    mediaHtml = `<div class="p-4 text-gray-900">Media not supported.</div>`;
                 }
                 const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
                     year: 'numeric', month: 'short', day: 'numeric'
