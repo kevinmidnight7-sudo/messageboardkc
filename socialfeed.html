@@ -1036,18 +1036,16 @@
           ref.transaction(curr => curr ? null : true);
         }
 
-        // NEW: Function to delete a comment
-        async function deleteComment(ownerUid, postId, commentId) {
-            if (!currentUserUid || currentUserUid !== ownerUid) return;
+        // NEW: Corrected function to delete a comment
+        async function deleteComment(commentAuthorUid, commentId) {
+            // Updated auth check to allow post owner and admin to delete comments
+            if (!currentUserUid || (currentUserUid !== commentAuthorUid && !adminMode && currentUserUid !== openPostCtx.ownerUid)) return;
+            
             const doDelete = await showMessageBox('Are you sure you want to delete this comment?', true);
             if (!doDelete) return;
 
-            const commentRef = db.ref(`users/${postId}/posts/${commentId}`);
-            commentRef.remove().then(() => {
-                // The onSnapshot listener will automatically re-render the comments
-            }).catch(error => {
-                console.error("Error deleting comment:", error);
-            });
+            const commentRef = db.ref(`${openPostCtx.postPath}/comments/${commentId}`);
+            await commentRef.remove();
         }
         
         // MODIFIED: Replaced the entire renderPostComments function to include avatars and the delete button
@@ -1074,18 +1072,17 @@
             const name = (u.displayName || 'Anonymous');
             header.innerHTML = `<span>${name} • ${new Date(c.time||Date.now()).toLocaleString()}</span>`;
 
-            // NEW: Add a delete button for the comment owner
-            if (currentUserUid && c.uid === currentUserUid) {
+            // NEW: Add a delete button for the comment owner, post owner, or admin
+            if (currentUserUid && (c.uid === currentUserUid || currentUserUid === openPostCtx.ownerUid || adminMode)) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-comment-btn';
                 deleteBtn.textContent = 'Delete';
                 deleteBtn.onclick = (e) => {
                     e.stopPropagation();
-                    deleteComment(c.uid, openPostCtx.postId, cid);
+                    deleteComment(c.uid, cid);
                 };
                 header.appendChild(deleteBtn);
             }
-
 
             const text = document.createElement('div');
             text.className = 'whitespace-pre-wrap break-words';
@@ -1131,6 +1128,7 @@
               if (postsDisabled) return showMessageBox('Posting is currently disabled.');
               const text = row.querySelector('.replyText').value.trim();
               if (!text) return;
+              if (!canDo('comment:'+uu.uid)) return showMessageBox('Please wait a moment before commenting again.');
               if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
               firebase.database().ref(`${openPostCtx.postPath}/comments/${cid}/replies`).push({
                 uid: uu.uid, text, time: firebase.database.ServerValue.TIMESTAMP
@@ -2044,8 +2042,9 @@
             adminTargetUser.classList.remove('hidden');
             
             // Populate the dropdown with user names
-            adminUserSelect.innerHTML = Object.values(userProfiles)
-                .map(user => `<option value="${user.uid}">${user.displayName || 'Anonymous'}</option>`)
+            // FIXED: Use Object.entries to get the UID as the value
+            adminUserSelect.innerHTML = Object.entries(userProfiles)
+                .map(([uid, user]) => `<option value="${uid}">${user.displayName || 'Anonymous User'}</option>`)
                 .join('');
             
             postCreatorPopup.classList.remove('hidden');
