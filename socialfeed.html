@@ -454,6 +454,20 @@
         .open-post-indicator:hover {
             background: rgba(255, 255, 255, 0.2);
         }
+        /* NEW CSS for comment delete button */
+        .delete-comment-btn {
+            background: none;
+            border: none;
+            color: #f87171;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-left: auto;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .delete-comment-btn:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -488,6 +502,12 @@
         <div class="glass p-6 rounded-3xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
             <h2 class="text-3xl font-bold text-center mb-6">Create a new post</h2>
             <div class="flex flex-col items-center">
+                <!-- NEW: Admin user selection dropdown -->
+                <div id="adminTargetUser" class="w-full mb-4 hidden">
+                    <label for="adminUserSelect" class="block text-gray-400 mb-2">Post on behalf of:</label>
+                    <select id="adminUserSelect" class="w-full p-4 rounded-xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
+                </div>
+
                 <div id="postTypeSelection" class="flex gap-4 mb-4">
                     <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
                         <i class="fab fa-youtube"></i>
@@ -661,6 +681,7 @@
               <button id="adminResumePosts" class="px-3 py-1 rounded-lg bg-green-600 text-white">Resume</button>
             </div>
           </div>
+          <button id="adminCreatePostBtn" class="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-semibold">Create Post for User</button>
           <div class="text-sm text-gray-600">While logged in, delete buttons are enabled on all posts.</div>
           <button id="adminLogout" class="w-full px-4 py-2 rounded-lg bg-gray-800 text-white">Log out</button>
         </div>
@@ -729,6 +750,12 @@
         let selectedPostType = null;
         const urlInputContainer = document.getElementById('urlInputContainer');
         const uploadStatus = document.getElementById('uploadStatus');
+
+        // NEW: Admin Post Creation Elements
+        const adminCreatePostBtn = document.getElementById('adminCreatePostBtn');
+        const adminTargetUser = document.getElementById('adminTargetUser');
+        const adminUserSelect = document.getElementById('adminUserSelect');
+        let isCreatingAdminPost = false;
         
         // Message Box elements
         const messageBox = document.getElementById('messageBox');
@@ -1008,8 +1035,22 @@
           const ref = firebase.database().ref(`${openPostCtx.postPath}/reactions/${emo}/${u.uid}`);
           ref.transaction(curr => curr ? null : true);
         }
+
+        // NEW: Function to delete a comment
+        async function deleteComment(ownerUid, postId, commentId) {
+            if (!currentUserUid || currentUserUid !== ownerUid) return;
+            const doDelete = await showMessageBox('Are you sure you want to delete this comment?', true);
+            if (!doDelete) return;
+
+            const commentRef = db.ref(`users/${postId}/posts/${commentId}`);
+            commentRef.remove().then(() => {
+                // The onSnapshot listener will automatically re-render the comments
+            }).catch(error => {
+                console.error("Error deleting comment:", error);
+            });
+        }
         
-        // MODIFIED: Replaced the entire renderPostComments function to include avatars
+        // MODIFIED: Replaced the entire renderPostComments function to include avatars and the delete button
         function renderPostComments(snap){
           const data = snap.val() || {};
           poComments.innerHTML = '';
@@ -1029,9 +1070,22 @@
             body.className = 'flex-1';
 
             const header = document.createElement('div');
-            header.className = 'text-sm text-gray-600 mb-1';
+            header.className = 'text-sm text-gray-600 mb-1 flex items-center';
             const name = (u.displayName || 'Anonymous');
-            header.textContent = name + ' • ' + new Date(c.time||Date.now()).toLocaleString();
+            header.innerHTML = `<span>${name} • ${new Date(c.time||Date.now()).toLocaleString()}</span>`;
+
+            // NEW: Add a delete button for the comment owner
+            if (currentUserUid && c.uid === currentUserUid) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-comment-btn';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteComment(c.uid, openPostCtx.postId, cid);
+                };
+                header.appendChild(deleteBtn);
+            }
+
 
             const text = document.createElement('div');
             text.className = 'whitespace-pre-wrap break-words';
@@ -1129,6 +1183,8 @@
                     </div>
                 `;
                 document.getElementById('addPostBtn').addEventListener('click', () => {
+                    isCreatingAdminPost = false;
+                    adminTargetUser.classList.add('hidden');
                     postCreatorPopup.classList.remove('hidden');
                     postTypeSelection.classList.remove('hidden');
                     urlInputContainer.classList.add('hidden');
@@ -1152,6 +1208,8 @@
         
         closePostCreatorBtn.addEventListener('click', () => {
             postCreatorPopup.classList.add('hidden');
+            // NEW: Reset admin flag on close
+            isCreatingAdminPost = false;
         });
         
         youtubeBtn.addEventListener('click', () => {
@@ -1175,15 +1233,17 @@
         // REMOVED: Poll button listener
         
         postButton.addEventListener('click', async () => {
-            if (!currentUserUid) {
-                showMessageBox('Please log in to post.');
+            const targetUid = isCreatingAdminPost ? adminUserSelect.value : currentUserUid;
+
+            if (!targetUid) {
+                showMessageBox('Please select a user or log in to post.');
                 return;
             }
             if (postsDisabled) {
                 showMessageBox('Posting is currently disabled.');
                 return;
             }
-            if (!canDo('post:'+currentUserUid)) return showMessageBox('Slow down a bit 🙂');
+            if (!canDo('post:'+targetUid)) return showMessageBox('Slow down a bit 🙂');
 
             const caption = captionInput.value;
             let postData = null;
@@ -1207,7 +1267,7 @@
                      ytId: ytIdMatch[1],
                      caption: caption,
                      createdAt: firebase.database.ServerValue.TIMESTAMP,
-                     createdBy: currentUserUid
+                     createdBy: targetUid
                  };
             } else if (selectedPostType === 'tiktok') {
                 const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
@@ -1221,7 +1281,7 @@
                     videoId: ttIdMatch[1],
                     caption: caption,
                     createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    createdBy: currentUserUid
+                    createdBy: targetUid
                 };
             }
 
@@ -1240,7 +1300,7 @@
 
             try {
                 const postId = crypto.randomUUID();
-                await db.ref(`users/${currentUserUid}/posts/${postId}`).set(postData);
+                await db.ref(`users/${targetUid}/posts/${postId}`).set(postData);
                 postCreatorPopup.classList.add('hidden');
                 fetchAllData(); // Refresh the feed
             } catch (error) {
@@ -1976,6 +2036,28 @@
 
         // Initial data fetch on page load
         fetchAllData();
+
+        // NEW: Admin Post creation listener
+        adminCreatePostBtn.addEventListener('click', () => {
+            if (!adminMode) return;
+            isCreatingAdminPost = true;
+            adminTargetUser.classList.remove('hidden');
+            
+            // Populate the dropdown with user names
+            adminUserSelect.innerHTML = Object.values(userProfiles)
+                .map(user => `<option value="${user.uid}">${user.displayName || 'Anonymous'}</option>`)
+                .join('');
+            
+            postCreatorPopup.classList.remove('hidden');
+            postTypeSelection.classList.remove('hidden');
+            urlInputContainer.classList.add('hidden');
+            // Reset fields
+            selectedPostType = null;
+            urlInput.value = '';
+            captionInput.value = '';
+            draftToggle.checked = false;
+            scheduleAt.value = '';
+        });
     </script>
 </body>
 </html>
