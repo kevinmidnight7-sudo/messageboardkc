@@ -1200,7 +1200,9 @@ if (isEligible) {
         }
 
         const custom = userData.profileCustomization || {};
-        const hasCustomization = userData.codesUnlocked && userData.codesUnlocked.diamond;
+const hasCustomization =
+  userData.profileCustomizationUnlocked ||
+  !!(custom.gradient || custom.banner || custom.nameColor);
 
         if (hasCustomization && custom.gradient) {
             userPopupCard.style.background = custom.gradient;
