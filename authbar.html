@@ -413,7 +413,7 @@
 
     </style>
 </head>
-<body class="bg-gray-800 text-white">
+<body>
 
     <!-- Auth Bar Container -->
     <div id="authBarContainer" class="fixed top-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl glass-container text-sm text-gray-200 shadow-xl z-50 transition-all duration-300 min-w-[360px] md:min-w-[400px]">
@@ -598,6 +598,14 @@
             verified: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png',
             diamond: 'https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png',
             emerald: 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128',
+        };
+        const badgeEmojiMap = {
+          'verified': '✔️',
+          'offence': '�',
+          'defence': '🛡️',
+          'overall': '🏆',
+          'diamond': '💎',
+          'emerald': '💚'
         };
 
         let currentUserUid = null;
@@ -816,7 +824,14 @@
                     // Dynamically set the border and pulse effect based on gradient
                     const gradientRingStyle = gradient ? `background: ${gradient};` : `background: linear-gradient(to bottom right, #1ee57c, #50b2fa);`;
                     const usernameColorStyle = hasCustomization && userData.profileCustomization?.nameColor ? `style="color: ${userData.profileCustomization.nameColor}"` : '';
-                    const roleChip = userData.codesUnlocked?.diamond ? `<span class="text-xs font-bold brand-text px-2 py-1 rounded-full bg-white/10 ml-2">💎 Diamond</span>` : '';
+
+                    let badgesHtml = '';
+                    if(isVerified) badgesHtml += `<span class="text-xs ml-1" title="Verified">✔️</span>`;
+                    if(userData.codesUnlocked?.diamond) badgesHtml += `<span class="text-xs ml-1" title="Diamond User">💎</span>`;
+                    if(userData.badges?.offence > 0) badgesHtml += `<span class="text-xs ml-1" title="Best Offence">🔥</span>`;
+                    if(userData.badges?.defence > 0) badgesHtml += `<span class="text-xs ml-1" title="Best Defence">🛡️</span>`;
+                    if(userData.badges?.overall > 0) badgesHtml += `<span class="text-xs ml-1" title="Overall Winner">🏆</span>`;
+
 
                     authBarContainer.innerHTML = `
                         <div class="flex items-center justify-between w-full">
@@ -829,9 +844,9 @@
                                 </span>
                                 <div class="flex flex-col items-start min-w-0">
                                     <span class="text-white text-xs opacity-70">${getGreeting()},</span>
-                                    <div class="flex items-center">
+                                    <div class="flex items-center gap-2">
                                         <span class="text-white text-base font-semibold truncate max-w-xs" ${usernameColorStyle}>${name}</span>
-                                        ${roleChip}
+                                        ${badgesHtml}
                                     </div>
                                 </div>
                             </div>
@@ -905,7 +920,7 @@
             } else {
                 currentUserUid = null;
                 authBarContainer.innerHTML = `
-                    <button id="authModalBtn" class="px-4 py-2 rounded-xl text-white font-semibold transition-all hover:scale-105 active:scale-95 brand-gradient shadow-lg">
+                    <button id="authModalBtn" class="px-4 py-2 rounded-xl text-white font-semibold transition-all hover:scale-105 active:scale-95 brand-gradient shadow-lg mx-auto">
                         Log In / Sign Up
                     </button>
                 `;
@@ -996,3 +1011,4 @@
     </script>
 </body>
 </html>
+�
