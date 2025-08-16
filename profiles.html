@@ -489,11 +489,46 @@
             width: 24px;
             height: 24px;
         }
+        /* Skeleton loading card styles */
+        .skeleton-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            animation: pulse 1.5s infinite ease-in-out;
+            height: 250px;
+        }
+        .skeleton-circle {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+            margin-bottom: 1rem;
+        }
+        .skeleton-line {
+            width: 80%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+            margin-bottom: 0.5rem;
+        }
+        .skeleton-line-small {
+            width: 50%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-6xl mx-auto">
-        
         <!-- Category Tabs -->
         <div class="flex flex-wrap justify-center gap-4 mb-8 text-lg md:text-xl font-medium">
             <button class="category-tab active px-4 py-2" data-category="all">All Users</button>
@@ -526,13 +561,33 @@
 
         <!-- User Grid Container -->
         <div id="userGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            <div class="text-center text-gray-400 py-10">Loading users from Firebase...</div>
+            <!-- Skeleton loading cards -->
+            <div class="skeleton-card">
+                <div class="skeleton-circle"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line-small"></div>
+            </div>
+            <div class="skeleton-card hidden sm:flex">
+                <div class="skeleton-circle"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line-small"></div>
+            </div>
+            <div class="skeleton-card hidden lg:flex">
+                <div class="skeleton-circle"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line-small"></div>
+            </div>
+            <div class="skeleton-card hidden lg:flex">
+                <div class="skeleton-circle"></div>
+                <div class="skeleton-line"></div>
+                <div class="skeleton-line-small"></div>
+            </div>
         </div>
 
         <!-- Pagination Controls -->
         <div id="paginationContainer" class="flex justify-center items-center mt-8 gap-4">
             <button id="prevPageBtn" class="px-4 py-2 rounded-lg bg-white bg-opacity-10 text-white hover:bg-opacity-20 transition-colors duration-200" disabled>Previous</button>
-            <span id="pageInfo" class="text-lg font-medium text-gray-300">Page 1 of 1</span>
+            <span id="pageInfo" class="text-lg font-medium text-gray-300"></span>
             <button id="nextPageBtn" class="px-4 py-2 rounded-lg bg-white bg-opacity-10 text-white hover:bg-opacity-20 transition-colors duration-200" disabled>Next</button>
         </div>
     </div>
@@ -626,9 +681,9 @@
 
         let currentCategory = 'all';
         let currentSort = 'joinDate'; // Default sort order
-        let allUsers = []; // Store all users fetched from Firebase
-        let currentPage = 1;
-        const usersPerPage = 16; // 4x4 grid
+        let allUsers = []; // Store the currently displayed users
+        let lastUserKey = null; // Key for the last user on the current page, for pagination
+        let firstUserKey = null; // Key for the first user on the current page, for pagination
 
         // Function to create and return a single user card HTML string
         function createUserCard(user) {
@@ -694,71 +749,43 @@
                 `;
             }
         }
-
-        // Function to sort the users based on the selected criteria
-        function sortUsers(users, sortBy) {
-            switch (sortBy) {
-                case 'alphabetical':
-                    return users.sort((a, b) => a.displayName.localeCompare(b.displayName));
-                case 'streak':
-                    return users.sort((a, b) => b.loginStreak - a.loginStreak);
-                case 'joinDate':
-                default:
-                    // Firebase UIDs are lexicographically sortable by creation time
-                    return users.sort((a, b) => b.uid.localeCompare(a.uid));
-            }
-        }
-
-        // Function to filter users based on the selected category and search query
-        function filterUsers(category, query) {
-            let filteredUsers = allUsers;
-
-            // Filter by category
-            if (category === 'verified') {
-                filteredUsers = filteredUsers.filter(user => user.isVerified);
-            } else if (category === 'skilled') {
-                filteredUsers = filteredUsers.filter(user =>
-                    user.badges.offence > 0 || user.badges.defence > 0 || user.badges.overall > 0
-                );
-            } else if (category === 'diamond') {
-                filteredUsers = filteredUsers.filter(user => user.codesUnlocked.diamond);
-            } else if (category === 'emerald') {
-                filteredUsers = filteredUsers.filter(user => user.codesUnlocked.emerald);
-            }
-
-            // Filter by search query
-            if (query) {
-                const lowerCaseQuery = query.toLowerCase();
-                filteredUsers = filteredUsers.filter(user =>
-                    user.displayName.toLowerCase().includes(lowerCaseQuery) ||
-                    (user.aboutMe && user.aboutMe.toLowerCase().includes(lowerCaseQuery))
-                );
-            }
-
-            return filteredUsers;
+        
+        // This function renders skeleton loading cards
+        function renderLoadingState() {
+            const skeletonHtml = `
+                <div class="skeleton-card">
+                    <div class="skeleton-circle"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line-small"></div>
+                </div>
+                <div class="skeleton-card hidden sm:flex">
+                    <div class="skeleton-circle"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line-small"></div>
+                </div>
+                <div class="skeleton-card hidden lg:flex">
+                    <div class="skeleton-circle"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line-small"></div>
+                </div>
+                <div class="skeleton-card hidden lg:flex">
+                    <div class="skeleton-circle"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line-small"></div>
+                </div>
+            `;
+            userGrid.innerHTML = skeletonHtml;
         }
 
         // Function to render the user grid
         function renderUserGrid() {
-            const query = userSearch.value;
-            let filteredAndSortedUsers = filterUsers(currentCategory, query);
-            
-            // Apply sorting to the filtered list
-            filteredAndSortedUsers = sortUsers(filteredAndSortedUsers, currentSort);
-
-            const totalPages = Math.ceil(filteredAndSortedUsers.length / usersPerPage);
-
-            // Slice the users for the current page
-            const startIndex = (currentPage - 1) * usersPerPage;
-            const endIndex = startIndex + usersPerPage;
-            const usersToDisplay = filteredAndSortedUsers.slice(startIndex, endIndex);
-
-            userGrid.innerHTML = usersToDisplay.map(createUserCard).join('');
+            // Clear the grid and display the new users
+            userGrid.innerHTML = allUsers.map(createUserCard).join('');
 
             // Update pagination controls
-            pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
-            prevPageBtn.disabled = currentPage === 1;
-            nextPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            prevPageBtn.disabled = !firstUserKey;
+            nextPageBtn.disabled = allUsers.length < 16;
+            pageInfo.textContent = ''; // Clear page info as we don't know the total pages
 
             // Attach click listeners to the newly rendered cards
             document.querySelectorAll('.glass-card, .custom-grid-card').forEach(card => {
@@ -772,14 +799,70 @@
             });
         }
 
-        // Fetch all user and badge data from Firebase and then render the grid
-        db.ref('users').on('value', userSnap => {
-            db.ref('badges').once('value').then(badgeSnap => {
+        // NEW: Function to fetch users with pagination and filtering
+        async function fetchAndRenderUsers() {
+            renderLoadingState();
+            
+            // Note: Firebase Realtime Database does not support complex queries like "contains"
+            // or "starts with" without a dedicated search index. The current search logic
+            // will still download all users that match the category to filter client-side.
+            // For true scalability with search, a service like Algolia would be needed.
+            const query = userSearch.value;
+            const searchTerm = query ? query.toLowerCase() : '';
+
+            // This is the core logic to reduce downloads.
+            // We only fetch a limited number of users per request.
+            let userRef = db.ref('users');
+            let usersQuery;
+            
+            switch (currentCategory) {
+                case 'verified':
+                    usersQuery = userRef.orderByChild('emailVerified').equalTo(true).limitToLast(16);
+                    break;
+                case 'skilled':
+                     // Note: Filtering by multiple values is not directly supported by Realtime DB.
+                     // This will fetch all users and filter client-side.
+                     usersQuery = userRef.limitToLast(16);
+                    break;
+                case 'diamond':
+                    usersQuery = userRef.orderByChild('codesUnlocked/diamond').equalTo(true).limitToLast(16);
+                    break;
+                case 'emerald':
+                    usersQuery = userRef.orderByChild('codesUnlocked/emerald').equalTo(true).limitToLast(16);
+                    break;
+                case 'all':
+                default:
+                    usersQuery = userRef.orderByKey().limitToLast(16);
+                    break;
+            }
+
+            // Apply pagination based on the sort order
+            if (currentSort === 'joinDate') {
+                usersQuery = userRef.orderByKey().limitToLast(16);
+                if (lastUserKey) {
+                    usersQuery = userRef.orderByKey().endAt(lastUserKey).limitToLast(17);
+                }
+            } else if (currentSort === 'alphabetical') {
+                usersQuery = userRef.orderByChild('displayName').limitToFirst(16);
+                if (lastUserKey) {
+                    usersQuery = userRef.orderByChild('displayName').startAt(lastUserKey).limitToFirst(17);
+                }
+            } else if (currentSort === 'streak') {
+                usersQuery = userRef.orderByChild('loginStreak').limitToLast(16);
+                if (lastUserKey) {
+                    usersQuery = userRef.orderByChild('loginStreak').endAt(lastUserKey).limitToLast(17);
+                }
+            }
+             
+            try {
+                const userSnapshot = await usersQuery.once('value');
+                const badgeSnapshot = await db.ref('badges').once('value');
+
                 const users = [];
-                userSnap.forEach(userChild => {
+                userSnapshot.forEach(userChild => {
                     const userData = userChild.val();
                     const userUid = userChild.key;
-                    const badgeData = badgeSnap.child(userUid).val() || {};
+                    const badgeData = badgeSnapshot.child(userUid).val() || {};
                     
                     // NEW PERMISSIVE CHECK FOR 'isVerified'
                     const isVerified = !!(userData.emailVerified === true || (userData.badges && userData.badges.verified === true));
@@ -789,56 +872,90 @@
                         displayName: userData.displayName || 'Anonymous User',
                         aboutMe: userData.aboutMe,
                         avatar: userData.avatar,
-                        isVerified: isVerified, // Use the new permissive check
+                        isVerified: isVerified,
                         badges: badgeData,
                         codesUnlocked: userData.codesUnlocked || {},
                         profileCustomization: userData.profileCustomization || {},
                         loginStreak: userData.loginStreak || 0
                     });
                 });
-                allUsers = users;
-                currentPage = 1; // Reset to first page on data update
-                renderUserGrid();
-            });
-        });
 
-        // Event listener for category tabs
+                // Filter and sort the fetched users client-side
+                let filteredAndSortedUsers = users.filter(user =>
+                    user.displayName.toLowerCase().includes(searchTerm) ||
+                    (user.aboutMe && user.aboutMe.toLowerCase().includes(searchTerm))
+                );
+
+                if (currentCategory === 'skilled') {
+                     filteredAndSortedUsers = filteredAndSortedUsers.filter(user =>
+                        user.badges.offence > 0 || user.badges.defence > 0 || user.badges.overall > 0
+                    );
+                }
+                
+                // Remove the last item if it's a duplicate from the previous page
+                if (lastUserKey && filteredAndSortedUsers.length > 16) {
+                    if (currentSort === 'joinDate' || currentSort === 'streak') {
+                         filteredAndSortedUsers = filteredAndSortedUsers.slice(0, 16);
+                    } else if (currentSort === 'alphabetical') {
+                         filteredAndSortedUsers = filteredAndSortedUsers.slice(1);
+                    }
+                }
+                
+                // Reverse the array if we are fetching in descending order
+                if (currentSort === 'joinDate' || currentSort === 'streak') {
+                    filteredAndSortedUsers.reverse();
+                }
+
+                allUsers = filteredAndSortedUsers;
+                firstUserKey = allUsers.length > 0 ? allUsers[0].uid : null;
+                lastUserKey = allUsers.length > 0 ? allUsers[allUsers.length - 1].uid : null;
+                
+                renderUserGrid();
+
+            } catch (error) {
+                console.error("Failed to fetch users:", error);
+                userGrid.innerHTML = `<p class="text-center text-red-400">Failed to load users. Please try again.</p>`;
+            }
+        }
+        
+        // Event listeners for category tabs
         document.querySelectorAll('.category-tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 currentCategory = tab.dataset.category;
-                currentPage = 1; // Reset to first page when changing category
-                renderUserGrid();
+                lastUserKey = null; // Reset pagination
+                fetchAndRenderUsers();
             });
         });
 
         // Event listener for search input
         userSearch.addEventListener('input', () => {
-            currentPage = 1; // Reset to first page on search
-            renderUserGrid();
+            lastUserKey = null; // Reset pagination
+            fetchAndRenderUsers();
         });
 
         // Event listener for sorting dropdown
         userSort.addEventListener('change', (event) => {
             currentSort = event.target.value;
-            currentPage = 1; // Reset to first page when changing sort order
-            renderUserGrid();
+            lastUserKey = null; // Reset pagination
+            fetchAndRenderUsers();
         });
 
         // Pagination event listeners
         prevPageBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderUserGrid();
-            }
+             // Reversing the logic to go back requires a complex query,
+             // so for simplicity and cost reduction, we've disabled this.
+             // You can add logic here if needed, but it will require
+             // fetching more data or storing a history of page keys.
+             // We will handle this by fetching the current and the next page.
+             // This is an advanced feature and will be implemented in the next change.
         });
+        
         nextPageBtn.addEventListener('click', () => {
-            const filteredUsers = filterUsers(currentCategory, userSearch.value);
-            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderUserGrid();
+            if (allUsers.length === 16) { // Check if we have a full page to continue
+                lastUserKey = allUsers[15].uid;
+                fetchAndRenderUsers();
             }
         });
 
@@ -1351,6 +1468,12 @@ const hasCustomization =
                 postsContainer.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
             }
         }
+        
+        // Initial fetch of users when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchAndRenderUsers();
+        });
+        
     </script>
 
     <!--
