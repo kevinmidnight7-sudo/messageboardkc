@@ -95,322 +95,6 @@
         .offline {
             background-color: #ef4444;
         }
-
-        /* Styles for the pop-up, copied from profiles.html to keep it self-contained */
-        #userPopup {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            font-family: 'Poppins', sans-serif;
-            animation: fadeInBg 0.3s ease;
-            overflow-y: auto;
-        }
-        @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
-
-        .user-popup-card {
-            width: 360px;
-            max-width: 95vw;
-            border-radius: 1.5rem;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            position: relative;
-            background: #f1f3f5;
-        }
-        @media (min-width: 768px) {
-            .user-popup-card.two-column {
-                width: 720px;
-                display: flex;
-            }
-        }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .popup-banner {
-            height: 120px;
-            background-color: #ced4da;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border-radius: 1.5rem 1.5rem 0 0;
-            position: relative;
-        }
-        @media (min-width: 768px) {
-            .user-popup-card.two-column .popup-banner {
-                border-radius: 1.5rem 0 0 0;
-            }
-        }
-        .popup-header {
-            padding: 0 16px;
-            position: relative;
-            height: 48px;
-        }
-        .popup-info-column {
-             flex: 1;
-        }
-        .popup-posts-column {
-             flex: 1;
-            padding: 12px 16px 16px;
-            overflow-y: auto;
-            border-left: 1px solid rgba(0, 0, 0, 0.1);
-        }
-        .popup-avatar {
-            width: 96px;
-            height: 96px;
-            border-radius: 50%;
-            object-fit: cover;
-            position: absolute;
-            top: -48px;
-            left: 16px;
-            border: 6px solid #fff;
-            background-color: #f1f3f5;
-            z-index: 10;
-        }
-
-        .popup-body {
-            padding: 12px 16px 16px;
-            margin-top: 48px;
-        }
-
-        .popup-username {
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-align: left;
-            margin-bottom: 16px;
-        }
-
-        .popup-section {
-            background: rgba(255,255,255,0.5);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }
-        .popup-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .popup-section-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 8px 0;
-            text-align: left;
-        }
-
-        .popup-about-me {
-            font-size: 0.95rem;
-            color: #374151;
-            line-height: 1.5;
-            word-break: break-word;
-            text-align: left;
-            white-space: pre-wrap;
-        }
-
-        .popup-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .popup-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: white;
-            background: #6b7280;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .popup-badge img, .popup-badge .emoji-icon {
-            width: 20px;
-            height: 20px;
-            font-size: 1.2rem;
-        }
-
-        .user-streak {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #fde047;
-        }
-
-        .popup-close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(0,0,0,0.3);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-            z-index: 15;
-        }
-        .popup-close-btn:hover {
-            background: rgba(0,0,0,0.5);
-        }
-        
-        /* New Post feature CSS */
-        .post-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .post-tile {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 0.75rem;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .post-media {
-            width: 100%;
-            height: auto;
-        }
-        .post-caption {
-            padding: 0.5rem;
-            font-size: 0.875rem;
-            color: #f1f3f5;
-        }
-        .post-timestamp {
-            font-size: 0.75rem;
-            color: #adb5bd;
-            text-align: right;
-            padding: 0 0.5rem 0.5rem 0.5rem;
-        }
-        .delete-post-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(255, 0, 0, 0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            cursor: pointer;
-            opacity: 0.8;
-        }
-        .delete-post-btn:hover {
-            opacity: 1;
-        }
-        .spinner {
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top: 4px solid #fde047;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .upload-error-message {
-            background-color: #f87171;
-            color: white;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-align: center;
-            animation: fadeIn 0.3s ease;
-        }
-        .add-post-btn {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(45deg, #a855f7, #6366f1);
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            border-radius: 9999px;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .add-post-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
-        }
-        .social-media-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 12px 24px;
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: transform 0.2s, background-color 0.2s;
-            color: white;
-            width: 100%;
-        }
-        .social-media-btn:hover {
-            transform: translateY(-2px);
-        }
-        /* New Sidebar Styles (copied from login.html) */
-        .sidebar{
-            position:fixed; top:0; right:0; height:100%; width:340px; max-width:94vw;
-            background:rgba(255,255,255,0.2);
-            backdrop-filter: blur(22px) saturate(1.5);
-            -webkit-backdrop-filter: blur(22px) saturate(1.5);
-            border-left: 1.5px solid rgba(255,255,255,0.22);
-            box-shadow:-4px 0 24px rgba(0,0,0,0.3);
-            transform:translateX(110%);
-            transition:transform .28s cubic-bezier(.72,0,.26,1.03);
-            z-index:2100; padding:32px 18px 24px 30px; box-sizing:border-box;
-            display:flex; flex-direction:column; gap:16px;
-        }
-        .sidebar.open{transform:translateX(0);}
-        .sidebar h2{font-size:1.25rem;font-weight:700;margin:0 0 12px; color:#f3f4f6;}
-        .sidebar .sidebar-btn{
-            font-size:1.12rem; font-weight:600; border:none; border-radius:8px;
-            padding:10px 0; margin-bottom:8px; width:100%;
-            background:linear-gradient(90deg,#13ce7c 0%,#44b0ef 100%);
-            color:#fff; cursor:pointer; transition:background .13s,box-shadow .13s;
-            box-shadow:0 2px 10px #6db8fb22;
-        }
-        .sidebar .sidebar-btn:hover{
-            background:linear-gradient(90deg,#08d763 0%,#4183f8 100%);
-            box-shadow:0 3px 16px #338be955;
-        }
-        .sidebar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .sidebar-close-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.5rem;
-            cursor: pointer;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        .sidebar-close-btn:hover {
-            opacity: 1;
-        }
-
     </style>
 </head>
 <body>
@@ -423,42 +107,6 @@
             <div class="h-6 w-24 rounded-full skeleton"></div>
         </div>
         <!-- This content will be replaced by JS when authenticated -->
-    </div>
-
-    <!-- User Profile Popup (from profiles.html) -->
-    <div id="userPopup" class="hidden flex">
-        <div class="user-popup-card" id="userPopupCard">
-            <div id="popupContentWrapper" class="flex flex-col md:flex-row">
-                <div id="popupInfoColumn" class="popup-info-column">
-                    <div class="popup-banner" id="popupBanner"></div>
-                    <div class="popup-header">
-                        <img id="popupAvatar" src="" class="popup-avatar">
-                        <button id="closeUserPopup" class="popup-close-btn">&times;</button>
-                    </div>
-                    <div class="popup-body">
-                        <div id="popupUserName" class="popup-username"></div>
-                        <div class="popup-section">
-                            <h4 class="popup-section-title">ABOUT ME</h4>
-                            <div id="popupAboutMe" class="popup-about-me"></div>
-                        </div>
-                        <div class="popup-section">
-                            <h4 class="popup-section-title">BADGES</h4>
-                            <div id="popupBadges" class="popup-badges"></div>
-                        </div>
-                        <div class="popup-section">
-                            <h4 class="popup-section-title">STREAK</h4>
-                            <div id="popupStreak" class="user-streak"></div>
-                        </div>
-                        <button id="fullProfileBtn" class="bg-blue-500 text-white font-semibold rounded-lg px-4 py-2 w-full mt-4 hover:bg-blue-600 transition-colors">
-                            Full Profile
-                        </button>
-                    </div>
-                </div>
-                <div id="popupPostsColumn" class="popup-posts-column">
-                    <!-- Posts content will be inserted here -->
-                </div>
-            </div>
-        </div>
     </div>
     
     <!-- Login/Register Pop-up -->
@@ -484,57 +132,10 @@
         </div>
     </div>
     
-    <!-- Dropdown Menu -->
-    <div id="authDropdown" class="hidden absolute top-20 px-4 py-2 rounded-xl glass-container shadow-xl z-50 text-sm md:text-base">
-        <ul class="space-y-2">
-            <li class="p-2 rounded-lg cursor-pointer hover:bg-white/10" id="profileLink">
-                <i class="fa-solid fa-user-circle mr-2 w-5 text-center text-blue-300"></i>
-                <span class="font-semibold">Profile</span>
-            </li>
-            <li class="p-2 rounded-lg cursor-pointer hover:bg-white/10" id="settingsLink">
-                <i class="fa-solid fa-gear mr-2 w-5 text-center text-green-300"></i>
-                <span class="font-semibold">Settings</span>
-            </li>
-            <li class="p-2 rounded-lg cursor-pointer hover:bg-white/10" id="verifyEmailLink">
-                <i class="fa-solid fa-triangle-exclamation mr-2 w-5 text-center text-yellow-300"></i>
-                <span class="font-semibold">Verify Email</span>
-            </li>
-            <li class="p-2 rounded-lg cursor-pointer hover:bg-white/10 text-red-400 font-semibold" id="signOutLink">
-                <i class="fa-solid fa-arrow-right-from-bracket mr-2 w-5 text-center"></i>
-                <span>Sign Out</span>
-            </li>
-        </ul>
-    </div>
-    
-    <!-- Settings Sidebar -->
-    <div id="settingsSidebar" class="sidebar">
-        <div class="sidebar-header">
-            <h2 class="text-white">Settings</h2>
-            <button id="closeSettingsSidebar" class="sidebar-close-btn">&times;</button>
-        </div>
-        <div class="flex-1 overflow-y-auto">
-            <h3 class="text-lg font-semibold text-white/80 mb-4">Theme</h3>
-            <div class="flex flex-col gap-4">
-                <button id="setLightTheme" class="sidebar-btn">
-                    <i class="fa-solid fa-sun mr-2"></i>Light Theme
-                </button>
-                <button id="setDarkTheme" class="sidebar-btn">
-                    <i class="fa-solid fa-moon mr-2"></i>Dark Theme
-                </button>
-            </div>
-            <div id="additionalSettings" class="mt-8">
-                <h3 class="text-lg font-semibold text-white/80 mb-4">Account</h3>
-                <button id="signOutBtnSidebar" class="sidebar-btn bg-red-500 hover:bg-red-600">
-                    <i class="fa-solid fa-arrow-right-from-bracket mr-2"></i>Sign Out
-                </button>
-            </div>
-        </div>
-    </div>
-
+    <!-- This part of the code is not interactive and only for display -->
 
     <script>
         // --- Init Firebase ---
-        // Replace with your actual Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
             authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
@@ -546,247 +147,9 @@
             measurementId: "G-4LKP2M3JXE"
         };
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(),
-              db   = firebase.database(),
-              storage = firebase.storage();
-        
-        const actionCodeSettings = { url: window.location.origin + "/?mode=verifyEmail", handleCodeInApp:true };
-
-        // --- UI Element References ---
+        const auth = firebase.auth(), db = firebase.database();
         const authBarContainer = document.getElementById('authBarContainer');
         const loadingSpinner = document.getElementById('loading');
-        const userPopup = document.getElementById('userPopup');
-        const closeUserPopup = document.getElementById('closeUserPopup');
-        const authModal = document.getElementById('authModal');
-        const closeAuthModal = document.getElementById('closeAuthModal');
-        const loginForm = document.getElementById('loginForm');
-        const registerForm = document.getElementById('registerForm');
-        const showLoginBtn = document.getElementById('showLoginBtn');
-        const showRegisterBtn = document.getElementById('showRegisterBtn');
-        const loginEmail = document.getElementById('loginEmail');
-        const loginPass = document.getElementById('loginPass');
-        const regName = document.getElementById('regName');
-        const regEmail = document.getElementById('regEmail');
-        const regPass = document.getElementById('regPass');
-        const loginBtn = document.getElementById('loginBtn');
-        const registerBtn = document.getElementById('registerBtn');
-        const authDropdown = document.getElementById('authDropdown');
-
-        // --- Pop-up Profile Elements ---
-        const userPopupCard = document.getElementById('userPopupCard');
-        const bannerEl = document.getElementById('popupBanner');
-        const avatarEl = document.getElementById('popupAvatar');
-        const usernameEl = document.getElementById('popupUserName');
-        const aboutEl = document.getElementById('popupAboutMe');
-        const badgesContainer = document.getElementById('popupBadges');
-        const streakEl = document.getElementById('popupStreak');
-        const popupPostsColumn = document.getElementById('popupPostsColumn');
-        const fullProfileBtn = document.getElementById('fullProfileBtn');
-        
-        // --- Settings Sidebar Elements ---
-        const settingsSidebar = document.getElementById('settingsSidebar');
-        const closeSettingsSidebar = document.getElementById('closeSettingsSidebar');
-        const setLightThemeBtn = document.getElementById('setLightTheme');
-        const setDarkThemeBtn = document.getElementById('setDarkTheme');
-        const signOutBtnSidebar = document.getElementById('signOutBtnSidebar');
-
-        // --- Helper functions for profile pop-up ---
-        const badgeIconMap = {
-            offence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',
-            defence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',
-            overall: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png',
-            verified: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png',
-            diamond: 'https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png',
-            emerald: 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128',
-        };
-        const badgeEmojiMap = {
-          'verified': '✔️',
-          'offence': '�',
-          'defence': '🛡️',
-          'overall': '🏆',
-          'diamond': '💎',
-          'emerald': '💚'
-        };
-
-        let currentUserUid = null;
-        let profileOwnerUid = null;
-        let allPosts = [];
-        let postPageIndex = 0;
-        const postsPerPage = 2;
-
-        function showStatusMessage(message, isError = false) {
-            const statusEl = document.createElement('div');
-            statusEl.className = `p-2 rounded-lg text-center ${isError ? 'bg-red-500' : 'bg-green-500'} text-white text-sm`;
-            statusEl.textContent = message;
-            // The status message will appear in the main auth bar container
-            authBarContainer.innerHTML = '';
-            authBarContainer.appendChild(statusEl);
-            setTimeout(() => {
-                // Wait for a few seconds before returning to the default state
-                auth.onAuthStateChanged(auth.currentUser);
-            }, 3000);
-        }
-        
-        // --- Theme Logic ---
-        function applyTheme(theme) {
-            document.body.classList.remove('light-theme', 'dark-theme');
-            document.body.classList.add(theme === 'dark' ? 'dark-theme' : 'light-theme');
-        }
-
-        // --- Load & Render Profile Logic (re-factored for the new structure) ---
-        function loadUserProfile(uid) {
-            profileOwnerUid = uid;
-            // Show a loading state
-            userPopupCard.classList.remove('two-column');
-            popupPostsColumn.style.display = 'none';
-            popupPostsColumn.innerHTML = '';
-            userPopupCard.style.background = '#f1f3f5';
-            bannerEl.style.backgroundImage = 'none';
-            bannerEl.style.backgroundColor = '#ced4da';
-            avatarEl.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-            usernameEl.textContent = 'Loading...';
-            aboutEl.textContent = 'Loading...';
-            badgesContainer.innerHTML = 'Loading...';
-            streakEl.style.display = 'none';
-
-            userPopup.style.display = 'flex';
-
-            db.ref(`users/${uid}`).once('value').then(snap => {
-                const userData = snap.val() || {};
-                const isEligible = !!(userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald || userData.codesUnlocked?.content);
-
-                if (isEligible) {
-                    userPopupCard.classList.add('two-column');
-                    popupPostsColumn.style.display = 'block';
-                    popupPostsColumn.innerHTML = `
-                        <h4 class="popup-section-title text-center text-gray-800">POSTS</h4>
-                        <div id="postsContainer" class="post-list"></div>
-                        <div id="postPagination" class="flex justify-center items-center gap-4 mt-4">
-                            <button id="prevPostBtn" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 disabled:opacity-50 transition-colors hover:bg-gray-300">&leftarrow;</button>
-                            <button id="nextPostBtn" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 disabled:opacity-50 transition-colors hover:bg-gray-300">&rightarrow;</button>
-                        </div>
-                    `;
-                    loadPosts(uid);
-                    document.getElementById('prevPostBtn').onclick = () => { if (postPageIndex > 0) { postPageIndex--; renderPosts(); }};
-                    document.getElementById('nextPostBtn').onclick = () => { const maxIndex = Math.floor((allPosts.length - 1) / postsPerPage); if (postPageIndex < maxIndex) { postPageIndex++; renderPosts(); }};
-                }
-
-                usernameEl.textContent = userData.displayName || 'Anonymous User';
-                avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
-                const streakNum = typeof userData.loginStreak === 'number' ? userData.loginStreak : (parseInt(userData.loginStreak) || 0);
-                if (streakNum > 0) {
-                    streakEl.textContent = `🔥 ${streakNum} Day Streak`;
-                    streakEl.style.display = 'block';
-                }
-
-                const custom = userData.profileCustomization || {};
-                const hasCustomization = userData.profileCustomizationUnlocked || !!(custom.gradient || custom.banner || custom.nameColor);
-                if (hasCustomization && custom.gradient) {
-                    userPopupCard.style.background = custom.gradient;
-                }
-                if (hasCustomization && custom.nameColor) {
-                    usernameEl.style.color = custom.nameColor;
-                }
-                if (hasCustomization && custom.banner) {
-                    bannerEl.style.backgroundImage = `url('${custom.banner}')`;
-                    bannerEl.style.backgroundColor = 'transparent';
-                }
-
-                Promise.all([
-                    db.ref(`badges/${uid}`).once('value'),
-                    db.ref(`users/${uid}/customBadges`).once('value')
-                ]).then(([bsnap, csnap]) => {
-                    badgesContainer.innerHTML = '';
-                    let hasAnyBadge = false;
-                    const badgeSpecs = { verified: { label: 'Verified', icon: badgeIconMap.verified, bg: '#2dd4bf' } };
-                    const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
-                    const isVerified = !!(userData.emailVerified === true || (userData.badges && userData.badges.verified === true));
-                    if (isVerified) {
-                        const div = document.createElement('div');
-                        div.className = 'popup-badge';
-                        div.style.background = badgeSpecs.verified.bg;
-                        div.innerHTML = `<img src="${badgeSpecs.verified.icon}"><span>${badgeSpecs.verified.label}</span>`;
-                        badgesContainer.appendChild(div);
-                        hasAnyBadge = true;
-                    }
-                    if (userData.codesUnlocked && userData.codesUnlocked.diamond) {
-                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#55d9e5;color:#fff;"><img src="${badgeIconMap.diamond}" alt="Diamond"><span>Diamond User</span></div>`;
-                        hasAnyBadge = true;
-                    }
-                    if (!hasAnyBadge) badgesContainer.textContent = 'No badges to display.';
-                });
-                
-                // Add click handler for the "Full Profile" button
-                fullProfileBtn.onclick = () => {
-                    window.open(`https://kcevents.uk/#loginpage`, '_blank');
-                };
-
-            }).catch(error => {
-                console.error('Error loading user profile:', error);
-                usernameEl.textContent = 'Error loading profile';
-            });
-        }
-
-        async function loadPosts(uid) {
-            const postsContainer = document.getElementById('postsContainer');
-            postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
-            try {
-                const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
-                const posts = [];
-                snapshot.forEach(childSnap => {
-                    posts.push({ postId: childSnap.key, ...childSnap.val() });
-                });
-                allPosts = posts.sort((a, b) => b.createdAt - a.createdAt);
-                postPageIndex = 0;
-                renderPosts();
-            } catch (error) {
-                console.error('Failed to load posts:', error);
-                postsContainer.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
-            }
-        }
-
-        function renderPosts() {
-            const postsContainer = document.getElementById('postsContainer');
-            const paginationContainer = document.getElementById('postPagination');
-            const prevPostBtn = document.getElementById('prevPostBtn');
-            const nextPostBtn = document.getElementById('nextPostBtn');
-
-            postsContainer.innerHTML = '';
-            if (allPosts.length === 0) {
-                postsContainer.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
-                if (paginationContainer) paginationContainer.classList.add('hidden');
-                return;
-            }
-            if (paginationContainer) paginationContainer.classList.remove('hidden');
-
-            const start = postPageIndex * postsPerPage;
-            const end = start + postsPerPage;
-            const postsToDisplay = allPosts.slice(start, end);
-            const isOwner = currentUserUid === profileOwnerUid;
-
-            postsToDisplay.forEach(post => {
-                let mediaHtml = '';
-                if (post.type === 'image') { mediaHtml = `<img src="${post.url}" class="post-media" alt="${post.caption}">`; }
-                else if (post.type === 'youtube') { mediaHtml = `<iframe class="w-full aspect-video" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`; }
-                else if (post.type === 'tiktok') { mediaHtml = `<iframe class="w-full aspect-video" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`; }
-
-                const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-                const deleteButton = isOwner ? `<button class="delete-post-btn" data-post-id="${post.postId}">&times;</button>` : '';
-                
-                postsContainer.innerHTML += `
-                    <div class="post-tile">
-                        ${deleteButton}
-                        ${mediaHtml}
-                        <div class="post-caption">${post.caption}</div>
-                        <div class="post-timestamp">${timestamp}</div>
-                    </div>
-                `;
-            });
-
-            if (prevPostBtn) prevPostBtn.disabled = postPageIndex === 0;
-            if (nextPostBtn) nextPostBtn.disabled = end >= allPosts.length;
-        }
         
         // --- Greeting function ---
         function getGreeting() {
@@ -796,33 +159,31 @@
             return 'Good evening';
         }
 
-        // --- Presence dot logic ---
-        const presenceDot = document.createElement('span');
-        presenceDot.className = 'presence-dot ' + (navigator.onLine ? 'online' : 'offline');
-        
-        window.addEventListener('online', () => { presenceDot.className = 'presence-dot online'; });
-        window.addEventListener('offline', () => { presenceDot.className = 'presence-dot offline'; });
-
-
         // --- Auth State Listener (main logic) ---
         auth.onAuthStateChanged(user => {
             // First, remove the loading skeleton
             loadingSpinner.classList.add('hidden');
             
             if (user) {
-                currentUserUid = user.uid;
-                
                 // Fetch the current user's data once, then listen for changes
                 db.ref(`users/${user.uid}`).on('value', snap => {
                     const userData = snap.val() || {};
                     const name = userData.displayName || user.displayName || user.email;
                     const avatarUrl = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
                     const hasCustomization = userData.profileCustomizationUnlocked;
-                    const gradient = hasCustomization && userData.profileCustomization?.gradient;
+                    const customGradient = hasCustomization && userData.profileCustomization?.gradient;
                     const isVerified = !!user.emailVerified;
 
-                    // Dynamically set the border and pulse effect based on gradient
-                    const gradientRingStyle = gradient ? `background: ${gradient};` : `background: linear-gradient(to bottom right, #1ee57c, #50b2fa);`;
+                    // Apply custom gradient to the entire container if available
+                    if (customGradient) {
+                        authBarContainer.style.background = customGradient;
+                        authBarContainer.classList.remove('glass-container');
+                    } else {
+                        authBarContainer.style.background = '';
+                        authBarContainer.classList.add('glass-container');
+                    }
+
+                    const gradientRingStyle = customGradient ? `background: ${customGradient};` : `background: linear-gradient(to bottom right, #1ee57c, #50b2fa);`;
                     const usernameColorStyle = hasCustomization && userData.profileCustomization?.nameColor ? `style="color: ${userData.profileCustomization.nameColor}"` : '';
 
                     let badgesHtml = '';
@@ -832,11 +193,10 @@
                     if(userData.badges?.defence > 0) badgesHtml += `<span class="text-xs ml-1" title="Best Defence">🛡️</span>`;
                     if(userData.badges?.overall > 0) badgesHtml += `<span class="text-xs ml-1" title="Overall Winner">🏆</span>`;
 
-
                     authBarContainer.innerHTML = `
-                        <div class="flex items-center justify-between w-full">
-                            <div class="flex items-center gap-2">
-                                <span class="relative cursor-pointer" id="userProfileBtn">
+                        <div class="flex items-center gap-2">
+                            <a href="https://kcevents.uk/#loginpage" target="_blank" class="flex items-center gap-2">
+                                <span class="relative">
                                     <span class="gradient-ring" style="${gradientRingStyle}">
                                         <img src="${avatarUrl}" alt="User Avatar" class="w-8 h-8 rounded-full border-2 border-gray-800 object-cover">
                                     </span>
@@ -849,166 +209,26 @@
                                         ${badgesHtml}
                                     </div>
                                 </div>
-                            </div>
-                            <button id="authDropdownBtn" class="w-8 h-8 flex items-center justify-center text-white/50 hover:text-white transition-colors">
-                                <i class="fas fa-ellipsis-v text-lg"></i>
-                            </button>
+                            </a>
+                            <a href="#" id="signOutLink" class="text-red-400 text-sm ml-auto">Sign Out</a>
                         </div>
                     `;
-
-                    // Handle dropdown and profile clicks
-                    const authDropdownBtn = document.getElementById('authDropdownBtn');
-                    const userProfileBtn = document.getElementById('userProfileBtn');
-                    
-                    authDropdownBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        const dropdown = document.getElementById('authDropdown');
-                        dropdown.classList.toggle('hidden');
-                        if (!dropdown.classList.contains('hidden')) {
-                             // Position the dropdown right below the button
-                            const rect = authDropdownBtn.getBoundingClientRect();
-                            dropdown.style.top = `${rect.bottom + window.scrollY + 10}px`;
-                            dropdown.style.right = `${window.innerWidth - rect.right}px`;
-                        }
-                    };
-
-                    userProfileBtn.onclick = () => {
-                        loadUserProfile(user.uid);
-                        authDropdown.classList.add('hidden'); // Hide dropdown if it's open
-                    };
-
-                    // Populate the dropdown links and handlers
-                    const profileLink = document.getElementById('profileLink');
-                    const settingsLink = document.getElementById('settingsLink');
-                    const verifyEmailLink = document.getElementById('verifyEmailLink');
-                    const signOutLink = document.getElementById('signOutLink');
-                    
-                    if (!isVerified) {
-                        verifyEmailLink.style.display = 'flex';
-                        verifyEmailLink.onclick = () => {
-                             user.sendEmailVerification(actionCodeSettings)
-                                .then(() => showStatusMessage('Verification email sent!'))
-                                .catch(err => showStatusMessage(`Error: ${err.message}`, true));
-                             authDropdown.classList.add('hidden');
-                        };
-                    } else {
-                        verifyEmailLink.style.display = 'none';
-                    }
-
-                    profileLink.onclick = () => {
-                        loadUserProfile(user.uid);
-                        authDropdown.classList.add('hidden');
-                    };
-                    
-                    settingsLink.onclick = (e) => {
-                        e.stopPropagation();
-                        settingsSidebar.classList.add('open');
-                        authDropdown.classList.add('hidden');
-                    };
-                    
-                    signOutLink.onclick = () => {
+                    document.getElementById('signOutLink').onclick = (e) => {
+                        e.preventDefault();
                         auth.signOut();
-                        authDropdown.classList.add('hidden');
                     };
-
-                    document.addEventListener('click', (e) => {
-                        if (!authDropdown.contains(e.target) && !authDropdownBtn.contains(e.target)) {
-                            authDropdown.classList.add('hidden');
-                        }
-                    });
                 });
             } else {
-                currentUserUid = null;
                 authBarContainer.innerHTML = `
-                    <button id="authModalBtn" class="px-4 py-2 rounded-xl text-white font-semibold transition-all hover:scale-105 active:scale-95 brand-gradient shadow-lg mx-auto">
+                    <a href="https://kcevents.uk/#loginpage" target="_blank" class="px-4 py-2 rounded-xl text-white font-semibold transition-all hover:scale-105 active:scale-95 brand-gradient shadow-lg mx-auto">
                         Log In / Sign Up
-                    </button>
+                    </a>
                 `;
-                document.getElementById('authModalBtn').onclick = () => {
-                    authModal.style.display = 'flex';
-                    loginForm.classList.remove('hidden');
-                    loginForm.classList.add('flex');
-                    registerForm.classList.add('hidden');
-                    showLoginBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
-                    showRegisterBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
-                };
+                // Ensure the container reverts to default styles when logged out
+                authBarContainer.style.background = '';
+                authBarContainer.classList.add('glass-container');
             }
         });
-
-        // --- Auth Modal Logic ---
-        closeAuthModal.onclick = () => authModal.style.display = 'none';
-        authModal.onclick = (e) => { if (e.target === authModal) authModal.style.display = 'none'; };
-        showLoginBtn.onclick = () => {
-            loginForm.classList.remove('hidden');
-            loginForm.classList.add('flex');
-            registerForm.classList.add('hidden');
-            showLoginBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
-            showRegisterBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
-        };
-        showRegisterBtn.onclick = () => {
-            loginForm.classList.add('hidden');
-            registerForm.classList.remove('hidden');
-            registerForm.classList.add('flex');
-            showRegisterBtn.querySelector('span').classList.add('scale-x-100', 'opacity-100');
-            showLoginBtn.querySelector('span').classList.remove('scale-x-100', 'opacity-100');
-        };
-
-        // Handle form submissions
-        loginForm.onsubmit = (e) => {
-            e.preventDefault();
-            auth.signInWithEmailAndPassword(loginEmail.value, loginPass.value)
-                .then(() => {
-                    authModal.style.display = 'none';
-                })
-                .catch(error => {
-                    showStatusMessage(error.message, true);
-                });
-        };
-        registerForm.onsubmit = (e) => {
-            e.preventDefault();
-            auth.createUserWithEmailAndPassword(regEmail.value, regPass.value)
-                .then(userCred => userCred.user.updateProfile({ displayName: regName.value }))
-                .then(() => {
-                    authModal.style.display = 'none';
-                    showStatusMessage('Account created! Please verify your email.');
-                })
-                .catch(error => {
-                    showStatusMessage(error.message, true);
-                });
-        };
-
-        // --- User Profile Pop-up Listeners ---
-        closeUserPopup.onclick = () => userPopup.style.display = 'none';
-        userPopup.onclick = (e) => { if (e.target === userPopup) userPopup.style.display = 'none'; };
-
-        // --- Settings Sidebar Listeners ---
-        closeSettingsSidebar.onclick = () => settingsSidebar.classList.remove('open');
-        settingsSidebar.addEventListener('mousedown', (e) => {
-            if (!e.target.closest('.sidebar')) settingsSidebar.classList.remove('open');
-        });
-
-        // Sign out button inside the settings sidebar
-        signOutBtnSidebar.onclick = () => {
-            auth.signOut().then(() => {
-                settingsSidebar.classList.remove('open');
-                showStatusMessage('Signed out successfully.');
-            });
-        };
-        
-        // Theme buttons in settings sidebar
-        setLightTheme.onclick = () => {
-            applyTheme('light');
-            if (auth.currentUser) {
-                db.ref(`users/${auth.currentUser.uid}/theme`).set('light');
-            }
-        };
-        setDarkTheme.onclick = () => {
-            applyTheme('dark');
-            if (auth.currentUser) {
-                db.ref(`users/${auth.currentUser.uid}/theme`).set('dark');
-            }
-        };
     </script>
 </body>
 </html>
-�
