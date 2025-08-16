@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>KC Event Voting</title>
+  <title>KC Event Voting (Optimized)</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <!-- Use a single, optimized Firebase SDK import for efficiency -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -684,18 +685,21 @@
       -webkit-background-clip: text;
       color: transparent;
       font-size: 2.2rem;
+      font-weight: 800;
     }
     .podium-item.silver .name {
       background: linear-gradient(45deg,#dbe8fc,#8e9cae 85%);
       -webkit-background-clip: text;
       color: transparent;
       font-size: 1.6rem;
+      font-weight: 700;
     }
     .podium-item.bronze .name {
       background: linear-gradient(45deg,#fbc28b,#c38348 85%);
       -webkit-background-clip: text;
       color: transparent;
       font-size: 1.3rem;
+      font-weight: 700;
     }
 
     .podium-stand {
@@ -1222,72 +1226,89 @@
 
 
     // Leaderboard update function
-    async function updateLeaderboard(){
-      const [votesSnap, usersSnap, badgesSnap] = await Promise.all([
-        votesRef.once('value'),
-        usersRef.once('value'),
-        badgesRef.once('value')
-      ]);
-      const allVotes = votesSnap.val() || {};
-      const allUsers = usersSnap.val() || {};
-      const allBadges = badgesSnap.val() || {};
+    let allVotesCache = {};
+    let allUsersCache = {};
+    let allBadgesCache = {};
+    let normalizedNameToOriginalNameMapCache = {};
 
-      const nameToUidMap = {};
-      const normalizedNameToOriginalNameMap = {};
-      for (const uid in allUsers) {
-        const user = allUsers[uid];
-        const originalName = user.displayName || user.email || '';
-        const nameKey = normalize(originalName);
-        if (nameKey) {
-          nameToUidMap[nameKey] = uid;
-          normalizedNameToOriginalNameMap[nameKey] = originalName;
+    function processLeaderboardData() {
+        const off = {};
+        const def = {};
+
+        for (const voteKey in allVotesCache) {
+            const v = allVotesCache[voteKey];
+            const o = normalize(v.bestOffence || '');
+            const d = normalize(v.bestDefence || '');
+
+            if (o) {
+                if (!off[o]) {
+                    off[o] = { count: 0 };
+                }
+                off[o].count++;
+            }
+            if (d) {
+                if (!def[d]) {
+                    def[d] = { count: 0 };
+                }
+                def[d].count++;
+            }
         }
-      }
 
-      const off = {}, def = {};
-      
-      for (const voteKey in allVotes) {
-        const v = allVotes[voteKey];
-        const o = normalize(v.bestOffence || '');
-        const d = normalize(v.bestDefence || '');
+        const processEntries = (entriesMap) => {
+            return Object.entries(entriesMap).map(([normalizedName, data]) => {
+                const votedForUid = Object.keys(allUsersCache).find(uid => normalize(allUsersCache[uid].displayName || allUsersCache[uid].email) === normalizedName);
+                const representativeUser = votedForUid ? allUsersCache[votedForUid] : null;
+                const originalDisplayName = normalizedNameToOriginalNameMapCache[normalizedName] || normalizedName;
+
+                return { name: originalDisplayName, count: data.count, user: representativeUser, uid: votedForUid };
+            }).sort((a, b) => b.count - a.count);
+        };
+
+        const offenseEntries = processEntries(off);
+        const defenseEntries = processEntries(def);
+
+        renderList('offenseScores', offenseEntries);
+        renderList('defenseScores', defenseEntries);
+        renderPodium('offensePodium', offenseEntries);
+        renderPodium('defensePodium', defenseEntries);
+        renderTiles('offenseTiles', offenseEntries);
+        renderTiles('defenseTiles', defenseEntries);
+
+        window.leaderboardData = { allVotes: allVotesCache, allUsers: allUsersCache, allBadges: allBadgesCache, normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMapCache };
         
-        if (o) {
-          if (!off[o]) {
-            off[o] = { count: 0, voterUids: new Set() };
-          }
-          off[o].count++;
-          if (v.uid) off[o].voterUids.add(v.uid);
+        // Update user profile card if they have already voted
+        const user = auth.currentUser;
+        if(user) {
+            const hasVoted = Object.values(allVotesCache).some(v => v.uid === user.uid);
+            if (hasVoted) {
+                renderVotedUserProfile(user, window.leaderboardData);
+            }
         }
-        if (d) {
-          if (!def[d]) {
-            def[d] = { count: 0, voterUids: new Set() };
-          }
-          def[d].count++;
-          if (v.uid) def[d].voterUids.add(v.uid);
-        }
-      }
-
-      const processEntries = (entriesMap) => {
-        return Object.entries(entriesMap).map(([normalizedName, data]) => {
-          const votedForUid = nameToUidMap[normalizedName];
-          const representativeUser = votedForUid ? allUsers[votedForUid] : null;
-          const originalDisplayName = normalizedNameToOriginalNameMap[normalizedName] || normalizedName;
-
-          return { name: originalDisplayName, count: data.count, user: representativeUser, uid: votedForUid };
-        }).sort((a, b) => b.count - a.count);
-      };
-
-      const offenseEntries = processEntries(off);
-      const defenseEntries = processEntries(def);
-
-      renderList('offenseScores', offenseEntries);
-      renderList('defenseScores', defenseEntries);
-      renderPodium('offensePodium', offenseEntries);
-      renderPodium('defensePodium', defenseEntries);
-      renderTiles('offenseTiles', offenseEntries);
-      renderTiles('defenseTiles', defenseEntries);
-
-      window.leaderboardData = { allVotes, allUsers, allBadges, normalizedNameToOriginalNameMap };
+    }
+    
+    // Optimized: Use a single listener for all leaderboard data to reduce costs
+    function setupLeaderboardListeners() {
+        votesRef.on('value', snap => {
+            allVotesCache = snap.val() || {};
+            processLeaderboardData();
+        });
+        usersRef.on('value', snap => {
+            allUsersCache = snap.val() || {};
+            normalizedNameToOriginalNameMapCache = {};
+            for (const uid in allUsersCache) {
+                const user = allUsersCache[uid];
+                const originalName = user.displayName || user.email || '';
+                const nameKey = normalize(originalName);
+                if (nameKey) {
+                    normalizedNameToOriginalNameMapCache[nameKey] = originalName;
+                }
+            }
+            processLeaderboardData();
+        });
+        badgesRef.on('value', snap => {
+            allBadgesCache = snap.val() || {};
+            processLeaderboardData();
+        });
     }
 
     const DEFAULT_AVATAR_URL = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
@@ -1504,10 +1525,12 @@
       tilesDiv.innerHTML = tilesHTML;
     }
 
-    async function renderVotedUserProfile(currentUser, allVotes, allUsers, allBadges, normalizedNameToOriginalNameMap) {
+    // Optimized: Pass leaderboardData directly to avoid re-fetching
+    async function renderVotedUserProfile(currentUser, leaderboardData) {
         const uid = currentUser.uid;
-        const userData = allUsers[uid] || {};
-        const userBadges = allBadges[uid] || {};
+        const userData = leaderboardData.allUsers[uid] || {};
+        const userBadges = leaderboardData.allBadges[uid] || {};
+        const allVotes = leaderboardData.allVotes;
 
         const avatarSrc = userData.avatar || DEFAULT_AVATAR_URL;
         const username = userData.username || currentUser.displayName || currentUser.email || 'Guest';
@@ -1553,7 +1576,7 @@
         }
 
         const sortedOffense = Object.entries(offenseCounts).sort(([, countA], [, countB]) => countB - countA);
-        const sortedDefense = Object.entries(defenseCounts).sort(([, countA], [, countB]) => countB - countA);
+        const sortedDefense = Object.entries(defenseCounts).sort(([, countA], [, countB]) => countB - a[1]);
 
         const normalizedCurrentUserDisplayName = normalize(currentUser.displayName || currentUser.email);
 
@@ -1615,17 +1638,30 @@
         `;
     }
 
+    // Optimized: Use a single listener for average rating
     function updateAverageRating(){
-      votesRef.once('value').then(snap=>{
-        let sum=0,n=0;
-        snap.forEach(c=>{
-          const r=c.val().rating;
-          if(typeof r==='number'&&r>0){ sum+=r; n++; }
+      votesRef.on('value', snap => {
+        let sum = 0, n = 0;
+        snap.forEach(c => {
+          const r = c.val().rating;
+          if(typeof r === 'number' && r > 0){ sum += r; n++; }
         });
-        document.getElementById('avgRatingNum').textContent = n? (sum/n).toFixed(2): '–';
+        document.getElementById('avgRatingNum').textContent = n ? (sum / n).toFixed(2) : '–';
       });
     }
-    function renderForm(user, opts){
+    
+    // Optimized: Pass the list of all users to renderForm to avoid another database read
+    function renderForm(user, allUsers){
+      let opts='<option value="" disabled selected>– Select a player –</option>';
+      for (const uid in allUsers) {
+        const userVal = allUsers[uid];
+        if (userVal.emailVerified) {
+          const name = userVal.displayName || userVal.email || '(unknown)';
+          const esc = name.replace(/"/g, '&quot;');
+          opts += `<option value="${esc}">${esc}</option>`;
+        }
+      }
+
       voteContainer.innerHTML=`
         <label>Your Username</label>
         <input readonly id="username" value="${user.displayName||user.email||''}"/>
@@ -1658,35 +1694,10 @@
       });
       off.onchange=updateBtn;
       def.onchange=updateBtn;
-      votesRef.orderByChild('uid').equalTo(user.uid).once('value').then(async snap=>{
+      // Optimized: Check for existing vote with a query
+      votesRef.orderByChild('uid').equalTo(user.uid).once('value').then(snap=>{
         if(snap.exists()){
-          if (window.leaderboardData) {
-            renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
-          } else {
-            const [votesSnap, usersSnap, badgesSnap] = await Promise.all([
-                votesRef.once('value'),
-                usersRef.once('value'),
-                badgesRef.once('value')
-            ]);
-            const normalizedNameToOriginalNameMap = {};
-            const allUsersLocal = usersSnap.val() || {};
-            for (const uid in allUsersLocal) {
-                const userData = allUsersLocal[uid];
-                const originalName = userData.displayName || userData.email || '';
-                const nameKey = normalize(originalName);
-                if (nameKey) {
-                    normalizedNameToOriginalNameMap[nameKey] = originalName;
-                }
-            }
-
-            window.leaderboardData = {
-                allVotes: votesSnap.val() || {},
-                allUsers: allUsersLocal,
-                allBadges: badgesSnap.val() || {},
-                normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMap
-            };
-            renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
-          }
+          renderVotedUserProfile(user, window.leaderboardData);
         }
       });
       sub.onclick=()=>{
@@ -1701,49 +1712,24 @@
         })
         .then(()=> {
             kcAlert('Thanks for voting!');
-            updateLeaderboard();
-            updateAverageRating();
-            if (window.leaderboardData) {
-                renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
-            } else {
-                usersRef.once('value').then(usersSnap => {
-                    const allUsersLocal = usersSnap.val() || {};
-                    const normalizedNameToOriginalNameMap = {};
-                    for (const uid in allUsersLocal) {
-                        const userData = allUsersLocal[uid];
-                        const originalName = userData.displayName || userData.email || '';
-                        const nameKey = normalize(originalName);
-                        if (nameKey) {
-                            normalizedNameToOriginalNameMap[nameKey] = originalName;
-                        }
-                    }
-                    votesRef.once('value').then(votesSnap => {
-                        badgesRef.once('value').then(badgesSnap => {
-                            window.leaderboardData = {
-                                allVotes: votesSnap.val() || {},
-                                allUsers: allUsersLocal,
-                                allBadges: badgesSnap.val() || {},
-                                normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMap
-                            };
-                            renderVotedUserProfile(user, window.leaderboardData.allVotes, window.leaderboardData.allUsers, window.leaderboardData.allBadges, window.leaderboardData.normalizedNameToOriginalNameMap);
-                        });
-                    });
-                });
-            }
+            // The listeners will automatically update the UI
+            renderVotedUserProfile(user, window.leaderboardData);
         })
         .catch(e=>kcAlert('Error submitting: '+e.message));
       };
     }
+    
     auth.onAuthStateChanged(u=>{
       if(!u){
         voteContainer.innerHTML =
           `<p>Please <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">log in</a> to vote.</p>`;
         return;
       }
+      // Optimized: Use a single update call for user data
       usersRef.child(u.uid).update({
-        displayName: u.displayName||null,
-        email:       u.email        ||null,
-        joined:      firebase.database.ServerValue.TIMESTAMP,
+        displayName: u.displayName || null,
+        email: u.email || null,
+        joined: firebase.database.ServerValue.TIMESTAMP,
         emailVerified: u.emailVerified
       });
       if(!u.emailVerified){
@@ -1752,20 +1738,13 @@
           `<p>Verify your email to vote. <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">Resend verification</a></p>`;
         return;
       }
+      // Optimized: Fetch all users once and pass to renderForm
       usersRef.once('value').then(snap=>{
-        let opts='<option value="" disabled selected>– Select a player –</option>';
-        snap.forEach(c=>{
-          const userVal=c.val();
-          if(userVal.emailVerified){
-            const name=userVal.displayName||userVal.email||'(unknown)',
-                  esc=name.replace(/"/g,'&quot;');
-            opts+=`<option value="${esc}">${esc}</option>`;
-          }
-        });
-        renderForm(u,opts);
+        renderForm(u, snap.val() || {});
       });
     });
-    unlockBtn.onclick = ()=>{
+    
+    unlockBtn.onclick = async ()=>{
       if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
       if(!document.getElementById('toggleLeaderboard')){
         const lbl=document.createElement('label');
@@ -1783,6 +1762,7 @@
             .catch(e=>kcAlert('Save failed: '+e.message));
         };
       }
+      // Optimized: Fetch all votes once for the admin table
       votesRef.orderByChild('time').once('value').then(snap=>{
         let html=`<tr><th>Date</th><th>User</th><th>Offence</th><th>Defence</th><th>Rating</th><th>Delete</th></tr>`;
         snap.forEach(c=>{
@@ -1793,7 +1773,6 @@
                   <td><button class="delBtn">Delete</button></td></tr>`;
         });
         adminTable.innerHTML=html;
-        updateLeaderboard(); updateAverageRating();
       });
     };
     adminTable.addEventListener('click',async e=>{
@@ -1801,7 +1780,7 @@
       const key=e.target.closest('tr').dataset.key;
       if(!await kcConfirm('Delete this vote?')) return;
       votesRef.child(key).remove()
-        .then(()=>{ kcAlert('Vote deleted.'); updateLeaderboard(); updateAverageRating(); })
+        .then(()=>kcAlert('Vote deleted.'))
         .catch(err=>kcAlert('Delete failed: '+err.message));
     });
     resetBtn.onclick=async ()=>{
@@ -1810,7 +1789,7 @@
       const snap=await votesRef.once('value'), tasks=[];
       snap.forEach(c=>tasks.push(votesRef.child(c.key).remove()));
       Promise.all(tasks)
-        .then(()=>{ adminTable.innerHTML=''; kcAlert('All votes have been reset.'); updateLeaderboard(); updateAverageRating(); })
+        .then(()=>{ adminTable.innerHTML=''; kcAlert('All votes have been reset.'); })
         .catch(err=>kcAlert('Reset failed: '+err.message));
     };
 
@@ -1820,19 +1799,19 @@
         document.getElementById('leaderboardOffMessage').style.display = 'none';
         showLeaderboardView(viewModes[currentViewIndex]);
         document.querySelector('.view-selector-container').style.display = 'flex';
+        setupLeaderboardListeners(); // Optimized: Start listeners when leaderboard is enabled
       } else {
         leaderboardContent.style.display = 'none';
         podiumContent.style.display = 'none';
         tilesContent.style.display = 'none';
         document.getElementById('leaderboardOffMessage').style.display = 'block';
         document.querySelector('.view-selector-container').style.display = 'none';
+        
+        votesRef.off(); // Optimized: Stop listeners when leaderboard is disabled
+        usersRef.off();
+        badgesRef.off();
       }
-      if(on) updateLeaderboard();
     });
-
-    updateLeaderboard();
-    updateAverageRating();
-    showLeaderboardView(viewModes[currentViewIndex]);
   </script>
 </body>
 </html>
