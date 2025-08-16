@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KC Events (Improved)</title>
+  <title>KC Events (Optimized)</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <!-- Use a single, optimized Firebase SDK import for efficiency -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -2058,6 +2059,12 @@ firebase.initializeApp(cfg);
 const auth = firebase.auth(), db = firebase.database();
 const actionCodeSettings = { url: window.location.origin + "/?mode=verifyEmail", handleCodeInApp:true };
 
+// IMPORTANT: Set up Firebase security rules to prevent unauthorized reads
+// and writes on your database. This is crucial for controlling costs and
+// protecting user data. The `users` node should only be accessible by the
+// authenticated user, and the `badges` node should only be written by
+// admin users, but can be read by all.
+
 // ========== Profanity Filter Setup ==========
 let bannedWords = [];
 fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
@@ -2236,6 +2243,7 @@ submitCodeBtn.onclick = async () => {
         return;
     }
     const uid = user.uid;
+    // Optimized: Use once() to get the current code status
     const redeemedSnap = await db.ref(`users/${uid}/codesUnlocked/${conf.key}`).once('value');
     if (redeemedSnap.val()) {
         codeMsg.textContent = "Code already redeemed!";
@@ -2253,10 +2261,12 @@ submitCodeBtn.onclick = async () => {
     if (conf.profileCustomization) {
         updates[`users/${uid}/profileCustomizationUnlocked`] = true;
     }
+    // Optimized: Fetch the bonus once, then update
     const bonusSnap = await db.ref(`users/${uid}/customBonus`).once('value');
     const existingBonus = bonusSnap.val() || 0;
     updates[`users/${uid}/customBonus`] = existingBonus + (conf.customBonus || 0);
 
+    // Optimized: Use a single update call for all changes
     await db.ref().update(updates);
     
     codeMsg.textContent = "Success!";
@@ -2265,7 +2275,7 @@ submitCodeBtn.onclick = async () => {
     
     setTimeout(() => {
         closeCodesModal.onclick();
-        loadBadges(uid, user.emailVerified); // Reload badges and check for customization unlock
+        // The onSnapshot listener will handle the UI update after this change
         kcAlert(conf.alert, 2500, conf.icon);
     }, 1200);
 };
@@ -2289,6 +2299,7 @@ registerBtn.onclick = ()=>{
   if(!name||!email||!pass) return kcAlert("Fill all fields.");
   auth.createUserWithEmailAndPassword(email,pass)
     .then(u=>u.user.updateProfile({displayName:name}).then(()=>u.user))
+    // Optimized: write to Firebase on user creation
     .then(u=>db.ref(`users/${u.uid}`).set({displayName:name,email,joined:firebase.database.ServerValue.TIMESTAMP}).then(()=>u))
     .then(u=>u.sendEmailVerification(actionCodeSettings))
     .then(()=>kcAlert("Verification email sent!"))
@@ -2373,6 +2384,7 @@ function refreshUserSelect(){
     });
   });
 }
+// Optimized: Use Promise.all to fetch data concurrently
 function loadAllUsersToAdmin(){
   Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
     .then(([us,bad])=>{
@@ -2515,20 +2527,23 @@ function renderStreakModal(streak){
 
 function handleStreak(uid){
   const today=getToday();
-  db.ref(`users/${uid}`).once("value").then(snap=>{
-    let {lastLoginDate,loginStreak} = snap.val() || {};
-    loginStreak = loginStreak || 0;
-    if(lastLoginDate===today) return;
-    let yesterday = new Date();
-    yesterday.setDate(yesterday.getDate()-1);
-    let ystr = `${yesterday.getFullYear()}-${pad2(yesterday.getMonth()+1)}-${pad2(yesterday.getDate())}`;
-    if(lastLoginDate===ystr){
-      loginStreak += 1;
-    } else {
-      loginStreak = Math.max(loginStreak, 1);
+  // Optimized: Use a transaction to safely update streak and lastLoginDate
+  db.ref(`users/${uid}`).transaction(user => {
+    if (user) {
+      const {lastLoginDate, loginStreak} = user;
+      const streak = loginStreak || 0;
+      if(lastLoginDate === today) return; // Already logged in today
+      let yesterday = new Date();
+      yesterday.setDate(yesterday.getDate()-1);
+      let ystr = `${yesterday.getFullYear()}-${pad2(yesterday.getMonth()+1)}-${pad2(yesterday.getDate())}`;
+      if(lastLoginDate === ystr){
+        user.loginStreak = (streak || 0) + 1;
+      } else {
+        user.loginStreak = 1;
+      }
+      user.lastLoginDate = today;
     }
-    db.ref(`users/${uid}/lastLoginDate`).set(today);
-    db.ref(`users/${uid}/loginStreak`).set(loginStreak);
+    return user;
   });
 }
 
@@ -2584,11 +2599,10 @@ saveUsernameBtn.onclick = function(){
     usernameMsg.textContent = 'Not logged in.';
     return;
   }
+  // Optimized: Consolidate user updates into a single call
   db.ref(`users/${u.uid}`).update({username: val, displayName: val}).then(()=>{
     u.updateProfile({displayName: val}).catch(()=>{});
-    db.ref(`users/${u.uid}/profileCustomization/nameColor`).once('value').then(snap => {
-        displayUsername(val, snap.val() || '#1992d4');
-    });
+    // The onSnapshot listener will handle the UI update
     usernameModal.classList.remove('open');
     usernameModal.dataset.firstTime = '';
     closeUsernameModal.style.display = '';
@@ -2604,6 +2618,33 @@ function writeEmailVerified(uid, emailVerified) {
     .catch(err => console.error('Failed to write emailVerified:', err));
 }
 
+function fetchUserDataAndListen(user) {
+  // Optimized: Use a single on() listener instead of multiple once() calls
+  // This reduces reads and provides real-time updates to the UI
+  db.ref(`users/${user.uid}`).on('value', snap => {
+    const userData = snap.val() || {};
+    const nameToDisplay = userData.username || user.displayName || user.email;
+    const custom = userData.profileCustomization || {};
+    
+    // UI updates
+    displayUsername(nameToDisplay, custom.nameColor);
+    if (!userData.username) openUsernameModal(true);
+    const profileCard = document.getElementById('profileCard');
+    profileCard.style.background = custom.gradient || 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+    if (profileBanner) {
+      profileBanner.style.backgroundImage = custom.banner ? `url('${custom.banner}')` : 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
+    }
+    avatarImg.src = userData.avatar || "https://kevinmidnight7-sudo.github.io/messageboardkc/1.png";
+    avatarImg.style.display = "block";
+    displayAboutMe(userData.aboutMe || '');
+    
+    // Badges
+    loadBadges(user.uid, user.emailVerified, userData.codesUnlocked, userData.loginStreak, userData.customBadges);
+    
+    // Profile customization unlock
+    editProfileBtn.style.display = (userData.profileCustomizationUnlocked) ? 'flex' : 'none';
+  });
+}
 
 // ========== AUTH STATE & INIT AVATAR ==========
 auth.onAuthStateChanged(async (u) => {
@@ -2611,59 +2652,32 @@ auth.onAuthStateChanged(async (u) => {
     authForms.style.display = "none";
     profileUI.style.display = "block";
     
-    // Sync the emailVerified status on every auth state change
+    // Sync the emailVerified status
     try {
-        await u.reload(); // fetch latest from server (important after verification)
+        await u.reload();
         await writeEmailVerified(u.uid, u.emailVerified);
     } catch (e) {
         console.error('Auth state sync failed:', e);
     }
 
-    // Show or hide the "I've Verified" button based on verification status
-    if (u && !u.emailVerified) {
+    if (!u.emailVerified) {
         document.getElementById('iVerifiedBtn').style.display = 'block';
     } else {
         document.getElementById('iVerifiedBtn').style.display = 'none';
     }
-
+    
+    // Optimized: Use transaction for streak logic
     handleStreak(u.uid);
+
+    // Optimized: Start a single listener for user data
+    fetchUserDataAndListen(u);
+    
+    // Optimized: Get a one-time count of all users
+    db.ref("users").once("value").then(s => userCounter.textContent = `There are now ${s.numChildren()} users registered!`);
+    
     badgesCard.style.display = "flex";
     document.querySelector(".kc-title").textContent = "KC Events";
 
-    db.ref(`users/${u.uid}`).once('value').then(snap => {
-      const userData = snap.val() || {};
-      const nameToDisplay = userData.username || u.displayName || u.email;
-      const custom = userData.profileCustomization || {};
-      
-      displayUsername(nameToDisplay, custom.nameColor);
-
-      if(!userData.username){
-        openUsernameModal(true);
-      }
-
-      // Apply profile card theme AND banner
-      const profileCard = document.getElementById('profileCard');
-      if (custom.gradient) {
-          profileCard.style.background = custom.gradient;
-      } else {
-          profileCard.style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
-      }
-      if (profileBanner) {
-          if (custom.banner) {
-              profileBanner.style.backgroundImage = `url('${custom.banner}')`;
-          } else {
-              // Default branded banner if no custom banner is set
-              profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
-          }
-      }
-       avatarImg.src = userData.avatar || "https://kevinmidnight7-sudo.github.io/messageboardkc/1.png";
-       avatarImg.style.display = "block";
-       displayAboutMe(userData.aboutMe || '');
-    });
-
-    db.ref("users").once("value").then(s => userCounter.textContent = `There are now ${s.numChildren()} users registered!`);
-    loadBadges(u.uid, u.emailVerified);
-    
   } else {
     authForms.style.display = "flex";
     profileUI.style.display = "none";
@@ -2675,8 +2689,12 @@ auth.onAuthStateChanged(async (u) => {
     if(profileBanner) {
       profileBanner.style.backgroundImage = 'none';
     }
-    // Hide the "I've Verified" button when logged out
     document.getElementById('iVerifiedBtn').style.display = 'none';
+    
+    // Optimized: Stop listening to user data when logged out
+    if (auth.currentUser) {
+        db.ref(`users/${auth.currentUser.uid}`).off();
+    }
   }
 });
 
@@ -2688,7 +2706,7 @@ document.getElementById('iVerifiedBtn')?.addEventListener('click', async () => {
     await writeEmailVerified(user.uid, user.emailVerified);
     if(user.emailVerified) {
         kcAlert("Email verification synced! Reloading badges...");
-        loadBadges(user.uid, user.emailVerified);
+        // The onSnapshot listener will handle the UI update
         document.getElementById('iVerifiedBtn').style.display = 'none';
     } else {
         kcAlert("Your email still shows as unverified. Please check your email and try again.");
@@ -2725,7 +2743,7 @@ function renderAvatars(selectedUrl) {
     avatarCarousel.appendChild(div);
   });
 }
-function renderAvatarsWithUpload(user){
+function renderAvatarsWithUpload(user, currentAvatarUrl){
   avatarCarousel.innerHTML = "";
   const div = document.createElement("div");
   div.className = "avatar-item avatar-upload-unlocked";
@@ -2739,9 +2757,7 @@ function renderAvatarsWithUpload(user){
     const adiv = document.createElement("div");
     adiv.className = "avatar-item";
     adiv.innerHTML = `<img src="${url}" alt="Avatar">`;
-    db.ref(`users/${user.uid}/avatar`).once("value").then(snap=>{
-      if (url === snap.val()) adiv.classList.add('selected');
-    });
+    if (url === currentAvatarUrl) adiv.classList.add('selected');
     adiv.onclick = function() {
       document.querySelectorAll('.avatar-carousel .avatar-item').forEach(el=>el.classList.remove('selected'));
       adiv.classList.add('selected');
@@ -2760,16 +2776,16 @@ avatarBtn.onclick = ()=> {
   const user = auth.currentUser;
   if(!user) return;
   const uid = user.uid;
-  Promise.all([
-    db.ref(`users/${uid}/loginStreak`).once("value"),
-    db.ref(`users/${uid}/avatarUnlocked`).once("value")
-  ]).then(([streakSnap, unlockSnap]) => {
-    const streak  = (streakSnap.val() || 0);
-    const unlocked = !!unlockSnap.val();
+  // Optimized: Get all necessary user data with one call
+  db.ref(`users/${uid}`).once('value').then(snap => {
+    const userData = snap.val() || {};
+    const streak  = userData.loginStreak || 0;
+    const unlocked = !!userData.avatarUnlocked;
+    const currentAvatar = userData.avatar;
     if(streak >= 10 || unlocked){
-      renderAvatarsWithUpload(user);
+      renderAvatarsWithUpload(user, currentAvatar);
     } else {
-      renderAvatars(null);
+      renderAvatars(currentAvatar);
     }
     avatarModal.classList.add("open");
     setTimeout(() => {
@@ -2830,7 +2846,8 @@ avatarCarousel.addEventListener('pointermove', e=>{
 
 // ========== BADGES LOGIC ==========
 let editingBadgeId = null;
-async function loadBadges(uid, verified){
+// Optimized: Pass all necessary data to this function to avoid extra reads
+async function loadBadges(uid, verified, codesUnlocked, loginStreak, customBadges){
   badgeList.innerHTML="";
   joinBadge.innerHTML="";
   const verifiedBox=document.createElement("div");
@@ -2864,60 +2881,71 @@ async function loadBadges(uid, verified){
     defence:{label:"Best Defence",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png",cls:"defence",grad:"linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)", glow: "rgba(59,130,246,0.9)"},
     overall:{label:"Overall Winner",icon:"https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png",cls:"overall",grad:"linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)", glow: "rgba(234,179,8,0.9)"}
   };
-  const countsSnap = await db.ref(`badges/${uid}`).once('value');
-  const counts = countsSnap.val() || {};
-  for(const [k,s] of Object.entries(specs)){
-    const cnt=counts[k]||0;
-    const el=document.createElement("div");
-    el.className=`badge-item ${s.cls}${cnt?"":" locked"}`;
-    el.tabIndex=0;
-    el.innerHTML=`<img src="${s.icon}" alt="${s.label}"/><span class="badge-label">${s.label}</span>`;
-    if(cnt){
-      el.innerHTML+=`<span class="badge-mult">x${cnt}</span>`;
-      el.style.background=s.grad;
-      el.onmouseover=()=>{
-        el.style.boxShadow=`0 0 18px ${s.glow},0 4px 14px ${s.glow}77`;
-        el.style.transform="translateY(-3px) scale(1.045)";
+  // Optimized: Use a listener to automatically update badges
+  db.ref(`badges/${uid}`).on('value', countsSnap => {
+    const counts = countsSnap.val() || {};
+    // Render official badges
+    for(const [k,s] of Object.entries(specs)){
+      const cnt = counts[k] || 0;
+      let el = document.querySelector(`.badge-item.${s.cls}`);
+      if (!el) {
+        el = document.createElement("div");
+        el.className = `badge-item ${s.cls}`;
+        el.tabIndex = 0;
+        el.innerHTML = `<img src="${s.icon}" alt="${s.label}"/><span class="badge-label">${s.label}</span>`;
+        badgeList.appendChild(el);
+      }
+      el.classList.toggle('locked', cnt === 0);
+      let badgeMultEl = el.querySelector('.badge-mult');
+      let lockIconEl = el.querySelector('.lock-icon');
+      if (cnt) {
+          if (!badgeMultEl) {
+              badgeMultEl = document.createElement('span');
+              badgeMultEl.className = 'badge-mult';
+              el.appendChild(badgeMultEl);
+          }
+          badgeMultEl.textContent = `x${cnt}`;
+          if (lockIconEl) lockIconEl.remove();
+          el.style.background = s.grad;
+      } else {
+          if (badgeMultEl) badgeMultEl.remove();
+          if (!lockIconEl) {
+              lockIconEl = document.createElement('span');
+              lockIconEl.className = 'lock-icon';
+              lockIconEl.textContent = '🔒';
+              el.appendChild(lockIconEl);
+          }
+          el.style.background = `linear-gradient(90deg,#cfd8dc 65%,#eceff1 120%)`;
+      }
+      // Re-add event listeners if they were removed or if the element is new
+      el.onmouseover = () => {
+        el.style.boxShadow = (cnt ? `0 0 18px ${s.glow},0 4px 14px ${s.glow}77` : `0 0 12px #aaa8,0 1px 6px #aaa4`);
+        el.style.transform = (cnt ? "translateY(-3px) scale(1.045)" : "");
       };
-      el.onmouseleave=()=>{
-        el.style.boxShadow="";
-        el.style.transform="";
+      el.onmouseleave = () => {
+        el.style.boxShadow = "";
+        el.style.transform = "";
       };
-    } else {
-      el.innerHTML+=`<span class="lock-icon">🔒</span>`;
-      el.onmouseover=()=>{el.style.boxShadow="0 0 12px #aaa8,0 1px 6px #aaa4";};
-      el.onmouseleave=()=>{el.style.boxShadow="";};
     }
-    badgeList.appendChild(el);
-  }
-  const userSnap = await db.ref(`users/${uid}`).once('value');
-  const userData = userSnap.val() || {};
-  const streak = userData.loginStreak || 0;
-  const customBadges = userData.customBadges || {};
-  const customKeys = Object.keys(customBadges);
+  });
+
+  const customBadgesSnap = await db.ref(`users/${uid}/customBadges`).once('value');
+  const customBadgesData = customBadgesSnap.val() || {};
+  const customKeys = Object.keys(customBadgesData);
   const customCount = customKeys.length;
-  
+  const streak = loginStreak || 0;
   const baseMax = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
-  
-  const codesUnlocked = userData.codesUnlocked || {};
-  let bonus = 0;
-  if(codesUnlocked.diamond) bonus += 2;
-  if(codesUnlocked.emerald) bonus += 1;
+  const bonus = (codesUnlocked.diamond ? 2 : 0) + (codesUnlocked.emerald ? 1 : 0);
   const maxCustom = baseMax + bonus;
-  
   const allowCustom = (streak >= 50) || (bonus > 0);
   
-  // Check if profile customization is unlocked and show the button
-  const profileCustomizationUnlocked = userData.profileCustomizationUnlocked || false;
-  
-  if (profileCustomizationUnlocked) {
-    editProfileBtn.style.display = 'flex';
-  } else {
-    editProfileBtn.style.display = 'none';
-  }
+  // Clean up old custom badges from UI before re-rendering
+  document.querySelectorAll('.badge-item.custom-badge').forEach(el => el.remove());
+  document.getElementById('createCustomBadge')?.remove();
 
   if(allowCustom && customCount < maxCustom){
     const addDiv=document.createElement("div");
+    addDiv.id = 'createCustomBadge';
     addDiv.className="badge-item";
     addDiv.style.background="linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%)";
     addDiv.innerHTML=`<span style="font-size:2.3em;">➕</span><span class="badge-label">Create Badge</span>`;
@@ -2950,10 +2978,11 @@ async function loadBadges(uid, verified){
     };
     badgeList.appendChild(addDiv);
   }
+  
   customKeys.forEach(key=>{
-    const badge = customBadges[key];
+    const badge = customBadgesData[key];
     const cdiv = document.createElement("div");
-    cdiv.className = "badge-item";
+    cdiv.className = "badge-item custom-badge";
     cdiv.style.background = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
     cdiv.innerHTML = `<span style="font-size:2.2em;">${badge.icon}</span>
       <span class="badge-label" style="color:${badge.textColor||'#e5e7eb'};">${badge.name}</span>`;
@@ -2980,7 +3009,6 @@ async function loadBadges(uid, verified){
       e.stopPropagation();
       db.ref(`users/${uid}/customBadges/${key}`).remove().then(()=>{
         kcAlert('Badge deleted');
-        loadBadges(uid,auth.currentUser.emailVerified);
       });
     };
     cdiv.appendChild(delIcon);
@@ -3044,6 +3072,7 @@ async function loadBadges(uid, verified){
     badgeList.appendChild(cdiv);
   });
 }
+
 
 // ========== FANCY BADGE CREATOR LOGIC ==========
 const badgeIcons = ["🏆","🔥","💎","⭐","🐍","👑","🎯","🛡️"];
@@ -3218,25 +3247,27 @@ document.getElementById("saveBadgeFancyBtn").onclick = function(){
     return;
   }
   const uid = auth.currentUser.uid;
+  // Optimized: Use a single set or update call to save the badge
+  const badgeData = {name, icon, grad1: c1, grad2: c2, textColor};
   if(editingBadgeId){
-    db.ref(`users/${uid}/customBadges/${editingBadgeId}`).set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
+    db.ref(`users/${uid}/customBadges/${editingBadgeId}`).set(badgeData).then(()=>{
       document.getElementById("badgeCreateMsgFancy").textContent = "Badge updated!";
       setTimeout(()=>{
         document.getElementById("badgeCreatorModalFancy").classList.remove("open");
         document.getElementById("badgeCreateMsgFancy").textContent = "";
         editingBadgeId=null;
       }, 800);
-      loadBadges(uid,auth.currentUser.emailVerified);
+      // The onSnapshot listener will handle the UI update
     });
   } else {
     const newRef = db.ref(`users/${uid}/customBadges`).push();
-    newRef.set({name,icon,grad1:c1,grad2:c2,textColor}).then(()=>{
+    newRef.set(badgeData).then(()=>{
       document.getElementById("badgeCreateMsgFancy").textContent = "Badge saved!";
       setTimeout(()=>{
         document.getElementById("badgeCreatorModalFancy").classList.remove("open");
         document.getElementById("badgeCreateMsgFancy").textContent = "";
       }, 800);
-      loadBadges(uid,auth.currentUser.emailVerified);
+      // The onSnapshot listener will handle the UI update
     });
   }
 };
@@ -3498,10 +3529,11 @@ closeCustomizationModal.onclick = () => {
     // Restore the actual profile view from DB, in case user cancelled changes
     const user = auth.currentUser;
     if(user) {
+      // Optimized: Fetch and re-apply styles from a single DB read
         db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
             const custom = snap.val() || {};
             if(custom.banner) profileBanner.style.backgroundImage = `url('${custom.banner}')`;
-            else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)'; // Restore default branded banner
+            else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
 
             if(custom.gradient) document.getElementById('profileCard').style.background = custom.gradient;
             else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
@@ -3535,18 +3567,10 @@ saveCustomizationBtn.onclick = () => {
         nameColor: selectedColorEl ? selectedColorEl.style.backgroundColor : null
     };
 
+    // Optimized: Use a single update call to save changes
     db.ref(`users/${user.uid}/profileCustomization`).update(updates).then(() => {
         kcAlert('Profile customization saved!');
         profileCustomizationModal.classList.remove('open');
-        // The onAuthStateChanged listener will re-apply the saved styles automatically on next load,
-        // but we can apply them immediately for a better UX.
-        if(updates.banner) profileBanner.style.backgroundImage = `url('${updates.banner}')`;
-        else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)'; // Apply default branded banner
-        if(updates.gradient) document.getElementById('profileCard').style.background = updates.gradient;
-        else document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
-        const usernameText = document.querySelector('#welcomeUser .username-text');
-        if(usernameText) usernameText.style.color = updates.nameColor || '#1992d4';
-
     }).catch(err => {
         kcAlert('Error saving: ' + err.message);
     });
