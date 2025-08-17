@@ -820,9 +820,9 @@
                     usersQuery = userRef.orderByChild('emailVerified').equalTo(true).limitToLast(16);
                     break;
                 case 'skilled':
-                     // Note: Filtering by multiple values is not directly supported by Realtime DB.
-                     // This will fetch all users and filter client-side.
-                     usersQuery = userRef.limitToLast(16);
+                     // FIX: Remove the limit for the 'skilled' category to fetch all users.
+                     // The filtering will happen client-side, which is necessary for this type of query.
+                     usersQuery = userRef;
                     break;
                 case 'diamond':
                     usersQuery = userRef.orderByChild('codesUnlocked/diamond').equalTo(true).limitToLast(16);
@@ -836,21 +836,23 @@
                     break;
             }
 
-            // Apply pagination based on the sort order
-            if (currentSort === 'joinDate') {
-                usersQuery = userRef.orderByKey().limitToLast(16);
-                if (lastUserKey) {
-                    usersQuery = userRef.orderByKey().endAt(lastUserKey).limitToLast(17);
-                }
-            } else if (currentSort === 'alphabetical') {
-                usersQuery = userRef.orderByChild('displayName').limitToFirst(16);
-                if (lastUserKey) {
-                    usersQuery = userRef.orderByChild('displayName').startAt(lastUserKey).limitToFirst(17);
-                }
-            } else if (currentSort === 'streak') {
-                usersQuery = userRef.orderByChild('loginStreak').limitToLast(16);
-                if (lastUserKey) {
-                    usersQuery = userRef.orderByChild('loginStreak').endAt(lastUserKey).limitToLast(17);
+            // Apply pagination based on the sort order, but not for the 'skilled' category as it fetches all users
+            if (currentCategory !== 'skilled') {
+                if (currentSort === 'joinDate') {
+                    usersQuery = userRef.orderByKey().limitToLast(16);
+                    if (lastUserKey) {
+                        usersQuery = userRef.orderByKey().endAt(lastUserKey).limitToLast(17);
+                    }
+                } else if (currentSort === 'alphabetical') {
+                    usersQuery = userRef.orderByChild('displayName').limitToFirst(16);
+                    if (lastUserKey) {
+                        usersQuery = userRef.orderByChild('displayName').startAt(lastUserKey).limitToFirst(17);
+                    }
+                } else if (currentSort === 'streak') {
+                    usersQuery = userRef.orderByChild('loginStreak').limitToLast(16);
+                    if (lastUserKey) {
+                        usersQuery = userRef.orderByChild('loginStreak').endAt(lastUserKey).limitToLast(17);
+                    }
                 }
             }
              
@@ -892,12 +894,15 @@
                     );
                 }
                 
-                // Remove the last item if it's a duplicate from the previous page
-                if (lastUserKey && filteredAndSortedUsers.length > 16) {
-                    if (currentSort === 'joinDate' || currentSort === 'streak') {
-                         filteredAndSortedUsers = filteredAndSortedUsers.slice(0, 16);
-                    } else if (currentSort === 'alphabetical') {
-                         filteredAndSortedUsers = filteredAndSortedUsers.slice(1);
+                // For categories other than skilled, handle pagination logic
+                if (currentCategory !== 'skilled') {
+                    // Remove the last item if it's a duplicate from the previous page
+                    if (lastUserKey && filteredAndSortedUsers.length > 16) {
+                        if (currentSort === 'joinDate' || currentSort === 'streak') {
+                             filteredAndSortedUsers = filteredAndSortedUsers.slice(0, 16);
+                        } else if (currentSort === 'alphabetical') {
+                             filteredAndSortedUsers = filteredAndSortedUsers.slice(1);
+                        }
                     }
                 }
                 
