@@ -2079,7 +2079,7 @@ function containsProfane(str){
 
 // ================== CODES CONFIGURATION ==================
 const codesConfig = {
-  "D1//\\0ND-S70N3": {
+  "D1//\\0ND-S703": {
     key: "diamond",
     alert: "Diamond Exclusives Introduced",
     icon: "https://cdn.discordapp.com/emojis/1381097369474695178.webp?size=128",
@@ -2628,7 +2628,7 @@ function fetchUserDataAndListen(user) {
     
     // UI updates
     displayUsername(nameToDisplay, custom.nameColor);
-    if (!userData.username) openUsernameModal(true);
+    // The line that automatically opened the modal has been removed.
     const profileCard = document.getElementById('profileCard');
     profileCard.style.background = custom.gradient || 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
     if (profileBanner) {
