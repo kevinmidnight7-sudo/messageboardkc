@@ -1276,13 +1276,10 @@
 
         window.leaderboardData = { allVotes: allVotesCache, allUsers: allUsersCache, allBadges: allBadgesCache, normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMapCache };
         
-        // Update user profile card if they have already voted
+        // UPDATE: More efficient check to see if the current user has voted
         const user = auth.currentUser;
-        if(user) {
-            const hasVoted = Object.values(allVotesCache).some(v => v.uid === user.uid);
-            if (hasVoted) {
-                renderVotedUserProfile(user, window.leaderboardData);
-            }
+        if(user && allVotesCache[user.uid]) {
+            renderVotedUserProfile(user, window.leaderboardData);
         }
     }
     
@@ -1576,7 +1573,7 @@
         }
 
         const sortedOffense = Object.entries(offenseCounts).sort(([, countA], [, countB]) => countB - countA);
-        const sortedDefense = Object.entries(defenseCounts).sort(([, countA], [, countB]) => countB - a[1]);
+        const sortedDefense = Object.entries(defenseCounts).sort((a, b) => b[1] - a[1]);
 
         const normalizedCurrentUserDisplayName = normalize(currentUser.displayName || currentUser.email);
 
@@ -1694,16 +1691,20 @@
       });
       off.onchange=updateBtn;
       def.onchange=updateBtn;
-      // Optimized: Check for existing vote with a query
-      votesRef.orderByChild('uid').equalTo(user.uid).once('value').then(snap=>{
+      
+      // UPDATE: More efficient direct lookup for existing vote by UID
+      votesRef.child(user.uid).once('value').then(snap=>{
         if(snap.exists()){
           renderVotedUserProfile(user, window.leaderboardData);
         }
       });
+
       sub.onclick=()=>{
         sub.disabled=true;
-        votesRef.push({
-          uid:user.uid,
+        // UPDATE: Use .child(user.uid).set() for a deterministic path.
+        // This ensures each user can only vote once, overwriting their previous vote.
+        votesRef.child(user.uid).set({
+          uid:user.uid, // It's good practice to keep the uid in the object itself
           username:user.displayName||user.email,
           bestOffence:off.value,
           bestDefence:def.value,
@@ -1712,8 +1713,7 @@
         })
         .then(()=> {
             kcAlert('Thanks for voting!');
-            // The listeners will automatically update the UI
-            renderVotedUserProfile(user, window.leaderboardData);
+            // The live listeners will automatically update the UI to show the profile card.
         })
         .catch(e=>kcAlert('Error submitting: '+e.message));
       };
@@ -1767,6 +1767,7 @@
         let html=`<tr><th>Date</th><th>User</th><th>Offence</th><th>Defence</th><th>Rating</th><th>Delete</th></tr>`;
         snap.forEach(c=>{
           const v=c.val(), d=new Date(v.time).toLocaleString();
+          // The key is now the user's UID
           html+=`<tr data-key="${c.key}"><td>${d}</td><td>${v.username}</td>
                   <td>${v.bestOffence}</td><td>${v.bestDefence}</td>
                   <td>${v.rating}/5</td>
@@ -1777,6 +1778,7 @@
     };
     adminTable.addEventListener('click',async e=>{
       if(!e.target.matches('.delBtn')) return;
+      // The key is now the user's UID
       const key=e.target.closest('tr').dataset.key;
       if(!await kcConfirm('Delete this vote?')) return;
       votesRef.child(key).remove()
@@ -1786,9 +1788,8 @@
     resetBtn.onclick=async ()=>{
       if(adminPass.value!=='events2025KC') return kcAlert('Incorrect password.');
       if(!await kcConfirm('Reset all votes? This cannot be undone.')) return;
-      const snap=await votesRef.once('value'), tasks=[];
-      snap.forEach(c=>tasks.push(votesRef.child(c.key).remove()));
-      Promise.all(tasks)
+      // A simple .remove() on the parent is enough to delete all votes
+      votesRef.remove()
         .then(()=>{ adminTable.innerHTML=''; kcAlert('All votes have been reset.'); })
         .catch(err=>kcAlert('Reset failed: '+err.message));
     };
