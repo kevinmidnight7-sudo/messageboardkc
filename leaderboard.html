@@ -478,9 +478,10 @@
   }
 
   // --- Init
+  // Fetch leaderboard data once on load
   fetchData();
-  db.ref('users').on('value', fetchData);
-  db.ref('badges').on('value', fetchData);
+  // Removed continuous listeners to reduce download costs. If live updates are required,
+  // consider using more granular listeners like 'child_changed' instead of full table reads.
 </script>
 </body>
 </html>
