@@ -991,13 +991,14 @@
           const u = firebase.auth().currentUser;
           poReactions.innerHTML = '';
           
-          const usersRef = firebase.database().ref('users');
-          const allUserProfiles = {};
-          
-          const usersSnap = await usersRef.once('value');
-          usersSnap.forEach(childSnap => {
-              allUserProfiles[childSnap.key] = childSnap.val();
-          });
+          // Use cached user profiles to avoid re-downloading the entire users table on every reaction hover.
+          // If not yet loaded, fetch once and store in the global userProfiles cache.
+          let allUserProfiles = userProfiles;
+          if (!allUserProfiles || Object.keys(allUserProfiles).length === 0) {
+            const usersSnap = await firebase.database().ref('users').once('value');
+            userProfiles = usersSnap.val() || {};
+            allUserProfiles = userProfiles;
+          }
 
           POST_EMOJIS.forEach(emo => {
             const reactors = data[emo] ? Object.keys(data[emo]) : [];
@@ -1727,8 +1728,11 @@
                         if (shadowed && !isMe) continue;
 
                         if (users[uid].posts) {
-                            for (const postId in users[uid].posts) {
-                                const post = users[uid].posts[postId];
+                            // Limit to the most recent 50 posts per user to reduce download costs
+                            const postEntries = Object.entries(users[uid].posts);
+                            postEntries.sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
+                            const recentPosts = postEntries.slice(-50);
+                            for (const [postId, post] of recentPosts) {
                                 // NEW: Visibility logic for drafts and scheduled posts
                                 const now = Date.now();
                                 const visibleAt = post.publishAt || post.createdAt;
@@ -1826,7 +1830,11 @@
         
         async function loadProfilePosts(uid) {
             try {
-                const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+                // Load only the most recent 50 posts for a profile to reduce download costs
+                const snapshot = await db.ref(`users/${uid}/posts`)
+                    .orderByChild('createdAt')
+                    .limitToLast(50)
+                    .once('value');
                 const posts = [];
                 snapshot.forEach(childSnap => {
                     const post = childSnap.val();
