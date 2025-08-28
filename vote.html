@@ -1285,11 +1285,13 @@
     
     // Optimized: Use a single listener for all leaderboard data to reduce costs
     function setupLeaderboardListeners() {
-        votesRef.on('value', snap => {
+        // Listen only to the most recent 200 votes to reduce download costs
+        votesRef.orderByChild('time').limitToLast(200).on('value', snap => {
             allVotesCache = snap.val() || {};
             processLeaderboardData();
         });
-        usersRef.on('value', snap => {
+        // Load users and badges once at the beginning instead of streaming full tables
+        usersRef.once('value').then(snap => {
             allUsersCache = snap.val() || {};
             normalizedNameToOriginalNameMapCache = {};
             for (const uid in allUsersCache) {
@@ -1302,7 +1304,7 @@
             }
             processLeaderboardData();
         });
-        badgesRef.on('value', snap => {
+        badgesRef.once('value').then(snap => {
             allBadgesCache = snap.val() || {};
             processLeaderboardData();
         });
@@ -1637,7 +1639,8 @@
 
     // Optimized: Use a single listener for average rating
     function updateAverageRating(){
-      votesRef.on('value', snap => {
+      // Listen only to recent votes to compute the average rating
+      votesRef.orderByChild('time').limitToLast(200).on('value', snap => {
         let sum = 0, n = 0;
         snap.forEach(c => {
           const r = c.val().rating;
