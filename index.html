@@ -593,7 +593,8 @@
   const auth = firebase.auth(),
         db   = firebase.database(),
         storage = firebase.storage(),
-        msgs = db.ref('messages');
+        // Limit the messages query to the last 50 messages to reduce download costs
+        msgs = db.ref('messages').orderByChild('time').limitToLast(50);
 
   const actionCodeSettings = {
     url: window.location.origin + '/?mode=verifyEmail',
@@ -1099,7 +1100,11 @@
 
       try {
           // Fetch all posts for the user once
-          const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+          // Limit the number of posts loaded per user to the last 50 to reduce download costs
+          const snapshot = await db.ref(`users/${uid}/posts`)
+            .orderByChild('createdAt')
+            .limitToLast(50)
+            .once('value');
           const posts = [];
           snapshot.forEach(childSnap => {
               posts.push({
