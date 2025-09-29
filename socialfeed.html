@@ -468,6 +468,28 @@
         .delete-comment-btn:hover {
             opacity: 1;
         }
+
+        /* NEW: Glowing effect for top 3 posts */
+        @keyframes gold-glow {
+            0% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.5); }
+            100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.3); }
+        }
+        @keyframes silver-glow {
+            0% { box-shadow: 0 0 5px rgba(192, 192, 192, 0.4), 0 0 10px rgba(192, 192, 192, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.6), 0 0 30px rgba(192, 192, 192, 0.5); }
+            100% { box-shadow: 0 0 5px rgba(192, 192, 192, 0.4), 0 0 10px rgba(192, 192, 192, 0.3); }
+        }
+        @keyframes bronze-glow {
+            0% { box-shadow: 0 0 5px rgba(205, 127, 50, 0.4), 0 0 10px rgba(205, 127, 50, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(205, 127, 50, 0.6), 0 0 30px rgba(205, 127, 50, 0.5); }
+            100% { box-shadow: 0 0 5px rgba(205, 127, 50, 0.4), 0 0 10px rgba(205, 127, 50, 0.3); }
+        }
+
+        .rank-1.post-card { animation: gold-glow 3s infinite; }
+        .rank-2.post-card { animation: silver-glow 3s infinite; }
+        .rank-3.post-card { animation: bronze-glow 3s infinite; }
+
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -481,6 +503,9 @@
             <button class="tab-btn px-4 py-2" data-tab="all">All</button>
             <button class="tab-btn active px-4 py-2 flex items-center gap-2" data-tab="trending">
                 <i class="fas fa-fire"></i> Trending
+            </button>
+            <button class="tab-btn px-4 py-2 flex items-center gap-2" data-tab="all-time-best">
+                <i class="fas fa-trophy"></i> All-Time Best
             </button>
             <button class="tab-btn px-4 py-2" data-tab="youtube">YouTube</button>
             <button class="tab-btn px-4 py-2" data-tab="tiktok">TikTok</button>
@@ -1376,7 +1401,7 @@
         }
         
         // NEW: Special tile for trending posts
-        function createTrendingPostTile(post, ownerUid, rank) {
+        function createTrendingPostTile(post, ownerUid, rank, titleText = 'Trending Clip') {
             const user = userProfiles[ownerUid] || {};
             
             // Top Emojis
@@ -1420,6 +1445,8 @@
 
             const rankColors = { 1: 'border-yellow-400', 2: 'border-gray-400', 3: 'border-amber-600', 4: 'border-gray-600', 5: 'border-gray-700' };
             const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-amber-600', 4: 'text-gray-500', 5: 'text-gray-600' };
+            const rankGlowClasses = { 1: 'rank-1', 2: 'rank-2', 3: 'rank-3' };
+            const glowClass = rankGlowClasses[rank] || '';
 
             let mediaHtml = '';
             if (post.type === 'youtube' && post.ytId) {
@@ -1432,7 +1459,7 @@
             }
 
             return `
-                <div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank] || 'border-transparent'} bg-gray-800/20 flex flex-col md:flex-row gap-6">
+                <div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank] || 'border-transparent'} bg-gray-800/20 flex flex-col md:flex-row gap-6 ${glowClass}">
                     <div class="md:w-1/2 flex flex-col">
                         <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
                             <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-12 h-12 rounded-full object-cover">
@@ -1447,7 +1474,7 @@
                     <div class="md:w-1/2 flex flex-col gap-4">
                         <div class="flex items-center gap-3">
                             <div class="text-5xl font-bold ${rankTextColors[rank] || 'text-gray-700'}">#${rank}</div>
-                            <h3 class="text-xl font-bold text-white">Trending Clip</h3>
+                            <h3 class="text-xl font-bold text-white">${titleText}</h3>
                         </div>
                         <div>
                             <h4 class="font-semibold text-gray-200 mb-2">Top Reactions</h4>
@@ -1472,14 +1499,16 @@
         function renderPosts(reset=true){
             searchContainer.classList.toggle('hidden', currentTab !== 'all');
 
-            if (currentTab === 'trending') {
-                const filtered = filterPosts(allPosts, 'trending').slice(0, 5);
+            if (currentTab === 'trending' || currentTab === 'all-time-best') {
+                const isTrending = currentTab === 'trending';
+                const titleText = isTrending ? 'Trending Clip' : 'All-Time Best';
+                const filtered = filterPosts(allPosts, currentTab).slice(0, 5);
                 postsContainer.className = 'grid grid-cols-1 gap-6 md:gap-8'; // Override grid class for list view
                 if (filtered.length === 0) {
-                    postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">Nothing is trending right now.</div>`;
+                    postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">${isTrending ? 'Nothing is trending right now.' : 'No posts to rank yet.'}</div>`;
                     return;
                 }
-                const html = filtered.map((post, index) => createTrendingPostTile(post, post.createdBy, index + 1)).join('');
+                const html = filtered.map((post, index) => createTrendingPostTile(post, post.createdBy, index + 1, titleText)).join('');
                 postsContainer.innerHTML = html;
                 if (sentinel) sentinel.remove();
                 if (io) io.disconnect();
@@ -1556,6 +1585,12 @@
                     const score = totalReactions / Math.pow(ageInHours + 2, gravity);
                     return { ...post, score };
                 }).sort((a, b) => b.score - a.score);
+            } else if (tab === 'all-time-best') {
+                finalPosts = visiblePosts.sort((a, b) => {
+                    const scoreA = getReactionCount(a) + (a.comments ? Object.keys(a.comments).length : 0);
+                    const scoreB = getReactionCount(b) + (b.comments ? Object.keys(b.comments).length : 0);
+                    return scoreB - scoreA;
+                });
             } else if (tab === 'all') {
                 const searchTerm = searchInput.value.toLowerCase();
                 let filtered = visiblePosts;
@@ -1579,7 +1614,7 @@
                 finalPosts = visiblePosts.filter(post => post.type === 'youtube');
             } else if (tab === 'tiktok') {
                 finalPosts = visiblePosts.filter(post => post.type === 'tiktok');
-            } else if (tab === 'saved') { // NEW: Saved tab filter
+            } else if (tab === 'saved') {
                 const u = (firebase.auth().currentUser||{}).uid;
                 if (!u) return [];
                 const saved = (currentUserProfile && currentUserProfile.saved) ? Object.keys(currentUserProfile.saved) : [];
@@ -1639,7 +1674,7 @@
             ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else if (ph.dataset.tt){
             const id = ph.dataset.tt;
-            ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${id}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${id}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           }
         }, true);
         
@@ -2177,4 +2212,3 @@
     </script>
 </body>
 </html>
-
