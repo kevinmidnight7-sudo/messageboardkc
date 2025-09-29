@@ -479,6 +479,10 @@
         <!-- Social Media Tabs -->
         <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 text-lg md:text-xl font-medium border-b border-gray-600">
             <button class="tab-btn active px-4 py-2" data-tab="popular">Popular</button>
+            <!-- NEW TRENDING TAB -->
+            <button class="tab-btn px-4 py-2 flex items-center gap-2" data-tab="trending">
+                <i class="fas fa-fire"></i> Trending
+            </button>
             <button class="tab-btn px-4 py-2" data-tab="youtube">YouTube</button>
             <button class="tab-btn px-4 py-2" data-tab="tiktok">TikTok</button>
             <!-- NEW: Saved Posts Tab -->
@@ -1119,24 +1123,6 @@
             });
             body.appendChild(repliesUl);
 
-            // Reply composer
-            const row = document.createElement('div');
-            row.className = 'mt-2 flex gap-2';
-            row.innerHTML = '<input class="flex-1 p-2 rounded-lg border border-gray-300 replyText" placeholder="Reply..."><button class="px-3 py-1 rounded-lg bg-gray-800 text-white text-sm replySend">Send</button>';
-            row.querySelector('.replySend').onclick = ()=>{
-              const uu = firebase.auth().currentUser;
-              if (!uu) return showMessageBox('Please log in to reply.');
-              if (postsDisabled) return showMessageBox('Posting is currently disabled.');
-              const text = row.querySelector('.replyText').value.trim();
-              if (!text) return;
-              if (!canDo('comment:'+uu.uid)) return showMessageBox('Please wait a moment before commenting again.');
-              if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
-              firebase.database().ref(`${openPostCtx.postPath}/comments/${cid}/replies`).push({
-                uid: uu.uid, text, time: firebase.database.ServerValue.TIMESTAMP
-              });
-              row.querySelector('.replyText').value = '';
-            };
-
             li.appendChild(avatar);
             li.appendChild(body);
             poComments.appendChild(li);
@@ -1255,19 +1241,19 @@
                 return;
             }
             if (selectedPostType === 'youtube') {
-                 const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
-                 if (!ytIdMatch) {
-                     uploadStatus.textContent = 'Invalid YouTube URL.';
-                     uploadStatus.classList.remove('hidden');
-                     return;
-                 }
-                 postData = {
-                     type: 'youtube',
-                     ytId: ytIdMatch[1],
-                     caption: caption,
-                     createdAt: firebase.database.ServerValue.TIMESTAMP,
-                     createdBy: targetUid
-                 };
+                const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+                if (!ytIdMatch) {
+                    uploadStatus.textContent = 'Invalid YouTube URL.';
+                    uploadStatus.classList.remove('hidden');
+                    return;
+                }
+                postData = {
+                    type: 'youtube',
+                    ytId: ytIdMatch[1],
+                    caption: caption,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP,
+                    createdBy: targetUid
+                };
             } else if (selectedPostType === 'tiktok') {
                 const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
                 if (!ttIdMatch) {
@@ -1358,107 +1344,228 @@
             const captionContent = formatCaption(post.caption || '');
 
             return `
-              <div class="post-tile post-card p-4 rounded-2xl" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" ${postCardStyle}>
-                  <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
-                      <div class="relative w-12 h-12 rounded-full overflow-hidden" style="${avatarRingStyle}">
-                          <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-full h-full object-cover" loading="lazy">
-                      </div>
-                      <div class="flex flex-col">
-                          <span class="font-bold text-lg" ${usernameStyle}>${user.displayName || 'Anonymous User'}</span>
-                          <span class="text-sm text-gray-500">${timestamp}</span>
-                      </div>
-                  </div>
-                  ${deleteButton}
-                  ${mediaHtml}
-                  <div class="post-footer mt-4 flex flex-col gap-2">
-                      <div class="post-caption text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${captionContent}</div>
-                      <div class="flex justify-between items-center">
-                          <button class="open-post-indicator">
-                              <i class="fas fa-eye"></i>
-                              <span>Open</span>
-                          </button>
-                          <button class="px-3 py-1 rounded-lg bg-gray-700/60 text-white text-xs save-btn" data-owner="${ownerUid}" data-post="${post.postId}">${isSaved ? 'Unsave' : 'Save'}</button>
-                      </div>
-                  </div>
-              </div>
+                <div class="post-tile post-card p-4 rounded-2xl" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" ${postCardStyle}>
+                    <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
+                        <div class="relative w-12 h-12 rounded-full overflow-hidden" style="${avatarRingStyle}">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="font-bold text-lg" ${usernameStyle}>${user.displayName || 'Anonymous User'}</span>
+                            <span class="text-sm text-gray-500">${timestamp}</span>
+                        </div>
+                    </div>
+                    ${deleteButton}
+                    ${mediaHtml}
+                    <div class="post-footer mt-4 flex flex-col gap-2">
+                        <div class="post-caption text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${captionContent}</div>
+                        <div class="flex justify-between items-center">
+                            <button class="open-post-indicator">
+                                <i class="fas fa-eye"></i>
+                                <span>Open</span>
+                            </button>
+                            <button class="px-3 py-1 rounded-lg bg-gray-700/60 text-white text-xs save-btn" data-owner="${ownerUid}" data-post="${post.postId}">${isSaved ? 'Unsave' : 'Save'}</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // NEW: Special tile for trending posts
+        function createTrendingPostTile(post, ownerUid, rank) {
+            const user = userProfiles[ownerUid] || {};
+            
+            // Top Emojis
+            let topEmojisHtml = '<div class="text-gray-400">No reactions yet.</div>';
+            if (post.reactions) {
+                const sortedEmojis = Object.entries(post.reactions)
+                    .map(([emoji, reactors]) => ({ emoji, count: Object.keys(reactors).length }))
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 3);
+                
+                if (sortedEmojis.length > 0) {
+                    topEmojisHtml = sortedEmojis.map(item => `
+                        <div class="flex items-center gap-2 bg-gray-700/50 px-3 py-1 rounded-full">
+                            <span class="text-xl">${item.emoji}</span>
+                            <span class="font-bold text-white">${item.count}</span>
+                        </div>
+                    `).join('');
+                }
+            }
+
+            // Latest Comment
+            let topCommentHtml = '<div class="text-gray-400">No comments yet.</div>';
+            if (post.comments) {
+                const sortedComments = Object.values(post.comments)
+                    .sort((a, b) => (b.time || 0) - (a.time || 0));
+                
+                if (sortedComments.length > 0) {
+                    const topComment = sortedComments[0];
+                    const commenter = userProfiles[topComment.uid] || {};
+                    topCommentHtml = `
+                        <div class="bg-gray-700/50 p-3 rounded-lg">
+                            <div class="flex items-center gap-2 mb-2">
+                                <img src="${commenter.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-6 h-6 rounded-full object-cover">
+                                <span class="font-semibold text-sm text-white">${commenter.displayName || 'Anonymous'}</span>
+                            </div>
+                            <p class="text-gray-300 text-sm">${escapeHtml(topComment.text || '')}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            const rankColors = { 1: 'border-yellow-400', 2: 'border-gray-400', 3: 'border-yellow-700' };
+            const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-yellow-700' };
+
+            let mediaHtml = '';
+            if (post.type === 'youtube' && post.ytId) {
+                const thumb = `https://i.ytimg.com/vi/${post.ytId}/hqdefault.jpg`;
+                mediaHtml = `<div class="embed-placeholder aspect-video" data-yt="${post.ytId}"><img src="${thumb}" alt="YouTube preview"/><div class="embed-play">▶</div></div>`;
+            } else if (post.type === 'tiktok' && post.videoId) {
+                mediaHtml = `<div class="embed-placeholder aspect-video" data-tt="${post.videoId}"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/tiktok_placeholder.png" alt="TikTok preview"/><div class="embed-play">▶</div></div>`;
+            } else {
+                mediaHtml = `<div class="post-media rounded-xl bg-gray-800 text-center text-gray-400 flex items-center justify-center">No Media</div>`;
+            }
+
+            return `
+                <div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank]} bg-gray-800/20 flex flex-col md:flex-row gap-6">
+                    <div class="md:w-1/2 flex flex-col">
+                        <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-12 h-12 rounded-full object-cover">
+                            <div>
+                                <span class="font-bold text-lg text-white">${user.displayName || 'Anonymous User'}</span>
+                                <span class="block text-sm text-gray-400">${new Date(post.createdAt).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                        ${mediaHtml}
+                        <div class="post-caption text-sm text-gray-300 mt-3">${formatCaption(post.caption || '')}</div>
+                    </div>
+                    <div class="md:w-1/2 flex flex-col gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-5xl font-bold ${rankTextColors[rank]}">#${rank}</div>
+                            <h3 class="text-xl font-bold text-white">Trending Clip</h3>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-200 mb-2">Top Reactions</h4>
+                            <div class="flex flex-wrap gap-2">${topEmojisHtml}</div>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-200 mb-2">Latest Comment</h4>
+                            ${topCommentHtml}
+                        </div>
+                        <div class="mt-auto flex justify-end">
+                            <button class="open-post-indicator" onclick="openPostDetails('${ownerUid}', '${post.postId}')">
+                                <i class="fas fa-eye mr-2"></i>
+                                <span>View Full Post</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             `;
         }
 
-        // NEW: Replaced with paged renderer
+        // NEW: Replaced with paged/trending renderer
         function renderPosts(reset=true){
-          const filtered = filterPosts(allPosts, currentTab);
-          if (reset){
-            postsContainer.innerHTML = '';
-            renderIndex = 0;
-          }
-          const slice = filtered.slice(renderIndex, renderIndex + RENDER_PAGE);
-          const html = slice.map(post => createPostTile(post, post.createdBy)).join('');
-          postsContainer.insertAdjacentHTML('beforeend', html);
-          renderIndex += slice.length;
+            if (currentTab === 'trending') {
+                const filtered = filterPosts(allPosts, 'trending').slice(0, 3);
+                postsContainer.className = 'grid grid-cols-1 gap-6 md:gap-8'; // Override grid class for list view
+                if (filtered.length === 0) {
+                    postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">Nothing is trending right now.</div>`;
+                    return;
+                }
+                const html = filtered.map((post, index) => createTrendingPostTile(post, post.createdBy, index + 1)).join('');
+                postsContainer.innerHTML = html;
+                if (sentinel) sentinel.remove();
+                if (io) io.disconnect();
+                return;
+            }
 
-          // keep DOM light: cap at ~60 nodes
-          const tiles = postsContainer.querySelectorAll('.post-tile');
-          if (tiles.length > 60){
-            for (let i=0;i<tiles.length-60;i++) tiles[i].remove();
-          }
+            // Reset grid class for other tabs
+            postsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8';
 
-          // sentinel for more
-          if (sentinel) sentinel.remove();
-          sentinel = document.createElement('div');
-          sentinel.id = 'feed-sentinel';
-          sentinel.className = 'py-4 text-center text-gray-500';
-          sentinel.textContent = (renderIndex < filtered.length) ? 'Loading more…' : '— End —';
-          postsContainer.appendChild(sentinel);
+            const filtered = filterPosts(allPosts, currentTab);
+            if (reset){
+                postsContainer.innerHTML = '';
+                renderIndex = 0;
+            }
+            const slice = filtered.slice(renderIndex, renderIndex + RENDER_PAGE);
+            const html = slice.map(post => createPostTile(post, post.createdBy)).join('');
+            postsContainer.insertAdjacentHTML('beforeend', html);
+            renderIndex += slice.length;
 
-          if (io) io.disconnect();
-          if (renderIndex < filtered.length){
-            io = new IntersectionObserver((entries)=>{
-              if (entries[0].isIntersecting){
-                io.disconnect();
-                renderPosts(false);
-              }
-            }, {rootMargin: '400px'});
-            io.observe(sentinel);
-          }
+            const tiles = postsContainer.querySelectorAll('.post-tile');
+            if (tiles.length > 60){
+                for (let i=0;i<tiles.length-60;i++) tiles[i].remove();
+            }
+
+            if (sentinel) sentinel.remove();
+            sentinel = document.createElement('div');
+            sentinel.id = 'feed-sentinel';
+            sentinel.className = 'py-4 text-center text-gray-500 col-span-full';
+            sentinel.textContent = (renderIndex < filtered.length) ? 'Loading more…' : '— End —';
+            postsContainer.appendChild(sentinel);
+
+            if (io) io.disconnect();
+            if (renderIndex < filtered.length){
+                io = new IntersectionObserver((entries)=>{
+                    if (entries[0].isIntersecting){
+                        io.disconnect();
+                        renderPosts(false);
+                    }
+                }, {rootMargin: '400px'});
+                io.observe(sentinel);
+            }
         }
         
+        function getReactionCount(post) {
+            if (!post || !post.reactions) return 0;
+            return Object.values(post.reactions).reduce((sum, reactors) => {
+                if (typeof reactors === 'object' && reactors !== null) {
+                    return sum + Object.keys(reactors).length;
+                }
+                return sum;
+            }, 0);
+        }
+
         function filterPosts(posts, tab) {
-            // NEW: Shadowban filter
             const now = Date.now();
             const filteredByVisibility = posts.filter(post => {
-              const visibleAt = post.publishAt || post.createdAt;
-              return !post.draft && (!visibleAt || visibleAt <= now);
+                const visibleAt = post.publishAt || post.createdAt;
+                return !post.draft && (!visibleAt || visibleAt <= now);
             });
 
-            // NEW: Shadowban filter logic
             const visiblePosts = filteredByVisibility.filter(post => {
-              const shadowed = !!userProfiles[post.createdBy]?.shadowbanned;
-              const isMe = currentUserUid && post.createdBy === currentUserUid;
-              return !shadowed || isMe;
+                const shadowed = !!userProfiles[post.createdBy]?.shadowbanned;
+                const isMe = currentUserUid && post.createdBy === currentUserUid;
+                return !shadowed || isMe;
             });
             
             let finalPosts = visiblePosts;
 
-            if (tab === 'popular') {
+            if (tab === 'trending') {
+                 finalPosts = visiblePosts.map(post => {
+                    const totalReactions = getReactionCount(post);
+                    const ageInHours = (Date.now() - post.createdAt) / 3600000;
+                    const gravity = 1.8;
+                    const score = totalReactions / Math.pow(ageInHours + 2, gravity);
+                    return { ...post, score };
+                }).sort((a, b) => b.score - a.score);
+            } else if (tab === 'popular') {
                 finalPosts = visiblePosts.sort((a, b) => {
-                    const aReactions = b.reactions ? Object.values(b.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
-                    const bReactions = a.reactions ? Object.values(a.reactions).reduce((sum, current) => sum + Object.keys(current).length, 0) : 0;
-                    const aComments = b.comments ? Object.keys(b.comments).length : 0;
-                    const bComments = a.comments ? Object.keys(a.comments).length : 0;
-                    return (aReactions + aComments) - (bReactions + bComments);
+                    const scoreA = getReactionCount(a) + (a.comments ? Object.keys(a.comments).length : 0);
+                    const scoreB = getReactionCount(b) + (b.comments ? Object.keys(b.comments).length : 0);
+                    return scoreB - scoreA;
                 });
             } else if (tab === 'youtube') {
                 finalPosts = visiblePosts.filter(post => post.type === 'youtube');
             } else if (tab === 'tiktok') {
                 finalPosts = visiblePosts.filter(post => post.type === 'tiktok');
             } else if (tab === 'saved') { // NEW: Saved tab filter
-              const u = (firebase.auth().currentUser||{}).uid;
-              if (!u) return [];
-              const saved = (currentUserProfile && currentUserProfile.saved) ? Object.keys(currentUserProfile.saved) : [];
-              finalPosts = visiblePosts.filter(p => saved.includes(`${p.createdBy}__${p.postId}`));
+                const u = (firebase.auth().currentUser||{}).uid;
+                if (!u) return [];
+                const saved = (currentUserProfile && currentUserProfile.saved) ? Object.keys(currentUserProfile.saved) : [];
+                finalPosts = visiblePosts.filter(p => saved.includes(`${p.createdBy}__${p.postId}`));
             }
 
-            // NEW: Hashtag filter
             if (activeTag){
               finalPosts = finalPosts.filter(p=> (p.caption||'').toLowerCase().includes('#'+activeTag));
             }
@@ -1471,7 +1578,6 @@
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 currentTab = button.dataset.tab;
-                // NEW: Reset infinite scroll on tab change
                 renderPosts(true);
             });
         });
@@ -1486,8 +1592,8 @@
           if (e.target.closest('.open-post-indicator')) {
             openPostDetails(ownerUid, postId);
           } else if (e.target.closest('.user-details')) {
-             // NEW: Open profile card on clicking user details
-             loadUserProfile(ownerUid);
+              // NEW: Open profile card on clicking user details
+              loadUserProfile(ownerUid);
           } else {
             // REMOVED: For poll votes
           }
@@ -1757,33 +1863,6 @@
             }
         }
         
-        // NEW: The old renderPosts is replaced by the new paged one, but we keep the call here.
-        // renderPosts() is now defined after this block.
-        
-        // OLD CODE, NOT USED.
-        // function renderPosts() {
-        //     const filteredPosts = filterPosts(allPosts, currentTab);
-            
-        //     if (filteredPosts.length === 0) {
-        //         postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">No posts found for this category.</div>`;
-        //         return;
-        //     }
-            
-        //     postsContainer.innerHTML = filteredPosts.map(post => createPostTile(post, post.createdBy)).join('');
-        // }
-        // The new paged `renderPosts` function is defined below
-
-        // OLD CODE, NOT USED.
-        // tabButtons.forEach(button => {
-        //     button.addEventListener('click', () => {
-        //         tabButtons.forEach(btn => btn.classList.remove('active'));
-        //         button.classList.add('active');
-        //         currentTab = button.dataset.tab;
-        //         renderPosts();
-        //     });
-        // });
-
-
         // --- USER POPUP LOGIC (from old file) ---
         let allProfilePosts = [];
         let postPageIndex = 0;
@@ -1800,8 +1879,8 @@
             const end = start + postsPerPage;
             const postsToDisplay = allProfilePosts.slice(start, end);
             postsToDisplay.forEach(post => {
-                 let mediaHtml = '';
-                if (post.type === 'image' && post.storagePath) {
+                let mediaHtml = '';
+               if (post.type === 'image' && post.storagePath) {
                     firebase.storage().ref(post.storagePath).getDownloadURL().then(url => {
                         postsContainerEl.querySelector(`[data-post-id="${post.postId}"] .post-media`).src = url;
                     });
