@@ -478,16 +478,20 @@
 
         <!-- Social Media Tabs -->
         <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 text-lg md:text-xl font-medium border-b border-gray-600">
-            <button class="tab-btn active px-4 py-2" data-tab="popular">Popular</button>
-            <!-- NEW TRENDING TAB -->
-            <button class="tab-btn px-4 py-2 flex items-center gap-2" data-tab="trending">
+            <button class="tab-btn px-4 py-2" data-tab="all">All</button>
+            <button class="tab-btn active px-4 py-2 flex items-center gap-2" data-tab="trending">
                 <i class="fas fa-fire"></i> Trending
             </button>
             <button class="tab-btn px-4 py-2" data-tab="youtube">YouTube</button>
             <button class="tab-btn px-4 py-2" data-tab="tiktok">TikTok</button>
-            <!-- NEW: Saved Posts Tab -->
             <button class="tab-btn px-4 py-2" data-tab="saved">Saved</button>
         </div>
+
+        <!-- NEW: Search Bar Container -->
+        <div id="searchContainer" class="max-w-md mx-auto mb-6 hidden">
+             <input type="search" id="searchInput" placeholder="Search by user or description..." class="w-full p-3 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+
 
         <!-- Posts Container -->
         <div id="postsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
@@ -719,7 +723,7 @@
         let currentUserUid = null;
         let currentUserProfile = null;
         let allPosts = [];
-        let currentTab = 'popular';
+        let currentTab = 'trending';
         let userProfiles = {}; // Cache user profiles
         let profileOwnerUid = null; // Used for the user popup
 
@@ -738,6 +742,8 @@
         const userPopup = document.getElementById('userPopup');
         const closeUserPopup = document.getElementById('closeUserPopup');
         const mainHeader = document.getElementById('mainHeader');
+        const searchContainer = document.getElementById('searchContainer');
+        const searchInput = document.getElementById('searchInput');
         
         // Post Creator Popup elements
         const postCreatorPopup = document.getElementById('postCreatorPopup');
@@ -748,7 +754,6 @@
         const postTypeSelection = document.getElementById('postTypeSelection');
         const youtubeBtn = document.getElementById('youtubeBtn');
         const tiktokBtn = document.getElementById('tiktokBtn');
-        // REMOVED: Poll button and fields
         const draftToggle = document.getElementById('draftToggle');
         const scheduleAt = document.getElementById('scheduleAt');
         let selectedPostType = null;
@@ -1413,8 +1418,8 @@
                 }
             }
 
-            const rankColors = { 1: 'border-yellow-400', 2: 'border-gray-400', 3: 'border-yellow-700' };
-            const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-yellow-700' };
+            const rankColors = { 1: 'border-yellow-400', 2: 'border-gray-400', 3: 'border-amber-600', 4: 'border-gray-600', 5: 'border-gray-700' };
+            const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-amber-600', 4: 'text-gray-500', 5: 'text-gray-600' };
 
             let mediaHtml = '';
             if (post.type === 'youtube' && post.ytId) {
@@ -1427,7 +1432,7 @@
             }
 
             return `
-                <div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank]} bg-gray-800/20 flex flex-col md:flex-row gap-6">
+                <div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank] || 'border-transparent'} bg-gray-800/20 flex flex-col md:flex-row gap-6">
                     <div class="md:w-1/2 flex flex-col">
                         <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
                             <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-12 h-12 rounded-full object-cover">
@@ -1441,7 +1446,7 @@
                     </div>
                     <div class="md:w-1/2 flex flex-col gap-4">
                         <div class="flex items-center gap-3">
-                            <div class="text-5xl font-bold ${rankTextColors[rank]}">#${rank}</div>
+                            <div class="text-5xl font-bold ${rankTextColors[rank] || 'text-gray-700'}">#${rank}</div>
                             <h3 class="text-xl font-bold text-white">Trending Clip</h3>
                         </div>
                         <div>
@@ -1465,8 +1470,10 @@
 
         // NEW: Replaced with paged/trending renderer
         function renderPosts(reset=true){
+            searchContainer.classList.toggle('hidden', currentTab !== 'all');
+
             if (currentTab === 'trending') {
-                const filtered = filterPosts(allPosts, 'trending').slice(0, 3);
+                const filtered = filterPosts(allPosts, 'trending').slice(0, 5);
                 postsContainer.className = 'grid grid-cols-1 gap-6 md:gap-8'; // Override grid class for list view
                 if (filtered.length === 0) {
                     postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">Nothing is trending right now.</div>`;
@@ -1544,17 +1551,30 @@
             if (tab === 'trending') {
                  finalPosts = visiblePosts.map(post => {
                     const totalReactions = getReactionCount(post);
-                    const ageInHours = (Date.now() - post.createdAt) / 3600000;
+                    const ageInHours = (Date.now() - (post.createdAt || 0)) / 3600000;
                     const gravity = 1.8;
                     const score = totalReactions / Math.pow(ageInHours + 2, gravity);
                     return { ...post, score };
                 }).sort((a, b) => b.score - a.score);
-            } else if (tab === 'popular') {
-                finalPosts = visiblePosts.sort((a, b) => {
+            } else if (tab === 'all') {
+                const searchTerm = searchInput.value.toLowerCase();
+                let filtered = visiblePosts;
+
+                if (searchTerm) {
+                    filtered = visiblePosts.filter(post => {
+                        const user = userProfiles[post.createdBy] || {};
+                        const usernameMatch = (user.displayName || '').toLowerCase().includes(searchTerm);
+                        const captionMatch = (post.caption || '').toLowerCase().includes(searchTerm);
+                        return usernameMatch || captionMatch;
+                    });
+                }
+                
+                finalPosts = filtered.sort((a, b) => {
                     const scoreA = getReactionCount(a) + (a.comments ? Object.keys(a.comments).length : 0);
                     const scoreB = getReactionCount(b) + (b.comments ? Object.keys(b.comments).length : 0);
                     return scoreB - scoreA;
                 });
+
             } else if (tab === 'youtube') {
                 finalPosts = visiblePosts.filter(post => post.type === 'youtube');
             } else if (tab === 'tiktok') {
@@ -1578,24 +1598,34 @@
                 tabButtons.forEach(btn => btn.classList.remove('active'));
                 button.classList.add('active');
                 currentTab = button.dataset.tab;
+                if (currentTab !== 'all') {
+                    searchInput.value = '';
+                }
                 renderPosts(true);
             });
+        });
+        
+        searchInput.addEventListener('input', () => {
+            if (currentTab === 'all') {
+                renderPosts(true);
+            }
         });
 
         // Event delegation for opening the post popup and interacting with its content
         postsContainer.addEventListener('click', (e)=>{
-          const tile = e.target.closest('.post-tile');
+          const tile = e.target.closest('.post-tile, .post-card');
           if (!tile) return;
-          const ownerUid = tile.dataset.ownerUid;
-          const postId = tile.dataset.postId;
-          // MODIFIED: Only open post details if the user clicks the open button or the footer
+
+          // For trending tiles, the details are in the parent .post-card
+          const ownerUid = tile.dataset.ownerUid || tile.querySelector('[data-uid]')?.dataset.uid;
+          const postId = tile.dataset.postId || tile.querySelector('[data-post-id]')?.dataset.postId;
+          
+          if (!ownerUid || !postId) return;
+
           if (e.target.closest('.open-post-indicator')) {
             openPostDetails(ownerUid, postId);
           } else if (e.target.closest('.user-details')) {
-              // NEW: Open profile card on clicking user details
               loadUserProfile(ownerUid);
-          } else {
-            // REMOVED: For poll votes
           }
         });
 
@@ -1631,9 +1661,9 @@
           const t = e.target.closest('.tag-link'); if (!t) return;
           e.preventDefault();
           activeTag = (t.dataset.tag||'').toLowerCase();
-          currentTab = 'popular';
+          currentTab = 'all';
           document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-          document.querySelector('.tab-btn[data-tab="popular"]').classList.add('active');
+          document.querySelector('.tab-btn[data-tab="all"]').classList.add('active');
           renderPosts(true);
         });
 
@@ -1856,7 +1886,7 @@
                 }
                 
                 allPosts = combinedPosts.sort((a, b) => b.createdAt - a.createdAt);
-                renderPosts();
+                renderPosts(true);
             } catch (error) {
                 console.error("Failed to fetch all data:", error);
                 postsContainer.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Failed to load posts.</div>`;
@@ -2147,3 +2177,4 @@
     </script>
 </body>
 </html>
+
