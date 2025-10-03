@@ -1389,11 +1389,17 @@
                     <div class="post-footer mt-4 flex flex-col gap-2">
                         <div class="post-caption text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${captionContent}</div>
                         <div class="flex justify-between items-center">
-                            <button class="open-post-indicator">
+                            <div class="flex items-center gap-2 text-gray-400 text-sm">
                                 <i class="fas fa-eye"></i>
-                                <span>Open</span>
-                            </button>
-                            <button class="px-3 py-1 rounded-lg bg-gray-700/60 text-white text-xs save-btn" data-owner="${ownerUid}" data-post="${post.postId}">${isSaved ? 'Unsave' : 'Save'}</button>
+                                <span>${(post.views || 0).toLocaleString()} Views</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="open-post-indicator">
+                                    <i class="fas fa-folder-open"></i>
+                                    <span>Open</span>
+                                </button>
+                                <button class="px-3 py-1 rounded-lg bg-gray-700/60 text-white text-xs save-btn" data-owner="${ownerUid}" data-post="${post.postId}">${isSaved ? 'Unsave' : 'Save'}</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1447,6 +1453,7 @@
             const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-amber-600', 4: 'text-gray-500', 5: 'text-gray-600' };
             const rankGlowClasses = { 1: 'rank-1', 2: 'rank-2', 3: 'rank-3' };
             const glowClass = rankGlowClasses[rank] || '';
+            const viewCount = post.views || 0;
 
             let mediaHtml = '';
             if (post.type === 'youtube' && post.ytId) {
@@ -1484,9 +1491,13 @@
                             <h4 class="font-semibold text-gray-200 mb-2">Latest Comment</h4>
                             ${topCommentHtml}
                         </div>
-                        <div class="mt-auto flex justify-end">
+                        <div class="mt-auto flex justify-between items-center">
+                            <div class="flex items-center gap-2 text-gray-400 text-sm">
+                                <i class="fas fa-eye"></i>
+                                <span>${viewCount.toLocaleString()} Views</span>
+                            </div>
                             <button class="open-post-indicator" onclick="openPostDetails('${ownerUid}', '${post.postId}')">
-                                <i class="fas fa-eye mr-2"></i>
+                                <i class="fas fa-folder-open mr-2"></i>
                                 <span>View Full Post</span>
                             </button>
                         </div>
@@ -1772,6 +1783,12 @@
         // F) Implement openPostDetails() and loaders
         async function openPostDetails(ownerUid, postId){
           const postPath = `users/${ownerUid}/posts/${postId}`;
+
+          // NEW: Increment view count
+          firebase.database().ref(postPath).child('views').transaction(currentViews => {
+            return (currentViews || 0) + 1;
+          }).catch(err => console.error("View count transaction failed:", err));
+
           openPostCtx = { ownerUid, postId, postPath };
 
           // Snapshot post
