@@ -344,6 +344,7 @@
             font-weight: bold;
             cursor: pointer;
             opacity: 0.8;
+            z-index: 10;
         }
         .delete-post-btn:hover {
             opacity: 1;
@@ -489,6 +490,55 @@
         .rank-1.post-card { animation: gold-glow 3s infinite; }
         .rank-2.post-card { animation: silver-glow 3s infinite; }
         .rank-3.post-card { animation: bronze-glow 3s infinite; }
+        
+        /* === START: STYLES FOR NEW FEATURES === */
+        /* Rank Indicator Badges on "All" tab */
+        .rank-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem; /* 6px */
+            padding: 0.25rem 0.6rem; /* 4px 10px */
+            border-radius: 9999px;
+            font-size: 0.75rem; /* 12px */
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .rank-badge.fire-theme {
+            background: rgba(239, 68, 68, 0.7); /* red-500 with transparency */
+        }
+
+        .rank-badge.trophy-theme {
+            background: rgba(250, 204, 21, 0.7); /* yellow-400 with transparency */
+        }
+
+        /* Themes for Trending/ATB cards on "All" tab */
+        @keyframes trending-glow {
+            0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3), 0 0 8px rgba(249, 115, 22, 0.2); }
+            50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.5), 0 0 24px rgba(249, 115, 22, 0.4); }
+            100% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3), 0 0 8px rgba(249, 115, 22, 0.2); }
+        }
+
+        @keyframes atb-glow {
+            0% { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4), 0 0 8px rgba(234, 179, 8, 0.3); }
+            50% { box-shadow: 0 0 16px rgba(250, 204, 21, 0.6), 0 0 24px rgba(234, 179, 8, 0.5); }
+            100% { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4), 0 0 8px rgba(234, 179, 8, 0.3); }
+        }
+
+        .post-card.trending-card {
+            border-color: rgba(239, 68, 68, 0.5);
+            animation: trending-glow 3s infinite;
+        }
+
+        .post-card.atb-card {
+            border-color: rgba(250, 204, 21, 0.6);
+            animation: atb-glow 3s infinite;
+        }
+        /* === END: STYLES FOR NEW FEATURES === */
 
     </style>
 </head>
@@ -751,6 +801,9 @@
         let currentTab = 'trending';
         let userProfiles = {}; // Cache user profiles
         let profileOwnerUid = null; // Used for the user popup
+        // NEW: Global maps for trending/ATB ranks
+        let trendingRankMap = {};
+        let atbRankMap = {};
 
         // Badge icon map to render badges correctly.
         const badgeIconMap = {
@@ -1343,6 +1396,55 @@
             const usernameStyle = `style="color:${nameColor}"`;
             const avatarRingStyle = `box-shadow:0 0 0 2px ${ringColor}`;
 
+            // NEW: Calculate reaction counts
+            let fireReactions = 0;
+            let thumbsDownReactions = 0;
+            if (post.reactions) {
+                for (const [emoji, reactors] of Object.entries(post.reactions)) {
+                    const count = Object.keys(reactors).length;
+                    if (emoji === '👎') {
+                        thumbsDownReactions += count;
+                    } else {
+                        fireReactions += count;
+                    }
+                }
+            }
+
+            // NEW: Check for ranks and build indicator HTML and card classes
+            let indicatorHtml = '';
+            const trendingRank = trendingRankMap[post.postId];
+            const atbRank = atbRankMap[post.postId];
+            let cardClasses = "post-tile post-card p-4 rounded-2xl relative";
+
+            if (trendingRank) {
+                cardClasses += " trending-card";
+            }
+            if (atbRank) {
+                cardClasses += " atb-card";
+            }
+
+            if (trendingRank || atbRank) {
+                let badges = '';
+                if (trendingRank) {
+                    badges += `
+                        <div class="rank-badge fire-theme">
+                            <i class="fas fa-fire"></i>
+                            <span>#${trendingRank}</span>
+                        </div>
+                    `;
+                }
+                if (atbRank) {
+                    badges += `
+                        <div class="rank-badge trophy-theme">
+                            <i class="fas fa-trophy"></i>
+                            <span>#${atbRank}</span>
+                        </div>
+                    `;
+                }
+                indicatorHtml = `<div class="absolute top-3 right-3 flex flex-col items-end gap-2 z-10">${badges}</div>`;
+            }
+
+
             let mediaHtml = '';
             // NEW: Lazy-load YouTube/TikTok embeds
             if (post.type === 'image' && post.url) {
@@ -1374,7 +1476,8 @@
             const captionContent = formatCaption(post.caption || '');
 
             return `
-                <div class="post-tile post-card p-4 rounded-2xl" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" ${postCardStyle}>
+                <div class="${cardClasses}" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" ${postCardStyle}>
+                    ${indicatorHtml}
                     <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
                         <div class="relative w-12 h-12 rounded-full overflow-hidden" style="${avatarRingStyle}">
                             <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-full h-full object-cover" loading="lazy">
@@ -1389,9 +1492,19 @@
                     <div class="post-footer mt-4 flex flex-col gap-2">
                         <div class="post-caption text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${captionContent}</div>
                         <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-2 text-gray-400 text-sm">
-                                <i class="fas fa-eye"></i>
-                                <span>${(post.views || 0).toLocaleString()} Views</span>
+                            <div class="flex items-center gap-4 text-gray-400 text-sm">
+                                <div class="flex items-center gap-1.5" title="Views">
+                                    <i class="fas fa-eye"></i>
+                                    <span>${(post.views || 0).toLocaleString()}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-orange-400" title="Reactions">
+                                    <i class="fas fa-fire"></i>
+                                    <span>${fireReactions.toLocaleString()}</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-blue-400" title="Thumbs Down">
+                                    <i class="fas fa-thumbs-down"></i>
+                                    <span>${thumbsDownReactions.toLocaleString()}</span>
+                                </div>
                             </div>
                             <div class="flex items-center gap-2">
                                 <button class="open-post-indicator">
@@ -1938,6 +2051,20 @@
                 }
                 
                 allPosts = combinedPosts.sort((a, b) => b.createdAt - a.createdAt);
+
+                // NEW: Pre-calculate ranks before rendering
+                const trendingPosts = filterPosts(allPosts, 'trending').slice(0, 5);
+                trendingRankMap = {};
+                trendingPosts.forEach((p, index) => {
+                    trendingRankMap[p.postId] = index + 1;
+                });
+
+                const atbPosts = filterPosts(allPosts, 'all-time-best').slice(0, 5);
+                atbRankMap = {};
+                atbPosts.forEach((p, index) => {
+                    atbRankMap[p.postId] = index + 1;
+                });
+                
                 renderPosts(true);
             } catch (error) {
                 console.error("Failed to fetch all data:", error);
