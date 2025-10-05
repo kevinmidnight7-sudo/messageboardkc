@@ -30,33 +30,6 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
             border-radius: 1.5rem;
         }
-        /* New styling to handle the custom gradient border */
-        .diamond-border {
-            position: relative;
-            z-index: 1;
-        }
-        .diamond-border::before {
-            content: '';
-            position: absolute;
-            top: -3px;
-            left: -3px;
-            right: -3px;
-            bottom: -3px;
-            border-radius: 9999px; /* For full circle */
-            border: 3px solid transparent;
-            /* Use a CSS variable for the custom gradient */
-            background: var(--gradient, linear-gradient(45deg, #a4c5ff, #717dff)) border-box;
-            -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
-            z-index: -1;
-        }
-        .diamond-text {
-            background-image: linear-gradient(45deg, #A4C5FF, #717DFF);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
         .tab-btn.active {
             color: #717dff;
             font-weight: 700;
@@ -76,287 +49,12 @@
         .post-card:hover {
             transform: translateY(-5px) scale(1.01);
         }
-        .profile-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 9999px;
-            object-fit: cover;
-            /* Default white border for all users */
-            border: 2px solid #ffffff;
-            position: relative;
-        }
-        /* Class to remove border when a gradient border is applied to the parent */
-        .profile-avatar-no-border {
-            border-color: transparent !important;
-        }
         .post-media {
             width: 100%;
             height: auto;
             border-radius: 1.5rem;
             object-fit: cover;
-            aspect-ratio: 16/9; /* Maintain aspect ratio for videos */
-        }
-        .post-comment-btn,
-        .post-like-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
-        /* Mobile adjustments */
-        @media (max-width: 640px) {
-            .grid-cols-3 {
-                grid-template-columns: repeat(1, minmax(0, 1fr));
-            }
-        }
-        /* User Popup Styles */
-        #userPopup {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            font-family: 'Poppins', sans-serif;
-            animation: fadeInBg 0.3s ease;
-            overflow-y: auto;
-        }
-        @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
-
-        .user-popup-card {
-            width: 360px;
-            max-width: 95vw;
-            border-radius: 1.5rem;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            animation: zoomIn 0.3s cubic-bezier(0.25, 1, 0.5, 1);
-            position: relative;
-            background: #f1f3f5;
-        }
-        @media (min-width: 768px) {
-            .user-popup-card.two-column {
-                width: 720px;
-                display: flex;
-            }
-        }
-        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .popup-banner {
-            height: 120px;
-            background-color: #ced4da;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border-radius: 1.5rem 1.5rem 0 0;
-            position: relative;
-        }
-        @media (min-width: 768px) {
-            .user-popup-card.two-column .popup-banner {
-                border-radius: 1.5rem 0 0 0;
-            }
-        }
-        .popup-header {
-            padding: 0 16px;
-            position: relative;
-            height: 48px;
-        }
-        .popup-info-column {
-            flex: 1;
-        }
-        .popup-posts-column {
-            flex: 1;
-            padding: 12px 16px 16px;
-            overflow-y: auto;
-            border-left: 1.5px solid rgba(0, 0, 0, 0.1);
-        }
-        .popup-avatar {
-            width: 96px;
-            height: 96px;
-            border-radius: 50%;
-            object-fit: cover;
-            position: absolute;
-            top: -48px;
-            left: 16px;
-            border: 6px solid #fff;
-            background-color: #f1f3f5;
-            z-index: 10;
-        }
-        .popup-body {
-            padding: 12px 16px 16px;
-            margin-top: 48px;
-        }
-        .popup-username {
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-align: left;
-            margin-bottom: 16px;
-        }
-        .popup-section {
-            background: rgba(255,255,255,0.5);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 12px;
-        }
-        .popup-section:last-child {
-            margin-bottom: 0;
-        }
-        .popup-section-title {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0 0 8px 0;
-            text-align: left;
-        }
-        .popup-about-me {
-            font-size: 0.95rem;
-            color: #374151;
-            line-height: 1.5;
-            word-break: break-word;
-            text-align: left;
-            white-space: pre-wrap;
-        }
-        .popup-badges {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .popup-badge {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 10px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: white;
-            background: #6b7280;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .popup-badge img, .popup-badge .emoji-icon {
-            width: 20px;
-            height: 20px;
-            font-size: 1.2rem;
-        }
-        .user-streak {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #fde047;
-        }
-        .popup-close-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(0,0,0,0.3);
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-            z-index: 15;
-        }
-        .popup-close-btn:hover {
-            background: rgba(0,0,0,0.5);
-        }
-        .add-post-btn {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(45deg, #a855f7, #6366f1);
-            color: white;
-            font-size: 2rem;
-            font-weight: 700;
-            border-radius: 9999px;
-            border: none;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .add-post-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
-        }
-        .social-media-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            padding: 12px 24px;
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: transform 0.2s, background-color 0.2s;
-            color: white;
-            width: 100%;
-        }
-        .social-media-btn:hover {
-            transform: translateY(-2px);
-        }
-        .social-media-btn svg {
-            width: 24px;
-            height: 24px;
-        }
-        .post-list {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .post-tile {
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 0.75rem;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .post-caption {
-            padding: 0.5rem;
-            font-size: 0.875rem;
-            color: #f1f3f5;
-        }
-        .post-timestamp {
-            font-size: 0.75rem;
-            color: #adb5bd;
-            text-align: right;
-            padding: 0 0.5rem 0.5rem 0.5rem;
-        }
-        .delete-post-btn {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: rgba(255, 0, 0, 0.6);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            cursor: pointer;
-            opacity: 0.8;
-            z-index: 10;
-        }
-        .delete-post-btn:hover {
-            opacity: 1;
-        }
-        .upload-error-message {
-            background-color: #f87171;
-            color: white;
-            padding: 0.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-align: center;
-            animation: fadeIn 0.3s ease;
+            aspect-ratio: 16/9;
         }
         .spinner {
             border: 4px solid rgba(255,255,255,0.1);
@@ -366,464 +64,453 @@
             height: 24px;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* === START OF NEW CSS UTILITIES === */
-        /* Skeleton loader */
-        .skeleton {
-          position: relative;
-          overflow: hidden;
-          background: rgba(255,255,255,0.08);
-        }
-        .skeleton::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          transform: translateX(-100%);
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent);
-          animation: shine 1.2s infinite;
-        }
+        .skeleton { position: relative; overflow: hidden; background: rgba(255,255,255,0.08); }
+        .skeleton::after { content: ''; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.15), transparent); animation: shine 1.2s infinite; }
         @keyframes shine { 100% { transform: translateX(100%); } }
         
-        /* Confetti (emoji pop) */
-        .confetti-piece {
-          position: fixed;
-          pointer-events: none;
-          font-size: 18px;
-          z-index: 11000;
-          animation: confetti-fall 900ms cubic-bezier(.07,.84,.19,1.01) forwards;
-        }
-        @keyframes confetti-fall {
-          0% { opacity: 0; transform: translate(0,0) scale(.8) rotate(0deg); }
-          50% { opacity: 1; }
-          100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(var(--rot)); }
-        }
-        
-        /* Reduced motion: tone down transforms */
-        @media (prefers-reduced-motion: reduce) {
-          .post-card:hover { transform: none !important; }
-          .add-post-btn:hover { transform: none !important; }
-          .confetti-piece { animation-duration: 0ms !important; }
-        }
-        
-        /* Tooltip for reactions */
-        .reactions-tooltip { position: fixed; background: rgba(0,0,0,.75); color:#fff; padding:8px 12px; border-radius:8px; z-index:11000; font-size:.875rem; pointer-events:none; transform: translate(-50%, -110%); white-space:pre-wrap; }
-        
-        /* Accessible focus */
-        .post-tile:focus { outline: 3px solid rgba(113,125,255,.6); outline-offset: 3px; }
-        
-        /* Lazy-embed placeholder */
         .embed-placeholder { position: relative; background:#0f172a; border-radius: 1rem; overflow: hidden; }
         .embed-placeholder img { width:100%; height:auto; display:block; }
-        .embed-play {
-          position:absolute; inset:auto 0 0 0; top:50%; left:50%; transform:translate(-50%,-50%);
-          width:72px; height:72px; border-radius:9999px; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; color:#fff; font-size:32px;
-          border:2px solid rgba(255,255,255,.4);
-        }
+        .embed-play { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:72px; height:72px; border-radius:9999px; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; color:#fff; font-size:32px; border:2px solid rgba(255,255,255,.4); }
         
-        /* Poll styling */
-        .poll-option { display:flex; align-items:center; gap:.5rem; padding:.5rem .75rem; border-radius:.75rem; border:1px solid rgba(255,255,255,.12); cursor:pointer; }
-        .poll-bar { height:8px; border-radius:9999px; background:rgba(255,255,255,.15); overflow:hidden; }
-        .poll-fill { height:100%; background:linear-gradient(90deg,#a855f7,#6366f1); }
+        .delete-post-btn { position: absolute; top: 1rem; right: 1rem; background: rgba(255, 0, 0, 0.6); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; opacity: 0.8; z-index: 10; }
+        .delete-post-btn:hover { opacity: 1; }
+        .delete-comment-btn { background: none; border: none; color: #f87171; cursor: pointer; font-size: 0.8rem; margin-left: auto; opacity: 0.7; transition: opacity 0.2s; }
+        .delete-comment-btn:hover { opacity: 1; }
         
-        /* Hashtag/mention */
-        .caption a.tag-link { color:#93c5fd; text-decoration: none; }
-        .caption a.mention-link { color:#fda4af; text-decoration: none; }
+        @keyframes trending-glow { 0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3), 0 0 8px rgba(249, 115, 22, 0.2); } 50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.5), 0 0 24px rgba(249, 115, 22, 0.4); } 100% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3), 0 0 8px rgba(249, 115, 22, 0.2); } }
+        @keyframes atb-glow { 0% { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4), 0 0 8px rgba(234, 179, 8, 0.3); } 50% { box-shadow: 0 0 16px rgba(250, 204, 21, 0.6), 0 0 24px rgba(234, 179, 8, 0.5); } 100% { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4), 0 0 8px rgba(234, 179, 8, 0.3); } }
+        .post-card.trending-card { border-color: rgba(239, 68, 68, 0.5); animation: trending-glow 3s infinite; }
+        .post-card.atb-card { border-color: rgba(250, 204, 21, 0.6); animation: atb-glow 3s infinite; }
+        .rank-badge { display: flex; align-items: center; gap: 0.35rem; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; color: white; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .rank-badge.fire-theme { background: rgba(239, 68, 68, 0.7); }
+        .rank-badge.trophy-theme { background: rgba(250, 204, 21, 0.7); }
         
-        /* Subtle pop on add */
-        @keyframes popIn { 0%{ transform:scale(.96); opacity:.0 } 100%{ transform:scale(1); opacity:1 } }
-        .post-card.pop { animation: popIn .22s ease-out; }
-        /* === END OF NEW CSS UTILITIES === */
+        #createMenu { position: absolute; top: 100%; right: 0; background: rgba(30, 41, 59, 0.9); backdrop-filter: blur(8px); border-radius: 0.75rem; padding: 0.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; }
+        .create-menu-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
+        .create-menu-item:hover { background: rgba(255, 255, 255, 0.1); }
+        .clip-selector-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem; border-radius: 0.75rem; background: rgba(255,255,255,0.05); cursor: pointer; }
+        .clip-selector-item.selected { background: rgba(99, 102, 241, 0.4); box-shadow: 0 0 0 2px #6366f1; }
+        .playlist-row { background: rgba(255, 255, 255, 0.05); border-radius: 1.5rem; padding: 1.5rem; display: flex; flex-direction: column; md:flex-direction: row; gap: 1.5rem; align-items: center; border: 1px solid rgba(255, 255, 255, 0.1); transition: background-color 0.2s, box-shadow 0.2s; }
+        .playlist-row-clickable { cursor: pointer; } .playlist-row-clickable:hover { background: rgba(255, 255, 255, 0.1); box-shadow: 0 0 15px rgba(113, 125, 255, 0.2); }
+        .playlist-info { flex-shrink: 0; width: 100%; md:width: 280px; }
+        .playlist-clips-scroll { flex-grow: 1; display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem; scrollbar-width: thin; scrollbar-color: #4f46e5 #1f2937; }
+        .playlist-clips-scroll::-webkit-scrollbar { height: 8px; }
+        .playlist-clips-scroll::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        .playlist-clips-scroll::-webkit-scrollbar-thumb { background-color: #4f46e5; border-radius: 4px; }
+        .playlist-clip-item { flex-shrink: 0; width: 160px; position: relative; }
+        .playlist-clip-item img { width: 100%; height: 90px; object-fit: cover; border-radius: 0.5rem; }
+        .playlist-clip-item .overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 0.5rem; border-radius: 0 0 0.5rem 0.5rem; }
+        #playlistViewerOverlay { display: none; position: fixed; inset: 0; z-index: 10020; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); padding: 1.5rem; }
+        .playlist-viewer-grid { display: grid; grid-template-columns: 1fr 320px; gap: 1.5rem; height: 100%; }
+        .playlist-queue { background: rgba(255,255,255,0.05); border-radius: 1rem; padding: 1rem; overflow-y: auto; }
+        .queue-item { display: flex; gap: 0.75rem; padding: 0.75rem; border-radius: 0.5rem; cursor: pointer; transition: background-color 0.2s; }
+        .queue-item:hover { background: rgba(255,255,255,0.1); }
+        .queue-item.active { background: rgba(99, 102, 241, 0.3); }
+        #topPlaylistsCarousel { scrollbar-width: none; }
+        #topPlaylistsCarousel::-webkit-scrollbar { display: none; }
+        .carousel-playlist-item { flex-shrink: 0; width: 250px; background: rgba(255, 255, 255, 0.08); border-radius: 1rem; padding: 1rem; cursor: pointer; transition: transform 0.2s; }
+        .carousel-playlist-item:hover { transform: translateY(-4px); }
+        .reactions-tooltip { position: fixed; background: rgba(0,0,0,.75); color:#fff; padding:8px 12px; border-radius:8px; z-index:11000; font-size:.875rem; pointer-events:none; transform: translate(-50%, -110%); white-space:pre-wrap; }
 
-        /* NEW CSS for "Open" button */
-        .open-post-indicator {
+        /* User Popup Styles */
+        #userPopup {
+            position: fixed;
+            inset: 0;
+            z-index: 10030;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .user-popup-card {
+            background: #1f2937; /* slate-800 */
+            color: white;
+            border-radius: 1.5rem;
+            width: 95vw;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            animation: zoomIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        .user-popup-card.two-column #popupContentWrapper {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+        }
+
+        #popupContentWrapper {
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        .popup-info-column {
+            overflow-y: auto;
+            background: #374151; /* gray-700 */
+        }
+
+        .popup-banner {
+            height: 160px;
+            background-color: #4b5563; /* gray-600 */
+            background-size: cover;
+            background-position: center;
+        }
+
+        .popup-header {
+            position: relative;
+            height: 60px;
+        }
+
+        .popup-avatar-wrapper {
+            position: absolute;
+            left: 1.5rem;
+            bottom: 0;
+            width: 120px;
+            height: 120px;
+        }
+
+        .popup-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 9999px;
+            border: 5px solid #1f2937; /* slate-800 */
+            object-fit: cover;
+            background-color: #4b5563; /* gray-600 */
+        }
+
+        .popup-body {
+            padding: 1.5rem;
+            padding-top: 70px; /* space for avatar */
+        }
+
+        .popup-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 9999px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            line-height: 1;
+            cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
-            padding: 6px 10px;
-            border-radius: 9999px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: background-color 0.2s ease;
-        }
-        .open-post-indicator:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-        /* NEW CSS for comment delete button */
-        .delete-comment-btn {
-            background: none;
-            border: none;
-            color: #f87171;
-            cursor: pointer;
-            font-size: 0.8rem;
-            margin-left: auto;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        .delete-comment-btn:hover {
-            opacity: 1;
         }
 
-        /* NEW: Glowing effect for top 3 posts */
-        @keyframes gold-glow {
-            0% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.5); }
-            100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.4), 0 0 10px rgba(255, 215, 0, 0.3); }
-        }
-        @keyframes silver-glow {
-            0% { box-shadow: 0 0 5px rgba(192, 192, 192, 0.4), 0 0 10px rgba(192, 192, 192, 0.3); }
-            50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.6), 0 0 30px rgba(192, 192, 192, 0.5); }
-            100% { box-shadow: 0 0 5px rgba(192, 192, 192, 0.4), 0 0 10px rgba(192, 192, 192, 0.3); }
-        }
-        @keyframes bronze-glow {
-            0% { box-shadow: 0 0 5px rgba(205, 127, 50, 0.4), 0 0 10px rgba(205, 127, 50, 0.3); }
-            50% { box-shadow: 0 0 20px rgba(205, 127, 50, 0.6), 0 0 30px rgba(205, 127, 50, 0.5); }
-            100% { box-shadow: 0 0 5px rgba(205, 127, 50, 0.4), 0 0 10px rgba(205, 127, 50, 0.3); }
-        }
-
-        .rank-1.post-card { animation: gold-glow 3s infinite; }
-        .rank-2.post-card { animation: silver-glow 3s infinite; }
-        .rank-3.post-card { animation: bronze-glow 3s infinite; }
-        
-        /* === START: STYLES FOR NEW FEATURES === */
-        /* Rank Indicator Badges on "All" tab */
-        .rank-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem; /* 6px */
-            padding: 0.25rem 0.6rem; /* 4px 10px */
-            border-radius: 9999px;
-            font-size: 0.75rem; /* 12px */
+        .popup-username {
+            font-size: 1.875rem; /* text-3xl */
             font-weight: 700;
-            color: white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 1rem;
         }
 
-        .rank-badge.fire-theme {
-            background: rgba(239, 68, 68, 0.7); /* red-500 with transparency */
+        .popup-section {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 1.5rem;
         }
 
-        .rank-badge.trophy-theme {
-            background: rgba(250, 204, 21, 0.7); /* yellow-400 with transparency */
+        .popup-section-title {
+            font-size: .75rem; 
+            font-weight: 700; 
+            letter-spacing: .05em;
+            color: #9ca3af; 
+            margin-bottom: .5rem; 
+            text-transform: uppercase;
         }
 
-        /* Themes for Trending/ATB cards on "All" tab */
-        @keyframes trending-glow {
-            0% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3), 0 0 8px rgba(249, 115, 22, 0.2); }
-            50% { box-shadow: 0 0 16px rgba(239, 68, 68, 0.5), 0 0 24px rgba(249, 115, 22, 0.4); }
-            100% { box-shadow: 0 0 4px rgba(239, 68, 68, 0.3), 0 0 8px rgba(249, 115, 22, 0.2); }
+        .popup-about-me {
+            font-size: 0.875rem; /* text-sm */
+            color: #d1d5db; /* gray-300 */
+            white-space: pre-wrap;
         }
 
-        @keyframes atb-glow {
-            0% { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4), 0 0 8px rgba(234, 179, 8, 0.3); }
-            50% { box-shadow: 0 0 16px rgba(250, 204, 21, 0.6), 0 0 24px rgba(234, 179, 8, 0.5); }
-            100% { box-shadow: 0 0 4px rgba(250, 204, 21, 0.4), 0 0 8px rgba(234, 179, 8, 0.3); }
+        #profBadges { display:flex; flex-wrap:wrap; gap:8px; }
+        #profBadges .popup-badge {
+          display:flex; align-items:center; gap:6px;
+          padding:4px 10px; border-radius:8px; font-weight:600; font-size:0.9rem;
+          color:#fff; background:#6b7280; transition:transform .2s, box-shadow .2s;
+        }
+        #profBadges .popup-badge img,
+        #profBadges .popup-badge .emoji-icon { width:20px; height:20px; font-size:1.2rem; }
+        
+        .user-streak {
+            background: rgba(250, 204, 21, 0.2);
+            color: #fde047; /* yellow-300 */
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            display: inline-block;
+            font-weight: 600;
         }
 
-        .post-card.trending-card {
-            border-color: rgba(239, 68, 68, 0.5);
-            animation: trending-glow 3s infinite;
+        .popup-posts-column {
+            overflow-y: auto;
+            border-left: 1px solid #4b5563; /* gray-600 */
         }
 
-        .post-card.atb-card {
-            border-color: rgba(250, 204, 21, 0.6);
-            animation: atb-glow 3s infinite;
+        .post-list {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
         }
-        /* === END: STYLES FOR NEW FEATURES === */
 
+        .post-tile {
+            background: #374151; /* gray-700 */
+            border-radius: 0.75rem;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .post-tile:hover {
+            transform: translateY(-4px);
+        }
+        .post-caption {
+            padding: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .post-timestamp {
+            padding: 0 0.75rem 0.75rem;
+            font-size: 0.75rem; /* text-xs */
+            color: #9ca3af; /* gray-400 */
+        }
+        /* Gradient ring helper copied from oldsocial */
+        .diamond-border {
+          position: relative;
+          z-index: 1;
+        }
+        .diamond-border::before {
+          content: '';
+          position: absolute;
+          top: -3px; left: -3px; right: -3px; bottom: -3px;
+          border-radius: 9999px;
+          border: 3px solid transparent;
+          background: var(--gradient, linear-gradient(45deg,#a4c5ff,#717dff)) border-box;
+          -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+          z-index: -1;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
-        <!-- Conditional Header/Post Button -->
-        <header id="mainHeader" class="text-center mb-8">
-        </header>
+        <header id="mainHeader" class="text-center mb-8"></header>
 
-        <!-- Social Media Tabs -->
         <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-8 text-lg md:text-xl font-medium border-b border-gray-600">
             <button class="tab-btn px-4 py-2" data-tab="all">All</button>
-            <button class="tab-btn active px-4 py-2 flex items-center gap-2" data-tab="trending">
-                <i class="fas fa-fire"></i> Trending
-            </button>
-            <button class="tab-btn px-4 py-2 flex items-center gap-2" data-tab="all-time-best">
-                <i class="fas fa-trophy"></i> All-Time Best
-            </button>
+            <button class="tab-btn px-4 py-2 flex items-center gap-2" data-tab="playlists"><i class="fas fa-list-music"></i> Playlists</button>
+            <button class="tab-btn active px-4 py-2 flex items-center gap-2" data-tab="trending"><i class="fas fa-fire"></i> Trending</button>
+            <button class="tab-btn px-4 py-2 flex items-center gap-2" data-tab="all-time-best"><i class="fas fa-trophy"></i> All-Time Best</button>
             <button class="tab-btn px-4 py-2" data-tab="youtube">YouTube</button>
             <button class="tab-btn px-4 py-2" data-tab="tiktok">TikTok</button>
             <button class="tab-btn px-4 py-2" data-tab="saved">Saved</button>
         </div>
 
-        <!-- NEW: Search Bar Container -->
         <div id="searchContainer" class="max-w-md mx-auto mb-6 hidden">
              <input type="search" id="searchInput" placeholder="Search by user or description..." class="w-full p-3 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
         </div>
 
+        <div id="topPlaylistsCarouselContainer" class="mb-8 hidden">
+            <h3 class="text-xl font-bold mb-4 text-center">Top Playlists</h3>
+            <div id="topPlaylistsCarousel" class="flex gap-4 pb-4 overflow-x-auto"></div>
+        </div>
 
-        <!-- Posts Container -->
-        <div id="postsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8">
-            <div class="col-span-full text-center text-gray-400 py-10">
-                Loading posts...
-                <div class="flex justify-center mt-4">
-                    <div class="spinner"></div>
-                </div>
+        <div id="postsContainer"></div>
+    </div>
+
+    <!-- All Popups and Overlays -->
+    <div id="postCreatorPopup" class="fixed inset-0 flex items-center justify-center z-[1000] bg-black/50 hidden">
+        <div class="glass p-6 rounded-3xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-3xl font-bold text-center mb-6">Create a new post</h2>
+            <div id="postTypeSelection" class="flex gap-4 mb-4">
+                <button id="youtubeBtn" class="flex-1 p-4 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition">YouTube</button>
+                <button id="tiktokBtn" class="flex-1 p-4 rounded-xl bg-black text-white font-bold hover:bg-gray-800 transition">TikTok</button>
+            </div>
+            <div id="urlInputContainer" class="w-full hidden">
+                <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-4 rounded-xl bg-white/10">
+                <textarea id="captionInput" placeholder="Add a caption..." maxlength="140" class="w-full mb-4 p-4 rounded-xl bg-white/10 resize-y"></textarea>
+                <button id="postButton" class="w-full p-4 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
+            </div>
+            <button id="closePostCreatorBtn" class="mt-4 p-2 w-full rounded-full bg-gray-600 hover:bg-gray-700 text-white font-semibold">Cancel</button>
+        </div>
+    </div>
+    
+    <div id="playlistCreatorPopup" class="fixed inset-0 flex items-center justify-center z-[1000] bg-black/50 hidden">
+        <div class="glass p-6 rounded-3xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+            <h2 class="text-3xl font-bold text-center mb-6">Create a Playlist</h2>
+            <input type="text" id="playlistNameInput" placeholder="Playlist Name..." class="w-full mb-4 p-4 rounded-xl bg-white/10">
+            <div id="clipSelector" class="flex-1 space-y-3 overflow-y-auto pr-2"></div>
+            <div class="mt-6 flex gap-4">
+                <button id="savePlaylistBtn" class="flex-1 p-4 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Save Playlist</button>
+                <button id="closePlaylistCreatorBtn" class="flex-1 p-4 rounded-full bg-gray-600 hover:bg-gray-700">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- POST CREATION POPUP -->
-    <div id="postCreatorPopup" class="fixed inset-0 flex items-center justify-center z-[1000] bg-black/50 hidden">
-        <!-- MODIFIED: Added max-h-[90vh] overflow-y-auto for mobile scrollability -->
-        <div class="glass p-6 rounded-3xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 class="text-3xl font-bold text-center mb-6">Create a new post</h2>
-            <div class="flex flex-col items-center">
-                <!-- NEW: Admin user selection dropdown -->
-                <div id="adminTargetUser" class="w-full mb-4 hidden">
-                    <label for="adminUserSelect" class="block text-gray-400 mb-2">Post on behalf of:</label>
-                    <select id="adminUserSelect" class="w-full p-4 rounded-xl bg-white/10 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
-                </div>
-
-                <div id="postTypeSelection" class="flex gap-4 mb-4">
-                    <button id="youtubeBtn" class="social-media-btn bg-red-600 hover:bg-red-700">
-                        <i class="fab fa-youtube"></i>
-                        <span>YouTube</span>
-                    </button>
-                    <button id="tiktokBtn" class="social-media-btn bg-black hover:bg-gray-800">
-                        <i class="fab fa-tiktok"></i>
-                        <span>TikTok</span>
-                    </button>
-                    <!-- REMOVED: Poll Post Button -->
-                </div>
-                <div id="urlInputContainer" class="w-full hidden">
-                    <input type="text" id="urlInput" placeholder="Paste URL here..." class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <textarea id="captionInput" placeholder="Add a caption (140 characters max)" maxlength="140" class="w-full mb-4 p-4 rounded-xl bg-white/10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"></textarea>
-                    
-                    <!-- NEW: Draft & Schedule Fields -->
-                    <div class="w-full mt-2 grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                        <label class="flex items-center gap-2 text-sm"><input id="draftToggle" type="checkbox" class="form-checkbox"> Save as draft</label>
-                        <label class="flex items-center gap-2 text-sm">Schedule: <input id="scheduleAt" type="datetime-local" class="p-2 rounded bg-white/10 text-white"></label>
+    <div id="postOverlay" class="fixed inset-0 z-[10020] hidden">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="postOverlayBg"></div>
+      <div class="relative mx-auto my-6 w-[95vw] max-w-3xl rounded-2xl bg-slate-800 text-white max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div id="poMedia" class="w-full bg-black rounded-t-2xl aspect-video"></div>
+        <div class="p-4 space-y-3">
+             <div class="flex justify-between items-start">
+                <div class="flex items-center gap-3">
+                    <img id="poAvatar" class="w-10 h-10 rounded-full object-cover cursor-pointer">
+                    <div>
+                        <div id="poUsername" class="font-semibold cursor-pointer"></div>
+                        <div id="poTimestamp" class="text-xs text-gray-400"></div>
                     </div>
-
-                    <!-- REMOVED: Poll Fields -->
-                    <div id="pollFields" class="w-full hidden">
-                      <input id="pollQuestion" class="w-full mb-3 p-3 rounded-xl bg-white/10 text-white" placeholder="Poll question">
-                      <div id="pollOptions" class="space-y-2">
-                        <input class="pollOpt w-full p-3 rounded-xl bg-white/10 text-white" placeholder="Option 1">
-                        <input class="pollOpt w-full p-3 rounded-xl bg-white/10 text-white" placeholder="Option 2">
-                      </div>
-                      <button id="addPollOption" class="mt-2 px-3 py-1 rounded bg-gray-700 text-white text-sm">Add option</button>
-                    </div>
-
-                    <button id="postButton" class="w-full p-4 rounded-xl bg-blue-500 text-white font-bold hover:bg-blue-600 transition">Post</button>
-                    <div id="uploadStatus" class="mt-2 text-sm text-center text-gray-400 hidden"></div>
                 </div>
-                <button id="closePostCreatorBtn" class="mt-4 p-2 w-1/2 rounded-full bg-gray-600 hover:bg-gray-700 text-white font-semibold">Cancel</button>
+                <button id="postOverlayClose" class="w-8 h-8 rounded-full bg-white/10">✕</button>
+            </div>
+            <div><div class="font-semibold">Description:</div><div id="poCaptionText" class="whitespace-pre-wrap break-words text-gray-300"></div></div>
+            <div id="poReactions" class="flex flex-wrap items-center gap-2"></div>
+            <div class="border-t border-gray-700 pt-3">
+                <div class="font-semibold mb-2">Comments</div>
+                <ul id="poComments" class="space-y-3"></ul>
+                <div class="mt-3 flex gap-2">
+                    <input id="poCommentInput" class="flex-1 p-2 rounded-lg border bg-gray-700 border-gray-600 text-white" placeholder="Write a comment...">
+                    <button id="poCommentSend" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Send</button>
+                </div>
             </div>
         </div>
+      </div>
     </div>
     
     <!-- USER PROFILE POPUP -->
     <div id="userPopup">
-        <div class="user-popup-card" id="userPopupCard">
-            <div id="popupContentWrapper" class="flex flex-col md:flex-row">
-                <div id="popupInfoColumn" class="popup-info-column">
-                    <div class="popup-banner" id="popupBanner"></div>
-                    <div class="popup-header">
-                        <img id="popupAvatar" src="" class="popup-avatar">
-                        <button id="closeUserPopup" class="popup-close-btn">&times;</button>
-                    </div>
-                    <div class="popup-body">
-                        <div id="popupUserName" class="popup-username"></div>
-                        <div class="popup-section">
-                            <h4 class="popup-section-title">ABOUT ME</h4>
-                            <div id="popupAboutMe" class="popup-about-me"></div>
-                        </div>
-                        <div class="popup-section">
-                            <h4 class="popup-section-title">BADGES</h4>
-                            <div id="popupBadges" class="popup-badges"></div>
-                        </div>
-                        <div class="popup-section">
-                            <h4 class="popup-section-title">STREAK</h4>
-                            <div id="popupStreak" class="user-streak"></div>
-                        </div>
-                    </div>
-                </div>
-                <div id="popupPostsColumn" class="popup-posts-column">
-                    <!-- Posts content will be inserted here -->
-                </div>
+      <div class="user-popup-card" id="userPopupCard">
+        <div id="popupContentWrapper" class="flex flex-col md:flex-row">
+          <div id="popupInfoColumn" class="popup-info-column">
+            <div class="popup-banner" id="popupBanner"></div>
+            <div class="popup-header">
+              <div id="profAvatarRing" class="popup-avatar-wrapper">
+                  <img id="popupAvatar" src="" class="popup-avatar">
+              </div>
+              <button id="closeUserPopup" class="popup-close-btn">&times;</button>
             </div>
-        </div>
-    </div>
-
-    <!-- Message Box / Alert Modal -->
-    <div id="messageBox" class="fixed inset-0 z-[10040] hidden flex items-center justify-center">
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
-        <div class="relative w-full max-w-sm rounded-xl bg-white p-6 text-center text-gray-900 shadow-2xl">
-            <div id="messageBoxText" class="mb-4"></div>
-            <div class="flex justify-center gap-2">
-                <button id="messageBoxOk" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">OK</button>
-                <button id="messageBoxCancel" class="px-4 py-2 rounded-lg bg-gray-200 font-semibold hidden">Cancel</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- === POST DETAILS OVERLAY === -->
-    <div id="postOverlay" class="fixed inset-0 z-[10020] hidden">
-      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="postOverlayBg"></div>
-      <!-- MODIFIED: Added max-h-[90vh] overflow-y-auto for mobile scrollability -->
-      <div class="relative mx-auto my-6 w-[95vw] max-w-3xl rounded-2xl bg-white text-gray-900 max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div class="flex justify-between items-center px-4 py-3 border-b">
-          <div class="flex items-center gap-3">
-            <img id="poAvatar" class="w-10 h-10 rounded-full object-cover" alt="avatar">
-            <div class="leading-tight">
-              <div id="poUsername" class="font-semibold"></div>
-              <div id="poTimestamp" class="text-xs text-gray-500"></div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2">
-            <!-- MODIFIED: Share button now copies a fixed URL -->
-            <button id="poShareBtn" class="px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold">Share</button>
-            <!-- REMOVED: Report button has been deleted -->
-            <button id="poEditBtn" class="hidden px-3 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-semibold">Edit</button>
-            <button id="poDeleteBtn" class="hidden px-3 py-1 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-semibold">Delete</button>
-            <button id="postOverlayClose" class="w-9 h-9 rounded-full bg-gray-900/80 text-white">✕</button>
-          </div>
-        </div>
-
-        <div id="poMedia" class="w-full bg-black"></div>
-
-        <div class="px-4 py-3 space-y-3">
-          <div class="flex items-start gap-3">
-            <div class="font-semibold mt-1">Description:</div>
-            <div class="flex-1">
-              <div id="poCaptionText" class="whitespace-pre-wrap break-words"></div>
-              <div id="poCaptionEdit" class="hidden">
-                <textarea id="poCaptionInput" rows="3" class="w-full p-2 rounded-lg border border-gray-300"></textarea>
-                <div class="mt-2 flex gap-2">
-                  <button id="poSaveCaption" class="px-3 py-1 rounded-lg bg-blue-600 text-white">Save</button>
-                  <button id="poCancelCaption" class="px-3 py-1 rounded-lg bg-gray-200">Cancel</button>
-                </div>
+            <div class="popup-body">
+              <div id="popupUserName" class="popup-username"></div>
+              <div class="popup-section">
+                <h4 class="popup-section-title">ABOUT ME</h4>
+                <div id="popupAboutMe" class="popup-about-me"></div>
+              </div>
+              <div class="popup-section">
+                <h4 class="popup-section-title">BADGES</h4>
+                <div id="profBadges" class="popup-badges"></div>
+              </div>
+              <div class="popup-section">
+                <h4 class="popup-section-title">STREAK</h4>
+                <div id="popupStreak" class="user-streak"></div>
               </div>
             </div>
           </div>
-
-          <!-- Reactions row -->
-          <div id="poReactions" class="flex flex-wrap items-center gap-2"></div>
-
-          <!-- Comments -->
-          <div class="border-t pt-3">
-            <div class="font-semibold mb-2">Comments</div>
-            <ul id="poComments" class="space-y-3"></ul>
-
-            <!-- New comment composer -->
-            <div class="mt-3 flex gap-2">
-              <input id="poCommentInput" class="flex-1 p-2 rounded-lg border border-gray-300" placeholder="Write a comment...">
-              <button id="poCommentSend" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Send</button>
-            </div>
-          </div>
+          <div id="popupPostsColumn" class="popup-posts-column"><!-- Posts injected here --></div>
         </div>
       </div>
     </div>
 
-    <!-- === ADMIN FLOATING BUTTON + PANEL === -->
+    <div id="playlistViewerOverlay">
+        <div class="playlist-viewer-grid">
+            <div id="playlistPlayerContainer" class="bg-gray-900/50 rounded-2xl flex flex-col overflow-hidden">
+                <div id="pvMedia" class="w-full bg-black aspect-video"></div>
+                <div class="p-4 space-y-3 overflow-y-auto text-white flex-1">
+                    <div class="flex items-center gap-3"><img id="pvAvatar" class="w-10 h-10 rounded-full object-cover cursor-pointer"><div><div id="pvUsername" class="font-semibold cursor-pointer"></div><div id="pvTimestamp" class="text-xs text-gray-400"></div></div></div>
+                    <div><div class="font-semibold">Description:</div><div id="pvCaptionText" class="whitespace-pre-wrap break-words text-gray-300"></div></div>
+                     <div id="pvReactions" class="flex flex-wrap items-center gap-2"></div>
+                    <div class="border-t border-gray-700 pt-3">
+                        <div class="font-semibold mb-2">Comments</div>
+                        <ul id="pvComments" class="space-y-3"></ul>
+                        <div class="mt-3 flex gap-2">
+                            <input id="pvCommentInput" class="flex-1 p-2 rounded-lg border bg-gray-800 border-gray-600 text-white" placeholder="Write a comment...">
+                            <button id="pvCommentSend" class="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="playlist-queue flex flex-col">
+                <div class="flex justify-between items-center mb-4 text-white">
+                     <h3 class="text-lg font-bold">Up Next</h3>
+                     <button id="playlistViewerClose" class="w-8 h-8 rounded-full bg-white/10">✕</button>
+                </div>
+                <div id="playlistQueueList" class="space-y-2 flex-1 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reaction Tooltip -->
+    <div class="reactions-tooltip hidden"></div>
+
+    <!-- ADMIN FLOATING BUTTON + PANEL -->
     <button id="adminBtn" title="Admin" class="fixed bottom-6 left-6 z-[10010] rounded-full shadow-lg">
       <img src="https://raw.githubusercontent.com/kevinmidnight7-sudo/messageboardkc/main/Admin.png" alt="Admin" class="w-12 h-12"/>
     </button>
-
     <div id="adminPanel" class="fixed inset-0 z-[10030] hidden">
       <div class="absolute inset-0 bg-black/60" id="adminBg"></div>
-      <div class="relative mx-auto my-8 max-w-md w-[92vw] rounded-2xl bg-white text-gray-900 p-5 shadow-2xl">
+      <div class="relative mx-auto my-8 max-w-md w-[92vw] rounded-2xl bg-slate-800 text-white p-5 shadow-2xl">
         <div class="flex justify-between items-center mb-3">
           <div class="text-lg font-bold">Admin Controls</div>
-          <button id="adminClose" class="w-9 h-9 rounded-full bg-gray-900/80 text-white">✕</button>
+          <button id="adminClose" class="w-9 h-9 rounded-full bg-white/10">✕</button>
         </div>
-
         <div id="adminLogin">
           <label class="text-sm">Password</label>
-          <input id="adminPass" type="password" class="mt-1 w-full p-2 rounded-lg border border-gray-300" placeholder="Enter password"/>
-          <button id="adminLoginBtn" class="mt-3 w-full px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold">Login</button>
-          <div id="adminErr" class="hidden mt-2 text-sm text-red-600">Incorrect password.</div>
+          <input id="adminPass" type="password" class="mt-1 w-full p-2 rounded-lg border bg-gray-700 border-gray-600" placeholder="Enter password"/>
+          <button id="adminLoginBtn" class="mt-3 w-full px-4 py-2 rounded-lg bg-blue-600 font-semibold">Login</button>
+          <div id="adminErr" class="hidden mt-2 text-sm text-red-500">Incorrect password.</div>
         </div>
-
         <div id="adminControls" class="hidden space-y-3">
-          <div class="p-3 rounded-lg bg-gray-100 flex items-center justify-between">
+          <div class="p-3 rounded-lg bg-slate-700 flex items-center justify-between">
             <div>
               <div class="font-semibold">New Posts</div>
-              <div id="adminPostsState" class="text-sm text-gray-600">Loading...</div>
+              <div id="adminPostsState" class="text-sm text-gray-400">Loading...</div>
             </div>
             <div class="flex gap-2">
-              <button id="adminStopPosts" class="px-3 py-1 rounded-lg bg-red-600 text-white">Stop</button>
-              <button id="adminResumePosts" class="px-3 py-1 rounded-lg bg-green-600 text-white">Resume</button>
+              <button id="adminStopPosts" class="px-3 py-1 rounded-lg bg-red-600">Stop</button>
+              <button id="adminResumePosts" class="px-3 py-1 rounded-lg bg-green-600">Resume</button>
             </div>
           </div>
-          <button id="adminCreatePostBtn" class="w-full px-4 py-2 rounded-lg bg-green-600 text-white font-semibold">Create Post for User</button>
-          <div class="text-sm text-gray-600">While logged in, delete buttons are enabled on all posts.</div>
-          <button id="adminLogout" class="w-full px-4 py-2 rounded-lg bg-gray-800 text-white">Log out</button>
+          <div class="text-sm text-gray-400">While logged in, delete buttons are enabled on all posts.</div>
+          <button id="adminLogout" class="w-full px-4 py-2 rounded-lg bg-slate-600">Log out</button>
         </div>
       </div>
     </div>
 
-    <!-- NEW: Mini Profile Popup -->
-    <div id="miniProfile" class="fixed z-[10005] hidden rounded-xl bg-white text-gray-900 shadow-xl p-3 w-64"></div>
-    <!-- NEW: Reaction Tooltip -->
-    <div class="reactions-tooltip hidden"></div>
 
-    
     <script>
-        // Firebase setup from provided HTMLs
-        const firebaseConfig = {
-            apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-            authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-            databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "kckillerscompany-ab1ec",
-            storageBucket: "kckillerscompany-ab1ec.appspot.com",
-            messagingSenderId: "198711213988",
-            appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-            measurementId: "G-4LKP2M3JXE"
-        };
+        // --- START OF SCRIPT ---
+        const firebaseConfig = { apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo", authDomain: "kckillerscompany-ab1ec.firebaseapp.com", databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app", projectId: "kckillerscompany-ab1ec", storageBucket: "kckillerscompany-ab1ec.appspot.com", messagingSenderId: "198711213988", appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
-        const storage = firebase.storage();
 
-        // Global variables for user data and posts
-        let currentUserUid = null;
-        let currentUserProfile = null;
-        let allPosts = [];
-        let currentTab = 'trending';
-        let userProfiles = {}; // Cache user profiles
-        let profileOwnerUid = null; // Used for the user popup
-        // NEW: Global maps for trending/ATB ranks
-        let trendingRankMap = {};
-        let atbRankMap = {};
-
-        // Badge icon map to render badges correctly.
-        const badgeIconMap = {
-            offence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',
-            defence: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',
-            overall: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png',
-            verified: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png',
-            diamond: 'https://kevinmidnight7-sudo.github.io/messageboardkc/diamond2.png',
-            emerald: 'https://cdn.discordapp.com/emojis/1381097372930543776.webp?size=128',
-        };
+        // Global State
+        let currentUserUid = null, currentUserProfile = null, allPosts = [], allPlaylists = [], currentTab = 'trending', userProfiles = {}, trendingRankMap = {}, atbRankMap = {}, openPlaylistCtx = null, openPostCtx = null;
+        let adminMode = false;
+        const postsDisabledRef = firebase.database().ref('config/postsDisabled');
         
+        // Element Refs
         const postsContainer = document.getElementById('postsContainer');
         const tabButtons = document.querySelectorAll('.tab-btn');
-        const userPopup = document.getElementById('userPopup');
-        const closeUserPopup = document.getElementById('closeUserPopup');
         const mainHeader = document.getElementById('mainHeader');
         const searchContainer = document.getElementById('searchContainer');
         const searchInput = document.getElementById('searchInput');
-        
-        // Post Creator Popup elements
         const postCreatorPopup = document.getElementById('postCreatorPopup');
         const closePostCreatorBtn = document.getElementById('closePostCreatorBtn');
         const postButton = document.getElementById('postButton');
@@ -832,180 +519,27 @@
         const postTypeSelection = document.getElementById('postTypeSelection');
         const youtubeBtn = document.getElementById('youtubeBtn');
         const tiktokBtn = document.getElementById('tiktokBtn');
-        const draftToggle = document.getElementById('draftToggle');
-        const scheduleAt = document.getElementById('scheduleAt');
-        let selectedPostType = null;
         const urlInputContainer = document.getElementById('urlInputContainer');
-        const uploadStatus = document.getElementById('uploadStatus');
-
-        // NEW: Admin Post Creation Elements
-        const adminCreatePostBtn = document.getElementById('adminCreatePostBtn');
-        const adminTargetUser = document.getElementById('adminTargetUser');
-        const adminUserSelect = document.getElementById('adminUserSelect');
-        let isCreatingAdminPost = false;
-        
-        // Message Box elements
-        const messageBox = document.getElementById('messageBox');
-        const messageBoxText = document.getElementById('messageBoxText');
-        const messageBoxOk = document.getElementById('messageBoxOk');
-        const messageBoxCancel = document.getElementById('messageBoxCancel');
-
-        // Reusable message box function
-        function showMessageBox(text, isConfirm = false) {
-          return new Promise((resolve) => {
-            messageBoxText.textContent = text;
-            messageBoxCancel.classList.toggle('hidden', !isConfirm);
-            messageBox.classList.remove('hidden');
-
-            const onOk = () => {
-              messageBox.classList.add('hidden');
-              messageBoxOk.removeEventListener('click', onOk);
-              messageBoxCancel.removeEventListener('click', onCancel);
-              resolve(true);
-            };
-
-            const onCancel = () => {
-              messageBox.classList.add('hidden');
-              messageBoxOk.removeEventListener('click', onOk);
-              messageBoxCancel.removeEventListener('click', onCancel);
-              resolve(false);
-            };
-
-            messageBoxOk.addEventListener('click', onOk);
-            messageBoxCancel.addEventListener('click', onCancel);
-          });
-        }
-        
-        // D) Wire-up Code (additions from fix pack)
-        // ==== GLOBALS FOR POSTS/ADMIN/PROFANITY ====
-        let adminMode = false;
-        let badWords = [];
-        const postsDisabledRef = firebase.database().ref('config/postsDisabled');
-        // NEW: Globals for infinite scroll
-        let RENDER_PAGE = 12;      // items per chunk
-        let renderIndex = 0;       // how many already rendered
-        let io = null;             // IntersectionObserver
-        let sentinel = null;       // sentinel element
-        // NEW: Global for caption formatting
-        let activeTag = null;
-        // NEW: Global for mentions
-        const nameToUid = {};
-
-
-        function containsBadWord(s=''){
-          try {
-            const lower = (s||'').toLowerCase();
-            return badWords.some(w => new RegExp('\\b'+w+'\\b','i').test(lower));
-          } catch(_) { return false; }
-        }
-        
-        // NEW: Caption formatting helpers
-        function escapeHtml(s=''){ return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-        function formatCaption(raw=''){
-          const safe = escapeHtml(raw);
-          let out = safe
-            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
-            .replace(/`(.+?)`/g, '<code class="px-1 rounded bg-black/30">$1</code>');
-          // links
-          out = out.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" class="underline decoration-dotted">$1</a>');
-          // hashtags
-          out = out.replace(/(^|\s)#([a-zA-Z0-9_]{2,24})/g, '$1<a class="tag-link" data-tag="$2">#$2</a>');
-          // mentions
-          out = out.replace(/(^|\s)@([\w\.\-\[\]]{2,24})/g, '$1<a class="mention-link" data-name="$2">@$2</a>');
-          return out;
-        }
-
-        // NEW: Rate limiting helpers
-        const RATE = { post: 20_000, comment: 6_000 }; // ms
-        function canDo(key){ const now=Date.now(); const t=+localStorage.getItem(key)||0; if (now-t<RATE[key.split(':')[0]]) return false; localStorage.setItem(key, now); return true; }
-
-        // NEW: Confetti helper
-        function confettiBurst(x, y){
-          const EMOJIS = ['✨','🎉','💥','🔥','⭐','💫'];
-          for (let i=0;i<12;i++){
-            const el = document.createElement('div');
-            el.className = 'confetti-piece';
-            el.textContent = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
-            el.style.left = x+'px'; el.style.top = y+'px';
-            el.style.setProperty('--dx', (Math.random()*160-80)+'px');
-            el.style.setProperty('--dy', (80 + Math.random()*140)+'px');
-            el.style.setProperty('--rot', (Math.random()*360-180)+'deg');
-            document.body.appendChild(el);
-            setTimeout(()=> el.remove(), 950);
-          }
-        }
-
-        // NEW: Skeleton loader helpers
-        function showSkeletons(n=6){
-          const skels = Array.from({length:n}).map(()=>`
-            <div class="post-card p-4 rounded-2xl skeleton">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-full bg-white/10"></div>
-                <div class="flex-1">
-                  <div class="h-4 w-40 bg-white/10 mb-2"></div>
-                  <div class="h-3 w-24 bg-white/10"></div>
-                </div>
-              </div>
-              <div class="w-full aspect-video bg-white/10 rounded-xl"></div>
-              <div class="mt-3 h-4 w-3/4 bg-white/10 rounded"></div>
-            </div>`).join('');
-          postsContainer.innerHTML = skels;
-        }
-        function clearSkeletons(){ /* no-op; next render replaces content */ }
-
-        // Load profanity list once
-        fetch('https://raw.githubusercontent.com/zacanger/profane-words/master/words.json')
-          .then(r => r.json()).then(list => badWords = list || [])
-          .catch(() => console.warn('Profanity list failed to load.'));
-
-        // Observe global "stop posts" flag
-        let postsDisabled = false;
-        postsDisabledRef.on('value', snap => postsDisabled = !!snap.val());
-        
-        // Add Post Overlay element refs and core API:
+        const playlistCreatorPopup = document.getElementById('playlistCreatorPopup');
+        const closePlaylistCreatorBtn = document.getElementById('closePlaylistCreatorBtn');
+        const savePlaylistBtn = document.getElementById('savePlaylistBtn');
+        const playlistNameInput = document.getElementById('playlistNameInput');
+        const clipSelector = document.getElementById('clipSelector');
+        const topPlaylistsCarouselContainer = document.getElementById('topPlaylistsCarouselContainer');
+        const topPlaylistsCarousel = document.getElementById('topPlaylistsCarousel');
+        const playlistViewerOverlay = document.getElementById('playlistViewerOverlay');
+        const playlistViewerClose = document.getElementById('playlistViewerClose');
         const postOverlay = document.getElementById('postOverlay');
         const postOverlayBg = document.getElementById('postOverlayBg');
         const postOverlayClose = document.getElementById('postOverlayClose');
-        const poAvatar = document.getElementById('poAvatar');
-        const poUsername = document.getElementById('poUsername');
-        const poTimestamp = document.getElementById('poTimestamp');
-        const poMedia = document.getElementById('poMedia');
-        const poCaptionText = document.getElementById('poCaptionText');
-        const poCaptionEdit = document.getElementById('poCaptionEdit');
-        const poCaptionInput = document.getElementById('poCaptionInput');
-        const poSaveCaption = document.getElementById('poSaveCaption');
-        const poCancelCaption = document.getElementById('poCancelCaption');
-        const poReactions = document.getElementById('poReactions');
-        const poComments = document.getElementById('poComments');
-        const poCommentInput = document.getElementById('poCommentInput');
-        const poCommentSend = document.getElementById('poCommentSend');
-        const poEditBtn = document.getElementById('poEditBtn');
-        const poDeleteBtn = document.getElementById('poDeleteBtn');
-        // MODIFIED: poShareBtn still exists
-        const poShareBtn = document.getElementById('poShareBtn');
-        // REMOVED: poReportBtn and its JS handler
-        // NEW: Reaction tooltip
         const reactTip = document.querySelector('.reactions-tooltip');
+        const poCommentSend = document.getElementById('poCommentSend');
+        const poCommentInput = document.getElementById('poCommentInput');
+        const pvCommentSend = document.getElementById('pvCommentSend');
+        const pvCommentInput = document.getElementById('pvCommentInput');
+        const POST_EMOJIS = ['👍','❤️','😂','😮','🔥','👎'];
 
-        let openPostCtx = null; // {ownerUid, postId, postPath}
-
-        function showPostOverlay(){ postOverlay.classList.remove('hidden'); }
-        function hidePostOverlay(){
-            // Detach listeners before hiding the overlay
-            if (openPostCtx) {
-                firebase.database().ref(`${openPostCtx.postPath}/reactions`).off();
-                firebase.database().ref(`${openPostCtx.postPath}/comments`).off();
-            }
-            postOverlay.classList.add('hidden');
-            openPostCtx=null;
-            fetchAllData(); // Refresh main feed
-        }
-        postOverlayBg.onclick = hidePostOverlay;
-        postOverlayClose.onclick = hidePostOverlay;
-        document.addEventListener('keydown', e => { if(e.key==='Escape') hidePostOverlay(); });
-        
-        // Add Admin panel wiring:
+        // Admin panel refs
         const adminBtn = document.getElementById('adminBtn');
         const adminPanel = document.getElementById('adminPanel');
         const adminBg = document.getElementById('adminBg');
@@ -1020,9 +554,724 @@
         const adminResumePosts = document.getElementById('adminResumePosts');
         const adminLogout = document.getElementById('adminLogout');
 
+
+        // Utility Functions
+        const escapeHtml = s => s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+        const showMessageBox = text => alert(text);
+        function incrementViewCount(postPath) {
+          if (!postPath) return;
+          // throttle so the same user can’t spam views on the same clip for 6 hours
+          const key = `viewed:${postPath}`;
+          const last = parseInt(localStorage.getItem(key) || '0', 10);
+          const now = Date.now();
+          if (now - last < 6 * 60 * 60 * 1000) return; // 6 hours
+
+          db.ref(`${postPath}/views`).transaction(curr => (curr || 0) + 1);
+          localStorage.setItem(key, String(now));
+        }
+
+        // --- AUTH & HEADER ---
+        auth.onAuthStateChanged(user => {
+            currentUserUid = user ? user.uid : null;
+            if (user) {
+                db.ref(`users/${user.uid}`).on('value', snap => {
+                    currentUserProfile = snap.val() || {};
+                    renderHeader();
+                    fetchAllData();
+                });
+            } else {
+                currentUserProfile = null;
+                renderHeader();
+                fetchAllData();
+            }
+        });
+
+        function renderHeader() {
+            const hasPostPermissions = currentUserProfile?.codesUnlocked?.content || currentUserProfile?.codesUnlocked?.diamond || currentUserProfile?.codesUnlocked?.emerald;
+            mainHeader.innerHTML = `<div class="flex items-center justify-between"><h1 class="text-4xl md:text-5xl font-bold">Slither Clips</h1><div class="flex-1 flex justify-end relative">${currentUserUid ? `<button id="addContentBtn" class="p-3 bg-blue-500 rounded-full text-white text-lg hover:bg-blue-600"><i class="fa-solid fa-plus"></i></button><div id="createMenu" class="hidden"><div id="createPostMenuItem" class="create-menu-item ${hasPostPermissions ? '' : 'hidden'}"><i class="fas fa-plus w-5 text-center"></i> Create Post</div><div id="createPlaylistMenuItem" class="create-menu-item"><i class="fas fa-list-check w-5 text-center"></i> Create Playlist</div></div>` : ''}</div></div>`;
+            if(currentUserUid) {
+                const addContentBtn = document.getElementById('addContentBtn');
+                const createMenu = document.getElementById('createMenu');
+                addContentBtn.addEventListener('click', e => { e.stopPropagation(); createMenu.classList.toggle('hidden'); });
+                document.getElementById('createPostMenuItem').addEventListener('click', () => { createMenu.classList.add('hidden'); openPostCreator(); });
+                document.getElementById('createPlaylistMenuItem').addEventListener('click', () => { createMenu.classList.add('hidden'); openPlaylistCreator(); });
+                document.addEventListener('click', () => createMenu.classList.add('hidden'));
+            }
+        }
+        
+        // --- DATA FETCHING ---
+        async function fetchAllData() {
+            try {
+                postsContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="spinner"></div></div>';
+                const [usersSnap, playlistsSnap] = await Promise.all([
+                    db.ref('users').once('value'),
+                    db.ref('playlists').once('value')
+                ]);
+                userProfiles = usersSnap.val() || {};
+                
+                allPosts = [];
+                usersSnap.forEach(user => {
+                    const posts = user.child('posts').val();
+                    if(posts) {
+                        for (const postId in posts) {
+                            allPosts.push({ postId, ...posts[postId], createdBy: user.key });
+                        }
+                    }
+                });
+
+                const playlistsData = playlistsSnap.val() || {};
+                allPlaylists = Object.entries(playlistsData).map(([id, p]) => ({ playlistId: id, ...p }));
+
+                const trendingPosts = filterContent(allPosts, 'trending').slice(0, 5);
+                trendingRankMap = Object.fromEntries(trendingPosts.map((p, i) => [p.postId, i + 1]));
+                const atbPosts = filterContent(allPosts, 'all-time-best').slice(0, 5);
+                atbRankMap = Object.fromEntries(atbPosts.map((p, i) => [p.postId, i + 1]));
+                
+                renderTopPlaylistsCarousel();
+                renderContent();
+                attachPlaylistsListener();
+            } catch (error) {
+                console.error("Failed to fetch all data:", error);
+                postsContainer.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Failed to load content. Error: ${error.message}</div>`;
+            }
+        }
+        
+        let playlistsListenerAttached = false;
+        function attachPlaylistsListener() {
+          if (playlistsListenerAttached) return;
+          playlistsListenerAttached = true;
+
+          db.ref('playlists').on('value', snap => {
+            const playlistsData = snap.val() || {};
+            allPlaylists = Object.entries(playlistsData).map(([id, p]) => ({ playlistId: id, ...p }));
+            // Re-render if we are on a tab that shows playlists or uses them in the UI
+            renderTopPlaylistsCarousel();
+            if (currentTab === 'playlists' || currentTab === 'all') renderContent();
+          });
+        }
+        function detachPlaylistsListener() {
+          db.ref('playlists').off('value');
+          playlistsListenerAttached = false;
+        }
+
+        // --- CONTENT RENDERING ---
+        function renderContent() {
+            topPlaylistsCarouselContainer.classList.toggle('hidden', currentTab !== 'all' || allPlaylists.length === 0);
+            searchContainer.classList.toggle('hidden', currentTab !== 'all');
+            
+            let content = [];
+            let containerClasses = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8';
+            let emptyMessage = "Nothing to see here yet.";
+
+            if (currentTab === 'playlists') {
+                content = [...allPlaylists].sort((a,b) => (b.upvotes ? Object.keys(b.upvotes).length : 0) - (a.upvotes ? Object.keys(a.upvotes).length : 0));
+                postsContainer.innerHTML = content.length > 0 ? content.map(createPlaylistCard).join('') : `<div class="text-center text-gray-400 py-10">${emptyMessage}</div>`;
+                postsContainer.className = 'flex flex-col gap-8';
+                return;
+            } else {
+                content = filterContent(allPosts, currentTab);
+            }
+
+            if (currentTab === 'trending' || currentTab === 'all-time-best') {
+                 content = content.slice(0, 5);
+                 containerClasses = 'grid grid-cols-1 gap-6 md:gap-8';
+                 postsContainer.innerHTML = content.length > 0 ? content.map((p, i) => createTrendingPostTile(p, p.createdBy, i + 1, currentTab === 'trending' ? 'Trending Clip' : 'All-Time Best')).join('') : `<div class="text-center text-gray-400 py-10">${emptyMessage}</div>`;
+            } else {
+                 postsContainer.innerHTML = content.length > 0 ? content.map(p => createPostTile(p, p.createdBy)).join('') : `<div class="text-center text-gray-400 py-10">${emptyMessage}</div>`;
+            }
+            postsContainer.className = containerClasses;
+        }
+
+        function filterContent(posts, tab) {
+            const now = Date.now();
+            const visiblePosts = posts.filter(p => !p.draft && (!p.publishAt || p.publishAt <= now));
+            const getReactionCount = p => p.reactions ? Object.values(p.reactions).reduce((s, r) => s + (r ? Object.keys(r).length : 0), 0) : 0;
+            
+            if (tab === 'trending') return visiblePosts.map(p => ({ ...p, score: getReactionCount(p) / Math.pow(((now - p.createdAt) / 36e5) + 2, 1.8) })).sort((a,b) => b.score - a.score);
+            if (tab === 'all-time-best') return [...visiblePosts].sort((a,b) => (getReactionCount(b) + (b.comments ? Object.keys(b.comments).length : 0)) - (getReactionCount(a) + (a.comments ? Object.keys(a.comments).length : 0)));
+            if (tab === 'saved') {
+                const savedKeys = Object.keys(currentUserProfile?.saved || {});
+                return visiblePosts.filter(p => savedKeys.includes(`${p.createdBy}__${p.postId}`));
+            }
+            if (tab === 'youtube' || tab === 'tiktok') return visiblePosts.filter(p => p.type === tab);
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            return visiblePosts.filter(p => !searchTerm || (userProfiles[p.createdBy]?.displayName.toLowerCase().includes(searchTerm)) || (p.caption?.toLowerCase().includes(searchTerm)));
+        }
+
+        // --- HTML CREATION ---
+        function createPostTile(post, ownerUid) {
+            const user = userProfiles[ownerUid] || {};
+            const hasCustomization = !!(user.codesUnlocked && (user.codesUnlocked.diamond || user.codesUnlocked.emerald));
+            const nameColor = hasCustomization ? (user.profileCustomization?.nameColor || '#fff') : '#fff';
+            const cardBg = hasCustomization ? (user.profileCustomization?.gradient || '') : '';
+
+            let fireReactions = 0, thumbsDownReactions = 0;
+            if (post.reactions) {
+                for (const [emoji, reactors] of Object.entries(post.reactions)) {
+                   if(reactors){
+                        const count = Object.keys(reactors).length;
+                        if (emoji === '👎') thumbsDownReactions += count; else fireReactions += count;
+                   }
+                }
+            }
+            let indicatorHtml = '';
+            const trendingRank = trendingRankMap[post.postId];
+            const atbRank = atbRankMap[post.postId];
+            let cardClasses = "post-card p-4 rounded-2xl relative";
+
+            if (trendingRank) cardClasses += " trending-card";
+            if (atbRank) cardClasses += " atb-card";
+
+            if (trendingRank || atbRank) {
+                let badges = '';
+                if (trendingRank) badges += `<div class="rank-badge fire-theme"><i class="fas fa-fire"></i><span>#${trendingRank}</span></div>`;
+                if (atbRank) badges += `<div class="rank-badge trophy-theme"><i class="fas fa-trophy"></i><span>#${atbRank}</span></div>`;
+                indicatorHtml = `<div class="absolute top-3 right-3 flex flex-col items-end gap-2 z-10">${badges}</div>`;
+            }
+            
+            let thumb = 'https://kevinmidnight7-sudo.github.io/messageboardkc/tiktok_placeholder.png';
+            if (post.ytId) thumb = `https://i.ytimg.com/vi/${post.ytId}/hqdefault.jpg`;
+            
+            const mediaHtml = `<div class="embed-placeholder aspect-video" data-yt="${post.ytId || ''}" data-tt="${post.videoId || ''}"><img src="${thumb}" alt="Preview"><div class="embed-play"><i class="fas fa-play"></i></div></div>`;
+
+            const isOwner = currentUserUid === ownerUid;
+            const deleteButton = (isOwner || adminMode) ? `<button class="delete-post-btn" onclick="event.stopPropagation(); deletePostFromFeed('${ownerUid}', '${post.postId}');">✕</button>` : '';
+            
+            return `
+                <div class="${cardClasses}" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" style="${cardBg ? `background:${cardBg}` : ''}">
+                    ${indicatorHtml}
+                    <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
+                        <div class="relative w-12 h-12 rounded-full overflow-hidden" style="box-shadow:0 0 0 2px ${nameColor}">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-full h-full object-cover" loading="lazy">
+                        </div>
+                        <div>
+                            <span class="font-bold text-lg" style="color:${nameColor}">${escapeHtml(user.displayName || 'Anonymous')}</span>
+                            <span class="text-sm text-gray-500">${new Date(post.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    ${deleteButton}
+                    ${mediaHtml}
+                    <div class="post-footer mt-4 flex flex-col gap-2">
+                        <div class="text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${escapeHtml(post.caption || '')}</div>
+                        <div class="flex justify-between items-center pt-2 mt-2 border-t border-white/10">
+                            <div class="flex items-center gap-4 text-gray-400 text-sm">
+                                <div class="flex items-center gap-1.5" title="Views"><i class="fas fa-eye"></i><span>${(post.views || 0).toLocaleString()}</span></div>
+                                <div class="flex items-center gap-1.5 text-orange-400" title="Reactions"><i class="fas fa-fire"></i><span>${fireReactions.toLocaleString()}</span></div>
+                                <div class="flex items-center gap-1.5 text-blue-400" title="Thumbs Down"><i class="fas fa-thumbs-down"></i><span>${thumbsDownReactions.toLocaleString()}</span></div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button class="open-post-indicator text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20">Open</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function createTrendingPostTile(post, ownerUid, rank, titleText) {
+            const user = userProfiles[ownerUid] || {};
+            let topEmojisHtml = '<div class="text-gray-400">No reactions.</div>';
+            if (post.reactions) {
+                const sorted = Object.entries(post.reactions).map(([e,r])=>({e, c: r ? Object.keys(r).length : 0})).sort((a,b)=>b.c - a.c).slice(0,3);
+                if (sorted.length) topEmojisHtml = sorted.map(i=>`<div class="flex items-center gap-2 bg-gray-700/50 px-3 py-1 rounded-full"><span class="text-xl">${i.e}</span><span class="font-bold text-white">${i.c}</span></div>`).join('');
+            }
+            let topCommentHtml = '<div class="text-gray-400">No comments.</div>';
+            if (post.comments) {
+                const top = Object.values(post.comments).sort((a, b) => (b.time || 0) - (a.time || 0))[0];
+                if(top) {
+                    const cUser = userProfiles[top.uid] || {};
+                    topCommentHtml = `<div class="bg-gray-700/50 p-3 rounded-lg"><div class="flex items-center gap-2 mb-2"><img src="${cUser.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-6 h-6 rounded-full object-cover"><span class="font-semibold text-sm text-white">${escapeHtml(cUser.displayName || 'Anonymous')}</span></div><p class="text-gray-300 text-sm">${escapeHtml(top.text || '')}</p></div>`;
+                }
+            }
+            const rankColors = { 1: 'border-yellow-400', 2: 'border-gray-400', 3: 'border-amber-600'};
+            const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-amber-600'};
+            const thumb = post.ytId ? `https://i.ytimg.com/vi/${post.ytId}/hqdefault.jpg` : 'https://i.imgur.com/eTSruYe.png';
+
+            return `<div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank] || 'border-gray-600'} bg-gray-800/20 flex flex-col md:flex-row gap-6">
+                <div class="md:w-1/2 flex flex-col"><div class="flex items-center gap-3 mb-4"><img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="avatar" class="w-12 h-12 rounded-full object-cover"><div><span class="font-bold text-lg text-white">${escapeHtml(user.displayName || 'Anonymous')}</span><span class="block text-sm text-gray-400">${new Date(post.createdAt).toLocaleDateString()}</span></div></div><div class="embed-placeholder aspect-video" data-yt="${post.ytId||''}" data-tt="${post.videoId||''}"><img src="${thumb}" alt="Preview"/><div class="embed-play"><i class="fas fa-play"></i></div></div><div class="text-sm text-gray-300 mt-3">${escapeHtml(post.caption || '')}</div></div>
+                <div class="md:w-1/2 flex flex-col gap-4"><div class="flex items-center gap-3"><div class="text-5xl font-bold ${rankTextColors[rank] || 'text-gray-500'}">#${rank}</div><h3 class="text-xl font-bold text-white">${titleText}</h3></div><div><h4 class="font-semibold text-gray-200 mb-2">Top Reactions</h4><div class="flex flex-wrap gap-2">${topEmojisHtml}</div></div><div><h4 class="font-semibold text-gray-200 mb-2">Latest Comment</h4>${topCommentHtml}</div><div class="mt-auto flex justify-between items-center"><div class="flex items-center gap-2 text-gray-400 text-sm"><i class="fas fa-eye"></i><span>${(post.views || 0).toLocaleString()} Views</span></div><button class="open-post-indicator text-xs px-3 py-1" onclick="openPostDetails('${ownerUid}', '${post.postId}')"><i class="fas fa-folder-open mr-2"></i>View Full Post</button></div></div>
+            </div>`;
+        }
+
+        function createPlaylistCard(playlist) {
+            const creator = userProfiles[playlist.createdBy] || {};
+            const hasCust = creator.codesUnlocked?.diamond || creator.codesUnlocked?.emerald;
+            const nameColor = hasCust && creator.profileCustomization?.nameColor ? creator.profileCustomization.nameColor : '#fff';
+            const cardBg = hasCust && creator.profileCustomization?.gradient ? `background:${creator.profileCustomization.gradient}` : '';
+
+            const upvoteCount = playlist.upvotes ? Object.keys(playlist.upvotes).length : 0;
+            const downvoteCount = playlist.downvotes ? Object.keys(playlist.downvotes).length : 0;
+            const isUpvoted = currentUserUid && playlist.upvotes?.[currentUserUid];
+            const isDownvoted = currentUserUid && playlist.downvotes?.[currentUserUid];
+
+            const clipList = Array.isArray(playlist.clips) ? playlist.clips : Object.values(playlist.clips || {});
+            const clipsHtml = clipList.map(clipRef => {
+                const post = allPosts.find(p => p.postId === clipRef.postId && p.createdBy === clipRef.ownerUid);
+                if (!post) return '';
+                return `<div class="playlist-clip-item"><img src="${post.ytId ? `https://i.ytimg.com/vi/${post.ytId}/mqdefault.jpg` : 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="Clip thumbnail"><div class="overlay"><p class="text-xs text-white font-semibold truncate">${escapeHtml(post.caption || 'Untitled')}</p></div></div>`;
+            }).join('');
+
+            return `<div class="playlist-row playlist-row-clickable" data-playlist-id="${playlist.playlistId}" style="${cardBg}">
+                <div class="playlist-info">
+                    <h3 class="text-2xl font-bold mb-2 truncate" style="color: ${nameColor};">${escapeHtml(playlist.name)}</h3>
+                    <p class="text-sm text-gray-400 mb-4">By <span class="font-semibold" style="color:${nameColor}">${escapeHtml(creator.displayName || 'Anonymous')}</span></p>
+                    <div class="flex gap-2">
+                         <button class="playlist-upvote-btn flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${isUpvoted ? 'bg-indigo-500 text-white' : 'bg-gray-700/60 text-gray-300 hover:bg-gray-600'}" data-playlist-id="${playlist.playlistId}"><i class="fas fa-arrow-up"></i><span>${upvoteCount}</span></button>
+                         <button class="playlist-downvote-btn flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold transition-colors ${isDownvoted ? 'bg-red-500 text-white' : 'bg-gray-700/60 text-gray-300 hover:bg-gray-600'}" data-playlist-id="${playlist.playlistId}"><i class="fas fa-arrow-down"></i><span>${downvoteCount}</span></button>
+                    </div>
+                </div>
+                <div class="playlist-clips-scroll">${clipsHtml}</div>
+            </div>`;
+        }
+        
+        function renderTopPlaylistsCarousel() {
+            const sorted = [...allPlaylists].sort((a,b) => (b.upvotes ? Object.keys(b.upvotes).length : 0) - (a.upvotes ? Object.keys(a.upvotes).length : 0)).slice(0, 10);
+            if(sorted.length > 0) {
+                 topPlaylistsCarousel.innerHTML = sorted.map(p => {
+                    const creator = userProfiles[p.createdBy] || {};
+                    return `<div class="carousel-playlist-item" data-playlist-id="${p.playlistId}">
+                                <h4 class="font-bold text-white truncate">${escapeHtml(p.name)}</h4>
+                                <p class="text-xs text-gray-400 mb-2">By ${escapeHtml(creator.displayName || 'Anonymous')}</p>
+                                <div class="flex items-center gap-2 text-sm text-gray-300"><i class="fas fa-arrow-up text-indigo-400"></i><span>${p.upvotes ? Object.keys(p.upvotes).length : 0} Upvotes</span></div>
+                            </div>`
+                 }).join('');
+            } else {
+                topPlaylistsCarousel.innerHTML = '';
+            }
+        }
+
+        // --- EVENT LISTENERS & ACTIONS ---
+        tabButtons.forEach(btn => btn.addEventListener('click', () => { tabButtons.forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentTab = btn.dataset.tab; renderContent(); }));
+        searchInput.addEventListener('input', () => { if(currentTab === 'all') renderContent(); });
+        
+        postsContainer.addEventListener('click', e => {
+            let target = e.target;
+            while(target && target !== postsContainer) {
+                if (target.closest('.user-details')) {
+                  const uid = target.closest('.user-details').dataset.uid;
+                  if (uid) openUserProfile(uid);
+                  return;
+                }
+                if(target.matches('.playlist-upvote-btn')) { e.stopPropagation(); togglePlaylistUpvote(target.dataset.playlistId); return; }
+                if(target.matches('.playlist-downvote-btn')) { e.stopPropagation(); togglePlaylistDownvote(target.dataset.playlistId); return; }
+                if(target.matches('.playlist-row-clickable')) { openPlaylistViewer(target.dataset.playlistId); return; }
+                if(target.matches('.embed-placeholder')) { 
+                    e.stopPropagation(); 
+                    const ytId = target.dataset.yt; const ttId = target.dataset.tt;
+                    if (ytId) target.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${ytId}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                    else if (ttId) target.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${ttId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+                    return;
+                }
+                if(target.matches('.open-post-indicator')) { 
+                    const postCard = target.closest('.post-card');
+                    openPostDetails(postCard.dataset.ownerUid, postCard.dataset.postId); 
+                    return;
+                }
+                 if (target.matches('.post-card')) {
+                    openPostDetails(target.dataset.ownerUid, target.dataset.postId);
+                    return;
+                }
+                target = target.parentElement;
+            }
+        });
+
+        topPlaylistsCarousel.addEventListener('click', e => { const item = e.target.closest('.carousel-playlist-item'); if(item) openPlaylistViewer(item.dataset.playlistId); });
+        
+        poCommentSend.addEventListener('click', async () => {
+          if (!currentUserUid) return showMessageBox('Please log in to comment.');
+          const text = (poCommentInput.value || '').trim();
+          if (!text || !openPostCtx) return;
+          const ref = db.ref(`${openPostCtx.postPath}/comments`).push();
+          await ref.set({ uid: currentUserUid, text, time: firebase.database.ServerValue.TIMESTAMP });
+          poCommentInput.value = '';
+        });
+
+        pvCommentSend.addEventListener('click', async () => {
+          if (!currentUserUid) return showMessageBox('Please log in to comment.');
+          if (!openPlaylistCtx || !openPlaylistCtx.currentClip) return;
+          const text = (pvCommentInput.value || '').trim();
+          if (!text) return;
+          const { postPath } = openPlaylistCtx.currentClip;
+          const ref = db.ref(`${postPath}/comments`).push();
+          await ref.set({ uid: currentUserUid, text, time: firebase.database.ServerValue.TIMESTAMP });
+          pvCommentInput.value = '';
+        });
+
+        document.getElementById('poComments').addEventListener('click', e => {
+          if (e.target.matches('.delete-comment-btn')) {
+            const li = e.target.closest('li');
+            const { commentId, commentAuthor } = li.dataset;
+            deleteComment(commentAuthor, commentId, openPostCtx);
+          }
+        });
+         document.getElementById('pvComments').addEventListener('click', e => {
+          if (e.target.matches('.delete-comment-btn')) {
+            const li = e.target.closest('li');
+            const { commentId, commentAuthor } = li.dataset;
+            deleteComment(commentAuthor, commentId, openPlaylistCtx.currentClip);
+          }
+        });
+
+        // --- CREATION POPUPS ---
+        function openPostCreator() { postCreatorPopup.style.display = 'flex'; }
+        closePostCreatorBtn.addEventListener('click', () => {postCreatorPopup.style.display = 'none'; });
+        youtubeBtn.addEventListener('click', () => { selectedPostType = 'youtube'; postTypeSelection.style.display = 'none'; urlInputContainer.style.display = 'block'; });
+        tiktokBtn.addEventListener('click', () => { selectedPostType = 'tiktok'; postTypeSelection.style.display = 'none'; urlInputContainer.style.display = 'block'; });
+        
+        function openPlaylistCreator() {
+            const sortedClips = [...allPosts].sort((a,b) => b.createdAt - a.createdAt);
+            clipSelector.innerHTML = sortedClips.map(post => `<div class="clip-selector-item" data-owner-uid="${post.createdBy}" data-post-id="${post.postId}"><img src="${post.ytId ? `https://i.ytimg.com/vi/${post.ytId}/mqdefault.jpg` : 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-20 h-12 object-cover rounded-md"><div class="flex-1"><div class="font-semibold text-white truncate">${escapeHtml(post.caption || 'Untitled')}</div><div class="text-xs text-gray-400">By ${userProfiles[post.createdBy]?.displayName || 'Anonymous'}</div></div></div>`).join('');
+            playlistCreatorPopup.style.display = 'flex';
+        }
+        clipSelector.addEventListener('click', e => { const item = e.target.closest('.clip-selector-item'); if(item) item.classList.toggle('selected'); });
+        closePlaylistCreatorBtn.addEventListener('click', () => {playlistCreatorPopup.style.display = 'none';});
+        savePlaylistBtn.addEventListener('click', async () => { 
+            const name = playlistNameInput.value.trim();
+            if(!name) return showMessageBox("Playlist name is required.");
+            const selected = clipSelector.querySelectorAll('.selected');
+            if(selected.length === 0) return showMessageBox("Select at least one clip.");
+            const clips = Array.from(selected).map(el => ({ownerUid: el.dataset.ownerUid, postId: el.dataset.postId}));
+            await db.ref(`playlists/${crypto.randomUUID()}`).set({ name, clips, createdBy: currentUserUid, createdAt: firebase.database.ServerValue.TIMESTAMP }); 
+            playlistCreatorPopup.style.display = 'none'; 
+            fetchAllData(); 
+        });
+        
+        // --- PLAYLISTS & POST OVERLAYS ---
+        function openUserProfile(uid) {
+            const u = userProfiles[uid] || {};
+            const hasCust = !!(u.codesUnlocked && (u.codesUnlocked.diamond || u.codesUnlocked.emerald));
+            const gradient = u.profileCustomization?.gradient;
+            const nameColor = hasCust ? (u.profileCustomization?.nameColor || '#fff') : '#fff';
+            
+            const cardEl = document.getElementById('userPopupCard');
+            if (hasCust && gradient) {
+              cardEl.style.background = gradient;
+            } else {
+              cardEl.style.background = ''; // fall back to class bg-slate-800
+            }
+
+            const ring = document.getElementById('profAvatarRing');
+            if (hasCust && gradient) {
+              ring.classList.add('diamond-border');
+              ring.style.setProperty('--gradient', gradient);
+            } else {
+              ring.classList.remove('diamond-border');
+              ring.style.removeProperty('--gradient');
+            }
+
+            // Banner: use custom banner if available; else neutral bg.
+            const bannerEl = document.getElementById('popupBanner');
+            const banner = u.profileCustomization?.banner;
+            if (banner && /^https?:\/\//i.test(banner)) {
+                bannerEl.style.backgroundImage = `url(${banner})`;
+            } else if (u.profileCustomization?.gradient) {
+                bannerEl.style.background = u.profileCustomization.gradient;
+                bannerEl.style.backgroundImage = '';
+            } else {
+                bannerEl.style.background = '';
+                bannerEl.style.backgroundImage = '';
+            }
+
+            // Header
+            document.getElementById('popupAvatar').src = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+            document.getElementById('popupUserName').innerHTML = `<span style="color:${nameColor}">${escapeHtml(u.displayName || 'Anonymous')}</span>`;
+            
+            const aboutText = (u.about && String(u.about).trim()) || (u.aboutMe && String(u.aboutMe).trim()) ||  '';
+            document.getElementById('popupAboutMe').textContent = aboutText;
+            
+            document.getElementById('popupStreak').textContent = u.loginStreak ? `Current streak: ${u.loginStreak}🔥` : 'No streak yet';
+
+            // Badges
+            const badgesEl = document.getElementById('profBadges');
+            badgesEl.innerHTML = '';
+            const badgeSpecs = {
+              verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
+              offence:  { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      bg: '#ff6b6b' },
+              defence:  { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     bg: '#74c0fc' },
+              overall:  { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
+            };
+            const addBadge = (spec, text, insertFirst = false) => {
+              const div = document.createElement('div');
+              div.className = 'popup-badge';
+              div.style.background = spec.bg;
+              div.innerHTML = `<img src="${spec.icon}" alt=""><span>${text}</span>`;
+              if (insertFirst && badgesEl.firstChild) badgesEl.insertBefore(div, badgesEl.firstChild);
+              else badgesEl.appendChild(div);
+            };
+            const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
+            
+            if (toBool(u.emailVerified)) addBadge(badgeSpecs.verified, 'Verified', true);
+            
+            db.ref(`badges/${uid}`).once('value').then(snap => {
+              const base = snap.val() || {};
+              ['offence','defence','overall'].forEach(k => {
+                const count = parseInt(base[k] || 0) || 0;
+                if (count > 0) addBadge(badgeSpecs[k], `${badgeSpecs[k].label} x${count}`);
+              });
+            });
+            
+            if (u.codesUnlocked?.diamond) {
+              const div = document.createElement('div');
+              div.className = 'popup-badge';
+              div.style.background = '#55d9e5';
+              div.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/diamond.png" alt=""><span>Diamond User</span>`;
+              badgesEl.appendChild(div);
+            }
+            if (u.codesUnlocked?.emerald) {
+              const div = document.createElement('div');
+              div.className = 'popup-badge';
+              div.style.background = '#22c55e';
+              div.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/emerald.png" alt=""><span>Emerald User</span>`;
+              badgesEl.appendChild(div);
+            }
+            
+            const customs = u.customBadges ? Object.values(u.customBadges) : [];
+            customs.forEach(b => {
+              const div = document.createElement('div');
+              div.className = 'popup-badge';
+              div.style.background = `linear-gradient(90deg,${b.grad1||'#6b7280'} 30%,${b.grad2||'#6b7280'} 100%)`;
+              div.style.color = b.textColor || '#fff';
+              div.innerHTML = `<span class="emoji-icon">${b.icon || '🏷️'}</span><span>${b.name || 'Badge'}</span>`;
+              badgesEl.appendChild(div);
+            });
+            if (!badgesEl.children.length) {
+              badgesEl.textContent = 'No badges to display.';
+            }
+
+            // User’s clips in right column
+            const mine = allPosts.filter(p => p.createdBy === uid).sort((a,b)=> b.createdAt - a.createdAt);
+            const postsCol = document.getElementById('popupPostsColumn');
+            postsCol.innerHTML = `
+                <div class="post-list">
+                  ${mine.map(p => {
+                    const thumb = p.ytId
+                      ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg`
+                      : 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+                    return `
+                      <div class="post-tile" tabindex="0" onclick="openPostDetails('${uid}','${p.postId}')">
+                        <img src="${thumb}" alt="" class="w-full h-40 object-cover">
+                        <div class="post-caption">${escapeHtml(p.caption || 'Untitled')}</div>
+                        <div class="post-timestamp">${new Date(p.createdAt).toLocaleDateString()}</div>
+                      </div>`;
+                  }).join('')}
+                </div>`;
+
+            // Two-column layout on md+ when there are posts
+            cardEl.classList.toggle('two-column', mine.length > 0);
+
+            // Show overlay
+            const popup = document.getElementById('userPopup');
+            popup.style.display = 'flex';
+        }
+        
+        document.getElementById('closeUserPopup').onclick = () => { document.getElementById('userPopup').style.display = 'none'; };
+        document.getElementById('userPopup').addEventListener('click', (e) => {
+          if (e.target.id === 'userPopup') document.getElementById('userPopup').style.display = 'none';
+        });
+
+        function togglePlaylistUpvote(playlistId) {
+          if (!currentUserUid) return showMessageBox('Please log in to vote.');
+          const upRef = db.ref(`playlists/${playlistId}/upvotes/${currentUserUid}`);
+          const downRef = db.ref(`playlists/${playlistId}/downvotes/${currentUserUid}`);
+          upRef.transaction(curr => curr ? null : true);
+          downRef.set(null);
+        }
+
+        function togglePlaylistDownvote(playlistId) {
+          if (!currentUserUid) return showMessageBox('Please log in to vote.');
+          const upRef = db.ref(`playlists/${playlistId}/upvotes/${currentUserUid}`);
+          const downRef = db.ref(`playlists/${playlistId}/downvotes/${currentUserUid}`);
+          downRef.transaction(curr => curr ? null : true);
+          upRef.set(null);
+        }
+
+        async function openPlaylistViewer(playlistId) {
+            const playlist = allPlaylists.find(p => p.playlistId === playlistId);
+            if (!playlist) return;
+            openPlaylistCtx = { playlist, currentClipIndex: 0, postContexts: {} };
+            playlistViewerOverlay.style.display = 'grid';
+            await renderPlaylistPlayer();
+        }
+
+        async function renderPlaylistPlayer() {
+            const { playlist, currentClipIndex } = openPlaylistCtx;
+            const clipRef = playlist.clips[currentClipIndex];
+            if (!clipRef) return;
+            
+            const post = allPosts.find(p => p.postId === clipRef.postId && p.createdBy === clipRef.ownerUid);
+            if (!post) return;
+            
+            const postPath = `users/${post.createdBy}/posts/${post.postId}`;
+            openPlaylistCtx.currentClip = { ownerUid: post.createdBy, postId: post.postId, postPath };
+            incrementViewCount(postPath);
+            
+            const ownerUid = post.createdBy;
+            const user = userProfiles[ownerUid] || {};
+            document.getElementById('pvAvatar').src = user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+            document.getElementById('pvUsername').textContent = escapeHtml(user.displayName || 'Anonymous');
+            document.getElementById('pvTimestamp').textContent = new Date(post.createdAt).toLocaleString();
+            document.getElementById('pvCaptionText').innerHTML = escapeHtml(post.caption || 'No description');
+            document.getElementById('pvAvatar').onclick = () => openUserProfile(ownerUid);
+            document.getElementById('pvUsername').onclick = () => openUserProfile(ownerUid);
+            
+            const mediaContainer = document.getElementById('pvMedia');
+            if (post.ytId) mediaContainer.innerHTML = `<iframe class="w-full h-full" src="https://www.youtube.com/embed/${post.ytId}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            else if (post.videoId) mediaContainer.innerHTML = `<iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            else mediaContainer.innerHTML = '';
+            
+            if(openPlaylistCtx.activeListeners) {
+                openPlaylistCtx.activeListeners.reactionsRef.off();
+                openPlaylistCtx.activeListeners.commentsRef.off();
+            }
+
+            const reactionsRef = db.ref(`${postPath}/reactions`);
+            const commentsRef = db.ref(`${postPath}/comments`).orderByChild('time');
+            openPlaylistCtx.activeListeners = { reactionsRef, commentsRef };
+
+            reactionsRef.on('value', snap => renderPostReactions(snap, document.getElementById('pvReactions')));
+            commentsRef.on('value', snap => renderPostComments(snap, document.getElementById('pvComments'), openPlaylistCtx.currentClip));
+
+            document.getElementById('playlistQueueList').innerHTML = playlist.clips.map((c, index) => {
+                const p = allPosts.find(post => post.postId === c.postId && post.createdBy === c.ownerUid);
+                if (!p) return '';
+                const u = userProfiles[p.createdBy] || {};
+                return `<div class="queue-item ${index === currentClipIndex ? 'active' : ''}" onclick="changePlaylistClip(${index})"><img src="${p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-16 h-10 object-cover rounded"><div><p class="text-sm font-semibold truncate">${escapeHtml(p.caption || 'Untitled')}</p><p class="text-xs text-gray-400">By ${escapeHtml(u.displayName || 'Anonymous')}</p></div></div>`;
+            }).join('');
+        }
+        
+        function changePlaylistClip(index) {
+            if (openPlaylistCtx) {
+                openPlaylistCtx.currentClipIndex = index;
+                renderPlaylistPlayer();
+            }
+        }
+
+        playlistViewerClose.addEventListener('click', () => {
+             playlistViewerOverlay.style.display = 'none';
+             document.getElementById('pvMedia').innerHTML = '';
+             if (openPlaylistCtx && openPlaylistCtx.activeListeners) {
+                openPlaylistCtx.activeListeners.reactionsRef.off();
+                openPlaylistCtx.activeListeners.commentsRef.off();
+                openPlaylistCtx = null;
+             }
+        });
+
+        async function openPostDetails(ownerUid, postId) {
+            if(!ownerUid || !postId) return;
+            const postPath = `users/${ownerUid}/posts/${postId}`;
+            openPostCtx = { ownerUid, postId, postPath };
+
+            const postSnap = await db.ref(postPath).once('value');
+            const post = postSnap.val();
+            if (!post) return;
+            
+            const user = userProfiles[ownerUid] || {};
+            document.getElementById('poAvatar').src = user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+            document.getElementById('poUsername').textContent = escapeHtml(user.displayName || 'Anonymous');
+            document.getElementById('poTimestamp').textContent = new Date(post.createdAt).toLocaleString();
+            document.getElementById('poCaptionText').innerHTML = escapeHtml(post.caption || 'No description');
+            document.getElementById('poAvatar').onclick = () => openUserProfile(ownerUid);
+            document.getElementById('poUsername').onclick = () => openUserProfile(ownerUid);
+
+            const mediaContainer = document.getElementById('poMedia');
+            if (post.ytId) mediaContainer.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${post.ytId}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            else if (post.videoId) mediaContainer.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            else mediaContainer.innerHTML = '';
+            
+            incrementViewCount(postPath);
+
+            db.ref(`${postPath}/reactions`).on('value', snap => renderPostReactions(snap, document.getElementById('poReactions')));
+            db.ref(`${postPath}/comments`).orderByChild('time').on('value', snap => renderPostComments(snap, document.getElementById('poComments'), openPostCtx));
+            
+            postOverlay.style.display = 'block';
+        }
+        
+        postOverlayClose.addEventListener('click', () => {
+            postOverlay.style.display = 'none';
+            document.getElementById('poMedia').innerHTML = '';
+             if (openPostCtx) {
+                db.ref(`${openPostCtx.postPath}/reactions`).off();
+                db.ref(`${openPostCtx.postPath}/comments`).off();
+                openPostCtx = null;
+             }
+        });
+        
+        function togglePostReaction(emo, context){
+          const u = auth.currentUser;
+          if (!u) return showMessageBox('Please log in to react.');
+          if (!context) return;
+          const ref = db.ref(`${context.postPath}/reactions/${emo}/${u.uid}`);
+          ref.transaction(curr => curr ? null : true);
+        }
+
+        async function renderPostReactions(snap, targetEl){
+          const data = snap.val() || {};
+          targetEl.innerHTML = '';
+          
+          POST_EMOJIS.forEach(emo => {
+            const reactors = data[emo] ? Object.keys(data[emo]) : [];
+            const count = reactors.length;
+            const userReacted = currentUserUid && data[emo] && data[emo][currentUserUid];
+            const btn = document.createElement('button');
+            btn.className = `px-2 py-1 rounded-full border text-sm flex items-center gap-1 ${userReacted ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-slate-600/50 text-gray-200 border-slate-500'}`;
+            btn.textContent = `${emo} ${count||''}`.trim();
+            btn.onclick = (ev)=>{
+              const currentContext = openPlaylistCtx ? openPlaylistCtx.currentClip : openPostCtx;
+              togglePostReaction(emo, currentContext);
+            };
+            
+            btn.onmouseenter = (ev)=>{
+              const rect = ev.target.getBoundingClientRect();
+              reactTip.style.left = (rect.left + rect.width/2)+'px';
+              reactTip.style.top = (rect.top - 8)+'px';
+              const names = reactors.slice(0,25).map(uid => (userProfiles[uid]?.displayName) || 'User');
+              reactTip.textContent = names.length ? names.join('\n') : 'No reactions yet';
+              reactTip.classList.remove('hidden');
+            };
+            btn.onmouseleave = ()=> reactTip.classList.add('hidden');
+            targetEl.appendChild(btn);
+          });
+        }
+
+        async function deleteComment(commentAuthorUid, commentId, context) {
+            if (!currentUserUid || (currentUserUid !== commentAuthorUid && !adminMode && currentUserUid !== context.ownerUid)) return;
+            const doDelete = confirm('Are you sure you want to delete this comment?');
+            if (!doDelete) return;
+            const commentRef = db.ref(`${context.postPath}/comments/${commentId}`);
+            await commentRef.remove();
+        }
+
+        function renderPostComments(snap, targetEl, context){
+            if(!targetEl) return;
+            targetEl.innerHTML = '';
+            snap.forEach(childSnap => {
+                const cid = childSnap.key;
+                const c = childSnap.val();
+                const u = userProfiles[c.uid] || {};
+                const isDeletable = currentUserUid && (c.uid === currentUserUid || (context && context.ownerUid === currentUserUid) || adminMode);
+                const deleteBtnHtml = isDeletable ? `<button class="delete-comment-btn">Delete</button>` : '';
+
+                const li = document.createElement('li');
+                li.className = 'p-2 rounded-lg bg-gray-700 flex gap-3';
+                li.dataset.commentId = cid;
+                li.dataset.commentAuthor = c.uid;
+                li.innerHTML = `
+                    <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-8 h-8 rounded-full object-cover mt-0.5">
+                    <div class="flex-1">
+                        <div class="text-sm text-gray-400 mb-1 flex items-center">
+                            <span>${escapeHtml(u.displayName || 'Anonymous')} • ${new Date(c.time||Date.now()).toLocaleString()}</span>
+                            ${deleteBtnHtml}
+                        </div>
+                        <div class="whitespace-pre-wrap break-words">${escapeHtml(c.text || '')}</div>
+                    </div>`;
+                targetEl.appendChild(li);
+            });
+        }
+        
+        // --- ADMIN PANEL LOGIC ---
         function showAdmin(){ adminPanel.classList.remove('hidden'); }
         function hideAdmin(){ adminPanel.classList.add('hidden'); adminErr.classList.add('hidden'); }
-        // Admin button is now handled by the renderHeader function
         if (adminBtn) adminBtn.onclick = showAdmin;
         if (adminBg) adminBg.onclick = hideAdmin;
         if (adminClose) adminClose.onclick = hideAdmin;
@@ -1042,24 +1291,15 @@
                 adminLogin.classList.add('hidden');
                 adminControls.classList.remove('hidden');
                 refreshAdminState();
+                fetchAllData(); // Refresh to show delete buttons
               } else {
                 adminErr.classList.remove('hidden');
               }
             };
         }
 
-        if (adminStopPosts) {
-            adminStopPosts.onclick = ()=>{
-              if (!adminMode) return;
-              postsDisabledRef.set(true).then(refreshAdminState);
-            };
-        }
-        if (adminResumePosts) {
-            adminResumePosts.onclick = ()=>{
-              if (!adminMode) return;
-              postsDisabledRef.set(false).then(refreshAdminState);
-            };
-        }
+        if (adminStopPosts) adminStopPosts.onclick = ()=>{ if (adminMode) postsDisabledRef.set(true).then(refreshAdminState); };
+        if (adminResumePosts) adminResumePosts.onclick = ()=>{ if (adminMode) postsDisabledRef.set(false).then(refreshAdminState); };
         if (adminLogout) {
             adminLogout.onclick = ()=>{
               adminMode = false;
@@ -1067,1292 +1307,14 @@
               adminLogin.classList.remove('hidden');
               adminPass.value='';
               hideAdmin();
+              fetchAllData(); // Refresh to hide delete buttons
             };
         }
 
-        // G) Reactions renderer + toggle
-        const POST_EMOJIS = ['👍','❤️','😂','😮','🔥','👎'];
 
-        async function renderPostReactions(snap){
-          const data = snap.val() || {};
-          const u = firebase.auth().currentUser;
-          poReactions.innerHTML = '';
-          
-          // Use cached user profiles to avoid re-downloading the entire users table on every reaction hover.
-          // If not yet loaded, fetch once and store in the global userProfiles cache.
-          let allUserProfiles = userProfiles;
-          if (!allUserProfiles || Object.keys(allUserProfiles).length === 0) {
-            const usersSnap = await firebase.database().ref('users').once('value');
-            userProfiles = usersSnap.val() || {};
-            allUserProfiles = userProfiles;
-          }
-
-          POST_EMOJIS.forEach(emo => {
-            const reactors = data[emo] ? Object.keys(data[emo]) : [];
-            const count = reactors.length;
-            const userReacted = u && data[emo] && data[emo][u.uid];
-            const btn = document.createElement('button');
-            btn.className = 'px-2 py-1 rounded-full border text-sm flex items-center gap-1 ' + (userReacted ? 'bg-blue-600 text-white' : 'bg-gray-100');
-            btn.textContent = `${emo} ${count||''}`.trim();
-            // MODIFIED: Pass event to confettiBurst
-            btn.onclick = (ev)=>{
-              const wasReacted = !!userReacted;
-              togglePostReaction(emo, ev);
-              if (!wasReacted) { const r = ev.target.getBoundingClientRect(); confettiBurst(r.left + r.width/2, r.top); }
-            };
-            
-            // MODIFIED: Reaction tooltip hover listeners now use cached userProfiles
-            btn.addEventListener('mouseenter', (ev)=>{
-              const rect = ev.target.getBoundingClientRect();
-              reactTip.style.left = (rect.left + rect.width/2)+'px';
-              reactTip.style.top = (rect.top - 8)+'px';
-              const names = reactors.slice(0,25).map(uid => (userProfiles[uid]?.displayName) || 'User');
-              reactTip.textContent = names.length ? names.join(', ') : 'No reactions yet';
-              reactTip.classList.remove('hidden');
-            });
-            btn.addEventListener('mouseleave', ()=>{ reactTip.classList.add('hidden'); });
-
-            poReactions.appendChild(btn);
-          });
-        }
-        // MODIFIED: togglePostReaction now accepts an event argument
-        function togglePostReaction(emo, ev){
-          const u = firebase.auth().currentUser;
-          if (!u) return showMessageBox('Please log in to react.');
-          if (!openPostCtx) return;
-          const ref = firebase.database().ref(`${openPostCtx.postPath}/reactions/${emo}/${u.uid}`);
-          ref.transaction(curr => curr ? null : true);
-        }
-
-        // NEW: Corrected function to delete a comment
-        async function deleteComment(commentAuthorUid, commentId) {
-            // Updated auth check to allow post owner and admin to delete comments
-            if (!currentUserUid || (currentUserUid !== commentAuthorUid && !adminMode && currentUserUid !== openPostCtx.ownerUid)) return;
-            
-            const doDelete = await showMessageBox('Are you sure you want to delete this comment?', true);
-            if (!doDelete) return;
-
-            const commentRef = db.ref(`${openPostCtx.postPath}/comments/${commentId}`);
-            await commentRef.remove();
-        }
-        
-        // MODIFIED: Replaced the entire renderPostComments function to include avatars and the delete button
-        function renderPostComments(snap){
-          const data = snap.val() || {};
-          poComments.innerHTML = '';
-          const entries = Object.entries(data).sort((a,b)=> (a[1].time||0) - (b[1].time||0));
-          entries.forEach(([cid, c]) => {
-            const li = document.createElement('li');
-            li.dataset.cid = cid;
-            li.className = 'p-2 rounded-lg bg-gray-50 border flex gap-3';
-
-            const avatar = document.createElement('img');
-            const u = userProfiles[c.uid] || {};
-            avatar.src = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-            avatar.className = 'w-8 h-8 rounded-full object-cover mt-0.5';
-            avatar.alt = 'avatar';
-
-            const body = document.createElement('div');
-            body.className = 'flex-1';
-
-            const header = document.createElement('div');
-            header.className = 'text-sm text-gray-600 mb-1 flex items-center';
-            const name = (u.displayName || 'Anonymous');
-            header.innerHTML = `<span>${name} • ${new Date(c.time||Date.now()).toLocaleString()}</span>`;
-
-            // NEW: Add a delete button for the comment owner, post owner, or admin
-            if (currentUserUid && (c.uid === currentUserUid || currentUserUid === openPostCtx.ownerUid || adminMode)) {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'delete-comment-btn';
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    deleteComment(c.uid, cid);
-                };
-                header.appendChild(deleteBtn);
-            }
-
-            const text = document.createElement('div');
-            text.className = 'whitespace-pre-wrap break-words';
-            text.textContent = c.text || '';
-
-            body.appendChild(header);
-            body.appendChild(text);
-
-            // Replies
-            const repliesUl = document.createElement('ul');
-            repliesUl.className = 'mt-2 ml-4 space-y-2';
-            const replies = c.replies || {};
-            Object.entries(replies).sort((a,b)=> (a[1].time||0) - (b[1].time||0)).forEach(([rid, r])=>{
-              const rLi = document.createElement('li');
-              rLi.className = 'p-2 rounded-md bg-white border flex gap-2';
-              const rAv = document.createElement('img');
-              const ru = userProfiles[r.uid] || {};
-              rAv.src = ru.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-              rAv.className = 'w-6 h-6 rounded-full object-cover mt-0.5';
-              const metaWrap = document.createElement('div');
-              metaWrap.className = 'flex-1';
-              const meta = document.createElement('div');
-              meta.className = 'text-xs text-gray-600 mb-1';
-              meta.textContent = (ru.displayName || 'Anonymous') + ' • ' + new Date(r.time||Date.now()).toLocaleString();
-              const bodyTxt = document.createElement('div');
-              bodyTxt.textContent = r.text || '';
-              metaWrap.appendChild(meta);
-              metaWrap.appendChild(bodyTxt);
-
-              rLi.appendChild(rAv);
-              rLi.appendChild(metaWrap);
-              repliesUl.appendChild(rLi);
-            });
-            body.appendChild(repliesUl);
-
-            li.appendChild(avatar);
-            li.appendChild(body);
-            poComments.appendChild(li);
-          });
-        }
-
-        // --- AUTH & CONFIG LOGIC ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                currentUserUid = user.uid;
-                db.ref(`users/${user.uid}`).on('value', snap => {
-                    currentUserProfile = snap.val() || {};
-                    renderHeader();
-                    fetchAllData();
-                });
-            } else {
-                currentUserUid = null;
-                currentUserProfile = null;
-                renderHeader();
-                fetchAllData();
-            }
-        });
-        
-        db.ref('config/postsDisabled').on('value', snap => {
-            postsDisabled = !!snap.val();
-            // Old admin modal logic removed, this is handled by the new admin panel
-            renderHeader(); // Rerender header to show/hide post button based on status
-        });
-
-        // --- POST CREATION LOGIC ---
-        function renderHeader() {
-            const hasPostPermissions = currentUserProfile && currentUserProfile.codesUnlocked && (currentUserProfile.codesUnlocked.emerald || currentUserProfile.codesUnlocked.diamond || currentUserProfile.codesUnlocked.content);
-            
-            if (hasPostPermissions) {
-                mainHeader.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <h1 class="text-4xl md:text-5xl font-bold">Slither Clips</h1>
-                        <div class="flex-1 flex justify-end">
-                            <button id="addPostBtn" class="p-3 bg-blue-500 rounded-full text-white text-lg hover:bg-blue-600 transition-colors ${!postsDisabled ? '' : 'hidden'}">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                document.getElementById('addPostBtn').addEventListener('click', () => {
-                    isCreatingAdminPost = false;
-                    adminTargetUser.classList.add('hidden');
-                    postCreatorPopup.classList.remove('hidden');
-                    postTypeSelection.classList.remove('hidden');
-                    urlInputContainer.classList.add('hidden');
-                    // REMOVED: Hide poll fields
-                    selectedPostType = null;
-                    urlInput.value = '';
-                    captionInput.value = '';
-                    // Reset drafts/schedule
-                    draftToggle.checked = false;
-                    scheduleAt.value = '';
-                });
-            } else {
-                mainHeader.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <h1 class="text-4xl md:text-5xl font-bold">Slither Clips</h1>
-                        <div class="flex-1"></div>
-                    </div>
-                `;
-            }
-        }
-        
-        closePostCreatorBtn.addEventListener('click', () => {
-            postCreatorPopup.classList.add('hidden');
-            // NEW: Reset admin flag on close
-            isCreatingAdminPost = false;
-        });
-        
-        youtubeBtn.addEventListener('click', () => {
-            selectedPostType = 'youtube';
-            postTypeSelection.classList.add('hidden');
-            urlInputContainer.classList.remove('hidden');
-            urlInput.placeholder = 'Paste YouTube URL here...';
-            // REMOVED: Hide poll fields
-            document.getElementById('urlInput').parentElement.classList.remove('hidden');
-        });
-
-        tiktokBtn.addEventListener('click', () => {
-            selectedPostType = 'tiktok';
-            postTypeSelection.classList.add('hidden');
-            urlInputContainer.classList.remove('hidden');
-            urlInput.placeholder = 'Paste TikTok URL here...';
-            // REMOVED: Hide poll fields
-            document.getElementById('urlInput').parentElement.classList.remove('hidden');
-        });
-
-        // REMOVED: Poll button listener
-        
-        postButton.addEventListener('click', async () => {
-            const targetUid = isCreatingAdminPost ? adminUserSelect.value : currentUserUid;
-
-            if (!targetUid) {
-                showMessageBox('Please select a user or log in to post.');
-                return;
-            }
-            if (postsDisabled) {
-                showMessageBox('Posting is currently disabled.');
-                return;
-            }
-            if (!canDo('post:'+targetUid)) return showMessageBox('Slow down a bit 🙂');
-
-            const caption = captionInput.value;
-            let postData = null;
-
-            // REMOVED: Handle poll posts
-            const url = urlInput.value;
-            if (!url || !selectedPostType) {
-                uploadStatus.textContent = 'URL or post type missing.';
-                uploadStatus.classList.remove('hidden');
-                return;
-            }
-            if (selectedPostType === 'youtube') {
-                const ytIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|v\/|shorts\/))([\w-]{11})/);
-                if (!ytIdMatch) {
-                    uploadStatus.textContent = 'Invalid YouTube URL.';
-                    uploadStatus.classList.remove('hidden');
-                    return;
-                }
-                postData = {
-                    type: 'youtube',
-                    ytId: ytIdMatch[1],
-                    caption: caption,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    createdBy: targetUid
-                };
-            } else if (selectedPostType === 'tiktok') {
-                const ttIdMatch = url.match(/(?:tiktok\.com\/.*\/video\/)([\d]+)/);
-                if (!ttIdMatch) {
-                    uploadStatus.textContent = 'Invalid TikTok URL.';
-                    uploadStatus.classList.remove('hidden');
-                    return;
-                }
-                postData = {
-                    type: 'tiktok',
-                    videoId: ttIdMatch[1],
-                    caption: caption,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP,
-                    createdBy: targetUid
-                };
-            }
-
-            if (containsBadWord(caption)) {
-                showMessageBox('Post contains profanity. Please edit.');
-                return;
-            }
-
-            // NEW: Add drafts and scheduling logic
-            const isDraft = draftToggle.checked;
-            const scheduleVal = scheduleAt.value;
-            const publishAt = scheduleVal ? new Date(scheduleVal).getTime() : null;
-            if (postData) {
-              postData = { ...postData, draft: !!isDraft, publishAt: publishAt || null };
-            }
-
-            try {
-                const postId = crypto.randomUUID();
-                await db.ref(`users/${targetUid}/posts/${postId}`).set(postData);
-                postCreatorPopup.classList.add('hidden');
-                fetchAllData(); // Refresh the feed
-            } catch (error) {
-                console.error('URL post failed:', error);
-                uploadStatus.textContent = `Post failed: ${error.message}.`;
-                uploadStatus.classList.remove('hidden');
-            }
-        });
-
-        // --- MAIN FEED LOGIC ---
-        function createPostTile(post, ownerUid) {
-            const user = userProfiles[ownerUid] || {};
-            
-            // NEW: Profile Customization
-            const hasCustomization = !!(user.codesUnlocked && (user.codesUnlocked.diamond || user.codesUnlocked.emerald));
-            const nameColor = hasCustomization ? (user.profileCustomization?.nameColor || '#fff') : '#fff';
-            const cardBg = hasCustomization ? (user.profileCustomization?.gradient || '') : '';
-            const ringColor = nameColor;
-            // MODIFIED: Saved state check for button label
-            const saveKey = `${ownerUid}__${post.postId}`;
-            const isSaved = !!(currentUserProfile && currentUserProfile.saved && currentUserProfile.saved[saveKey]);
-
-            // Apply customizations directly as inline styles
-            const postCardStyle = cardBg ? `style="background:${cardBg}"` : '';
-            const usernameStyle = `style="color:${nameColor}"`;
-            const avatarRingStyle = `box-shadow:0 0 0 2px ${ringColor}`;
-
-            // NEW: Calculate reaction counts
-            let fireReactions = 0;
-            let thumbsDownReactions = 0;
-            if (post.reactions) {
-                for (const [emoji, reactors] of Object.entries(post.reactions)) {
-                    const count = Object.keys(reactors).length;
-                    if (emoji === '👎') {
-                        thumbsDownReactions += count;
-                    } else {
-                        fireReactions += count;
-                    }
-                }
-            }
-
-            // NEW: Check for ranks and build indicator HTML and card classes
-            let indicatorHtml = '';
-            const trendingRank = trendingRankMap[post.postId];
-            const atbRank = atbRankMap[post.postId];
-            let cardClasses = "post-tile post-card p-4 rounded-2xl relative";
-
-            if (trendingRank) {
-                cardClasses += " trending-card";
-            }
-            if (atbRank) {
-                cardClasses += " atb-card";
-            }
-
-            if (trendingRank || atbRank) {
-                let badges = '';
-                if (trendingRank) {
-                    badges += `
-                        <div class="rank-badge fire-theme">
-                            <i class="fas fa-fire"></i>
-                            <span>#${trendingRank}</span>
-                        </div>
-                    `;
-                }
-                if (atbRank) {
-                    badges += `
-                        <div class="rank-badge trophy-theme">
-                            <i class="fas fa-trophy"></i>
-                            <span>#${atbRank}</span>
-                        </div>
-                    `;
-                }
-                indicatorHtml = `<div class="absolute top-3 right-3 flex flex-col items-end gap-2 z-10">${badges}</div>`;
-            }
-
-
-            let mediaHtml = '';
-            // NEW: Lazy-load YouTube/TikTok embeds
-            if (post.type === 'image' && post.url) {
-                mediaHtml = `<img src="${post.url}" alt="${post.caption}" class="post-media rounded-xl" loading="lazy">`;
-            } else if (post.type === 'youtube' && post.ytId) {
-                const thumb = `https://i.ytimg.com/vi/${post.ytId}/hqdefault.jpg`;
-                mediaHtml = `
-                  <div class="embed-placeholder aspect-video" data-yt="${post.ytId}">
-                    <img src="${thumb}" alt="YouTube preview"/>
-                    <div class="embed-play">▶</div>
-                  </div>`;
-            } else if (post.type === 'tiktok' && post.videoId) {
-                mediaHtml = `
-                  <div class="embed-placeholder aspect-video" data-tt="${post.videoId}">
-                    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/tiktok_placeholder.png" alt="TikTok preview"/>
-                    <div class="embed-play">▶</div>
-                  </div>`;
-            } else {
-                mediaHtml = `<div class="post-media rounded-xl bg-gray-800 text-center text-gray-400 flex items-center justify-center">No Media</div>`;
-            }
-
-            const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric', month: 'short', day: 'numeric'
-            });
-
-            const isOwner = currentUserUid === ownerUid;
-            const deleteButton = (isOwner || adminMode) ? `<button class="delete-post-btn" onclick="event.stopPropagation(); deletePostFromFeed('${ownerUid}', '${post.postId}');">✕</button>` : '';
-            
-            const captionContent = formatCaption(post.caption || '');
-
-            return `
-                <div class="${cardClasses}" data-post-id="${post.postId}" data-owner-uid="${ownerUid}" tabindex="0" ${postCardStyle}>
-                    ${indicatorHtml}
-                    <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
-                        <div class="relative w-12 h-12 rounded-full overflow-hidden" style="${avatarRingStyle}">
-                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-full h-full object-cover" loading="lazy">
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="font-bold text-lg" ${usernameStyle}>${user.displayName || 'Anonymous User'}</span>
-                            <span class="text-sm text-gray-500">${timestamp}</span>
-                        </div>
-                    </div>
-                    ${deleteButton}
-                    ${mediaHtml}
-                    <div class="post-footer mt-4 flex flex-col gap-2">
-                        <div class="post-caption text-sm" style="color:${hasCustomization ? nameColor : '#d1d5db'}">${captionContent}</div>
-                        <div class="flex justify-between items-center">
-                            <div class="flex items-center gap-4 text-gray-400 text-sm">
-                                <div class="flex items-center gap-1.5" title="Views">
-                                    <i class="fas fa-eye"></i>
-                                    <span>${(post.views || 0).toLocaleString()}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 text-orange-400" title="Reactions">
-                                    <i class="fas fa-fire"></i>
-                                    <span>${fireReactions.toLocaleString()}</span>
-                                </div>
-                                <div class="flex items-center gap-1.5 text-blue-400" title="Thumbs Down">
-                                    <i class="fas fa-thumbs-down"></i>
-                                    <span>${thumbsDownReactions.toLocaleString()}</span>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button class="open-post-indicator">
-                                    <i class="fas fa-folder-open"></i>
-                                    <span>Open</span>
-                                </button>
-                                <button class="px-3 py-1 rounded-lg bg-gray-700/60 text-white text-xs save-btn" data-owner="${ownerUid}" data-post="${post.postId}">${isSaved ? 'Unsave' : 'Save'}</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // NEW: Special tile for trending posts
-        function createTrendingPostTile(post, ownerUid, rank, titleText = 'Trending Clip') {
-            const user = userProfiles[ownerUid] || {};
-            
-            // Top Emojis
-            let topEmojisHtml = '<div class="text-gray-400">No reactions yet.</div>';
-            if (post.reactions) {
-                const sortedEmojis = Object.entries(post.reactions)
-                    .map(([emoji, reactors]) => ({ emoji, count: Object.keys(reactors).length }))
-                    .sort((a, b) => b.count - a.count)
-                    .slice(0, 3);
-                
-                if (sortedEmojis.length > 0) {
-                    topEmojisHtml = sortedEmojis.map(item => `
-                        <div class="flex items-center gap-2 bg-gray-700/50 px-3 py-1 rounded-full">
-                            <span class="text-xl">${item.emoji}</span>
-                            <span class="font-bold text-white">${item.count}</span>
-                        </div>
-                    `).join('');
-                }
-            }
-
-            // Latest Comment
-            let topCommentHtml = '<div class="text-gray-400">No comments yet.</div>';
-            if (post.comments) {
-                const sortedComments = Object.values(post.comments)
-                    .sort((a, b) => (b.time || 0) - (a.time || 0));
-                
-                if (sortedComments.length > 0) {
-                    const topComment = sortedComments[0];
-                    const commenter = userProfiles[topComment.uid] || {};
-                    topCommentHtml = `
-                        <div class="bg-gray-700/50 p-3 rounded-lg">
-                            <div class="flex items-center gap-2 mb-2">
-                                <img src="${commenter.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-6 h-6 rounded-full object-cover">
-                                <span class="font-semibold text-sm text-white">${commenter.displayName || 'Anonymous'}</span>
-                            </div>
-                            <p class="text-gray-300 text-sm">${escapeHtml(topComment.text || '')}</p>
-                        </div>
-                    `;
-                }
-            }
-
-            const rankColors = { 1: 'border-yellow-400', 2: 'border-gray-400', 3: 'border-amber-600', 4: 'border-gray-600', 5: 'border-gray-700' };
-            const rankTextColors = { 1: 'text-yellow-400', 2: 'text-gray-400', 3: 'text-amber-600', 4: 'text-gray-500', 5: 'text-gray-600' };
-            const rankGlowClasses = { 1: 'rank-1', 2: 'rank-2', 3: 'rank-3' };
-            const glowClass = rankGlowClasses[rank] || '';
-            const viewCount = post.views || 0;
-
-            let mediaHtml = '';
-            if (post.type === 'youtube' && post.ytId) {
-                const thumb = `https://i.ytimg.com/vi/${post.ytId}/hqdefault.jpg`;
-                mediaHtml = `<div class="embed-placeholder aspect-video" data-yt="${post.ytId}"><img src="${thumb}" alt="YouTube preview"/><div class="embed-play">▶</div></div>`;
-            } else if (post.type === 'tiktok' && post.videoId) {
-                mediaHtml = `<div class="embed-placeholder aspect-video" data-tt="${post.videoId}"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/tiktok_placeholder.png" alt="TikTok preview"/><div class="embed-play">▶</div></div>`;
-            } else {
-                mediaHtml = `<div class="post-media rounded-xl bg-gray-800 text-center text-gray-400 flex items-center justify-center">No Media</div>`;
-            }
-
-            return `
-                <div class="post-card p-4 rounded-2xl border-2 ${rankColors[rank] || 'border-transparent'} bg-gray-800/20 flex flex-col md:flex-row gap-6 ${glowClass}">
-                    <div class="md:w-1/2 flex flex-col">
-                        <div class="flex items-center gap-3 mb-4 cursor-pointer user-details" data-uid="${ownerUid}">
-                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="w-12 h-12 rounded-full object-cover">
-                            <div>
-                                <span class="font-bold text-lg text-white">${user.displayName || 'Anonymous User'}</span>
-                                <span class="block text-sm text-gray-400">${new Date(post.createdAt).toLocaleDateString()}</span>
-                            </div>
-                        </div>
-                        ${mediaHtml}
-                        <div class="post-caption text-sm text-gray-300 mt-3">${formatCaption(post.caption || '')}</div>
-                    </div>
-                    <div class="md:w-1/2 flex flex-col gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="text-5xl font-bold ${rankTextColors[rank] || 'text-gray-700'}">#${rank}</div>
-                            <h3 class="text-xl font-bold text-white">${titleText}</h3>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-200 mb-2">Top Reactions</h4>
-                            <div class="flex flex-wrap gap-2">${topEmojisHtml}</div>
-                        </div>
-                        <div>
-                            <h4 class="font-semibold text-gray-200 mb-2">Latest Comment</h4>
-                            ${topCommentHtml}
-                        </div>
-                        <div class="mt-auto flex justify-between items-center">
-                            <div class="flex items-center gap-2 text-gray-400 text-sm">
-                                <i class="fas fa-eye"></i>
-                                <span>${viewCount.toLocaleString()} Views</span>
-                            </div>
-                            <button class="open-post-indicator" onclick="openPostDetails('${ownerUid}', '${post.postId}')">
-                                <i class="fas fa-folder-open mr-2"></i>
-                                <span>View Full Post</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // NEW: Replaced with paged/trending renderer
-        function renderPosts(reset=true){
-            searchContainer.classList.toggle('hidden', currentTab !== 'all');
-
-            if (currentTab === 'trending' || currentTab === 'all-time-best') {
-                const isTrending = currentTab === 'trending';
-                const titleText = isTrending ? 'Trending Clip' : 'All-Time Best';
-                const filtered = filterPosts(allPosts, currentTab).slice(0, 5);
-                postsContainer.className = 'grid grid-cols-1 gap-6 md:gap-8'; // Override grid class for list view
-                if (filtered.length === 0) {
-                    postsContainer.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">${isTrending ? 'Nothing is trending right now.' : 'No posts to rank yet.'}</div>`;
-                    return;
-                }
-                const html = filtered.map((post, index) => createTrendingPostTile(post, post.createdBy, index + 1, titleText)).join('');
-                postsContainer.innerHTML = html;
-                if (sentinel) sentinel.remove();
-                if (io) io.disconnect();
-                return;
-            }
-
-            // Reset grid class for other tabs
-            postsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8';
-
-            const filtered = filterPosts(allPosts, currentTab);
-            if (reset){
-                postsContainer.innerHTML = '';
-                renderIndex = 0;
-            }
-            const slice = filtered.slice(renderIndex, renderIndex + RENDER_PAGE);
-            const html = slice.map(post => createPostTile(post, post.createdBy)).join('');
-            postsContainer.insertAdjacentHTML('beforeend', html);
-            renderIndex += slice.length;
-
-            const tiles = postsContainer.querySelectorAll('.post-tile');
-            if (tiles.length > 60){
-                for (let i=0;i<tiles.length-60;i++) tiles[i].remove();
-            }
-
-            if (sentinel) sentinel.remove();
-            sentinel = document.createElement('div');
-            sentinel.id = 'feed-sentinel';
-            sentinel.className = 'py-4 text-center text-gray-500 col-span-full';
-            sentinel.textContent = (renderIndex < filtered.length) ? 'Loading more…' : '— End —';
-            postsContainer.appendChild(sentinel);
-
-            if (io) io.disconnect();
-            if (renderIndex < filtered.length){
-                io = new IntersectionObserver((entries)=>{
-                    if (entries[0].isIntersecting){
-                        io.disconnect();
-                        renderPosts(false);
-                    }
-                }, {rootMargin: '400px'});
-                io.observe(sentinel);
-            }
-        }
-        
-        function getReactionCount(post) {
-            if (!post || !post.reactions) return 0;
-            return Object.values(post.reactions).reduce((sum, reactors) => {
-                if (typeof reactors === 'object' && reactors !== null) {
-                    return sum + Object.keys(reactors).length;
-                }
-                return sum;
-            }, 0);
-        }
-
-        function filterPosts(posts, tab) {
-            const now = Date.now();
-            const filteredByVisibility = posts.filter(post => {
-                const visibleAt = post.publishAt || post.createdAt;
-                return !post.draft && (!visibleAt || visibleAt <= now);
-            });
-
-            const visiblePosts = filteredByVisibility.filter(post => {
-                const shadowed = !!userProfiles[post.createdBy]?.shadowbanned;
-                const isMe = currentUserUid && post.createdBy === currentUserUid;
-                return !shadowed || isMe;
-            });
-            
-            let finalPosts = visiblePosts;
-
-            if (tab === 'trending') {
-                 finalPosts = visiblePosts.map(post => {
-                    const totalReactions = getReactionCount(post);
-                    const ageInHours = (Date.now() - (post.createdAt || 0)) / 3600000;
-                    const gravity = 1.8;
-                    const score = totalReactions / Math.pow(ageInHours + 2, gravity);
-                    return { ...post, score };
-                }).sort((a, b) => b.score - a.score);
-            } else if (tab === 'all-time-best') {
-                finalPosts = visiblePosts.sort((a, b) => {
-                    const scoreA = getReactionCount(a) + (a.comments ? Object.keys(a.comments).length : 0);
-                    const scoreB = getReactionCount(b) + (b.comments ? Object.keys(b.comments).length : 0);
-                    return scoreB - scoreA;
-                });
-            } else if (tab === 'all') {
-                const searchTerm = searchInput.value.toLowerCase();
-                let filtered = visiblePosts;
-
-                if (searchTerm) {
-                    filtered = visiblePosts.filter(post => {
-                        const user = userProfiles[post.createdBy] || {};
-                        const usernameMatch = (user.displayName || '').toLowerCase().includes(searchTerm);
-                        const captionMatch = (post.caption || '').toLowerCase().includes(searchTerm);
-                        return usernameMatch || captionMatch;
-                    });
-                }
-                
-                finalPosts = filtered.sort((a, b) => {
-                    const scoreA = getReactionCount(a) + (a.comments ? Object.keys(a.comments).length : 0);
-                    const scoreB = getReactionCount(b) + (b.comments ? Object.keys(b.comments).length : 0);
-                    return scoreB - scoreA;
-                });
-
-            } else if (tab === 'youtube') {
-                finalPosts = visiblePosts.filter(post => post.type === 'youtube');
-            } else if (tab === 'tiktok') {
-                finalPosts = visiblePosts.filter(post => post.type === 'tiktok');
-            } else if (tab === 'saved') {
-                const u = (firebase.auth().currentUser||{}).uid;
-                if (!u) return [];
-                const saved = (currentUserProfile && currentUserProfile.saved) ? Object.keys(currentUserProfile.saved) : [];
-                finalPosts = visiblePosts.filter(p => saved.includes(`${p.createdBy}__${p.postId}`));
-            }
-
-            if (activeTag){
-              finalPosts = finalPosts.filter(p=> (p.caption||'').toLowerCase().includes('#'+activeTag));
-            }
-            
-            return finalPosts;
-        }
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                currentTab = button.dataset.tab;
-                if (currentTab !== 'all') {
-                    searchInput.value = '';
-                }
-                renderPosts(true);
-            });
-        });
-        
-        searchInput.addEventListener('input', () => {
-            if (currentTab === 'all') {
-                renderPosts(true);
-            }
-        });
-
-        // Event delegation for opening the post popup and interacting with its content
-        postsContainer.addEventListener('click', (e)=>{
-          const tile = e.target.closest('.post-tile, .post-card');
-          if (!tile) return;
-
-          // For trending tiles, the details are in the parent .post-card
-          const ownerUid = tile.dataset.ownerUid || tile.querySelector('[data-uid]')?.dataset.uid;
-          const postId = tile.dataset.postId || tile.querySelector('[data-post-id]')?.dataset.postId;
-          
-          if (!ownerUid || !postId) return;
-
-          if (e.target.closest('.open-post-indicator')) {
-            openPostDetails(ownerUid, postId);
-          } else if (e.target.closest('.user-details')) {
-              loadUserProfile(ownerUid);
-          }
-        });
-
-        // NEW: Lazy-load embeds click handler
-        postsContainer.addEventListener('click', (e)=>{
-          const ph = e.target.closest('.embed-placeholder');
-          if (!ph) return;
-          e.stopPropagation();
-          if (ph.dataset.yt){
-            const id = ph.dataset.yt;
-            ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${id}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-          } else if (ph.dataset.tt){
-            const id = ph.dataset.tt;
-            ph.outerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${id}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-          }
-        }, true);
-        
-        // NEW: Long-press handler
-        let pressTimer = null;
-        postsContainer.addEventListener('touchstart', (e)=>{
-          const tile = e.target.closest('.post-tile');
-          if (!tile) return;
-          pressTimer = setTimeout(()=>{
-            const ownerUid = tile.dataset.ownerUid;
-            const postId = tile.dataset.postId;
-            openPostDetails(ownerUid, postId);
-          }, 420);
-        }, {passive:true});
-        ['touchend','touchmove','touchcancel'].forEach(evt => postsContainer.addEventListener(evt,()=> clearTimeout(pressTimer), {passive:true}));
-
-        // NEW: Hashtag click handler
-        postsContainer.addEventListener('click', (e)=>{
-          const t = e.target.closest('.tag-link'); if (!t) return;
-          e.preventDefault();
-          activeTag = (t.dataset.tag||'').toLowerCase();
-          currentTab = 'all';
-          document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-          document.querySelector('.tab-btn[data-tab="all"]').classList.add('active');
-          renderPosts(true);
-        });
-
-        // NEW: Mention click handler
-        postsContainer.addEventListener('click', (e)=>{
-          const m = e.target.closest('.mention-link'); if (!m) return;
-          e.preventDefault();
-          const uid = nameToUid[(m.dataset.name||'').toLowerCase()];
-          if (uid) loadUserProfile(uid);
-        });
-
-        // MODIFIED: Save button click handler now toggles text
-        postsContainer.addEventListener('click', (e)=>{
-          const b = e.target.closest('.save-btn'); if (!b) return;
-          e.stopPropagation();
-          const u = (firebase.auth().currentUser||{}).uid;
-          if (!u) return showMessageBox('Please log in to save posts.');
-          const key = `${b.dataset.owner}__${b.dataset.post}`;
-          const ref = firebase.database().ref(`users/${u}/saved/${key}`);
-          const currentlyUnsave = (b.textContent.trim().toLowerCase() === 'unsave');
-          if (currentlyUnsave){
-            ref.remove();
-            b.textContent = 'Save';
-          } else {
-            ref.set(true);
-            b.textContent = 'Unsave';
-          }
-        });
-        
-        // NEW: Keyboard handler for accessibility
-        postsContainer.addEventListener('keydown', (e)=>{
-          if (e.key !== 'Enter') return;
-          const tile = e.target.closest('.post-tile'); if (!tile) return;
-          openPostDetails(tile.dataset.ownerUid, tile.dataset.postId);
-        });
-
-        // NEW: Mini Profile Hover
-        const mini = document.getElementById('miniProfile');
-        let miniTimer = null;
-        postsContainer.addEventListener('mouseenter', (e)=>{
-          const userEl = e.target.closest('.user-details'); if (!userEl) return;
-          const uid = userEl.dataset.uid; if (!uid) return;
-          clearTimeout(miniTimer);
-          const rect = userEl.getBoundingClientRect();
-          mini.style.left = (rect.left)+'px'; mini.style.top = (rect.bottom+8)+'px';
-          const u = userProfiles[uid] || {};
-          mini.innerHTML = `
-            <div class="flex items-center gap-2">
-              <img src="${u.avatar||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
-              <div class="font-semibold">${escapeHtml(u.displayName||'Anonymous')}</div>
-            </div>
-            <div class="text-xs text-gray-600 mt-1">${escapeHtml(u.aboutMe||'')}</div>
-            <div class="mt-2 flex gap-2">
-              <button class="px-2 py-1 rounded bg-gray-900 text-white text-xs" data-open="${uid}">View</button>
-            </div>`;
-          mini.classList.remove('hidden');
-        }, true);
-        postsContainer.addEventListener('mouseleave', (e)=>{
-          if (!e.relatedTarget || !mini.contains(e.relatedTarget)){
-            miniTimer = setTimeout(()=> mini.classList.add('hidden'), 120);
-          }
-        }, true);
-        mini.addEventListener('mouseenter', ()=> clearTimeout(miniTimer));
-        mini.addEventListener('mouseleave', ()=> mini.classList.add('hidden'));
-        mini.addEventListener('click', (e)=>{
-          const b = e.target.closest('[data-open]'); if (!b) return;
-          loadUserProfile(b.dataset.open);
-          mini.classList.add('hidden');
-        });
-
-        // F) Implement openPostDetails() and loaders
-        async function openPostDetails(ownerUid, postId){
-          const postPath = `users/${ownerUid}/posts/${postId}`;
-
-          // NEW: Increment view count
-          firebase.database().ref(postPath).child('views').transaction(currentViews => {
-            return (currentViews || 0) + 1;
-          }).catch(err => console.error("View count transaction failed:", err));
-
-          openPostCtx = { ownerUid, postId, postPath };
-
-          // Snapshot post
-          const snap = await firebase.database().ref(postPath).once('value');
-          const post = snap.val();
-          if (!post){ return; }
-
-          // Header + avatar/name
-          const [nameSnap, avatarSnap] = await Promise.all([
-            firebase.database().ref(`users/${ownerUid}/displayName`).once('value'),
-            firebase.database().ref(`users/${ownerUid}/avatar`).once('value')
-          ]);
-          const displayName = nameSnap.val() || 'Anonymous';
-          const avatarUrl = avatarSnap.val() || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-
-          poAvatar.src = avatarUrl;
-          poUsername.textContent = displayName;
-          poTimestamp.textContent = new Date(post.createdAt || Date.now()).toLocaleString();
-
-          // Media
-          poMedia.innerHTML = ''; // Clear existing content
-          if (post.type === 'image' && post.storagePath){
-            const url = await firebase.storage().ref(post.storagePath).getDownloadURL().catch(()=>null);
-            poMedia.innerHTML = url ? `<img src="${url}" class="w-full h-auto">` : '<div class="p-6 text-white">Image not available.</div>';
-          } else if (post.type === 'youtube' && post.ytId){
-            poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-          } else if (post.type === 'tiktok' && post.videoId){
-            poMedia.innerHTML = `<div class="aspect-video"><iframe class="w-full h-full" src="https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
-          } else {
-            poMedia.innerHTML = '<div class="p-6 text-white">No media.</div>';
-          }
-
-          // Caption + owner edit controls
-          // MODIFIED: Use formatCaption() for overlay
-          poCaptionText.innerHTML = formatCaption(post.caption || '');
-          const currentUid = (firebase.auth().currentUser || {}).uid;
-          const isOwner = currentUid && currentUid === ownerUid;
-          poEditBtn.classList.toggle('hidden', !isOwner);
-          poDeleteBtn.classList.toggle('hidden', !(isOwner || adminMode));
-          
-          // MODIFIED: Also set caption color if user has customization
-          firebase.database().ref(`users/${ownerUid}/profileCustomization/nameColor`).once('value').then(s=>{
-            const c = s.val();
-            if (c) poCaptionText.style.color = c;
-          });
-
-          poEditBtn.onclick = ()=>{
-            poCaptionInput.value = post.caption || '';
-            poCaptionText.classList.add('hidden');
-            poCaptionEdit.classList.remove('hidden');
-          };
-          poCancelCaption.onclick = ()=>{
-            poCaptionEdit.classList.add('hidden');
-            poCaptionText.classList.remove('hidden');
-          };
-          poSaveCaption.onclick = async ()=>{
-            const newCap = (poCaptionInput.value || '').trim();
-            if (containsBadWord(newCap)) { showMessageBox('That description contains banned words.'); return; }
-            await firebase.database().ref(`${postPath}/caption`).set(newCap);
-            poCaptionText.innerHTML = formatCaption(newCap); // NEW: use formatCaption()
-            poCaptionEdit.classList.add('hidden');
-            poCaptionText.classList.remove('hidden');
-          };
-          poDeleteBtn.onclick = async ()=>{
-            const doDelete = await showMessageBox('Delete this post?', true);
-            if (!doDelete) return;
-            // if it was an image, try to delete the file too (best-effort)
-            if (post.type === 'image' && post.storagePath){
-              firebase.storage().ref(post.storagePath).delete().catch(()=>{});
-            }
-            firebase.database().ref(postPath).remove().then(hidePostOverlay);
-          };
-          // MODIFIED: Share button handler now uses fixed URL
-          poShareBtn.onclick = ()=>{
-            const link = "https://kcevents.uk/#socialfeed";
-            navigator.clipboard.writeText(link).then(()=> showMessageBox('Link copied!'));
-          };
-          // REMOVED: Report button handler has been deleted.
-
-          // Reactions (live)
-          firebase.database().ref(`${postPath}/reactions`).off();
-          firebase.database().ref(`${postPath}/reactions`).on('value', renderPostReactions);
-
-          // Comments (live)
-          firebase.database().ref(`${postPath}/comments`).off();
-          firebase.database().ref(`${postPath}/comments`).on('value', renderPostComments);
-
-          // New comment
-          poCommentSend.onclick = ()=>{
-            const u = firebase.auth().currentUser;
-            if (!u) return showMessageBox('Please log in to comment.');
-            if (postsDisabled) return showMessageBox('Posting is currently disabled.');
-            const text = (poCommentInput.value || '').trim();
-            if (!text) return;
-            if (!canDo('comment:'+u.uid)) return showMessageBox('Please wait a moment before commenting again.');
-            if (containsBadWord(text)) return showMessageBox('Please avoid profanity.');
-
-            const cRef = firebase.database().ref(`${postPath}/comments`).push();
-            cRef.set({ uid: u.uid, text, time: firebase.database.ServerValue.TIMESTAMP });
-            poCommentInput.value = '';
-          };
-          
-          showPostOverlay();
-        }
-
-        async function fetchAllData() {
-            try {
-                // NEW: Show skeletons before fetching
-                showSkeletons(6);
-                const usersRef = db.ref('users');
-                const usersSnapshot = await usersRef.once('value');
-                const users = usersSnapshot.val();
-                
-                let combinedPosts = [];
-
-                if (users) {
-                    userProfiles = users;
-                    // NEW: Build nameToUid index for mentions
-                    Object.entries(users).forEach(([uid, u]) => { if (u.displayName) nameToUid[u.displayName.toLowerCase()] = uid; });
-                    
-                    for (const uid in users) {
-                        // NEW: Shadowban filter
-                        const shadowed = !!users[uid].shadowbanned;
-                        const isMe = currentUserUid && uid===currentUserUid;
-                        if (shadowed && !isMe) continue;
-
-                        if (users[uid].posts) {
-                            // Limit to the most recent 50 posts per user to reduce download costs
-                            const postEntries = Object.entries(users[uid].posts);
-                            postEntries.sort((a, b) => (a[1].createdAt || 0) - (b[1].createdAt || 0));
-                            const recentPosts = postEntries.slice(-50);
-                            for (const [postId, post] of recentPosts) {
-                                // NEW: Visibility logic for drafts and scheduled posts
-                                const now = Date.now();
-                                const visibleAt = post.publishAt || post.createdAt;
-                                const isVisible = !post.draft && (!visibleAt || visibleAt <= now);
-                                if (!isVisible) continue;
-
-                                combinedPosts.push({
-                                    postId: postId,
-                                    ...post,
-                                    createdBy: uid,
-                                });
-                            }
-                        }
-                    }
-                }
-                
-                allPosts = combinedPosts.sort((a, b) => b.createdAt - a.createdAt);
-
-                // NEW: Pre-calculate ranks before rendering
-                const trendingPosts = filterPosts(allPosts, 'trending').slice(0, 5);
-                trendingRankMap = {};
-                trendingPosts.forEach((p, index) => {
-                    trendingRankMap[p.postId] = index + 1;
-                });
-
-                const atbPosts = filterPosts(allPosts, 'all-time-best').slice(0, 5);
-                atbRankMap = {};
-                atbPosts.forEach((p, index) => {
-                    atbRankMap[p.postId] = index + 1;
-                });
-                
-                renderPosts(true);
-            } catch (error) {
-                console.error("Failed to fetch all data:", error);
-                postsContainer.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Failed to load posts.</div>`;
-            }
-        }
-        
-        // --- USER POPUP LOGIC (from old file) ---
-        let allProfilePosts = [];
-        let postPageIndex = 0;
-        const postsPerPage = 2;
-
-        function renderProfilePosts() {
-            const postsContainerEl = document.getElementById('popupPostsColumn');
-            postsContainerEl.innerHTML = '';
-            if (allProfilePosts.length === 0) {
-                postsContainerEl.innerHTML = `<p class="text-gray-500 text-center">No posts to display.</p>`;
-                return;
-            }
-            const start = postPageIndex * postsPerPage;
-            const end = start + postsPerPage;
-            const postsToDisplay = allProfilePosts.slice(start, end);
-            postsToDisplay.forEach(post => {
-                let mediaHtml = '';
-               if (post.type === 'image' && post.storagePath) {
-                    firebase.storage().ref(post.storagePath).getDownloadURL().then(url => {
-                        postsContainerEl.querySelector(`[data-post-id="${post.postId}"] .post-media`).src = url;
-                    });
-                } else if (post.type === 'youtube') {
-                    const embedUrl = `https://www.youtube.com/embed/${post.ytId}`;
-                    mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-                } else if (post.type === 'tiktok') {
-                    const embedUrl = `https://www.tiktok.com/embed/v2/${post.videoId}?lang=en-US`;
-                    mediaHtml = `<iframe class="w-full aspect-video" src="${embedUrl}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
-                } else {
-                    mediaHtml = `<div class="p-4 text-gray-900">Media not supported.</div>`;
-                }
-                const timestamp = new Date(post.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric', month: 'short', day: 'numeric'
-                });
-                
-                postsContainerEl.innerHTML += `
-                    <div class="post-tile bg-gray-700/20 rounded-lg p-4" data-post-id="${post.postId}">
-                        ${mediaHtml || '<img class="post-media w-full" src="">'}
-                        <div class="mt-2 text-gray-300">${post.caption}</div>
-                        <div class="mt-1 text-xs text-gray-500">${timestamp}</div>
-                    </div>
-                `;
-            });
-        }
-        
-        async function loadProfilePosts(uid) {
-            try {
-                // Load only the most recent 50 posts for a profile to reduce download costs
-                const snapshot = await db.ref(`users/${uid}/posts`)
-                    .orderByChild('createdAt')
-                    .limitToLast(50)
-                    .once('value');
-                const posts = [];
-                snapshot.forEach(childSnap => {
-                    const post = childSnap.val();
-                    // NEW: Filter drafts/scheduled posts for profile owner
-                    const now = Date.now();
-                    const visibleAt = post.publishAt || post.createdAt;
-                    if (post.draft || (visibleAt && visibleAt > now)) return;
-
-                    posts.push({
-                        postId: childSnap.key,
-                        ...post
-                    });
-                });
-                allProfilePosts = posts.sort((a, b) => b.createdAt - a.createdAt);
-                postPageIndex = 0;
-                renderProfilePosts();
-            } catch (error) {
-                console.error('Failed to load posts for profile popup:', error);
-                const postsContainerEl = document.getElementById('popupPostsColumn');
-                postsContainerEl.innerHTML = `<p class="text-gray-500 text-center">Failed to load posts.</p>`;
-            }
-        }
-        
-        window.loadUserProfile = (uid) => {
-            profileOwnerUid = uid;
-            
-            const popupCard = document.getElementById('userPopupCard');
-            const postsColumn = document.getElementById('popupPostsColumn');
-            const bannerEl = document.getElementById('popupBanner');
-            const avatarEl = document.getElementById('popupAvatar');
-            const usernameEl = document.getElementById('popupUserName');
-            const aboutEl = document.getElementById('popupAboutMe');
-            const badgesContainer = document.getElementById('popupBadges');
-            const streakEl = document.getElementById('popupStreak');
-
-            popupCard.classList.remove('two-column');
-            postsColumn.style.display = 'none';
-            postsColumn.innerHTML = '';
-            
-            db.ref(`users/${uid}`).once('value').then(snap => {
-                const userData = snap.val() || {};
-                const isEligible = !!(userData.codesUnlocked?.diamond || userData.codesUnlocked?.emerald);
-
-                if (isEligible) {
-                    popupCard.classList.add('two-column');
-                    postsColumn.style.display = 'block';
-                    postsColumn.innerHTML = `
-                        <h4 class="popup-section-title text-center text-gray-800">POSTS</h4>
-                        <div id="postsContainer" class="post-list"></div>
-                    `;
-                    loadProfilePosts(uid);
-                }
-
-                usernameEl.textContent = userData.displayName || 'Anonymous User';
-                avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
-
-                const streakNum = typeof userData.loginStreak === 'number' ? userData.loginStreak : (parseInt(userData.loginStreak) || 0);
-                if (streakNum > 0) {
-                    streakEl.textContent = `🔥 ${streakNum} Day Streak`;
-                    streakEl.style.display = 'block';
-                } else {
-                    streakEl.style.display = 'none';
-                }
-
-                const custom = userData.profileCustomization || {};
-                const hasCustomization = userData.codesUnlocked?.diamond;
-
-                if (hasCustomization && custom.gradient) {
-                    popupCard.style.background = custom.gradient;
-                } else {
-                    popupCard.style.background = '#f1f3f5';
-                }
-
-                if (hasCustomization && custom.nameColor) {
-                    usernameEl.style.color = custom.nameColor;
-                } else {
-                    usernameEl.style.color = '#111827';
-                }
-
-                if (hasCustomization && custom.banner) {
-                    bannerEl.style.backgroundImage = `url('${custom.banner}')`;
-                    bannerEl.style.backgroundColor = 'transparent';
-                } else {
-                    bannerEl.style.backgroundImage = 'none';
-                    bannerEl.style.backgroundColor = '#ced4da';
-                }
-
-                Promise.all([
-                    db.ref(`badges/${uid}`).once('value'),
-                    db.ref(`users/${uid}/customBadges`).once('value')
-                ]).then(([bsnap, csnap]) => {
-                    badgesContainer.innerHTML = '';
-                    let hasAnyBadge = false;
-
-                    const badgeSpecs = {
-                        verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
-                        offence: { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png', bg: '#ff6b6b' },
-                        defence: { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png', bg: '#74c0fc' },
-                        overall: { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
-                    };
-
-                    const addBadge = (spec, text, insertFirst = false) => {
-                        hasAnyBadge = true;
-                        const div = document.createElement('div');
-                        div.className = 'popup-badge';
-                        div.style.background = spec.bg;
-                        div.innerHTML = `<img src="${spec.icon}"><span>${text}</span>`;
-                        if (insertFirst && badgesContainer.firstChild) {
-                            badgesContainer.insertBefore(div, badgesContainer.firstChild);
-                        } else if (insertFirst) {
-                            badgesContainer.appendChild(div);
-                        } else {
-                            badgesContainer.appendChild(div);
-                        }
-                    };
-
-                    const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
-                    const baseBadges = bsnap.val() || {};
-
-                    const isVerified = toBool(userData.emailVerified);
-                    if (isVerified) addBadge(badgeSpecs.verified, 'Verified', true);
-
-                    ['offence', 'defence', 'overall'].forEach(key => {
-                        const count = parseInt((baseBadges && baseBadges[key]) || 0) || 0;
-                        if (count > 0) {
-                            addBadge(badgeSpecs[key], `${badgeSpecs[key].label} x${count}`);
-                        }
-                    });
-
-                    if (userData.codesUnlocked?.diamond) {
-                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#55d9e5;color:#fff;">
-                            <img src="${badgeIconMap.diamond}" alt="Diamond"><span>Diamond User</span>
-                        </div>`;
-                        hasAnyBadge = true;
-                    }
-                    if (userData.codesUnlocked?.emerald) {
-                        badgesContainer.innerHTML += `<div class="popup-badge" style="background:#22c55e;color:#fff;">
-                            <img src="${badgeIconMap.emerald}" alt="Emerald"><span>Emerald User</span>
-                        </div>`;
-                        hasAnyBadge = true;
-                    }
-
-                    const customBadges = csnap.val() || {};
-                    Object.values(customBadges).forEach(badge => {
-                        hasAnyBadge = true;
-                        const div = document.createElement('div');
-                        div.className = 'popup-badge';
-                        div.style.background = `linear-gradient(90deg,${badge.grad1||'#6b7280'} 30%,${badge.grad2||'#6b7280'} 100%)`;
-                        div.style.color = badge.textColor || 'white';
-                        div.innerHTML = `<span class="emoji-icon">${badge.icon}</span><span>${badge.name}</span>`;
-                        badgesContainer.appendChild(div);
-                    });
-
-                    if (!hasAnyBadge) {
-                        badgesContainer.textContent = 'No badges to display.';
-                    }
-                }).catch(err => {
-                    console.error('Badge load error:', err);
-                    badgesContainer.textContent = 'Failed to load badges.';
-                });
-
-            }).catch(error => {
-                console.error('Error loading user profile:', error);
-                usernameEl.textContent = 'Error loading profile';
-            });
-            userPopup.style.display = 'flex';
-        };
-
-        closeUserPopup.onclick = () => {
-            userPopup.style.display = 'none';
-        };
-        userPopup.onclick = (e) => {
-            if (e.target === userPopup) {
-                userPopup.style.display = 'none';
-            }
-        };
-        
-        // Function to handle post deletion from the main feed
-        async function deletePostFromFeed(uid, postId) {
-            if (!currentUserUid || (currentUserUid !== uid && !adminMode)) return;
-            const doDelete = await showMessageBox('Are you sure you want to delete this post?', true);
-            if (!doDelete) return;
-
-            const postRef = db.ref(`users/${uid}/posts/${postId}`);
-            const postSnap = await postRef.once('value');
-            const post = postSnap.val();
-            
-            if (post && post.type === 'image' && post.storagePath){
-              firebase.storage().ref(post.storagePath).delete().catch(()=>{});
-            }
-
-            postRef.remove().then(() => {
-                fetchAllData();
-            }).catch(error => {
-                console.error("Error deleting post:", error);
-            });
-        }
-        
-        // NEW: Check for deep link hash on load
-        (function(){
-          const h = location.hash.match(/post=([^:]+):(.+)/);
-          if (h){ openPostDetails(h[1], h[2]); }
-        })();
-
-        // Initial data fetch on page load
+        // --- INITIAL LOAD ---
         fetchAllData();
-
-        // NEW: Admin Post creation listener
-        adminCreatePostBtn.addEventListener('click', () => {
-            if (!adminMode) return;
-            isCreatingAdminPost = true;
-            adminTargetUser.classList.remove('hidden');
-            
-            // Populate the dropdown with user names
-            // FIXED: Use Object.entries to get the UID as the value
-            adminUserSelect.innerHTML = Object.entries(userProfiles)
-                .map(([uid, user]) => `<option value="${uid}">${user.displayName || 'Anonymous User'}</option>`)
-                .join('');
-            
-            postCreatorPopup.classList.remove('hidden');
-            postTypeSelection.classList.remove('hidden');
-            urlInputContainer.classList.add('hidden');
-            // Reset fields
-            selectedPostType = null;
-            urlInput.value = '';
-            captionInput.value = '';
-            draftToggle.checked = false;
-            scheduleAt.value = '';
-        });
     </script>
 </body>
 </html>
+
