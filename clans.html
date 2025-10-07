@@ -94,7 +94,7 @@
         <!-- Biggest Clans -->
         <div id="biggest-clans-container" class="glass-bg p-6 rounded-2xl">
             <h2 class="text-2xl font-bold mb-4 text-center">Biggest Clans</h2>
-            <div id="biggest-clans" class="flex justify-center items-center gap-4 flex-wrap">
+            <div id="biggest-clans" class="flex justify-center items-start gap-4 flex-wrap">
                 <!-- Biggest clan icons will be injected by JS -->
             </div>
         </div>
@@ -229,7 +229,7 @@
             return;
         }
 
-        const isAdmin = allAdminsData[currentUser.uid];
+        const isAdmin = allAdminsData && allAdminsData[currentUser.uid];
         adminPanelBtn.classList.toggle('hidden', !isAdmin);
 
         createClanBtn.classList.remove('hidden');
@@ -237,13 +237,13 @@
 
         renderFullUserProfile();
         renderBiggestClans();
-
+        
         if (selectedClanId && allClansData[selectedClanId]) {
-            renderClanDisplayArea(); 
+            renderClanDisplayArea();
         } else {
-            let userClanId = Object.keys(allClansData).find(id => allClansData[id].members && allClansData[id].members[currentUser.uid]);
-            if (userClanId) {
-                selectClan(userClanId, true); 
+            const userClanId = Object.keys(allClansData).find(id => allClansData[id].members && allClansData[id].members[currentUser.uid]);
+            if(userClanId) {
+                selectClan(userClanId, true);
             } else {
                 renderClanHub();
             }
@@ -316,10 +316,10 @@
             .slice(0, 4);
         
         biggestClansContainer.innerHTML = sortedClans.map(clan => `
-            <div class="flex flex-col items-center text-center cursor-pointer" onclick="selectClan('${clan.id}')">
+            <div class="flex flex-col items-center text-center cursor-pointer w-24" onclick="selectClan('${clan.id}')">
                 <img src="${clan.icon}" alt="${clan.name}" class="w-20 h-20 rounded-full object-contain mb-2 border-2 border-transparent hover:border-blue-400 transition">
-                <p class="font-semibold">${clan.name}</p>
-                <p class="text-sm text-gray-400">${clan.memberCount} members</p>
+                <p class="font-semibold text-sm truncate w-full">${clan.name}</p>
+                <p class="text-xs text-gray-400">${clan.memberCount} members</p>
             </div>
         `).join('') || '<p class="text-gray-400">No clans yet.</p>';
     }
@@ -585,7 +585,14 @@
     });
 
     // ========== ADMIN PANEL ==========
-    adminPanelBtn.onclick = () => adminPanelModal.classList.remove('hidden');
+    adminPanelBtn.onclick = () => {
+         const password = prompt("Enter Admin Password:");
+        if (password === "KC_Admin_2024") {
+            adminPanelModal.classList.remove('hidden');
+        } else if (password) {
+            kcAlert("Incorrect Password");
+        }
+    };
     document.getElementById('closeAdminPanel').onclick = () => adminPanelModal.classList.add('hidden');
     document.getElementById('addLeaderBtn').onclick = async () => {
         const clanId = document.getElementById('adminClanIdInput').value;
