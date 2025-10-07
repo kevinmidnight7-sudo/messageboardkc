@@ -204,6 +204,7 @@
 
     // ========== GLOBAL STATE ==========
     let allClansData = {}, allUsersData = {}, allBadgesData = {}, allAdminsData = {}, currentUser = null, selectedClanId = null;
+    let activeSettingsTab = null;
 
     // ========== CUSTOM ALERT ==========
     const kcAlert = (message) => {
@@ -255,7 +256,11 @@
         renderBiggestClans();
         
         if (selectedClanId && allClansData[selectedClanId]) {
-            renderClanDisplayArea(adminPanelModal.classList.contains('hidden') ? 'default' : 'settings');
+             if (activeSettingsTab) {
+                renderClanSettingsContent(selectedClanId, activeSettingsTab);
+            } else {
+                renderClanDisplayArea();
+            }
         } else {
             const userClanId = Object.keys(allClansData).find(id => allClansData[id].members && allClansData[id].members[currentUser.uid]);
             if(userClanId) {
@@ -291,6 +296,7 @@
         
         let badgesHtml = '';
         if (badges.verified) badgesHtml += `<div class="badge" style="background: #2dd4bf;">✔️ Verified</div>`;
+        if (user.emailVerified) badgesHtml += `<div class="badge" style="background: #2dd4bf;">✔️ Verified</div>`;
         if (badges.offence > 0) badgesHtml += `<div class="badge" style="background: #ff6b6b;">🔥 Best Offence x${badges.offence}</div>`;
         if (badges.defence > 0) badgesHtml += `<div class="badge" style="background: #74c0fc;">🛡️ Best Defence x${badges.defence}</div>`;
         if (badges.diamond) badgesHtml += `<div class="badge" style="background: #55d9e5;">💎 Diamond User</div>`;
@@ -357,6 +363,7 @@
         if(view === 'settings' && canEdit) {
             renderClanSettings(selectedClanId);
         } else {
+            activeSettingsTab = null; // Clear settings tab when returning to details view
             renderSelectedClanDetails(selectedClanId, editButton);
         }
     }
@@ -463,11 +470,13 @@
     window.selectClan = (clanId, force = false) => {
         if (!force && selectedClanId === clanId) return;
         selectedClanId = clanId;
+        activeSettingsTab = null; // Reset settings tab when selecting a new clan
         renderClanDisplayArea();
     }
     
     window.clearSelectedClan = () => {
         selectedClanId = null;
+        activeSettingsTab = null;
         renderClanHub();
     }
     
@@ -627,7 +636,7 @@
         if(user){
             attachDataListeners();
         } else {
-            renderPage();
+            renderLoginView();
         }
     });
 
@@ -674,22 +683,108 @@
             contentEl.innerHTML = `<div class="space-y-2">${clanList}</div>`;
         } else if (tab === 'leaders'){
             contentEl.innerHTML = `
-                <input type="text" id="adminClanIdInput" placeholder="Clan ID" class="w-full bg-gray-700 p-2 rounded">
-                <input type="text" id="adminUserIdInput" placeholder="User ID" class="w-full bg-gray-700 p-2 rounded mt-2">
-                <div class="flex gap-4 mt-4">
-                    <button id="addLeaderBtn" class="flex-1 bg-green-500 hover:bg-green-600 p-2 rounded">Add Leader</button>
-                    <button id="removeLeaderBtn" class="flex-1 bg-red-500 hover:bg-red-600 p-2 rounded">Remove Leader</button>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div class="glass-bg p-3 rounded-xl">
+                    <h4 class="font-bold mb-2">Select a Clan</h4>
+                    <select id="adminClanSelect" class="w-full bg-gray-700 p-2 rounded"></select>
+                  </div>
+                  <div class="glass-bg p-3 rounded-xl">
+                    <h4 class="font-bold mb-2">Select a VERIFIED User</h4>
+                    <select id="adminVerifiedUserSelect" class="w-full bg-gray-700 p-2 rounded"></select>
+                  </div>
                 </div>
-                <button id="transferOwnerBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 p-2 rounded mt-2">Transfer Ownership</button>
-            `;
-            document.getElementById('addLeaderBtn').onclick = () => db.ref(`clans/${document.getElementById('adminClanIdInput').value}/leaders/${document.getElementById('adminUserIdInput').value}`).set(true).then(()=>kcAlert('Leader added.'));
-            document.getElementById('removeLeaderBtn').onclick = () => db.ref(`clans/${document.getElementById('adminClanIdInput').value}/leaders/${document.getElementById('adminUserIdInput').value}`).remove().then(()=>kcAlert('Leader removed.'));
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div class="glass-bg p-3 rounded-xl">
+                    <h4 class="font-bold mb-3">Members</h4>
+                    <div class="flex gap-2">
+                      <button id="addMemberBtn" class="flex-1 bg-green-600 hover:bg-green-700 p-2 rounded">Add Member</button>
+                      <button id="removeMemberBtn" class="flex-1 bg-red-600 hover:bg-red-700 p-2 rounded">Remove Member</button>
+                    </div>
+                  </div>
+
+                  <div class="glass-bg p-3 rounded-xl">
+                    <h4 class="font-bold mb-3">Leaders</h4>
+                    <div class="flex gap-2">
+                      <button id="addLeaderBtn" class="flex-1 bg-green-600 hover:bg-green-700 p-2 rounded">Add Leader</button>
+                      <button id="removeLeaderBtn" class="flex-1 bg-red-600 hover:bg-red-700 p-2 rounded">Remove Leader</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="glass-bg p-3 rounded-xl mt-4">
+                  <h4 class="font-bold mb-3">Ownership</h4>
+                  <button id="transferOwnerBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 p-2 rounded">Transfer Ownership to Selected User</button>
+                </div>`;
+
+            const verifiedEntries = Object.keys(allUsersData)
+              .filter(uid => {
+                const user = allUsersData[uid];
+                const badges = allBadgesData[uid] || {};
+                // FIX: Check for verification in both user data (emailVerified) and badges data.
+                const isVerified = user && (user.emailVerified === true || badges.verified === true);
+                return isVerified;
+              })
+              .map(uid => ({ uid, name: allUsersData[uid].displayName || uid }))
+              .sort((a,b) => a.name.localeCompare(b.name));
+
+            const userSel = document.getElementById('adminVerifiedUserSelect');
+            userSel.innerHTML = verifiedEntries.map(u => `<option value="${u.uid}">${u.name}</option>`).join('') || '<option value="">No verified users</option>';
+
+            const clanEntries = Object.entries(allClansData)
+              .map(([id, c]) => ({ id, name: c.name || id, tag: c.letterTag || '' }))
+              .sort((a,b) => a.name.localeCompare(b.name));
+
+            const clanSel = document.getElementById('adminClanSelect');
+            clanSel.innerHTML = clanEntries.map(c => `<option value="${c.id}">${c.name}${c.tag ? ' ['+c.tag+']' : ''}</option>`).join('') || '<option value="">No clans</option>';
+
+            function getAdminSelections(){
+              const clanId = document.getElementById('adminClanSelect').value;
+              const userId = document.getElementById('adminVerifiedUserSelect').value;
+              return { clanId, userId };
+            }
+
+            document.getElementById('addMemberBtn').onclick = async () => {
+              const { clanId, userId } = getAdminSelections();
+              if(!clanId || !userId) return kcAlert('Select both a clan and a verified user.');
+              await db.ref(`clans/${clanId}/members/${userId}`).set(true);
+              kcAlert('Member added.');
+            };
+
+            document.getElementById('removeMemberBtn').onclick = async () => {
+              const { clanId, userId } = getAdminSelections();
+              if(!clanId || !userId) return kcAlert('Select both a clan and a verified user.');
+              const clan = allClansData[clanId];
+              if (clan && clan.owner === userId) return kcAlert('Cannot remove the current owner as a member. Transfer ownership first.');
+              await db.ref(`clans/${clanId}/members/${userId}`).remove();
+              await db.ref(`clans/${clanId}/leaders/${userId}`).remove();
+              kcAlert('Member removed.');
+            };
+
+            document.getElementById('addLeaderBtn').onclick = async () => {
+              const { clanId, userId } = getAdminSelections();
+              if(!clanId || !userId) return kcAlert('Select both a clan and a verified user.');
+              await db.ref(`clans/${clanId}/members/${userId}`).set(true);
+              await db.ref(`clans/${clanId}/leaders/${userId}`).set(true);
+              kcAlert('Leader added.');
+            };
+
+            document.getElementById('removeLeaderBtn').onclick = async () => {
+              const { clanId, userId } = getAdminSelections();
+              if(!clanId || !userId) return kcAlert('Select both a clan and a verified user.');
+              const clan = allClansData[clanId];
+              if (clan && clan.owner === userId) return kcAlert('Cannot remove the owner from leaders. Transfer ownership first.');
+              await db.ref(`clans/${clanId}/leaders/${userId}`).remove();
+              kcAlert('Leader removed.');
+            };
+            
             document.getElementById('transferOwnerBtn').onclick = async () => {
-                const clanId = document.getElementById('adminClanIdInput').value;
-                const userId = document.getElementById('adminUserIdInput').value;
-                await db.ref(`clans/${clanId}/owner`).set(userId);
-                await db.ref(`clans/${clanId}/leaders/${userId}`).set(true);
-                kcAlert('Ownership transferred.');
+              const { clanId, userId } = getAdminSelections();
+              if(!clanId || !userId) return kcAlert('Select both a clan and a verified user.');
+              await db.ref(`clans/${clanId}/owner`).set(userId);
+              await db.ref(`clans/${clanId}/members/${userId}`).set(true);
+              await db.ref(`clans/${clanId}/leaders/${userId}`).set(true);
+              kcAlert('Ownership transferred.');
             };
 
         } else if (tab === 'danger'){
@@ -729,12 +824,17 @@
         const tabs = clanDisplayArea.querySelectorAll('.tab-btn');
         tabs.forEach(tab => {
             tab.onclick = () => {
+                activeSettingsTab = tab.dataset.tab;
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 renderClanSettingsContent(clanId, tab.dataset.tab);
             }
         });
-        tabs[0].click(); // Open details tab by default
+
+        // Restore active tab or default to first
+        const tabToActivate = activeSettingsTab || 'details';
+        const activeTabEl = Array.from(tabs).find(t => t.dataset.tab === tabToActivate) || tabs[0];
+        activeTabEl.click();
     }
 
     function renderClanSettingsContent(clanId, tab) {
@@ -860,6 +960,16 @@
             option.value = r;
             option.textContent = r;
             regionSelect.appendChild(option);
+        });
+        
+        auth.onAuthStateChanged(user => {
+            detachDataListeners();
+            currentUser = user;
+            if(user){
+                attachDataListeners();
+            } else {
+                renderLoginView(); // Render login view if not authenticated
+            }
         });
     });
 
