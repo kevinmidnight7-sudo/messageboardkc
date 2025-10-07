@@ -113,6 +113,17 @@
 
 
 <!-- Modals -->
+<div id="adminPasswordModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden modal-overlay">
+    <div class="glass-bg w-full max-w-sm p-6 rounded-2xl modal-content">
+        <h2 class="text-xl font-bold mb-4 text-center">Admin Access</h2>
+        <input id="adminPasswordInput" type="password" placeholder="Password" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-4 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div class="flex gap-4">
+            <button id="cancelAdminPassword" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+            <button id="submitAdminPassword" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg">Submit</button>
+        </div>
+    </div>
+</div>
+
 <div id="createClanPasswordModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden modal-overlay">
     <div class="glass-bg w-full max-w-sm p-6 rounded-2xl modal-content">
         <h2 class="text-xl font-bold mb-4 text-center">Enter Password</h2>
@@ -127,8 +138,10 @@
 <div id="createClanModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden modal-overlay">
     <div class="glass-bg w-full max-w-sm p-6 rounded-2xl modal-content">
         <h2 class="text-xl font-bold mb-4 text-center">Create a Clan</h2>
-        <input id="clanNameInput" type="text" placeholder="Clan Name" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-4 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <input id="clanIconInput" type="text" placeholder="Clan Icon URL" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-4 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input id="clanNameInput" type="text" placeholder="Clan Name" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input id="clanIconInput" type="text" placeholder="Clan Icon URL" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input id="clanTagInput" type="text" placeholder="Letter Tag (e.g., VL)" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select id="clanRegionInput" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-2 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"></select>
         <textarea id="clanDescInput" placeholder="Clan Description" class="w-full bg-gray-700 text-white p-3 rounded-lg mb-4 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3"></textarea>
         <div class="flex gap-4">
             <button id="cancelCreateClan" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
@@ -138,16 +151,14 @@
 </div>
 
 <div id="adminPanelModal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden modal-overlay">
-    <div class="glass-bg w-full max-w-lg p-6 rounded-2xl modal-content">
+    <div class="glass-bg w-full max-w-2xl p-6 rounded-2xl modal-content flex flex-col max-h-[90vh]">
         <h2 class="text-xl font-bold mb-4 text-center">Admin Panel</h2>
-        <div class="space-y-4">
-             <input type="text" id="adminClanIdInput" placeholder="Clan ID" class="w-full bg-gray-700 p-2 rounded">
-             <input type="text" id="adminUserIdInput" placeholder="User ID" class="w-full bg-gray-700 p-2 rounded">
-             <div class="flex gap-4">
-                <button id="addLeaderBtn" class="flex-1 bg-green-500 hover:bg-green-600 p-2 rounded">Add Leader</button>
-                <button id="removeLeaderBtn" class="flex-1 bg-red-500 hover:bg-red-600 p-2 rounded">Remove Leader</button>
-             </div>
+        <div class="flex justify-center border-b border-white/10 mb-4">
+            <button class="admin-tab-btn tab-btn p-2 flex-1" data-tab="clans">Clans</button>
+            <button class="admin-tab-btn tab-btn p-2 flex-1" data-tab="leaders">Leaders & Owners</button>
+            <button class="admin-tab-btn tab-btn p-2 flex-1" data-tab="danger">Danger Zone</button>
         </div>
+        <div id="adminPanelContent" class="flex-1 overflow-y-auto no-scrollbar"></div>
         <button id="closeAdminPanel" class="mt-4 w-full bg-gray-600 hover:bg-gray-700 p-2 rounded">Close</button>
     </div>
 </div>
@@ -173,6 +184,10 @@
     const auth = firebase.auth();
     const db = firebase.database();
     
+    // ========== CONSTANTS ==========
+    const ADMIN_PASSWORD = "events2025KC";
+    const REGIONS = ["North America","South America","Europe","Africa","Middle East","Asia","Oceania"];
+
     // ========== UI ELEMENTS ==========
     const userProfileFull = document.getElementById('user-profile-full');
     const biggestClansContainer = document.getElementById('biggest-clans');
@@ -180,6 +195,7 @@
     const clanDisplayArea = document.getElementById('clan-display-area');
     const createClanPasswordModal = document.getElementById('createClanPasswordModal');
     const createClanModal = document.getElementById('createClanModal');
+    const adminPasswordModal = document.getElementById('adminPasswordModal');
     const adminPanelModal = document.getElementById('adminPanelModal');
     const adminPanelBtn = document.getElementById('adminPanelBtn');
     const createClanBtn = document.getElementById('createClanBtn');
@@ -200,38 +216,38 @@
             };
         });
     };
-
-    // ========== DATA FETCHING ==========
-    async function fetchData() {
-        try {
-            const [clansSnap, usersSnap, badgesSnap, adminsSnap] = await Promise.all([
-                db.ref('clans').once('value'), 
-                db.ref('users').once('value'), 
-                db.ref('badges').once('value'),
-                db.ref('admins').once('value')
-            ]);
-            allClansData = clansSnap.val() || {};
-            allUsersData = usersSnap.val() || {};
-            allBadgesData = badgesSnap.val() || {};
-            allAdminsData = adminsSnap.val() || {};
-
-            renderPage();
-        } catch (error) {
-            console.error("Firebase data fetch error:", error);
-            clanDisplayArea.innerHTML = `<p class="text-center text-red-400">Failed to load data. This may be a permission error in your Firebase rules.</p>`;
-        }
+    
+    // ========== HELPERS ==========
+    function formatClanDisplayName(user, clan) {
+        const tag = clan && clan.letterTag ? `[${clan.letterTag}] ` : '';
+        return `${tag}${(user && user.displayName) || 'Unknown'}`;
     }
+
+    // ========== DATA LISTENERS ==========
+    function attachDataListeners() {
+        db.ref('clans').on('value', snap => { allClansData = snap.val() || {}; renderPage(); });
+        db.ref('users').on('value', snap => { allUsersData = snap.val() || {}; renderPage(); });
+        db.ref('badges').on('value', snap => { allBadgesData = snap.val() || {}; renderPage(); });
+        db.ref('admins').on('value', snap => { allAdminsData = snap.val() || {}; renderPage(); });
+    }
+
+    function detachDataListeners() {
+        db.ref('clans').off();
+        db.ref('users').off();
+        db.ref('badges').off();
+        db.ref('admins').off();
+    }
+
 
     // ========== RENDER LOGIC ==========
     function renderPage() {
-        if (!currentUser) {
-            renderLoginView();
-            return;
+        if (!document.body) return;
+        if (!currentUser) { 
+            renderLoginView(); 
+            return; 
         }
 
-        const isAdmin = allAdminsData && allAdminsData[currentUser.uid];
-        adminPanelBtn.classList.toggle('hidden', !isAdmin);
-
+        adminPanelBtn.classList.remove('hidden');
         createClanBtn.classList.remove('hidden');
         biggestClansContainerWrapper.classList.remove('hidden');
 
@@ -239,7 +255,7 @@
         renderBiggestClans();
         
         if (selectedClanId && allClansData[selectedClanId]) {
-            renderClanDisplayArea();
+            renderClanDisplayArea(adminPanelModal.classList.contains('hidden') ? 'default' : 'settings');
         } else {
             const userClanId = Object.keys(allClansData).find(id => allClansData[id].members && allClansData[id].members[currentUser.uid]);
             if(userClanId) {
@@ -331,10 +347,14 @@
             return;
         }
 
-        const isOwner = clan.leaders && clan.leaders[currentUser.uid];
-        const editButton = isOwner ? `<button onclick="renderClanDisplayArea('settings')" class="absolute top-2 right-2 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Edit Clan">✏️</button>` : '';
+        const isOwner = clan.owner === currentUser.uid;
+        const isLeader = clan.leaders && clan.leaders[currentUser.uid];
+        const isAdmin = allAdminsData && allAdminsData[currentUser.uid];
+        const canEdit = isOwner || isLeader || isAdmin;
 
-        if(view === 'settings' && isOwner) {
+        const editButton = canEdit ? `<button onclick="renderClanDisplayArea('settings')" class="absolute top-2 right-2 w-10 h-10 bg-blue-500 hover:bg-blue-600 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110" title="Edit Clan">✏️</button>` : '';
+
+        if(view === 'settings' && canEdit) {
             renderClanSettings(selectedClanId);
         } else {
             renderSelectedClanDetails(selectedClanId, editButton);
@@ -369,7 +389,13 @@
         listEl.innerHTML = filtered.map(([id, clan]) => `
             <div class="flex items-center p-3 rounded-xl bg-white/5 hover:bg-white/10 transition cursor-pointer" onclick="selectClan('${id}')">
                 <img src="${clan.icon}" class="w-12 h-12 rounded-full mr-4 object-contain">
-                <div class="flex-1"><span class="font-bold text-lg">${clan.name}</span><p class="text-sm text-gray-400">${clan.members ? Object.keys(clan.members).length : 0} members</p></div>
+                <div class="flex-1">
+                  <div class="flex items-center">
+                    <span class="font-bold text-lg">${clan.name}</span>
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10 border border-white/10">${clan.letterTag || ''}</span>
+                  </div>
+                  <p class="text-sm text-gray-400">${clan.members ? Object.keys(clan.members).length : 0} members</p>
+                </div>
                 <button onclick="event.stopPropagation(); joinOrRequestToJoinClan('${id}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-full transition-transform transform hover:scale-105">Join</button>
             </div>
         `).join('');
@@ -377,10 +403,15 @@
 
     function renderSelectedClanDetails(clanId, editButton = '') {
         const clan = allClansData[clanId];
-        const leader = allUsersData[Object.keys(clan.leaders || {})[0]] || {};
+        const owner = allUsersData[clan.owner] || {};
         const membersHtml = Object.keys(clan.members).map(uid => {
             const user = allUsersData[uid];
-            return user ? `<img src="${user.avatar}" title="${user.displayName}" class="w-12 h-12 rounded-full object-cover border-2 border-gray-600">` : '';
+            if (!user) return '';
+            const isOwner = clan.owner === uid;
+            return `<div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5">
+                <img src="${user.avatar}" title="${user.displayName}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-600">
+                <span class="text-sm font-semibold">${formatClanDisplayName(user, clan)}${isOwner ? ' 👑' : ''}</span>
+            </div>`;
         }).join('');
         
         const isMember = currentUser && clan.members[currentUser.uid];
@@ -404,8 +435,12 @@
             <div class="flex flex-col items-center text-center relative h-full">
                 ${editButton}
                 <img src="${clan.icon}" class="w-24 h-24 rounded-full mb-3 object-contain">
-                <h2 class="text-3xl font-bold">${clan.name}</h2>
-                <p class="text-gray-400 mb-2">Led by ${leader.displayName || 'Unknown'}</p>
+                <div class="flex items-center">
+                    <h2 class="text-3xl font-bold">${clan.name}</h2>
+                    <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10 border border-white/10">${clan.letterTag || ''}</span>
+                </div>
+                <p class="text-gray-400 mb-1">Owner: ${owner.displayName || 'Unknown'}</p>
+                 <p class="text-gray-500 text-sm mb-2">Region: ${clan.region || 'N/A'}</p>
                 <p class="text-gray-400 text-sm max-w-md mx-auto">${clan.description || ''}</p>
                 
                 ${!isMember ? `<button onclick="joinOrRequestToJoinClan('${clanId}')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded-lg mt-4">${clan.isOpen ? 'Join Clan' : 'Request to Join'}</button>`: ''}
@@ -437,6 +472,11 @@
     }
     
     createClanBtn.onclick = () => {
+        const userClanId = Object.keys(allClansData).find(id => allClansData[id].members && allClansData[id].members[currentUser.uid]);
+        if (userClanId) { 
+            kcAlert("You must leave your current clan before creating a new one."); 
+            return; 
+        }
         createClanPasswordModal.classList.remove('hidden');
     };
     document.getElementById('cancelPassword').onclick = () => createClanPasswordModal.classList.add('hidden');
@@ -456,11 +496,17 @@
         const name = document.getElementById('clanNameInput').value.trim();
         const icon = document.getElementById('clanIconInput').value.trim();
         const description = document.getElementById('clanDescInput').value.trim();
-        if (!currentUser || !name || !icon) return kcAlert("Please fill all fields.");
+        const letterTag = document.getElementById('clanTagInput').value.trim().toUpperCase();
+        const region = document.getElementById('clanRegionInput').value;
+        
+        if (!currentUser || !name || !icon || !letterTag || !region) return kcAlert("Please fill all fields.");
+        if (!/^[A-Z]{1,4}$/.test(letterTag)) return kcAlert("Letter Tag must be 1–4 uppercase letters.");
+        if (!REGIONS.includes(region)) return kcAlert("Please choose a valid region.");
 
         const newClanId = name.toLowerCase().replace(/\s+/g, '_').replace(/[.#$\[\]]/g, '');
         const newClanData = {
-            name, icon, description,
+            name, icon, description, letterTag, region,
+            owner: currentUser.uid,
             leaders: { [currentUser.uid]: true },
             members: { [currentUser.uid]: true },
             isOpen: false // Default to request-to-join
@@ -469,10 +515,8 @@
         try {
             await db.ref(`clans/${newClanId}`).set(newClanData);
             createClanModal.classList.add('hidden');
-            document.getElementById('clanNameInput').value = '';
-            document.getElementById('clanIconInput').value = '';
-            document.getElementById('clanDescInput').value = '';
-            await fetchData();
+            // Clear fields
+            ['clanNameInput', 'clanIconInput', 'clanDescInput', 'clanTagInput'].forEach(id => document.getElementById(id).value = '');
             selectClan(newClanId);
         } catch (error) {
             kcAlert("Error creating clan: " + error.message);
@@ -491,7 +535,6 @@
         if (targetClan.isOpen) { // Free for all
             try {
                 await db.ref(`clans/${clanId}/members/${currentUser.uid}`).set(true);
-                await fetchData();
                 selectClan(clanId);
                 kcAlert(`Successfully joined ${targetClan.name}!`);
             } catch (error) {
@@ -513,7 +556,6 @@
             await db.ref(`clans/${clanId}/members/${currentUser.uid}`).remove();
             await db.ref(`clans/${clanId}/leaders/${currentUser.uid}`).remove();
             clearSelectedClan();
-            fetchData();
         } catch (error) {
             kcAlert("Error leaving clan: " + error.message);
         }
@@ -580,36 +622,96 @@
 
     // ========== AUTH & INITIAL LOAD ==========
     auth.onAuthStateChanged(user => {
+        detachDataListeners();
         currentUser = user;
-        fetchData();
+        if(user){
+            attachDataListeners();
+        } else {
+            renderPage();
+        }
     });
 
     // ========== ADMIN PANEL ==========
     adminPanelBtn.onclick = () => {
-         const password = prompt("Enter Admin Password:");
-        if (password === "KC_Admin_2024") {
+        adminPasswordModal.classList.remove('hidden');
+    };
+    document.getElementById('cancelAdminPassword').onclick = () => adminPasswordModal.classList.add('hidden');
+    document.getElementById('submitAdminPassword').onclick = () => {
+        const pass = document.getElementById('adminPasswordInput').value;
+        if (pass === ADMIN_PASSWORD) {
+            adminPasswordModal.classList.add('hidden');
             adminPanelModal.classList.remove('hidden');
-        } else if (password) {
+            document.getElementById('adminPasswordInput').value = '';
+            renderAdminPanel();
+        } else {
             kcAlert("Incorrect Password");
         }
     };
+    
     document.getElementById('closeAdminPanel').onclick = () => adminPanelModal.classList.add('hidden');
-    document.getElementById('addLeaderBtn').onclick = async () => {
-        const clanId = document.getElementById('adminClanIdInput').value;
-        const userId = document.getElementById('adminUserIdInput').value;
-        if(!clanId || !userId) return kcAlert("Please provide Clan ID and User ID");
-        await db.ref(`clans/${clanId}/leaders/${userId}`).set(true);
-        kcAlert('Leader added.');
-        fetchData();
-    };
-    document.getElementById('removeLeaderBtn').onclick = async () => {
-        const clanId = document.getElementById('adminClanIdInput').value;
-        const userId = document.getElementById('adminUserIdInput').value;
-        if(!clanId || !userId) return kcAlert("Please provide Clan ID and User ID");
-        await db.ref(`clans/${clanId}/leaders/${userId}`).remove();
-        kcAlert('Leader removed.');
-        fetchData();
-    };
+
+    function renderAdminPanel(tab = 'clans'){
+        const contentEl = document.getElementById('adminPanelContent');
+        
+        const tabs = adminPanelModal.querySelectorAll('.admin-tab-btn');
+        tabs.forEach(t => {
+            t.classList.toggle('active', t.dataset.tab === tab);
+            t.onclick = () => renderAdminPanel(t.dataset.tab);
+        });
+
+        if(tab === 'clans'){
+            const clanList = Object.entries(allClansData).map(([id, clan]) => {
+                const owner = allUsersData[clan.owner] || {};
+                return `<div class="flex items-center p-2 bg-gray-800 rounded">
+                    <img src="${clan.icon}" class="w-8 h-8 rounded-full mr-2">
+                    <div class="flex-1">
+                        <p>${clan.name}</p>
+                        <p class="text-xs text-gray-400">Owner: ${owner.displayName || 'N/A'}</p>
+                    </div>
+                    <button onclick="selectClan('${id}'); adminPanelModal.classList.add('hidden')" class="bg-blue-500 px-2 rounded">Open</button>
+                </div>`
+            }).join('');
+            contentEl.innerHTML = `<div class="space-y-2">${clanList}</div>`;
+        } else if (tab === 'leaders'){
+            contentEl.innerHTML = `
+                <input type="text" id="adminClanIdInput" placeholder="Clan ID" class="w-full bg-gray-700 p-2 rounded">
+                <input type="text" id="adminUserIdInput" placeholder="User ID" class="w-full bg-gray-700 p-2 rounded mt-2">
+                <div class="flex gap-4 mt-4">
+                    <button id="addLeaderBtn" class="flex-1 bg-green-500 hover:bg-green-600 p-2 rounded">Add Leader</button>
+                    <button id="removeLeaderBtn" class="flex-1 bg-red-500 hover:bg-red-600 p-2 rounded">Remove Leader</button>
+                </div>
+                <button id="transferOwnerBtn" class="w-full bg-yellow-500 hover:bg-yellow-600 p-2 rounded mt-2">Transfer Ownership</button>
+            `;
+            document.getElementById('addLeaderBtn').onclick = () => db.ref(`clans/${document.getElementById('adminClanIdInput').value}/leaders/${document.getElementById('adminUserIdInput').value}`).set(true).then(()=>kcAlert('Leader added.'));
+            document.getElementById('removeLeaderBtn').onclick = () => db.ref(`clans/${document.getElementById('adminClanIdInput').value}/leaders/${document.getElementById('adminUserIdInput').value}`).remove().then(()=>kcAlert('Leader removed.'));
+            document.getElementById('transferOwnerBtn').onclick = async () => {
+                const clanId = document.getElementById('adminClanIdInput').value;
+                const userId = document.getElementById('adminUserIdInput').value;
+                await db.ref(`clans/${clanId}/owner`).set(userId);
+                await db.ref(`clans/${clanId}/leaders/${userId}`).set(true);
+                kcAlert('Ownership transferred.');
+            };
+
+        } else if (tab === 'danger'){
+             contentEl.innerHTML = `
+                <h3 class="text-red-400 text-lg font-bold">Danger Zone</h3>
+                <input type="text" id="deleteClanIdInput" placeholder="Clan ID to Delete" class="w-full bg-gray-700 p-2 rounded mt-2">
+                <input type="text" id="deleteClanConfirmInput" placeholder="Type clan name to confirm" class="w-full bg-gray-700 p-2 rounded mt-2">
+                <button id="deleteClanBtn" class="w-full bg-red-600 hover:bg-red-700 p-2 rounded mt-4">Delete Clan</button>
+            `;
+            document.getElementById('deleteClanBtn').onclick = async () => {
+                const clanId = document.getElementById('deleteClanIdInput').value;
+                const confirmName = document.getElementById('deleteClanConfirmInput').value;
+                if(clanId && allClansData[clanId] && allClansData[clanId].name === confirmName){
+                    await db.ref(`clans/${clanId}`).remove();
+                    kcAlert('Clan deleted.');
+                    adminPanelModal.classList.add('hidden');
+                } else {
+                    kcAlert('Clan ID or confirmation name is incorrect.');
+                }
+            };
+        }
+    }
     
     // ========== CLAN SETTINGS ==========
     function renderClanSettings(clanId) {
@@ -618,7 +720,7 @@
                 <div class="flex justify-center border-b border-white/10 mb-4">
                     <button class="tab-btn p-2 flex-1" data-tab="details">Details</button>
                     <button class="tab-btn p-2 flex-1" data-tab="users">Users</button>
-                    <button class="tab-btn p-2 flex-1" data-tab="relations">Relations</button>
+                    <button class="tab-btn p-2 flex-1" data-tab="relationships">Relationships</button>
                 </div>
                 <div id="clanSettingsContent" class="flex-1 overflow-y-auto no-scrollbar"></div>
                 <button onclick="selectClan('${clanId}')" class="mt-4 text-gray-400 hover:text-white">Back to Clan</button>
@@ -640,9 +742,12 @@
         const clan = allClansData[clanId];
 
         if(tab === 'details') {
+            const regionOptions = REGIONS.map(r => `<option value="${r}" ${clan.region === r ? 'selected' : ''}>${r}</option>`).join('');
             contentEl.innerHTML = `
                 <input id="editClanName" class="w-full bg-gray-800 p-2 rounded mb-2" value="${clan.name}">
                 <input id="editClanIcon" class="w-full bg-gray-800 p-2 rounded mb-2" value="${clan.icon}">
+                <input id="editClanTag" class="w-full bg-gray-800 p-2 rounded mb-2" value="${clan.letterTag || ''}">
+                <select id="editClanRegion" class="w-full bg-gray-800 p-2 rounded mb-2">${regionOptions}</select>
                 <textarea id="editClanDesc" class="w-full bg-gray-800 p-2 rounded mb-2" rows="3">${clan.description || ''}</textarea>
                 <div class="flex items-center justify-between p-2 bg-gray-800 rounded mb-4">
                     <label for="joinToggle" class="font-semibold">Free for All Join</label>
@@ -660,7 +765,7 @@
                 return user ? `
                     <div class="flex items-center p-2 bg-gray-800 rounded">
                         <img src="${user.avatar}" class="w-8 h-8 rounded-full mr-2">
-                        <span>${user.displayName}</span>
+                        <span>${formatClanDisplayName(user, clan)}</span>
                         <div class="ml-auto flex gap-2">
                             <button onclick="handleRequest('${clanId}','${uid}', true)" class="bg-green-500 px-2 rounded">✔️</button>
                             <button onclick="handleRequest('${clanId}','${uid}', false)" class="bg-red-500 px-2 rounded">❌</button>
@@ -670,12 +775,12 @@
 
             const members = Object.keys(clan.members).map(uid => {
                 const user = allUsersData[uid];
-                const isLeader = clan.leaders && clan.leaders[uid];
+                const isOwner = clan.owner === uid;
                 if (!user || uid === currentUser.uid) return '';
                 return `
                     <div class="flex items-center p-2 bg-gray-800 rounded">
                         <img src="${user.avatar}" class="w-8 h-8 rounded-full mr-2">
-                        <span>${user.displayName} ${isLeader ? '👑' : ''}</span>
+                        <span>${formatClanDisplayName(user, clan)}${isOwner ? ' 👑' : ''}</span>
                         <button onclick="removeMember('${clanId}', '${uid}')" class="ml-auto bg-red-500 px-2 rounded">Kick</button>
                     </div>`;
             }).join('');
@@ -686,22 +791,28 @@
                 <h4 class="font-bold mb-2">Current Members</h4>
                 <div class="space-y-2">${members || '<p class="text-gray-400">No other members.</p>'}</div>
             `;
-        } else if (tab === 'relations') {
+        } else if (tab === 'relationships') {
             const otherClans = Object.entries(allClansData).filter(([id]) => id !== clanId);
             const allies = clan.allies || {};
             const enemies = clan.enemies || {};
 
-            const relationList = otherClans.map(([id, otherClan]) => `
+            const relationList = otherClans.map(([id, otherClan]) => {
+                const state = allies[id] ? 'ally' : enemies[id] ? 'enemy' : 'neutral';
+                const stateColor = state === 'ally' ? 'bg-green-600' : state === 'enemy' ? 'bg-red-600' : 'bg-gray-600';
+                return `
                  <div class="flex items-center p-2 bg-gray-800 rounded">
-                    <img src="${otherClan.icon}" class="w-8 h-8 rounded-full mr-2">
-                    <span>${otherClan.name}</span>
+                    <img src="${otherClan.icon}" class="w-10 h-10 rounded-full mr-3">
+                    <div class="flex-1">
+                        <p>${otherClan.name}</p>
+                        <span class="px-2 py-0.5 text-xs rounded-full ${stateColor}">${state.charAt(0).toUpperCase() + state.slice(1)}</span>
+                    </div>
                     <div class="ml-auto flex gap-2">
                         <button onclick="setRelation('${clanId}', '${id}', 'allies')" class="${allies[id] ? 'bg-green-600' : 'bg-green-800'} px-2 rounded">Ally</button>
                         <button onclick="setRelation('${clanId}', '${id}', 'enemies')" class="${enemies[id] ? 'bg-red-600' : 'bg-red-800'} px-2 rounded">Enemy</button>
                         <button onclick="setRelation('${clanId}', '${id}', null)" class="bg-gray-600 px-2 rounded">Neutral</button>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
             contentEl.innerHTML = `<div class="space-y-2">${relationList}</div>`;
         }
     }
@@ -710,12 +821,15 @@
         const name = document.getElementById('editClanName').value;
         const icon = document.getElementById('editClanIcon').value;
         const description = document.getElementById('editClanDesc').value;
+        const letterTag = document.getElementById('editClanTag').value.trim().toUpperCase();
+        const region = document.getElementById('editClanRegion').value;
         const isOpen = document.getElementById('joinToggle').checked;
-        await db.ref(`clans/${clanId}`).update({ name, icon, description, isOpen });
-        kcAlert('Clan details saved!');
-        await fetchData();
-        renderClanSettingsContent(clanId, 'details');
 
+        if (!/^[A-Z]{1,4}$/.test(letterTag)) return kcAlert("Letter Tag must be 1–4 uppercase letters.");
+        if (!REGIONS.includes(region)) return kcAlert("Please choose a valid region.");
+
+        await db.ref(`clans/${clanId}`).update({ name, icon, description, isOpen, letterTag, region });
+        kcAlert('Clan details saved!');
     }
     
     async function handleRequest(clanId, userId, accept) {
@@ -723,17 +837,11 @@
         if(accept) {
             await db.ref(`clans/${clanId}/members/${userId}`).set(true);
         }
-        const clansSnap = await db.ref('clans').once('value');
-        allClansData = clansSnap.val() || {};
-        renderClanSettingsContent(clanId, 'users');
     }
 
     async function removeMember(clanId, userId) {
         await db.ref(`clans/${clanId}/members/${userId}`).remove();
         await db.ref(`clans/${clanId}/leaders/${userId}`).remove(); // Also remove as leader
-        const clansSnap = await db.ref('clans').once('value');
-        allClansData = clansSnap.val() || {};
-        renderClanSettingsContent(clanId, 'users');
     }
 
     async function setRelation(clanId, otherClanId, status) {
@@ -742,10 +850,18 @@
         if (status) {
             await db.ref(`clans/${clanId}/${status}/${otherClanId}`).set(true);
         }
-        const clansSnap = await db.ref('clans').once('value');
-        allClansData = clansSnap.val() || {};
-        renderClanSettingsContent(clanId, 'relations');
     }
+
+    // ========== INIT ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        const regionSelect = document.getElementById('clanRegionInput');
+        REGIONS.forEach(r => {
+            const option = document.createElement('option');
+            option.value = r;
+            option.textContent = r;
+            regionSelect.appendChild(option);
+        });
+    });
 
 </script>
 </body>
