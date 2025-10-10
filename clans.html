@@ -6,6 +6,8 @@
   <title>KC Clans</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -73,6 +75,26 @@
     input:checked + .slider { background-color: #2196F3; }
     input:checked + .slider:before { transform: translateX(26px); }
 
+    /* Compact switch */
+    .switch-sm { position: relative; display: inline-block; width: 36px; height: 20px; }
+    .switch-sm input { opacity: 0; width: 0; height: 0; }
+    .slider-sm { position:absolute; cursor:pointer; inset:0; background:#9ca3af; transition:.25s; border-radius:9999px; }
+    .slider-sm:before { content:""; position:absolute; width:14px; height:14px; left:3px; top:3px; background:#fff; border-radius:9999px; transition:.25s; }
+    .switch-sm input:checked + .slider-sm { background:#3b82f6; }
+    .switch-sm input:checked + .slider-sm:before { transform: translateX(16px); }
+    
+    /* Post card styles from socialfeed */
+    .post-card { cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s; }
+    .post-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.3); }
+    .embed-placeholder { background-color: #2d3748; border-radius: 0.5rem; overflow: hidden; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+    .post-media { width: 100%; height: 100%; object-fit: cover; }
+    .embed-play {
+      position: absolute; font-size: 3rem; color: rgba(255,255,255,0.8);
+      background: rgba(0,0,0,0.4); width: 60px; height: 60px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s;
+    }
+    .post-card:hover .embed-play { transform: scale(1.1); }
   </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
@@ -93,7 +115,19 @@
 
         <!-- Biggest Clans -->
         <div id="biggest-clans-container" class="glass-bg p-6 rounded-2xl">
-            <h2 class="text-2xl font-bold mb-4 text-center">Biggest Clans</h2>
+            <div class="flex items-center justify-between mb-4 relative">
+              <!-- Compact toggle on the LEFT -->
+              <div class="absolute left-0 top-1 flex items-center gap-1 text-xs bg-white/5 px-1.5 py-0.5 rounded-md">
+                <span id="toggleLabel">Biggest</span>
+                <label class="switch switch-sm">
+                  <input id="clanToggle" type="checkbox">
+                  <span class="slider slider-sm"></span>
+                </label>
+                <span>Top Score</span>
+              </div>
+              <!-- Title centered -->
+              <h2 class="w-full text-center text-2xl font-bold">Clans</h2>
+            </div>
             <div id="biggest-clans" class="flex justify-center items-start gap-4 flex-wrap">
                 <!-- Biggest clan icons will be injected by JS -->
             </div>
@@ -174,6 +208,16 @@
   </div>
 </div>
 
+<!-- Post Overlay Modal (replaces clipOverlay) -->
+<div id="postOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-[70] modal-overlay flex items-center justify-center p-4">
+  <div class="glass-bg max-w-lg w-full mx-auto p-4 rounded-2xl modal-content relative max-h-[90vh] flex flex-col">
+    <button onclick="closePostOverlay()" class="absolute top-3 right-3 text-white z-10 bg-black/30 rounded-full w-8 h-8 flex items-center justify-center">✖</button>
+    <div id="poBody" class="overflow-y-auto no-scrollbar">
+        <!-- Post content will be injected here -->
+    </div>
+  </div>
+</div>
+
 <!-- Custom Alert -->
 <div id="kc-alert" class="kc-alert-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-[100]">
     <div class="kc-alert-box glass-bg p-6 rounded-2xl max-w-sm w-full text-center">
@@ -182,6 +226,8 @@
     </div>
 </div>
 
+<!-- Tooltip for reaction names -->
+<div id="reactTip" class="hidden fixed px-3 py-2 rounded-lg text-xs text-white bg-gray-700 shadow z-[100] whitespace-pre pointer-events-none"></div>
 
 <script>
     // ========== FIREBASE INIT ==========
@@ -198,6 +244,103 @@
     // ========== CONSTANTS ==========
     const ADMIN_PASSWORD = "events2025KC";
     const REGIONS = ["North America","South America","Europe","Africa","Middle East","Asia","Oceania"];
+
+    // ========== GLOBAL CONTEXT & POST INTERACTION HELPERS ==========
+    // Track the currently opened post's database path for reactions/comments observers
+    let currentPostPath = null;
+    // Define available post reactions consistent with the social feed
+    const POST_EMOJIS = ['👍','❤️','😂','😮','🔥','👎'];
+
+    /** Escape HTML to prevent injection */
+    function escapeHtml(str) {
+        return (str || '').toString().replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+    }
+
+    /** Render the reaction buttons for a post. Updates dynamically when reactions change */
+    function renderPostReactions(snap, targetEl) {
+        const data = snap.val() || {};
+        targetEl.innerHTML = '';
+        POST_EMOJIS.forEach(emo => {
+            const reactors = data[emo] ? Object.keys(data[emo]) : [];
+            const count = reactors.length;
+            const userReacted = currentUser && data[emo] && data[emo][currentUser.uid];
+            const btn = document.createElement('button');
+            btn.className = `px-2 py-1 rounded-full border text-sm flex items-center gap-1 ${userReacted ? 'bg-indigo-500 text-white border-indigo-400' : 'bg-slate-600/50 text-gray-200 border-slate-500'}`;
+            btn.innerHTML = `<span>${emo}</span><span>${count || ''}</span>`;
+            btn.dataset.emoji = emo;
+            btn.onclick = ev => {
+                ev.stopPropagation();
+                togglePostReaction(emo);
+            };
+            // simple tooltip showing reactor names on hover
+            btn.onmouseenter = ev => {
+                const rect = ev.target.getBoundingClientRect();
+                const names = reactors.slice(0,25).map(uid => (allUsersData[uid]?.displayName) || 'User');
+                const tip = document.getElementById('reactTip');
+                if (tip) {
+                    tip.textContent = names.length ? names.join('\n') : 'No reactions yet';
+                    tip.style.left = (rect.left + rect.width/2) + 'px';
+                    tip.style.top = (rect.top - 8) + 'px';
+                    tip.classList.remove('hidden');
+                }
+            };
+            btn.onmouseleave = () => {
+                const tip = document.getElementById('reactTip');
+                if(tip) tip.classList.add('hidden');
+            };
+            targetEl.appendChild(btn);
+        });
+    }
+
+    /** Toggle a reaction on/off for the currently open post */
+    function togglePostReaction(emo) {
+        const u = currentUser;
+        if (!u) { kcAlert('Please log in to react.'); return; }
+        if (!currentPostPath) return;
+        const ref = db.ref(`${currentPostPath}/reactions/${emo}/${u.uid}`);
+        ref.transaction(curr => curr ? null : true);
+    }
+
+    /** Render comments for a post */
+    function renderPostComments(snap, targetEl) {
+        const data = snap.val() || {};
+        // Sort comments chronologically
+        const comments = Object.values(data).sort((a,b) => (a.time || 0) - (b.time || 0));
+        targetEl.innerHTML = '';
+        comments.forEach(c => {
+            const user = allUsersData[c.uid] || {};
+            const hasCust = user.profileCustomization && (user.codesUnlocked?.diamond || user.codesUnlocked?.emerald);
+            const nameColor = hasCust && user.profileCustomization?.nameColor ? user.profileCustomization.nameColor : '#e5e7eb';
+            const dateString = c.time ? new Date(c.time).toLocaleString() : '';
+            const li = document.createElement('li');
+            li.className = 'space-y-1';
+            li.innerHTML = `
+                <div class="flex items-center gap-2">
+                    ${avatarImg(getAvatarUrl(user), 'w-6 h-6 rounded-full object-cover')}
+                    <span class="font-semibold text-sm" style="color:${nameColor}">${escapeHtml(user.displayName || 'Unknown')}</span>
+                    <span class="text-xs text-gray-400">${dateString}</span>
+                </div>
+                <div class="ml-8 text-sm text-gray-300">${escapeHtml(c.text || '')}</div>
+            `;
+            targetEl.appendChild(li);
+        });
+    }
+
+    /** Close the post overlay and detach realtime listeners */
+    function closePostOverlay() {
+        const overlay = document.getElementById('postOverlay');
+        overlay.classList.add('hidden');
+        document.getElementById('poBody').innerHTML = '';
+        if (currentPostPath) {
+            db.ref(`${currentPostPath}/reactions`).off();
+            db.ref(`${currentPostPath}/comments`).off();
+            currentPostPath = null;
+        }
+    }
 
     // ========== UI ELEMENTS ==========
     const userProfileFull = document.getElementById('user-profile-full');
@@ -217,6 +360,7 @@
     let allClansData = {}, allUsersData = {}, allBadgesData = {}, allAdminsData = {}, currentUser = null, selectedClanId = null;
     let activeSettingsTab = null;
     let isAdminSession = false;
+    let showTopScoreClans = false;
 
     // ========== CUSTOM ALERT ==========
     const kcAlert = (message) => {
@@ -244,6 +388,39 @@
     function avatarImg(src, cls=''){
       const safe = src || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
       return `<img referrerpolicy="no-referrer" src="${safe}" onerror="this.onerror=null;this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'" class="${cls}">`;
+    }
+
+    function getUserScores(uid){
+      const u = allUsersData[uid] || {};
+      const s = (u.stats) || {};
+      const b = allBadgesData[uid] || {};
+      const offence = Number(s.offence ?? b.offence ?? 0) || 0;
+      const defence = Number(s.defence ?? b.defence ?? 0) || 0;
+      const overall = Number(s.overall ?? b.overall ?? 0) || 0;
+      return { offence, defence, overall, total: offence + defence + overall };
+    }
+
+    function computeClanScore(clan){
+      if(!clan || !clan.members) return 0;
+      let sum = 0;
+      Object.keys(clan.members).forEach(uid => {
+        sum += getUserScores(uid).total;
+      });
+      return sum;
+    }
+    
+    function clanScoreBadge(total){
+      let gradient = 'linear-gradient(135deg, #c0c7d1, #8b94a5)'; // silver
+      if (total >= 50) gradient = 'linear-gradient(135deg, #ffd700, #f4a300)'; // gold
+      else if (total >= 25) gradient = 'linear-gradient(135deg, #cd7f32, #a05a26)'; // bronze
+      // Render a compact circular badge showing a trophy icon above the score.
+      // The parent container should position this badge absolutely as needed.
+      return `
+        <div class="w-12 h-12 rounded-full flex flex-col items-center justify-center text-xs font-semibold text-white select-none"
+             style="background:${gradient}; box-shadow:0 0 18px rgba(255,255,255,.25)">
+          <span class="text-lg leading-none">🏆</span>
+          <span class="leading-none mt-0.5">${total}</span>
+        </div>`;
     }
 
     // ========== DATA LISTENERS ==========
@@ -353,22 +530,30 @@
         if (userClanId) leaveClanBtn.onclick = () => leaveClan(userClanId);
     }
     
-    function renderBiggestClans() {
-      try {
-         const sortedClans = Object.entries(allClansData)
-            .map(([id, clan]) => ({ id, ...clan, memberCount: clan.members ? Object.keys(clan.members).length : 0 }))
-            .sort((a, b) => b.memberCount - a.memberCount)
-            .slice(0, 4);
-        
-        biggestClansContainer.innerHTML = sortedClans.map(clan => `
-            <div class="flex flex-col items-center text-center cursor-pointer w-24" onclick="selectClan('${clan.id}')">
-                ${avatarImg(clan.icon, 'w-20 h-20 rounded-full object-contain mb-2 border-2 border-transparent hover:border-blue-400 transition')}
-                <p class="font-semibold text-sm truncate w-full">${clan.name}</p>
-                <p class="text-xs text-gray-400">${clan.memberCount} members</p>
-            </div>
+    function renderBiggestClans(){
+      try{
+        const entries = Object.entries(allClansData).map(([id, clan]) => {
+          const memberCount = clan.members ? Object.keys(clan.members).length : 0;
+          const score = computeClanScore(clan);
+          return { id, ...clan, memberCount, score };
+        });
+
+        const sorted = showTopScoreClans
+          ? entries.sort((a,b) => b.score - a.score)
+          : entries.sort((a,b) => b.memberCount - a.memberCount);
+
+        const top = sorted.slice(0, 4);
+        biggestClansContainer.innerHTML = top.map(clan => `
+          <div class="flex flex-col items-center text-center cursor-pointer w-24" onclick="selectClan('${clan.id}')">
+            <img src="${clan.icon}" class="w-20 h-20 rounded-full object-contain mb-2 border-2 border-transparent hover:border-blue-400 transition" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'"/>
+            <p class="font-semibold text-sm truncate w-full">${clan.name}</p>
+            <p class="text-xs text-gray-400">
+              ${showTopScoreClans ? ('Score: ' + clan.score) : (clan.memberCount + ' members')}
+            </p>
+          </div>
         `).join('') || '<p class="text-gray-400">No clans yet.</p>';
-      } catch(e) {
-        console.error("Failed to render biggest clans:", e);
+      } catch(e){
+        console.error('Failed to render clans:', e);
         biggestClansContainer.innerHTML = '<p class="text-gray-400">Could not load clans.</p>';
       }
     }
@@ -439,16 +624,21 @@
         const clan = allClansData[clanId];
         const owner = allUsersData[clan.owner] || {};
         const isMember = currentUser && clan.members[currentUser.uid];
+        const clanTotalScore = computeClanScore(clan);
 
         clanDisplayArea.innerHTML = `
             <div class="flex flex-col items-center text-center relative h-full">
+                <!-- Place the clan score badge in the top-left corner -->
+                <div class="absolute left-4 top-4">
+                    ${clanScoreBadge(clanTotalScore)}
+                </div>
                 ${editButton}
                 ${avatarImg(clan.icon, 'w-24 h-24 rounded-full mb-3 object-contain')}
                 <div class="flex items-center">
                     <h2 class="text-3xl font-bold">${clan.name}</h2>
                     <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-white/10 border border-white/10">${clan.letterTag || ''}</span>
                 </div>
-                <p class="text-gray-400 mb-1">Owner: ${owner.displayName || 'Unknown'}</p>
+                <p class="text-gray-400 mb-1 mt-3">Owner: ${owner.displayName || 'Unknown'}</p>
                  <p class="text-gray-500 text-sm mb-2">Region: ${clan.region || 'N/A'}</p>
                 <p class="text-gray-400 text-sm max-w-md mx-auto">${clan.description || ''}</p>
                 
@@ -458,6 +648,7 @@
                 <div class="w-full max-w-xl mx-auto mb-4 flex bg-white/5 rounded-xl overflow-hidden">
                     <button class="flex-1 py-2 tab-btn active" id="tabMembers">Members</button>
                     <button class="flex-1 py-2 tab-btn" id="tabConnections">Connections</button>
+                    <button class="flex-1 py-2 tab-btn" id="tabClanClips">Clan Clips</button>
                 </div>
                 <div id="clanTabContent" class="w-full">
                     <!-- default content injected below -->
@@ -520,17 +711,202 @@
               };
               content.innerHTML = '<div class="space-y-4">' + mkRow('Allies', allies, 'text-green-400') + mkRow('Enemies', enemies, 'text-red-400') + '</div>';
             }
+            
+            function renderClanClips(){
+              const memberIds = Object.keys(clan.members || {});
+              const posts = []; 
+              content.innerHTML = `<p class="text-gray-400">Loading clips...</p>`;
+
+              const readUserPosts = uid => new Promise(resolve => {
+                db.ref(`users/${uid}/posts`).once('value').then(s => {
+                  const v = s.val() || {};
+                  Object.keys(v).forEach(postId => {
+                    const p = v[postId];
+                    posts.push({ uid, postId, ...p });
+                  });
+                  resolve();
+                }).catch(() => resolve());
+              });
+
+              Promise.all(memberIds.map(readUserPosts)).then(() => {
+                const html = posts.slice(0, 36).map(clipCardHTML).join('');
+                content.innerHTML = `
+                  <h3 class="font-bold text-xl mb-3 self-start">Clan Clips</h3>
+                  <div class="relative">
+                    <button onclick="this.nextElementSibling.scrollBy({left:-320, behavior:'smooth'})"
+                            class="absolute -left-3 top-1/2 -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-white">‹</button>
+                    <div class="overflow-x-auto no-scrollbar snap-x snap-mandatory flex gap-4 px-8" id="clanClipsStrip">
+                      ${html || '<p class="text-gray-400">No clips yet.</p>'}
+                    </div>
+                    <button onclick="this.previousElementSibling.scrollBy({left:320, behavior:'smooth'})"
+                            class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-white">›</button>
+                  </div>
+                `;
+              });
+            }
 
             // initial load
             renderMembers();
 
             const btnMembers = document.getElementById('tabMembers');
             const btnConnections = document.getElementById('tabConnections');
-            btnMembers.onclick = () => { btnMembers.classList.add('active'); btnConnections.classList.remove('active'); renderMembers(); };
-            btnConnections.onclick = () => { btnConnections.classList.add('active'); btnMembers.classList.remove('active'); renderConnections(); };
+            const btnClanClips = document.getElementById('tabClanClips');
+            
+            btnMembers.onclick = () => { 
+                btnMembers.classList.add('active'); 
+                btnConnections.classList.remove('active'); 
+                btnClanClips.classList.remove('active');
+                renderMembers(); 
+            };
+            btnConnections.onclick = () => { 
+                btnConnections.classList.add('active'); 
+                btnMembers.classList.remove('active'); 
+                btnClanClips.classList.remove('active');
+                renderConnections(); 
+            };
+            btnClanClips.onclick = () => {
+              btnMembers.classList.remove('active');
+              btnConnections.classList.remove('active');
+              btnClanClips.classList.add('active');
+              renderClanClips();
+            };
         })();
     }
     
+    // ========== SOCIAL FEED STYLE CLIPS ==========
+    function buildReactionBar(reactionsObj){
+      const EMOJIS = ['👍','❤️','😂','😮','🔥','👎'];
+      const counts = {}; EMOJIS.forEach(e => counts[e] = 0);
+      Object.entries(reactionsObj || {}).forEach(([emoji, users]) => {
+        counts[emoji] = users ? Object.keys(users).length : 0;
+      });
+      return `<div class="flex items-center gap-2 mt-2 text-sm text-gray-300">` + 
+        EMOJIS.map(e => counts[e] > 0 ? `<span class="inline-flex items-center gap-1"><span>${e}</span><span>${counts[e]}</span></span>` : '').join('') + 
+        `</div>`;
+    }
+
+    function clipCardHTML(p){
+      // Build a rich card similar to the social feed.
+      const user = allUsersData[p.uid] || {};
+      const hasCust = user.profileCustomization && (user.codesUnlocked?.diamond || user.codesUnlocked?.emerald);
+      const nameColor = hasCust && user.profileCustomization?.nameColor ? user.profileCustomization.nameColor : '#ffffff';
+      const cardBg = hasCust && user.profileCustomization?.gradient ? user.profileCustomization.gradient : '';
+      // Compute reaction counts: fire = any emoji except thumbs-down, thumbsDown = 👎
+      let fireCount = 0, thumbsDown = 0;
+      if (p.reactions) {
+        Object.entries(p.reactions).forEach(([emo, reactors]) => {
+          const count = reactors ? Object.keys(reactors).length : 0;
+          if (emo === '👎') thumbsDown += count;
+          else fireCount += count;
+        });
+      }
+      const views = p.views || 0;
+      // Determine thumbnail: prefer explicit thumbnail/image/cover; fallback to YouTube preview or placeholder
+      let thumb = p.thumbnail || p.image || p.cover || '';
+      if (!thumb && p.ytId) thumb = `https://i.ytimg.com/vi/${p.ytId}/hqdefault.jpg`;
+      if (!thumb) thumb = 'https://kevinmidnight7-sudo.github.io/messageboardkc/placeholder.png';
+      // Compose media element with play icon
+      const mediaHtml = `
+        <div class="embed-placeholder aspect-video relative">
+          <img src="${thumb}" alt="Preview" class="w-full h-full object-cover rounded-lg">
+          <div class="embed-play flex items-center justify-center">
+            <i class="fas fa-play"></i>
+          </div>
+        </div>`;
+      // Build card
+      return `
+        <div class="snap-start inline-block min-w-[280px] max-w-[320px]">
+          <div class="p-4 rounded-2xl bg-white/5 hover:bg-white/10 cursor-pointer post-card" onclick="openPostOverlay('${p.uid}','${p.postId}')">
+            <div class="flex items-center gap-3 mb-3">
+              <div class="relative w-10 h-10 rounded-full overflow-hidden" style="${cardBg ? `box-shadow:0 0 0 2px ${nameColor}` : ''}">
+                <img src="${getAvatarUrl(user)}" alt="${escapeHtml(user.displayName || 'Unknown')}" class="w-full h-full object-cover">
+              </div>
+              <div>
+                <span class="font-bold block" style="color:${nameColor}">${escapeHtml(user.displayName || 'Unknown')}</span>
+                <span class="block text-xs text-gray-500">
+                  ${p.timestamp ? new Date(p.timestamp).toLocaleDateString() : (p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '')}
+                </span>
+              </div>
+            </div>
+            ${mediaHtml}
+            <div class="text-sm text-gray-300 mt-3">${escapeHtml(p.description || p.caption || '')}</div>
+            <div class="flex justify-between items-center pt-2 mt-2 border-t border-white/10">
+              <div class="flex items-center gap-4 text-gray-400 text-sm">
+                <div class="flex items-center gap-1.5" title="Views"><i class="fas fa-eye"></i><span>${views.toLocaleString()}</span></div>
+                <div class="flex items-center gap-1.5 text-orange-400" title="Reactions"><i class="fas fa-fire"></i><span>${fireCount.toLocaleString()}</span></div>
+                <div class="flex items-center gap-1.5 text-blue-400" title="Thumbs Down"><i class="fas fa-thumbs-down"></i><span>${thumbsDown.toLocaleString()}</span></div>
+              </div>
+              <button class="open-post-indicator text-xs px-3 py-1 rounded-full bg-white/10 hover:bg-white/20" onclick="event.stopPropagation(); openPostOverlay('${p.uid}','${p.postId}')">Open</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Override the default openPostOverlay with a version that mirrors the social feed overlay.
+    window.openPostOverlay = (uid, postId) => {
+        const overlay = document.getElementById('postOverlay');
+        const body = document.getElementById('poBody');
+        // Detach existing listeners if another post is open
+        if (currentPostPath) {
+            db.ref(`${currentPostPath}/reactions`).off();
+            db.ref(`${currentPostPath}/comments`).off();
+            currentPostPath = null;
+        }
+        body.innerHTML = '<div class="text-center p-8">Loading clip...</div>';
+        overlay.classList.remove('hidden');
+        const path = `users/${uid}/posts/${postId}`;
+        db.ref(path).once('value').then(snap => {
+            const post = snap.val();
+            const author = allUsersData[uid] || {};
+            if (!post || !author) {
+                body.innerHTML = '<div class="text-center p-8">Could not load clip.</div>';
+                return;
+            }
+            currentPostPath = path;
+            // Determine media element: support video, image or YouTube
+            let mediaHtml = '';
+            if (post.video) {
+                mediaHtml = `<video controls class="w-full rounded-lg bg-black max-h-[60vh]" src="${post.video}"></video>`;
+            } else if (post.image) {
+                mediaHtml = `<img src="${post.image}" class="w-full rounded-lg bg-black object-contain max-h-[60vh]">`;
+            } else if (post.ytId) {
+                mediaHtml = `<div class="aspect-video"><iframe class="w-full h-full rounded-lg" src="https://www.youtube.com/embed/${post.ytId}?autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            }
+            // Determine author name color
+            const hasCust = author.profileCustomization && (author.codesUnlocked?.diamond || author.codesUnlocked?.emerald);
+            const nameColor = hasCust && author.profileCustomization?.nameColor ? author.profileCustomization.nameColor : '#ffffff';
+            const displayName = escapeHtml(author.displayName || 'Unknown');
+            const timestamp = post.timestamp ? new Date(post.timestamp).toLocaleString() : (post.createdAt ? new Date(post.createdAt).toLocaleString() : '');
+            const description = escapeHtml(post.description || post.caption || '');
+            // Render overlay body with reaction and comment placeholders
+            body.innerHTML = `
+                <div class="flex items-center gap-3 mb-3">
+                    ${avatarImg(getAvatarUrl(author), 'w-12 h-12 rounded-full object-cover')}
+                    <div>
+                        <p class="font-bold" style="color:${nameColor}">${displayName}</p>
+                        <p class="text-xs text-gray-400">${timestamp || 'Just now'}</p>
+                    </div>
+                </div>
+                ${description ? `<p class="mb-3">${description}</p>` : ''}
+                ${mediaHtml}
+                <div class="mt-3 flex flex-wrap gap-2" id="poReactions"></div>
+                <div class="mt-4 border-t border-white/10 pt-4">
+                    <h4 class="font-bold mb-2">Comments</h4>
+                    <ul class="space-y-3" id="poComments"></ul>
+                </div>
+            `;
+            // Increment view count
+            db.ref(`${path}/views`).transaction(n => (n || 0) + 1);
+            // Attach realtime listeners for reactions and comments
+            db.ref(`${path}/reactions`).on('value', snap2 => renderPostReactions(snap2, document.getElementById('poReactions')));
+            db.ref(`${path}/comments`).on('value', snap3 => renderPostComments(snap3, document.getElementById('poComments')));
+        }).catch(error => {
+            console.error("Error fetching post:", error);
+            body.innerHTML = '<div class="text-center p-8 text-red-400">Error loading clip.</div>';
+        });
+    };
+
     // ========== PROFILE OVERLAY ==========
     window.openProfileOverlay = (uid) => {
       const u = allUsersData[uid];
@@ -1087,6 +1463,12 @@
             regionSelect.appendChild(option);
         });
         
+        document.getElementById('clanToggle').addEventListener('change', (e) => {
+          showTopScoreClans = e.target.checked;
+          document.getElementById('toggleLabel').textContent = showTopScoreClans ? 'Top Score' : 'Biggest';
+          renderBiggestClans();
+        });
+        
         auth.onAuthStateChanged(user => {
             detachDataListeners();
             currentUser = user;
@@ -1109,4 +1491,3 @@
 </script>
 </body>
 </html>
-
