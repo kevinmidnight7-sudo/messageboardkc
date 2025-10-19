@@ -128,10 +128,20 @@
               <!-- Title centered -->
               <h2 class="w-full text-center text-2xl font-bold">Clans</h2>
             </div>
-            <div id="biggest-clans" class="flex justify-center items-start gap-4 flex-wrap">
-                <!-- Biggest clan icons will be injected by JS -->
+            <!-- Carousel container -->
+            <div class="max-w-md mx-auto">
+                <div class="relative">
+                    <button id="clans-prev" class="absolute -left-6 top-1/2 -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-white transition-opacity duration-300 opacity-70 hover:opacity-100">‹</button>
+                    <div id="biggest-clans-wrapper" class="overflow-x-auto no-scrollbar scroll-smooth">
+                        <div id="biggest-clans" class="flex items-start gap-4 flex-nowrap px-2">
+                            <!-- Biggest clan icons will be injected by JS -->
+                        </div>
+                    </div>
+                    <button id="clans-next" class="absolute -right-6 top-1/2 -translate-y-1/2 z-10 bg-white/10 hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center text-white transition-opacity duration-300 opacity-70 hover:opacity-100">›</button>
+                </div>
             </div>
         </div>
+
 
         <!-- Main Clan Display Area -->
         <div id="clan-display-area" class="glass-bg p-6 rounded-2xl min-h-[400px]">
@@ -542,9 +552,9 @@
           ? entries.sort((a,b) => b.score - a.score)
           : entries.sort((a,b) => b.memberCount - a.memberCount);
 
-        const top = sorted.slice(0, 4);
+        const top = sorted.slice(0, 20); // Show more clans for the carousel
         biggestClansContainer.innerHTML = top.map(clan => `
-          <div class="flex flex-col items-center text-center cursor-pointer w-24" onclick="selectClan('${clan.id}')">
+          <div class="flex flex-col items-center text-center cursor-pointer w-24 flex-shrink-0" onclick="selectClan('${clan.id}')">
             <img src="${clan.icon}" class="w-20 h-20 rounded-full object-contain mb-2 border-2 border-transparent hover:border-blue-400 transition" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'"/>
             <p class="font-semibold text-sm truncate w-full">${clan.name}</p>
             <p class="text-xs text-gray-400">
@@ -1468,6 +1478,22 @@
           document.getElementById('toggleLabel').textContent = showTopScoreClans ? 'Top Score' : 'Biggest';
           renderBiggestClans();
         });
+
+        // Carousel Logic for Biggest Clans
+        const clansWrapper = document.getElementById('biggest-clans-wrapper');
+        const prevBtn = document.getElementById('clans-prev');
+        const nextBtn = document.getElementById('clans-next');
+
+        if (clansWrapper && prevBtn && nextBtn) {
+            prevBtn.addEventListener('click', () => {
+                const scrollAmount = clansWrapper.clientWidth;
+                clansWrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            });
+            nextBtn.addEventListener('click', () => {
+                const scrollAmount = clansWrapper.clientWidth;
+                clansWrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            });
+        }
         
         auth.onAuthStateChanged(user => {
             detachDataListeners();
@@ -1491,3 +1517,4 @@
 </script>
 </body>
 </html>
+
