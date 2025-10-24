@@ -419,6 +419,69 @@
       return sum;
     }
     
+    // NEW FUNCTION START
+    function clanScoreCard(clan) {
+        const total = computeClanScore(clan);
+
+        // Determine gradient
+        let gradient = 'linear-gradient(135deg, #c0c7d1, #8b94a5)'; // default (silver)
+        if (total >= 50) gradient = 'linear-gradient(135deg, #ffd700, #f4a300)'; // gold
+        else if (total >= 25) gradient = 'linear-gradient(135deg, #cd7f32, #a05a26)'; // bronze
+
+        // Find top three members
+        const memberIds = Object.keys(clan.members || {});
+        const ranked = memberIds.map(uid => {
+            const u = allUsersData[uid];
+            // Handle case where user data might be loading/missing
+            if (!u) return { uid, user: { displayName: 'Loading...' }, score: 0 };
+            const score = getUserScores(uid).total;
+            return {uid, user: u, score};
+        }).sort((a,b) => b.score - a.score).slice(0,3);
+
+        // Determine next level threshold
+        let needed = 0;
+        let nextLevelMessage = 'Max level reached!';
+        if (total < 25) {
+            needed = 25 - total;
+            nextLevelMessage = `${needed} points until Bronze`;
+        } else if (total < 50) {
+            needed = 50 - total;
+            nextLevelMessage = `${needed} points until Gold`;
+        }
+
+        // Construct HTML
+        return `
+        <div class="w-48 rounded-lg overflow-hidden shadow-lg select-none"
+             style="background:rgba(30,32,42,0.8); border: 1px solid rgba(255,255,255,0.1);">
+            <!-- top portion with gradient and trophy/score -->
+            <div class="flex items-center justify-center gap-2 p-2 text-white"
+                 style="background:${gradient};">
+                <i class="fa-solid fa-trophy"></i>
+                <span class="font-bold text-lg">${total}</span>
+            </div>
+            <!-- top scorers list -->
+            <div class="p-2 space-y-1">
+                <p class="text-xs uppercase text-gray-400 font-semibold">Top Scorers</p>
+                ${ranked.map((r,i) => {
+                    const medalColors = ['#ffd700','#c0c0c0','#cd7f32'];
+                    return `<div class="flex items-center gap-2 text-sm"
+                                 style="color:${medalColors[i] || '#e5e7eb'};">
+                                ${avatarImg(getAvatarUrl(r.user),'w-6 h-6 rounded-full object-cover')}
+                                <span class="truncate max-w-[80px]">${r.user?.displayName || 'Unknown'}</span>
+                                <span class="ml-auto font-semibold">${r.score}</span>
+                            </div>`;
+                }).join('')}
+                ${ranked.length === 0 ? '<p class="text-xs text-gray-400">No members yet.</p>' : ''}
+            </div>
+            <!-- points until next level -->
+            <div class="px-2 pb-2 text-xs text-gray-400 border-t border-white/10 pt-1 mt-1">
+                ${nextLevelMessage}
+            </div>
+        </div>
+        `;
+    }
+    // NEW FUNCTION END
+
     function clanScoreBadge(total){
       let gradient = 'linear-gradient(135deg, #c0c7d1, #8b94a5)'; // silver
       if (total >= 50) gradient = 'linear-gradient(135deg, #ffd700, #f4a300)'; // gold
@@ -634,13 +697,13 @@
         const clan = allClansData[clanId];
         const owner = allUsersData[clan.owner] || {};
         const isMember = currentUser && clan.members[currentUser.uid];
-        const clanTotalScore = computeClanScore(clan);
+        // const clanTotalScore = computeClanScore(clan); // No longer needed here
 
         clanDisplayArea.innerHTML = `
             <div class="flex flex-col items-center text-center relative h-full">
-                <!-- Place the clan score badge in the top-left corner -->
-                <div class="absolute left-4 top-4">
-                    ${clanScoreBadge(clanTotalScore)}
+                <!-- Place the clan score card in the top-right corner -->
+                <div class="absolute right-4 top-4">
+                    ${clanScoreCard(clan)}
                 </div>
                 ${editButton}
                 ${avatarImg(clan.icon, 'w-24 h-24 rounded-full mb-3 object-contain')}
