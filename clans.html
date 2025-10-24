@@ -714,9 +714,22 @@
         clanDisplayArea.innerHTML = `
             <div class="flex flex-col items-center text-center relative h-full">
                 <!-- Place the clan score card in the top-right corner -->
-               <div class="absolute left-1 top-1">
-  ${clanScoreCard(clan)}
-</div>
+               <div class="absolute left-6 top-6 md:left-8 md:top-8">
+                  <button id="clanScoreBtn"
+                          class="w-10 h-10 rounded-full flex items-center justify-center
+                                 bg-white/10 hover:bg-white/20 border border-white/15
+                                 shadow-lg backdrop-blur"
+                          aria-haspopup="dialog" aria-expanded="false" title="Clan score">
+                    <i class="fa-solid fa-trophy text-white/90"></i>
+                  </button>
+                
+                  <!-- Popover anchored to the button -->
+                  <div id="clanScorePopover"
+                       class="hidden absolute z-20 mt-2 -ml-2"
+                       role="dialog" aria-label="Clan score popover">
+                    ${clanScoreCard(clan)}
+                  </div>
+                </div>
 
 
                 ${editButton}
@@ -834,6 +847,61 @@
 
             // initial load
             renderMembers();
+            
+            // Trophy popover behavior
+            (() => {
+              const btn = document.getElementById('clanScoreBtn');
+              const pop = document.getElementById('clanScorePopover');
+              if (!btn || !pop) return;
+            
+              let hideTimer;
+            
+              const show = () => {
+                clearTimeout(hideTimer);
+                pop.classList.remove('hidden');
+                btn.setAttribute('aria-expanded', 'true');
+              };
+            
+              const hide = (delay = 120) => {
+                clearTimeout(hideTimer);
+                hideTimer = setTimeout(() => {
+                  pop.classList.add('hidden');
+                  btn.setAttribute('aria-expanded', 'false');
+                }, delay);
+              };
+            
+              // Click toggles (works on mobile)
+              btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const open = !pop.classList.contains('hidden');
+                open ? hide(0) : show();
+              });
+            
+              // Hover opens (desktop convenience)
+              btn.addEventListener('mouseenter', show);
+              btn.addEventListener('mouseleave', () => hide(150));
+              pop.addEventListener('mouseenter', show);
+              pop.addEventListener('mouseleave', () => hide(150));
+            
+              // Click-away to close
+              const onDocClick = (e) => {
+                if (!pop.classList.contains('hidden') &&
+                    !pop.contains(e.target) &&
+                    e.target !== btn) {
+                  hide(0);
+                }
+              };
+              document.addEventListener('click', onDocClick, { once: true });
+            
+              // Re-arm click-away after each toggle-open
+              const rearm = () => {
+                if (!pop.classList.contains('hidden')) {
+                  document.addEventListener('click', onDocClick, { once: true });
+                }
+              };
+              btn.addEventListener('click', rearm);
+              pop.addEventListener('mouseenter', rearm);
+            })();
 
             const btnMembers = document.getElementById('tabMembers');
             const btnConnections = document.getElementById('tabConnections');
