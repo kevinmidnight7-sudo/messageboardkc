@@ -2017,70 +2017,44 @@
         updateRankEditorControls();
     }
     
-    // PATCH A: Replace saveRanks function with owner elevation logic
-    async function saveRanks(clanId, newOrder, newMap, renameMap = {}, deletedRanks = []){
-      const u = currentUser;
-      if(!u){ kcAlert('Please log in.'); return; }
-      const clan = allClansData[clanId];
-      if(!clan){ kcAlert('Clan not found.'); return; }
+    async function saveRanks(clanId, newOrder, newMap, renameMap = {}, deletedRanks = []) {
+  const u = currentUser;
+  if (!u) { kcAlert('Please log in.'); return; }
 
-      const ownerUid = getOwnerUid(clan);
-      const isOwner = ownerUid && ownerUid === u.uid;
-      const isLeader = userIsLeader(clan, u.uid);
-      let isAdminish = userIsAdmin(u.uid); // global admin OR session admin
+  // (Optional) just-in-time session boost for owners not already leader/admin
+  const clan = allClansData[clanId];
+  const ownerUid = getOwnerUid(clan);
+  const isOwner = ownerUid && ownerUid === u.uid;
+  const isLeader = userIsLeader(clan, u.uid);
+  if (isOwner && !isLeader && !userIsAdmin(u.uid)) {
+    await db.ref(`sessionAdmins/${u.uid}`).set(true);
+    isAdminSession = true;
+  }
 
-      // If owner but not leader/admin/sessionAdmin -> elevate to sessionAdmin
-      if (isOwner && !isLeader && !isAdminish) {
-        try {
-          await db.ref(`sessionAdmins/${u.uid}`).set(true);
-          isAdminSession = true; // reflect locally so UI gates match server
-          isAdminish = true; // Update local variable for the check below
-          // Keep the session flag, it will auto-clear on disconnect
-        } catch (e) {
-          console.error('Owner elevation to session failed', e);
-          kcAlert('Unable to gain permission to save ranks.');
-          return;
-        }
-      }
+  // 1) WRITE EXACTLY /clans/{id}/ranks WITH BOTH FIELDS
+  await db.ref(`clans/${clanId}/ranks`).set({
+    order: Array.isArray(newOrder) ? newOrder : [],
+    map: (newMap && typeof newMap === 'object') ? newMap : {}
+  });
 
-      // Re-evaluate allowed status AFTER potential elevation
-      const allowed = isAdminish || isOwner || isLeader; // Simplified check
-      if (!allowed) { 
-          // This should ideally not be reached if UI gates are correct, but acts as a safeguard
-          kcAlert('Permission denied. Only clan owner, leaders, or admins can change ranks.'); 
-          return; 
-      }
-
-      // 1) Write ONLY /clans/{id}/ranks (no sibling props)
-      await db.ref(`clans/${clanId}/ranks`).set({ order: newOrder, map: newMap });
-
-      // 2) Adjust /memberRanks via single multipath update
-      const snap = await db.ref(`clans/${clanId}/memberRanks`).once('value');
-      const mr = snap.val() || {};
-      const updates = {};
-
-      // Renames
-      Object.entries(mr).forEach(([uid, rname]) => {
-        if (renameMap[rname]) updates[`clans/${clanId}/memberRanks/${uid}`] = renameMap[rname];
-      });
-
-      // Deletions -> move to lowest rank (last in order) or 'Member'
-      const defaultRank = newOrder[newOrder.length - 1] || 'Member';
-      Object.entries(mr).forEach(([uid, rname]) => {
-        if (deletedRanks.includes(rname) && !updates[`clans/${clanId}/memberRanks/${uid}`]) {
-          updates[`clans/${clanId}/memberRanks/${uid}`] = defaultRank;
-        }
-      });
-
-      if (Object.keys(updates).length) {
-        await db.ref().update(updates);
-      }
-
-      kcAlert('Ranks saved.');
-      originalRanksOrder = newOrder;
-      activeSettingsTab = 'ranks';
-      renderClanSettingsContent(clanId, 'ranks');
+  // 2) Adjust memberRanks via single multipath update (rename/delete handling)
+  const snap = await db.ref(`clans/${clanId}/memberRanks`).once('value');
+  const mr = snap.val() || {};
+  const updates = {};
+  Object.entries(mr).forEach(([uid, r]) => {
+    if (renameMap[r]) updates[`clans/${clanId}/memberRanks/${uid}`] = renameMap[r];
+  });
+  const fallback = newOrder[newOrder.length - 1] || 'Member';
+  Object.entries(mr).forEach(([uid, r]) => {
+    if (deletedRanks.includes(r) && !updates[`clans/${clanId}/memberRanks/${uid}`]) {
+      updates[`clans/${clanId}/memberRanks/${uid}`] = fallback;
     }
+  });
+  if (Object.keys(updates).length) await db.ref().update(updates);
+
+  kcAlert('Ranks saved.');
+}
+
 
     // New handler function to bridge UI click and safe saveRanks
     function handleSaveRanksClick(clanId) {
