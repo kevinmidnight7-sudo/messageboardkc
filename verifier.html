@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - User Verification</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs (Compat version to match your login.html) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- Admin Login Overlay -->
+  <div id="admin-login-container" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm text-center">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">Admin Access</h2>
+      <p class="text-gray-600 mb-6">Please sign in with your admin account.</p>
+      <!-- Updated form to include email -->
+      <input type="email" id="adminEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Admin Email">
+      <input type="password" id="adminPass" class="w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Admin Password">
+      <button id="adminLoginBtn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold mt-6 hover:bg-blue-700 transition duration-300">Login</button>
+      <p id="loginError" class="text-red-500 text-sm mt-4"></p>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard (Hidden by default) -->
+  <div id="admin-dashboard" class="hidden container mx-auto p-4 md:p-8">
+    <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <h1 class="text-3xl font-bold text-gray-800">User Verification Management</h1>
+        <p class="text-gray-600 mt-1">Real-time list of all registered users.</p>
+      </div>
+      
+      <!-- User List Header -->
+      <div class="hidden md:flex bg-gray-50 p-4 font-semibold text-gray-600 text-sm">
+        <div class="w-2/5">User Email</div>
+        <div class="w-1/5">Status</div>
+        <div class="w-2/5 text-right">Actions</div>
+      </div>
+
+      <!-- User List Container -->
+      <div id="userList" class="divide-y divide-gray-200">
+        <!-- User items will be injected here by JavaScript -->
+        <div class="p-8 text-center text-gray-500">
+          Loading user list...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Firebase Configuration (Copied from your login.html) ---
+    const cfg = {
+      apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+      authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+      databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "kckillerscompany-ab1ec",
+      storageBucket: "kckillerscompany-ab1ec.appspot.com",
+      messagingSenderId: "198711213988",
+      appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+      measurementId: "G-4LKP2M3JXE"
+    };
+
+    // --- Initialize Firebase ---
+    firebase.initializeApp(cfg);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // --- DOM References ---
+    const adminLoginContainer = document.getElementById('admin-login-container');
+    const adminDashboard = document.getElementById('admin-dashboard');
+    const adminEmailInput = document.getElementById('adminEmail'); // <-- New ref
+    const adminPassInput = document.getElementById('adminPass');
+    const adminLoginBtn = document.getElementById('adminLoginBtn');
+    const loginError = document.getElementById('loginError');
+    const userListContainer = document.getElementById('userList');
+
+    // --- Admin Login Logic (Updated) ---
+    // Removed hardcoded password. We will now use Firebase Auth.
+
+    adminLoginBtn.addEventListener('click', async () => {
+      loginError.textContent = ""; // Clear previous errors
+      adminPassInput.classList.remove('border-red-500');
+      adminEmailInput.classList.remove('border-red-500');
+
+      const email = adminEmailInput.value;
+      const pass = adminPassInput.value;
+
+      if (!email || !pass) {
+          loginError.textContent = "Please enter both admin email and password.";
+          if (!email) adminEmailInput.classList.add('border-red-500');
+          if (!pass) adminPassInput.classList.add('border-red-500');
+          return;
+      }
+
+      try {
+        loginError.textContent = "Authenticating...";
+        adminLoginBtn.disabled = true;
+
+        // 1. Sign in with the admin's email and password
+        const userCredential = await auth.signInWithEmailAndPassword(email, pass);
+        const user = userCredential.user; // <-- Get the full user object
+
+        if (user && user.email) { // <-- Make sure we have the user and their email
+          // 2. Check if this user is *actually* an admin in the database
+          //    We MUST check by email, replacing '.' with ',' as shown in your screenshot
+          const adminEmailKey = user.email.replace(/\./g, ',');
+          const adminSnapshot = await db.ref(`admins/${adminEmailKey}`).once('value');
+          
+          if (adminSnapshot.val() === true) {
+            // 3. User is an admin. Show the dashboard.
+            adminLoginContainer.classList.add('hidden');
+            adminDashboard.classList.remove('hidden');
+            initUserListListener();
+          } else {
+            // 4. User is not an admin. Deny access.
+            loginError.textContent = "Access Denied. You are not an authorized admin.";
+            adminLoginBtn.disabled = false;
+            auth.signOut(); // Sign them out
+          }
+        } else {
+          throw new Error("Could not get a user ID or email from sign-in.");
+        }
+
+      } catch (err) {
+        // This catch block handles Firebase Auth errors (e.g., wrong password)
+        console.error("Admin auth failed:", err);
+        loginError.textContent = err.message; // Show Firebase error
+        adminLoginBtn.disabled = false;
+      }
+    });
+    
+    // Also allow pressing Enter to log in
+    adminPassInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+            adminLoginBtn.click();
+        }
+    });
+    adminEmailInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+            adminLoginBtn.click();
+        }
+    });
+
+
+    // --- User List Logic ---
+    function initUserListListener() {
+      const usersRef = db.ref("users");
+
+      // Use 'on' for real-time updates. When you verify a user,
+      // the list will refresh automatically.
+      usersRef.on('value', (snapshot) => {
+        userListContainer.innerHTML = ''; // Clear the list
+        
+        if (!snapshot.exists()) {
+            userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">No users found in the database.</div>';
+            return;
+        }
+        
+        // Create an array to sort by email
+        const userArray = [];
+        snapshot.forEach((childSnapshot) => {
+            const user = childSnapshot.val();
+            if (user && user.email) { // Only add users with an email
+                userArray.push({ uid: childSnapshot.key, ...user });
+            }
+        });
+        
+        // Sort the array by email address
+        userArray.sort((a, b) => a.email.localeCompare(b.email));
+
+        // Process the sorted array
+        userArray.forEach((user) => {
+          const uid = user.uid;
+          const isVerified = user.emailVerified === true;
+
+          // Create the list item element
+          const li = document.createElement('div');
+          li.className = 'p-4 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition duration-150';
+
+          const statusClass = isVerified ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
+          const statusText = isVerified ? 'Verified' : 'Not Verified';
+          
+          const actionButton = isVerified 
+            ? `<button class="revoke-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 transition duration-200" data-uid="${uid}">Revoke</button>`
+            : `<button class="verify-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200" data-uid="${uid}">Verify</button>`;
+
+          li.innerHTML = `
+            <div class="w-full md:w-2/5 mb-2 md:mb-0">
+              <div class="font-semibold text-gray-800">${user.email}</div>
+              <div class="text-sm text-gray-500">${user.displayName || 'No name'}</div>
+            </div>
+            <div class="w-full md:w-1/5 mb-2 md:mb-0">
+              <span class="px-3 py-1 rounded-full text-xs font-bold ${statusClass}">
+                ${statusText}
+              </span>
+            </div>
+            <div class="w-full md:w-2/5 flex md:justify-end space-x-2">
+              ${actionButton}
+            </div>
+          `;
+
+          userListContainer.appendChild(li);
+        });
+
+        // Add event listeners to the new buttons
+        addEventListenersToButtons();
+
+      }, (error) => {
+        console.error(error);
+        userListContainer.innerHTML = '<div class="p-8 text-center text-red-500">Error loading user list. Check console.</div>';
+      });
+    }
+
+    function addEventListenersToButtons() {
+        // Verify buttons
+        document.querySelectorAll('.verify-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const uid = e.target.dataset.uid;
+                toggleVerification(uid, true);
+            });
+        });
+
+        // Revoke buttons
+        document.querySelectorAll('.revoke-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const uid = e.target.dataset.uid;
+                toggleVerification(uid, false);
+            });
+        });
+    }
+
+    // --- Database Update Function ---
+    function toggleVerification(uid, status) {
+      if (!uid) return;
+      
+      // This updates the 'emailVerified' flag in your Realtime Database
+      // which your login.html file reads to grant access.
+      // This will work now because we are signed in as an admin.
+      db.ref("users/" + uid + "/emailVerified").set(status)
+        .then(() => {
+          console.log(`User ${uid} status set to ${status}`);
+          // The 'on' listener will automatically refresh the UI, so no
+          // manual DOM manipulation is needed here.
+        })
+        .catch(err => {
+          console.error("Failed to update verification status:", err);
+          alert("An error occurred. Check the console.");
+        });
+    }
+
+  </script>
+</body>
+</html>
+
+
