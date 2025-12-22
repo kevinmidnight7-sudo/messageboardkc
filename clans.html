@@ -206,6 +206,20 @@
       position: absolute; /* Remove from flow */
   }
 
+  /* Click Animation */
+  @keyframes clickPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.9); filter: brightness(1.2); }
+      100% { transform: scale(1); }
+  }
+  .animate-pop {
+      animation: clickPop 0.2s ease-out;
+  }
+
+  /* Leaderboard Gradients */
+  .bg-gold { background: linear-gradient(135deg, #FFD700, #FFA500); color: black; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
+  .bg-silver { background: linear-gradient(135deg, #E0E0E0, #B0B0B0); color: black; box-shadow: 0 4px 15px rgba(192, 192, 192, 0.3); }
+  .bg-bronze { background: linear-gradient(135deg, #CD7F32, #8B4513); color: white; box-shadow: 0 4px 15px rgba(205, 127, 50, 0.3); }
 
   </style>
 </head>
@@ -215,7 +229,6 @@
     <!-- Left Column: User Profile or Login -->
     <div id="user-profile-full" class="lg:col-span-1 glass-bg p-6 rounded-2xl profile-card">
         <!-- Profile content or Login form will be injected by JS -->
-        <!-- Content structure will be updated by renderFullUserProfile -->
     </div>
 
     <!-- Right Column: Clans -->
@@ -372,13 +385,34 @@
             <h2 id="battlesModalTitle" class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">Upcoming Clan Battles</h2>
             <button onclick="document.getElementById('clanBattlesModal').classList.add('hidden')" class="text-gray-400 hover:text-white text-xl">✖</button>
         </div>
-        <div class="flex gap-2 mb-4">
-             <button id="filterAllBattles" class="px-4 py-1.5 rounded-full bg-red-500/20 text-red-200 border border-red-500/50 hover:bg-red-500/40 active">All</button>
-             <button id="filterMyClanBattles" class="px-4 py-1.5 rounded-full bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10">My Clan</button>
-             <button id="filterPastBattles" class="px-4 py-1.5 rounded-full bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10">Past</button>
+        
+        <!-- Filter Tabs & Sorting -->
+        <div class="flex flex-col gap-3 mb-4">
+            <div class="flex gap-2 flex-wrap">
+                 <button id="filterAllBattles" class="px-4 py-1.5 rounded-full bg-red-500/20 text-red-200 border border-red-500/50 hover:bg-red-500/40 active">All</button>
+                 <button id="filterMyClanBattles" class="px-4 py-1.5 rounded-full bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10">My Clan</button>
+                 <button id="filterPastBattles" class="px-4 py-1.5 rounded-full bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10">Past</button>
+                 <button id="filterLeaderboard" class="px-4 py-1.5 rounded-full bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10">Leaderboard</button>
+            </div>
+            <!-- Sort Controls -->
+            <div id="battlesSortControls" class="flex items-center justify-between text-sm bg-white/5 p-2 rounded-lg">
+                <span class="text-gray-400">Sort by:</span>
+                <div class="flex gap-2">
+                    <button onclick="setBattlesSort('recent')" id="sortRecentBtn" class="px-3 py-1 rounded bg-blue-600 text-white transition">Most Recent</button>
+                    <button onclick="setBattlesSort('players')" id="sortPlayersBtn" class="px-3 py-1 rounded bg-white/5 text-gray-300 hover:bg-white/10 transition">Most Players</button>
+                </div>
+            </div>
         </div>
-        <div id="battlesListContent" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-2">
+
+        <div id="battlesListContent" class="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-2 min-h-[300px]">
             <!-- Battles injected here -->
+        </div>
+
+        <!-- Pagination Controls -->
+        <div id="battlesPagination" class="flex justify-between items-center mt-4 pt-2 border-t border-white/10 hidden">
+            <button id="battlesPrev" class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-white">Previous</button>
+            <span id="battlesPageInfo" class="text-xs text-gray-400">Page 1</span>
+            <button id="battlesNext" class="text-sm bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded-lg text-white">Next</button>
         </div>
     </div>
 </div>
@@ -547,6 +581,13 @@
     let originalRanksOrder = [];
     let dragSrcElement = null;
 
+    // Clan Battles Local State
+    let battlesPage = 0;
+    let battlesSort = 'recent'; // 'recent' or 'players'
+    let currentBattlesView = 'all'; // 'all', 'my', 'past', 'leaderboard'
+    const PAGE_SIZE_BATTLES = 3;
+
+
     // ========== CUSTOM ALERT ==========
     const kcAlert = (message) => {
         document.getElementById('kc-alert-message').textContent = message;
@@ -698,7 +739,12 @@
         db.ref('users').on('value', snap => { allUsersData = snap.val() || {}; renderPage(); });
         db.ref('badges').on('value', snap => { allBadgesData = snap.val() || {}; renderPage(); });
         db.ref('admins').on('value', snap => { allAdminsData = snap.val() || {}; renderPage(); });
-        db.ref('battles').on('value', snap => { allBattlesData = snap.val() || {}; /* No full re-render on battles update, handled locally */ });
+        db.ref('battles').on('value', snap => { 
+            allBattlesData = snap.val() || {}; 
+            if(!document.getElementById('clanBattlesModal').classList.contains('hidden')){
+                renderBattlesList(currentBattlesView);
+            }
+        });
     }
 
     function detachDataListeners() {
@@ -1652,49 +1698,85 @@
 
     window.openClanBattlesModal = () => {
         document.getElementById('clanBattlesModal').classList.remove('hidden');
-        renderBattlesList('all'); // Default view
+        battlesPage = 0;
+        currentBattlesView = 'all';
+        battlesSort = 'recent'; // Default sorting
+        updateBattlesFilterUI();
+        renderBattlesList();
         
+        // --- Filter Clicks ---
         document.getElementById('filterAllBattles').onclick = () => {
-            toggleFilterBtns('all'); renderBattlesList('all');
+            currentBattlesView = 'all'; battlesPage = 0; updateBattlesFilterUI(); renderBattlesList();
         };
         document.getElementById('filterMyClanBattles').onclick = () => {
-             toggleFilterBtns('my'); renderBattlesList('my');
+             currentBattlesView = 'my'; battlesPage = 0; updateBattlesFilterUI(); renderBattlesList();
         };
         document.getElementById('filterPastBattles').onclick = () => {
-             toggleFilterBtns('past'); renderBattlesList('past');
+             currentBattlesView = 'past'; battlesPage = 0; updateBattlesFilterUI(); renderBattlesList();
+        };
+        document.getElementById('filterLeaderboard').onclick = () => {
+             currentBattlesView = 'leaderboard'; battlesPage = 0; updateBattlesFilterUI(); renderBattlesList();
         };
     };
     
-    function toggleFilterBtns(type){
+    window.setBattlesSort = (type) => {
+        battlesSort = type;
+        battlesPage = 0;
+        updateBattlesFilterUI();
+        renderBattlesList();
+    };
+
+    function updateBattlesFilterUI(){
+        // Update Filter Tabs
         const allBtn = document.getElementById('filterAllBattles');
         const myBtn = document.getElementById('filterMyClanBattles');
         const pastBtn = document.getElementById('filterPastBattles');
+        const leadBtn = document.getElementById('filterLeaderboard');
         
-        // Reset all first
-        [allBtn, myBtn, pastBtn].forEach(b => {
-            b.classList.remove('bg-red-500/20','text-red-200');
+        [allBtn, myBtn, pastBtn, leadBtn].forEach(b => {
+            b.classList.remove('bg-red-500/20','text-red-200','bg-cyan-500/20','text-cyan-200','bg-yellow-500/20','text-yellow-200');
             b.classList.add('bg-white/5','text-gray-300');
         });
         
-        const activeClass = ['bg-red-500/20','text-red-200'];
-        const inactiveClass = ['bg-white/5','text-gray-300'];
+        if(currentBattlesView === 'all') { allBtn.classList.add('bg-red-500/20','text-red-200'); allBtn.classList.remove('bg-white/5','text-gray-300'); }
+        else if(currentBattlesView === 'my') { myBtn.classList.add('bg-red-500/20','text-red-200'); myBtn.classList.remove('bg-white/5','text-gray-300'); }
+        else if(currentBattlesView === 'past') { pastBtn.classList.add('bg-cyan-500/20','text-cyan-200'); pastBtn.classList.remove('bg-white/5','text-gray-300'); }
+        else if(currentBattlesView === 'leaderboard') { leadBtn.classList.add('bg-yellow-500/20','text-yellow-200'); leadBtn.classList.remove('bg-white/5','text-gray-300'); }
+
+        // Update Sort Buttons
+        const sortControls = document.getElementById('battlesSortControls');
+        const recentBtn = document.getElementById('sortRecentBtn');
+        const playersBtn = document.getElementById('sortPlayersBtn');
         
-        // Frosty theme logic in renderBattlesList, just button highlight here
-        if(type === 'all') {
-            allBtn.classList.add(...activeClass); allBtn.classList.remove(...inactiveClass);
-        } else if(type === 'my') {
-            myBtn.classList.add(...activeClass); myBtn.classList.remove(...inactiveClass);
-        } else if(type === 'past') {
-            pastBtn.classList.add('bg-cyan-500/20','text-cyan-200'); pastBtn.classList.remove(...inactiveClass);
+        if (currentBattlesView === 'leaderboard') {
+            sortControls.classList.add('hidden');
+        } else {
+            sortControls.classList.remove('hidden');
+            if(battlesSort === 'recent') {
+                recentBtn.classList.add('bg-blue-600','text-white'); recentBtn.classList.remove('bg-white/5','text-gray-300');
+                playersBtn.classList.add('bg-white/5','text-gray-300'); playersBtn.classList.remove('bg-blue-600','text-white');
+            } else {
+                playersBtn.classList.add('bg-blue-600','text-white'); playersBtn.classList.remove('bg-white/5','text-gray-300');
+                recentBtn.classList.add('bg-white/5','text-gray-300'); recentBtn.classList.remove('bg-blue-600','text-white');
+            }
         }
     }
 
-    function renderBattlesList(filterType) {
+    function renderBattlesList() {
         const container = document.getElementById('battlesListContent');
         const titleEl = document.getElementById('battlesModalTitle');
+        const paginationEl = document.getElementById('battlesPagination');
         
+        if(currentBattlesView === 'leaderboard') {
+            titleEl.textContent = "Clan Leaderboard";
+            titleEl.className = "text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-600";
+            renderLeaderboard(container);
+            paginationEl.classList.add('hidden');
+            return;
+        }
+
         // --- Theme Switching ---
-        if(filterType === 'past') {
+        if(currentBattlesView === 'past') {
             titleEl.textContent = "Clan Battles";
             titleEl.className = "text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-blue-200 to-white";
         } else {
@@ -1708,27 +1790,41 @@
         let userClanId = null;
         if(currentUser) userClanId = Object.keys(allClansData).find(id => allClansData[id].members && allClansData[id].members[currentUser.uid]);
 
-        if (filterType === 'past') {
-            filtered = battles
-                .filter(([id, b]) => b.status === 'finished')
-                .sort((a,b) => (b[1].scheduledTime || 0) - (a[1].scheduledTime || 0)); // Newest past first
+        // Filter Logic
+        if (currentBattlesView === 'past') {
+            filtered = battles.filter(([id, b]) => b.status === 'finished');
         } else {
             // Upcoming
-            filtered = battles
-                .filter(([id, b]) => b.status === 'accepted')
-                .sort((a,b) => (a[1].scheduledTime || 0) - (b[1].scheduledTime || 0)); // Soonest first
-                
-            if (filterType === 'my') {
+            filtered = battles.filter(([id, b]) => b.status === 'accepted');
+            if (currentBattlesView === 'my') {
                 filtered = filtered.filter(([id, b]) => b.challengerId === userClanId || b.targetId === userClanId);
             }
         }
 
-        if (filtered.length === 0) {
-            container.innerHTML = `<p class="text-gray-400 text-center py-8">No ${filterType === 'past' ? 'past' : 'upcoming'} battles found.</p>`;
+        // Sorting Logic
+        if(battlesSort === 'players') {
+            filtered.sort((a,b) => {
+                const lenA = Object.keys(a[1].participants||{}).length;
+                const lenB = Object.keys(b[1].participants||{}).length;
+                return lenB - lenA; // Most players first
+            });
+        } else {
+            // Recent (Added) - Default to CreatedAt descending (newest added first)
+            filtered.sort((a,b) => (b[1].createdAt || 0) - (a[1].createdAt || 0));
+        }
+
+        const totalBattles = filtered.length;
+        const maxPage = Math.max(0, Math.ceil(totalBattles / PAGE_SIZE_BATTLES) - 1);
+        battlesPage = Math.min(battlesPage, maxPage);
+        const paginated = filtered.slice(battlesPage * PAGE_SIZE_BATTLES, (battlesPage * PAGE_SIZE_BATTLES) + PAGE_SIZE_BATTLES);
+
+        if (totalBattles === 0) {
+            container.innerHTML = `<p class="text-gray-400 text-center py-8">No battles found.</p>`;
+            paginationEl.classList.add('hidden');
             return;
         }
 
-        container.innerHTML = filtered.map(([bid, b]) => {
+        container.innerHTML = paginated.map(([bid, b]) => {
             const c1 = allClansData[b.challengerId] || {name: 'Unknown', icon: ''};
             const c2 = allClansData[b.targetId] || {name: 'Unknown', icon: ''};
             
@@ -1751,7 +1847,7 @@
             // --- Action Section (Winner or Buttons) ---
             let actionHtml = '';
             
-            if (filterType === 'past') {
+            if (currentBattlesView === 'past') {
                 const winner = allClansData[b.winnerId];
                 if (winner) {
                     actionHtml = `
@@ -1765,29 +1861,41 @@
                     actionHtml = `<span class="text-xs text-gray-500 italic">No winner recorded</span>`;
                 }
             } else {
-                // Upcoming Logic (Join/Finish)
+                // Upcoming Logic (Join/Leave/Finish/Delete)
                 const inInvolvedClan = userClanId && (b.challengerId === userClanId || b.targetId === userClanId);
                 const alreadyJoined = parts[currentUser?.uid];
-                const joinBtn = (!alreadyJoined && inInvolvedClan) 
-                    ? `<button onclick="joinBattle('${bid}', '${userClanId}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded ml-auto">Join</button>` 
-                    : '';
+                
+                let btns = '';
+
+                // Join / Leave Logic
+                if (inInvolvedClan) {
+                    if (alreadyJoined) {
+                         btns += `<button onclick="handleBattleClick(this, () => leaveBattle('${bid}'))" class="bg-red-500/20 hover:bg-red-500/40 text-red-200 border border-red-500/30 text-xs px-3 py-1 rounded ml-2 transition-all active:scale-95">Leave</button>`;
+                    } else {
+                         btns += `<button onclick="handleBattleClick(this, () => joinBattle('${bid}', '${userClanId}'))" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded ml-auto transition-all active:scale-95">Join</button>`;
+                    }
+                }
 
                 const isOwner1 = getOwnerUid(c1) === currentUser?.uid;
                 const isOwner2 = getOwnerUid(c2) === currentUser?.uid;
-                const finishBtn = (isOwner1 || isOwner2) 
-                    ? `<button onclick="openFinishBattleModal('${bid}', '${b.challengerId}', '${b.targetId}')" class="text-xs text-orange-400 hover:text-orange-300 underline ml-2">Finish Battle</button>`
-                    : '';
+                const isOwnerInvolved = isOwner1 || isOwner2;
+
+                if (isOwnerInvolved) {
+                    btns += `<button onclick="openFinishBattleModal('${bid}', '${b.challengerId}', '${b.targetId}')" class="text-xs text-orange-400 hover:text-orange-300 underline ml-2">Finish</button>`;
+                    // Delete Button
+                    btns += `<button onclick="deleteBattle('${bid}')" class="text-gray-500 hover:text-red-500 ml-2" title="Delete Battle"><i class="fa-solid fa-trash"></i></button>`;
+                }
                 
-                actionHtml = `<div class="flex items-center">${joinBtn}${finishBtn}</div>`;
+                actionHtml = `<div class="flex items-center ml-auto">${btns}</div>`;
             }
 
             return `
             <div class="bg-white/5 p-4 rounded-xl border border-white/10 hover:bg-white/10 transition-colors">
                 <div class="flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2">
-                        <span class="font-bold text-lg text-white">${escapeHtml(c1.name)}</span>
+                        <span class="font-bold text-lg text-white truncate max-w-[100px] sm:max-w-none">${escapeHtml(c1.name)}</span>
                         <span class="text-red-500 font-bold text-xl">VS</span>
-                        <span class="font-bold text-lg text-white">${escapeHtml(c2.name)}</span>
+                        <span class="font-bold text-lg text-white truncate max-w-[100px] sm:max-w-none">${escapeHtml(c2.name)}</span>
                         <button onclick="document.getElementById('details-${bid}').classList.toggle('hidden')" class="text-gray-400 hover:text-white ml-2"><i class="fa-solid fa-circle-info"></i></button>
                     </div>
                     ${actionHtml}
@@ -1804,12 +1912,91 @@
                 </div>
             </div>`;
         }).join('');
+
+        // Pagination Controls Rendering
+        if (totalBattles > PAGE_SIZE_BATTLES) {
+             paginationEl.classList.remove('hidden');
+             const prev = document.getElementById('battlesPrev');
+             const next = document.getElementById('battlesNext');
+             const info = document.getElementById('battlesPageInfo');
+             
+             info.textContent = `Page ${battlesPage + 1} of ${maxPage + 1}`;
+             prev.disabled = battlesPage === 0;
+             next.disabled = battlesPage === maxPage;
+             
+             prev.classList.toggle('opacity-50', battlesPage === 0);
+             next.classList.toggle('opacity-50', battlesPage === maxPage);
+
+             prev.onclick = () => { if(battlesPage > 0) { battlesPage--; renderBattlesList(); } };
+             next.onclick = () => { if(battlesPage < maxPage) { battlesPage++; renderBattlesList(); } };
+        } else {
+             paginationEl.classList.add('hidden');
+        }
     }
+
+    function renderLeaderboard(container) {
+        const sortedClans = Object.entries(allClansData)
+            .map(([id, c]) => ({id, ...c, wins: c.battlesWon || 0}))
+            .sort((a,b) => b.wins - a.wins)
+            .slice(0, 3); // Top 3
+            
+        if(sortedClans.length === 0) {
+            container.innerHTML = `<p class="text-gray-400 text-center py-8">No clans found.</p>`;
+            return;
+        }
+        
+        container.innerHTML = sortedClans.map((c, index) => {
+            let bgClass = '';
+            let medal = '';
+            if(index === 0) { bgClass = 'bg-gold'; medal = '🥇'; }
+            else if(index === 1) { bgClass = 'bg-silver'; medal = '🥈'; }
+            else if(index === 2) { bgClass = 'bg-bronze'; medal = '🥉'; }
+            
+            return `
+            <div class="${bgClass} p-4 rounded-xl flex items-center justify-between mb-3 transform hover:scale-[1.02] transition-transform">
+                <div class="flex items-center gap-4">
+                    <span class="text-2xl font-bold">${medal}</span>
+                    ${avatarImg(c.icon, 'w-12 h-12 rounded-full object-contain bg-black/20')}
+                    <div>
+                        <h3 class="font-bold text-lg leading-tight">${escapeHtml(c.name)}</h3>
+                        <p class="text-xs opacity-80 uppercase font-bold tracking-wider">Rank #${index + 1}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-2xl font-bold">${c.wins}</p>
+                    <p class="text-xs opacity-80 uppercase">Wins</p>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // Battle Actions
+    window.handleBattleClick = (btn, action) => {
+        // Cool animation class
+        btn.classList.add('animate-pop');
+        setTimeout(() => btn.classList.remove('animate-pop'), 200);
+        action();
+    };
 
     window.joinBattle = (battleId, clanId) => {
         db.ref(`battles/${battleId}/participants/${currentUser.uid}`).set(clanId).then(() => {
-            renderBattlesList(document.getElementById('filterMyClanBattles').classList.contains('bg-red-500/20') ? 'my' : 'all');
+            renderBattlesList(); // Refresh local view
         });
+    };
+
+    window.leaveBattle = (battleId) => {
+        db.ref(`battles/${battleId}/participants/${currentUser.uid}`).remove().then(() => {
+            renderBattlesList();
+        });
+    };
+
+    window.deleteBattle = (battleId) => {
+        if(confirm("Are you sure you want to delete this battle completely?")) {
+            db.ref(`battles/${battleId}`).remove().then(() => {
+                renderBattlesList();
+                kcAlert("Battle Deleted.");
+            });
+        }
     };
 
     window.openFinishBattleModal = (bid, c1Id, c2Id) => {
@@ -1839,7 +2026,7 @@
         db.ref(`clans/${winnerId}/battlesWon`).transaction(count => (count || 0) + 1);
 
         document.getElementById('finishBattleModal').classList.add('hidden');
-        renderBattlesList('all'); // Refresh list (it will disappear from upcoming)
+        renderBattlesList(); // Refresh list (it will disappear from upcoming)
         kcAlert("Battle Finished! Winner recorded.");
     };
 
