@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KC NOW | Lobby</title>
+    
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Firebase SDKs (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --accent-blue: #3b82f6;
+            --brand-gradient: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #080c14;
+            color: #f8fafc;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* --- Background FX --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
+        }
+
+        .animated-gradient {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 70%, rgba(45, 212, 191, 0.08) 0%, transparent 40%);
+            animation: drift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes drift { from { transform: scale(1); } to { transform: scale(1.1) rotate(1deg); } }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.5) 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* --- UI Components --- */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-hover:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-4px);
+        }
+
+        .tab-btn {
+            position: relative;
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255,255,255,0.4);
+            transition: all 0.3s;
+        }
+        .tab-btn.active { color: #fff; }
+        .tab-btn.active::after {
+            content: ''; position: absolute; bottom: -12px; left: 50%;
+            transform: translateX(-50%); width: 30px; height: 3px;
+            background: var(--accent-blue); box-shadow: 0 0 15px var(--accent-blue);
+            border-radius: 10px;
+        }
+
+        .bottom-banner {
+            position: fixed; bottom: 24px; left: 50%;
+            transform: translateX(-50%); padding: 12px 80px;
+            border-radius: 100px; z-index: 50; pointer-events: none;
+        }
+        .banner-sheen::after {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            animation: sheen 6s infinite;
+        }
+        @keyframes sheen { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+        .view-transition { animation: slideUpFade 0.4s ease-out; }
+        @keyframes slideUpFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .feed-chip.active { background-color: var(--accent-blue); color: white; opacity: 1; }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+            height: calc(100vh - 240px);
+        }
+        @media (max-width: 1024px) {
+            .main-grid { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+            body { overflow-y: auto; }
+        }
+    </style>
+</head>
+<body class="p-6 md:p-10">
+
+    <div id="bg-canvas"></div>
+    <div class="animated-gradient"></div>
+    <div class="vignette"></div>
+
+    <!-- 1. Top Navigation Bar -->
+    <header class="flex justify-center mb-10 z-50 relative">
+        <nav class="glass px-10 py-4 rounded-3xl flex items-center gap-10 md:gap-20">
+            <button onclick="switchTab('clans')" class="tab-btn" id="tab-clans">Clans</button>
+            <button onclick="switchTab('profile')" class="tab-btn" id="tab-profile">Profile</button>
+            <button onclick="switchTab('home')" class="tab-btn active" id="tab-home">Home</button>
+            <button onclick="switchTab('players')" class="tab-btn" id="tab-players">Players</button>
+            <button onclick="switchTab('clips')" class="tab-btn" id="tab-clips">Clips</button>
+        </nav>
+    </header>
+
+    <!-- 2. Main Body Grid -->
+    <main class="max-w-[1600px] mx-auto main-grid relative z-10">
+        <!-- LEFT Area -->
+        <section id="content-viewport" class="custom-scroll overflow-y-auto pr-4">
+            <!-- HOME TAB -->
+            <div id="view-home" class="view-transition flex flex-col gap-8">
+                <!-- Welcome Card -->
+                <div id="welcome-card" class="glass p-8 rounded-[40px] flex items-center justify-between border-white/5 relative overflow-hidden">
+                    <div class="flex items-center gap-8 z-10">
+                        <div class="relative group">
+                            <div class="absolute -inset-1 bg-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition"></div>
+                            <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-24 h-24 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
+                            <div id="online-indicator" class="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
+                        </div>
+                        <div>
+                            <p id="greeting-text" class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-1">Checking Status...</p>
+                            <h1 id="user-display-name" class="text-4xl font-bold text-white tracking-tight">Welcome, Guest</h1>
+                            <div id="user-badges" class="flex gap-2 mt-3"></div>
+                        </div>
+                    </div>
+                    <div id="auth-actions" class="z-10"></div>
+                    <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px]"></div>
+                </div>
+
+                <!-- Hub Buttons -->
+                <div class="grid grid-cols-3 gap-6 h-56">
+                    <button onclick="openLeaderboard()" class="glass glass-hover rounded-[32px] flex flex-col items-center justify-center gap-4 group">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-trophy"></i>
+                        </div>
+                        <span class="font-bold tracking-wide">Leaderboard</span>
+                    </button>
+                    
+                    <button onclick="battledomeOpen()" class="glass glass-hover rounded-[32px] flex flex-col items-center justify-center gap-4 group cursor-not-allowed opacity-60">
+                        <div class="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 text-3xl">
+                            <i class="fa-solid fa-sword"></i>
+                        </div>
+                        <span class="font-bold tracking-wide">Battledome</span>
+                        <div class="text-[10px] bg-red-500/20 text-red-400 px-3 py-0.5 rounded-full font-black uppercase">Offline</div>
+                    </button>
+                    
+                    <button onclick="openClanBattles()" class="glass glass-hover rounded-[32px] flex flex-col items-center justify-center gap-4 group">
+                        <div class="w-16 h-16 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-400 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <span class="font-bold tracking-wide">Clan Battles</span>
+                    </button>
+                </div>
+
+                <!-- Trending Clips Preview -->
+                <div class="glass p-8 rounded-[40px] border-white/5">
+                    <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
+                        <i class="fa-solid fa-bolt text-blue-400"></i> Hot Community Clips
+                    </h3>
+                    <div id="home-clips-preview" class="grid grid-cols-2 gap-6">
+                        <div class="animate-pulse bg-white/5 rounded-3xl h-40"></div>
+                        <div class="animate-pulse bg-white/5 rounded-3xl h-40"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROFILE VIEW -->
+            <div id="view-profile" class="view-transition hidden space-y-8">
+                <div class="glass p-10 rounded-[40px]">
+                    <h2 class="text-3xl font-bold mb-8">Account Summary</h2>
+                    <div id="profile-lite-content" class="grid grid-cols-2 gap-10"></div>
+                    <div class="mt-12 flex justify-center">
+                        <a href="https://kcevents.uk/#loginpage" target="_blank" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl">
+                            Full Profile Options <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CLANS VIEW (Lite but Functional) -->
+            <div id="view-clans" class="view-transition hidden space-y-8">
+                <div class="glass p-10 rounded-[40px]">
+                    <div class="flex items-center justify-between mb-8">
+                        <h2 class="text-3xl font-bold">Clan Registry</h2>
+                        <button onclick="loadAllClans()" class="text-xs text-blue-400 font-bold uppercase hover:underline">Refresh List</button>
+                    </div>
+                    <div id="clans-lite-content" class="space-y-4"></div>
+                    <div class="mt-12 flex justify-center">
+                        <a href="https://kcevents.uk/#clans" target="_blank" class="px-10 py-4 glass glass-hover border-teal-500/30 text-teal-400 font-bold rounded-2xl">
+                            Enter Full Clan Hub <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLAYERS VIEW (Embedded profiles.html) -->
+            <div id="view-players" class="view-transition hidden space-y-6">
+                <div class="glass rounded-[40px] overflow-hidden border-white/5" style="height: calc(100vh - 320px);">
+                    <iframe src="profiles.html" class="w-full h-full" style="border:0;"></iframe>
+                </div>
+            </div>
+
+            <!-- CLIPS VIEW (Lite Social Feed as iframe) -->
+            <div id="view-clips" class="view-transition hidden space-y-8">
+                <div class="glass p-8 rounded-[40px]">
+                    <h2 class="text-3xl font-bold mb-8">Social Clips Feed</h2>
+                    <div class="w-full overflow-hidden rounded-[32px] mb-8" style="height: calc(100vh - 320px);">
+                        <iframe src="clipssocial.html" class="w-full h-full" style="border:0;"></iframe>
+                    </div>
+                    <div class="mt-12 flex justify-center">
+                        <a href="https://kcevents.uk/#socialfeed" target="_blank" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl">
+                            Full Social Application <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT Feed & Stats -->
+        <aside class="hidden lg:flex flex-col h-full overflow-hidden">
+            <div class="glass rounded-[40px] border-white/5 flex flex-col h-full overflow-hidden">
+                <div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
+                    <h3 class="font-black text-sm tracking-widest">KC NOW</h3>
+                    <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                </div>
+                <!-- Tabs for right panel -->
+                <div class="p-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
+                    <button onclick="switchRightTab('feed')" id="righttab-feed" class="feed-chip active px-4 py-1.5 rounded-full text-xs font-bold transition">Feed</button>
+                    <button onclick="switchRightTab('stats')" id="righttab-stats" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Stats</button>
+                </div>
+                <!-- Feed Panel -->
+                <div id="rightpanel-feed" class="flex-1 flex flex-col">
+                    <div class="p-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
+                        <button onclick="filterFeed('all')" id="feed-filter-all" class="feed-chip active px-4 py-1.5 rounded-full text-xs font-bold transition">All</button>
+                        <button onclick="filterFeed('clips')" id="feed-filter-clips" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Clips</button>
+                        <button onclick="filterFeed('clans')" id="feed-filter-clans" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Clans</button>
+                        <button onclick="filterFeed('users')" id="feed-filter-users" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Join</button>
+                    </div>
+                    <div id="lobby-notification-feed" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4"></div>
+                </div>
+                <!-- Stats Panel -->
+                <div id="rightpanel-stats" class="hidden flex-1 overflow-y-auto custom-scroll p-4">
+                    <iframe src="stats.html" style="width:100%;height:100%;border:0;border-radius:28px;"></iframe>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div class="bottom-banner glass banner-sheen border-white/10 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+        <span class="text-2xl font-black tracking-[0.3em] text-white">KC <span class="text-blue-500">NOW</span></span>
+    </div>
+
+    <div id="global-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-6 bg-black/60 backdrop-blur-xl transition-all">
+        <div class="glass w-full max-w-2xl max-h-[85vh] rounded-[48px] border-white/10 flex flex-col overflow-hidden shadow-2xl">
+            <div class="p-8 border-b border-white/5 flex items-center justify-between">
+                <h2 id="modal-title" class="text-2xl font-bold">Lobby Window</h2>
+                <button onclick="closeModal()" class="w-12 h-12 rounded-full glass flex items-center justify-center hover:bg-red-500/20 transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="modal-body" class="p-8 overflow-y-auto custom-scroll flex-1"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA & STATE ---
+        var currentUser = null, activeTab = 'home', auth, db, storage;
+        var allUsersData = [], allClansData = {}, allPostsData = [], feedItems = [];
+
+        // --- Firebase Config (KC Killers Company) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+            authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+            databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "kckillerscompany-ab1ec",
+            storageBucket: "kckillerscompany-ab1ec.appspot.com",
+            messagingSenderId: "198711213988",
+            appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31"
+        };
+
+        // Initialize Firebase only once
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        auth = firebase.auth(); db = firebase.database(); storage = firebase.storage();
+
+        // --- AUTH SYNC ---
+        auth.onAuthStateChanged(async (user) => {
+            currentUser = user;
+            if (user) {
+                // reload user to get latest emailVerified flag
+                try { await user.reload(); } catch (e) {}
+                db.ref(`users/${user.uid}`).on('value', snap => {
+                    const data = snap.val() || {};
+                    renderUserHeader(data, user);
+                    if (activeTab === 'profile') loadProfileLite();
+                });
+            } else {
+                renderUserHeader({}, null);
+            }
+            // Reset feed listeners and load clips preview on auth change
+            initFeedListeners();
+            loadClipsPreview();
+        });
+
+        // --- Greeting Function ---
+        function getGreeting() {
+            const h = new Date().getHours();
+            if (h < 12) return "Good morning";
+            if (h < 18) return "Good afternoon";
+            return "Good evening";
+        }
+
+        // --- Render User Header (Welcome Card) ---
+        function renderUserHeader(data, user) {
+            const nameEl = document.getElementById('user-display-name');
+            const greetingEl = document.getElementById('greeting-text');
+            const avatarEl = document.getElementById('user-avatar');
+            const badgeEl = document.getElementById('user-badges');
+            const actions = document.getElementById('auth-actions');
+            const ind = document.getElementById('online-indicator');
+            const welcomeCard = document.getElementById('welcome-card');
+
+            greetingEl.textContent = getGreeting() + ',';
+
+            if (user) {
+                // Determine avatar and customization
+                const avatarUrl = data.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+                const nameColor = (data.profileCustomizationUnlocked && data.profileCustomization && data.profileCustomization.nameColor) ? data.profileCustomization.nameColor : '#ffffff';
+                const customGradient = (data.profileCustomizationUnlocked && data.profileCustomization && data.profileCustomization.gradient) ? data.profileCustomization.gradient : null;
+                const isVerified = !!user.emailVerified;
+                const isStaff = !!data.isStaff;
+
+                nameEl.textContent = data.displayName || user.displayName || "Member";
+                nameEl.style.color = nameColor;
+                avatarEl.src = avatarUrl;
+                ind.classList.remove('hidden');
+
+                // Apply gradient background if available
+                if (customGradient) {
+                    welcomeCard.style.background = customGradient;
+                    welcomeCard.classList.remove('glass');
+                } else {
+                    welcomeCard.style.background = '';
+                    welcomeCard.classList.add('glass');
+                }
+
+                // Render badges
+                let badges = '';
+                if (isVerified) badges += `<i class="fa-solid fa-circle-check text-blue-400 text-xs" title="Verified"></i>`;
+                if (isStaff) badges += `<i class="fa-solid fa-shield-halved text-red-500 text-xs" title="Staff"></i>`;
+                badgeEl.innerHTML = badges;
+
+                // Auth actions (sign out)
+                actions.innerHTML = `<button onclick="auth.signOut()" class="px-6 py-2 border border-red-500/20 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-xs">SIGN OUT</button>`;
+            } else {
+                // Guest view
+                nameEl.textContent = "Welcome, Guest";
+                nameEl.style.color = "#ffffff";
+                avatarEl.src = "https://via.placeholder.com/100?text=?";
+                badgeEl.innerHTML = '';
+                ind.classList.add('hidden');
+                welcomeCard.style.background = '';
+                welcomeCard.classList.add('glass');
+                actions.innerHTML = `<button onclick="openAuthModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-900/40">SIGN IN</button>`;
+            }
+        }
+
+        // --- TAB SYSTEM ---
+        function switchTab(tabId) {
+            activeTab = tabId;
+            // hide all view containers with id starting with view-
+            document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        // --- RIGHT PANEL TAB SYSTEM ---
+        function switchRightTab(tab) {
+            // Toggle tab button classes
+            document.getElementById('righttab-feed').classList.remove('active');
+            document.getElementById('righttab-stats').classList.remove('active');
+            document.getElementById('rightpanel-feed').classList.add('hidden');
+            document.getElementById('rightpanel-stats').classList.add('hidden');
+            if (tab === 'feed') {
+                document.getElementById('righttab-feed').classList.add('active');
+                document.getElementById('rightpanel-feed').classList.remove('hidden');
+            } else if (tab === 'stats') {
+                document.getElementById('righttab-stats').classList.add('active');
+                document.getElementById('rightpanel-stats').classList.remove('hidden');
+            }
+        }
+
+        // --- FEED ADAPTER (Live Events) ---
+        function initFeedListeners() {
+            // Clear previous listeners and feed items
+            feedItems = [];
+            // Remove existing listeners if any by off() - ensures no duplicates
+            db.ref('social_posts').off();
+            db.ref('users').off();
+            // Subscribe to social posts for feed (latest 5)
+            db.ref('social_posts').limitToLast(5).on('child_added', snap => {
+                const p = snap.val();
+                addFeedItem({ type:'clips', title:'New Clip!', user:p.userName, detail:p.caption, time:'Just now', color:'text-blue-400', icon:'fa-clapperboard' });
+            });
+            // Subscribe to new users
+            db.ref('users').limitToLast(3).on('child_added', snap => {
+                const u = snap.val();
+                addFeedItem({ type:'users', title:'New Player!', user:u.displayName, detail:'Joined the KC community.', time:'New', color:'text-green-400', icon:'fa-user-plus' });
+            });
+        }
+
+        function addFeedItem(item) {
+            feedItems.unshift(item);
+            if (feedItems.length > 20) feedItems.pop();
+            renderFeed();
+        }
+
+        function filterFeed(f) {
+            // Toggle only the category filter chips
+            document.querySelectorAll('[id^="feed-filter-"]').forEach(c => {
+                c.classList.remove('active');
+                c.classList.add('glass','text-gray-500');
+            });
+            document.getElementById(`feed-filter-${f}`).classList.add('active');
+            document.getElementById(`feed-filter-${f}`).classList.remove('glass','text-gray-500');
+            renderFeed(f);
+        }
+
+        function renderFeed(filter = 'all') {
+            const el = document.getElementById('lobby-notification-feed');
+            const data = filter === 'all' ? feedItems : feedItems.filter(i => i.type === filter);
+            el.innerHTML = data.map(item => `
+                <div class="glass glass-hover p-4 rounded-3xl border-white/5 cursor-pointer overflow-hidden max-h-16 transition-all duration-500" onclick="toggleFeedItem(this)">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${item.color}"><i class="fa-solid ${item.icon}"></i></div>
+                            <div>
+                                <h4 class="text-xs font-bold text-white">${item.title}</h4>
+                                <p class="text-[9px] text-gray-500 uppercase font-black">${item.time}</p>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-gray-600"></i>
+                    </div>
+                    <div class="pt-4 border-t border-white/5">
+                        <p class="text-[11px] text-blue-400 font-bold mb-1">${item.user}</p>
+                        <p class="text-xs text-gray-400 leading-relaxed">${item.detail || ''}</p>
+                    </div>
+                </div>
+            `).join('') || `<div class="p-10 text-center opacity-20 text-xs italic">Awaiting events...</div>`;
+        }
+
+        function toggleFeedItem(el) {
+            const isExp = el.style.maxHeight === '300px';
+            el.style.maxHeight = isExp ? '64px' : '300px';
+            el.querySelector('.fa-chevron-down').style.transform = isExp ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // --- SUB-MODULE: PLAYERS (legacy) ---
+        // Note: players view is now loaded via iframe. This function is kept for backwards compatibility.
+        function loadPlayersFull() {
+            // Do nothing since profiles.html handles everything inside iframe.
+        }
+
+        // --- SUB-MODULE: CLANS (Lite but Functional) ---
+        function loadAllClans() {
+            const container = document.getElementById('clans-lite-content');
+            container.innerHTML = `<div class="p-10 text-center animate-pulse opacity-40">Polling Clan database...</div>`;
+            db.ref('clans').once('value').then(snap => {
+                allClansData = snap.val() || {};
+                renderClansLite();
+            });
+        }
+
+        function renderClansLite() {
+            const container = document.getElementById('clans-lite-content');
+            const clanIds = Object.keys(allClansData);
+            container.innerHTML = clanIds.map(id => {
+                const c = allClansData[id];
+                const isMember = currentUser && c.members && c.members[currentUser.uid];
+                return `
+                    <div class="glass p-6 rounded-[32px] flex items-center justify-between border-white/5">
+                        <div class="flex items-center gap-6">
+                            <div class="w-14 h-14 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-400 text-2xl font-black">${c.name.charAt(0)}</div>
+                            <div>
+                                <h4 class="text-lg font-bold">${c.name}</h4>
+                                <p class="text-[10px] text-gray-500 uppercase font-black">${Object.keys(c.members||{}).length} Members • ${c.isOpen ? 'Open' : 'Invite Only'}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            ${isMember ? 
+                                `<button onclick="leaveClan('${id}')" class="px-5 py-2 bg-red-500/10 text-red-400 text-[10px] font-bold rounded-xl hover:bg-red-500/20">LEAVE</button>` :
+                                `<button onclick="joinClan('${id}')" class="px-5 py-2 bg-teal-500/10 text-teal-400 text-[10px] font-bold rounded-xl hover:bg-teal-500/20">JOIN</button>`
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('') || `<p class="p-10 text-center opacity-40">No clans registered.</p>`;
+        }
+
+        window.joinClan = (id) => {
+            if(!currentUser) return openAuthModal();
+            const c = allClansData[id];
+            if(c.isOpen) {
+                db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => loadAllClans());
+            } else {
+                db.ref(`clans/${id}/requests/${currentUser.uid}`).set(true).then(() => kcAlert("Request Sent!"));
+            }
+        };
+
+        window.leaveClan = (id) => {
+            if(!currentUser) return;
+            db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => loadAllClans());
+        };
+
+        // --- SUB-MODULE: CLIPS (legacy) ---
+        function loadClipsFull() {
+            // Do nothing since clipssocial.html handles everything inside iframe.
+        }
+
+        window.likePost = (id) => {
+            if(!currentUser) return openAuthModal();
+            const ref = db.ref(`social_posts/${id}/likes`);
+            ref.transaction(cur => (cur || 0) + 1).then(() => loadClipsFull());
+        };
+
+        // --- MODAL & MISC ---
+        function openModal(title, body) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-body').innerHTML = body;
+            const m = document.getElementById('global-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const m = document.getElementById('global-modal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+            // Restore overflow depending on screen size
+            document.body.style.overflow = window.innerWidth < 1024 ? 'auto' : 'hidden';
+        }
+
+        function openLeaderboard() {
+            // Embed leaderboard.html inside modal via iframe
+            openModal("Leaderboard", `<iframe src="leaderboard.html" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
+        }
+
+        function openClanBattles() {
+            // Embed clans.html battles modal inside modal via iframe
+            openModal("Clan Battles", `<iframe src="clans.html?open=battles" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
+        }
+
+        function battledomeOpen() { console.log("Battledome is locked."); }
+
+        function openPlayerCard(uid) {
+            // Legacy: keep as is for clan view players or other use
+            db.ref(`users/${uid}`).once('value').then(snap => {
+                const u = snap.val(); if(!u) return;
+                const content = `
+                    <div class="flex flex-col items-center gap-6 text-center">
+                        <img src="${u.profilePicture || 'https://kcevents.uk/default-avatar.png'}" class="w-32 h-32 rounded-full border-8 border-white/5 shadow-2xl">
+                        <div>
+                            <h2 class="text-4xl font-bold mb-1" style="color:${u.nameColor||'#fff'}">${u.displayName || 'Member'}</h2>
+                            <p class="text-blue-400 font-black tracking-widest uppercase text-xs">${u.rank || 'Player'}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 w-full">
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">XP Points</p>
+                                <p class="text-2xl font-black">${u.totalPoints || 0}</p>
+                            </div>
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Clan</p>
+                                <p class="text-2xl font-black text-teal-400">${u.clanName || 'None'}</p>
+                            </div>
+                        </div>
+                        <div class="w-full glass p-6 rounded-3xl text-left">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-3">Biography</p>
+                            <p class="text-gray-300 text-sm italic">"${u.bio || 'Silence is this player\'s best friend.'}"</p>
+                        </div>
+                    </div>
+                `;
+                openModal(`Player Dossier`, content);
+            });
+        }
+
+        function loadProfileLite() {
+            if(!currentUser) return;
+            db.ref(`users/${currentUser.uid}`).once('value', snap => {
+                const u = snap.val() || {};
+                document.getElementById('profile-lite-content').innerHTML = `
+                    <div class="glass p-6 rounded-3xl flex items-center gap-4">
+                        <img src="${u.profilePicture || 'https://kcevents.uk/default-avatar.png'}" class="w-16 h-16 rounded-full border-2 border-white/5">
+                        <div>
+                            <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Authenticated As</p>
+                            <p class="font-bold" style="color:${u.nameColor||'#fff'}">${u.displayName || 'Explorer'}</p>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-3xl">
+                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Current Ranking</p>
+                        <p class="text-xl font-black text-blue-400">${u.rank || 'Member'}</p>
+                    </div>
+                    <div class="glass p-6 rounded-3xl col-span-2">
+                        <p class="text-[10px] text-gray-500 font-black uppercase mb-2">Member Statistics</p>
+                        <div class="flex gap-8">
+                            <div><p class="text-xs text-gray-400 uppercase">XP</p><p class="text-lg font-bold">${u.totalPoints || 0}</p></div>
+                            <div><p class="text-xs text-gray-400 uppercase">Streak</p><p class="text-lg font-bold text-orange-400">${u.streak || 0}🔥</p></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function loadClipsPreview() {
+            db.ref('social_posts').limitToLast(2).once('value').then(snap => {
+                let h = '';
+                snap.forEach(c => {
+                    const p = c.val();
+                    h += `<div class="relative bg-black/40 rounded-3xl overflow-hidden aspect-video border border-white/5">
+                            ${p.mediaUrl ? `<img src="${p.mediaUrl}" class="w-full h-full object-cover opacity-60">` : ''}
+                            <div class="absolute inset-0 flex items-center justify-center"><i class="fa-solid fa-play-circle text-4xl text-white/40"></i></div>
+                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white">${p.userName}</p></div>
+                        </div>`;
+                });
+                document.getElementById('home-clips-preview').innerHTML = h || '<p class="col-span-2 opacity-20 text-center text-xs">No media found.</p>';
+            });
+        }
+
+        function openAuthModal() {
+            openModal("Lobby Security", `<div class="py-6 text-center space-y-8">
+                    <div class="w-20 h-20 rounded-3xl bg-blue-500/10 flex items-center justify-center mx-auto text-blue-500 text-4xl"><i class="fa-solid fa-fingerprint"></i></div>
+                    <p class="text-gray-400">Please sign in to the KC Events Network to save progress, participate in clans, and share clips.</p>
+                    <a href="https://kcevents.uk/#loginpage" target="_blank" class="block w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl transition">LAUNCH AUTH INTERFACE</a>
+                </div>`);
+        }
+
+        function kcAlert(msg) { openModal("Notification", `<div class="p-10 text-center font-bold">${msg}</div>`); }
+
+        window.onload = () => {
+            switchTab('home');
+            window.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+        };
+    </script>
+</body>
+</html>
