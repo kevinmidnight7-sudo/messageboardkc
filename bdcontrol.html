@@ -634,6 +634,34 @@
             </div>
           </div>
         </div>
+
+        <!-- Pagination Controls -->
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <label style="margin: 0;">Rows per page:</label>
+            <select id="page-size" style="width: auto; padding: 8px 12px;">
+              <option value="25">25</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+              <option value="500">500</option>
+            </select>
+          </div>
+          
+          <div style="color: var(--text-secondary); font-size: 0.9em;">
+            Showing <strong id="page-start">0</strong>-<strong id="page-end">0</strong> of <strong id="total-filtered">0</strong>
+          </div>
+
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button onclick="goToFirstPage()" id="first-page-btn" style="padding: 8px 12px;" disabled>⏮️ First</button>
+            <button onclick="previousPage()" id="prev-page-btn" style="padding: 8px 12px;" disabled>◀️ Prev</button>
+            <span style="color: var(--text-secondary); font-size: 0.9em;">
+              Page <strong id="current-page">1</strong> of <strong id="total-pages">1</strong>
+            </span>
+            <button onclick="nextPage()" id="next-page-btn" style="padding: 8px 12px;">Next ▶️</button>
+            <button onclick="goToLastPage()" id="last-page-btn" style="padding: 8px 12px;">Last ⏭️</button>
+          </div>
+        </div>
       </div>
 
       <div class="data-table">
@@ -975,6 +1003,11 @@
     let currentUser = null;
     let isAdmin = false;
 
+    // Pagination
+    let currentPage = 1;
+    let pageSize = 50;
+    let filteredScoresData = [];
+
     // URL encoding function matching the bot's toRtdbKey
     function toRtdbKey(raw) {
       const s = String(raw ?? '').trim();
@@ -1140,64 +1173,122 @@
 
     async function loadAllData() {
       try {
-        // Load votes first
+        // Load votes first (smaller dataset)
         await loadVotesData();
         
-        // Load scores from config/bdTopScores (the correct path used by the bot)
-        try {
-          const snapshot = await get(ref(database, 'config/bdTopScores'));
-          if (snapshot.exists()) {
-            const data = snapshot.val();
-            parseScoresData(data);
-            console.log('Loaded scores from: config/bdTopScores');
-          } else {
-            // If no data found, show empty state
-            allScoresData = [];
-            renderScoresTable();
-            showToast('No Battledome scores found. You can add scores manually.', 'warning');
-          }
-        } catch (err) {
-          console.error('Error loading scores:', err);
-          allScoresData = [];
-          renderScoresTable();
-          showToast('Error loading scores: ' + err.message, 'error');
-        }
+        // For scores, we'll use a smarter approach - only load what we need
+        // Don't load everything at once!
+        showToast('Loading scores... (fetching only what you need)', 'warning');
+        
+        // Load just the stats we need for the dashboard
+        await loadScoreStats();
+        
+        // Load first page of data
+        await loadScoresPage();
         
         updateLastUpdated();
-        calculateAnalytics();
       } catch (error) {
         console.error('Error loading data:', error);
         showToast('Error loading data: ' + error.message, 'error');
       }
     }
 
-    function parseScoresData(data) {
-      allScoresData = [];
-      
-      // Structure from bot: { global: {encodedKey: {score, seenAt, serverName, name}}, East: {...}, EU: {...} }
-      ['global', 'East', 'EU'].forEach(region => {
-        if (data[region]) {
-          Object.entries(data[region]).forEach(([encodedKey, scoreData]) => {
-            if (!scoreData || typeof scoreData !== 'object') return;
-            
-            // Decode the player name (bot uses toRtdbKey which is encodeURIComponent + replace . with %2E)
-            let playerName = scoreData.name || decodeURIComponent(encodedKey.replace(/%2E/g, '.'));
-            
-            allScoresData.push({
-              name: playerName,
-              score: scoreData.score || 0,
-              region,
-              server: scoreData.serverName || '',
-              seenAt: scoreData.seenAt || Date.now(),
-              encodedKey // Store for editing/deleting
-            });
+    async function loadScoreStats() {
+      // Only load counts, not actual data
+      try {
+        const snapshot = await get(ref(database, 'config/bdTopScores'));
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          
+          // Count entries per region without loading all data
+          let globalCount = 0, eastCount = 0, euCount = 0, highestScore = 0;
+          
+          ['global', 'East', 'EU'].forEach(region => {
+            if (data[region]) {
+              const entries = Object.entries(data[region]);
+              if (region === 'global') globalCount = entries.length;
+              if (region === 'East') eastCount = entries.length;
+              if (region === 'EU') euCount = entries.length;
+              
+              // Find highest score
+              entries.forEach(([key, scoreData]) => {
+                if (scoreData && scoreData.score > highestScore) {
+                  highestScore = scoreData.score;
+                }
+              });
+            }
           });
+          
+          document.getElementById('stat-global').textContent = globalCount;
+          document.getElementById('stat-east').textContent = eastCount;
+          document.getElementById('stat-eu').textContent = euCount;
+          document.getElementById('stat-highest').textContent = highestScore.toLocaleString();
+          document.getElementById('total-scores').textContent = (globalCount + eastCount + euCount);
+          
+          console.log('Stats loaded without fetching full dataset');
         }
-      });
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    async function loadScoresPage() {
+      const searchTerm = document.getElementById('search-input')?.value.toLowerCase() || '';
+      const regionFilter = document.getElementById('region-filter')?.value || 'all';
+      const minScore = parseInt(document.getElementById('min-score')?.value) || 0;
       
-      console.log(`Loaded ${allScoresData.length} scores total`);
-      updateStats();
-      renderScoresTable();
+      try {
+        const snapshot = await get(ref(database, 'config/bdTopScores'));
+        if (!snapshot.exists()) {
+          allScoresData = [];
+          renderScoresTable();
+          showToast('No Battledome scores found.', 'warning');
+          return;
+        }
+        
+        const data = snapshot.val();
+        allScoresData = [];
+        
+        // Parse all regions
+        ['global', 'East', 'EU'].forEach(region => {
+          // Skip if filtering by region
+          if (regionFilter !== 'all' && regionFilter !== region) return;
+          
+          if (data[region]) {
+            Object.entries(data[region]).forEach(([encodedKey, scoreData]) => {
+              if (!scoreData || typeof scoreData !== 'object') return;
+              
+              // Apply filters while parsing
+              const score = scoreData.score || 0;
+              if (score < minScore) return;
+              
+              let playerName = scoreData.name || decodeURIComponent(encodedKey.replace(/%2E/g, '.'));
+              
+              // Apply search filter
+              if (searchTerm && !playerName.toLowerCase().includes(searchTerm)) return;
+              
+              allScoresData.push({
+                name: playerName,
+                score: score,
+                region,
+                server: scoreData.serverName || '',
+                seenAt: scoreData.seenAt || Date.now(),
+                encodedKey
+              });
+            });
+          }
+        });
+        
+        console.log(`Loaded ${allScoresData.length} scores (filtered)`);
+        renderScoresTable();
+        calculateAnalytics();
+        
+      } catch (error) {
+        console.error('Error loading scores:', error);
+        allScoresData = [];
+        renderScoresTable();
+        showToast('Error loading scores: ' + error.message, 'error');
+      }
     }
 
     async function loadVotesData() {
@@ -1225,19 +1316,6 @@
         allVotesData = [];
         renderVotesTable();
       }
-    }
-
-    function updateStats() {
-      const global = allScoresData.filter(s => s.region === 'global').length;
-      const east = allScoresData.filter(s => s.region === 'East').length;
-      const eu = allScoresData.filter(s => s.region === 'EU').length;
-      const highest = Math.max(...allScoresData.map(s => s.score), 0);
-      
-      document.getElementById('stat-global').textContent = global;
-      document.getElementById('stat-east').textContent = east;
-      document.getElementById('stat-eu').textContent = eu;
-      document.getElementById('stat-highest').textContent = highest.toLocaleString();
-      document.getElementById('total-scores').textContent = allScoresData.length;
     }
 
     function updateVotesStats() {
@@ -1272,6 +1350,7 @@
     }
 
     function calculateAnalytics() {
+      // Work with currently loaded data only
       const uniquePlayers = new Set(allScoresData.map(s => s.name)).size;
       const avgScore = allScoresData.length > 0
         ? Math.round(allScoresData.reduce((sum, s) => sum + s.score, 0) / allScoresData.length)
@@ -1324,7 +1403,8 @@
       const regionFilter = document.getElementById('region-filter')?.value || 'all';
       const minScore = parseInt(document.getElementById('min-score')?.value) || 0;
       
-      let filtered = allScoresData.filter(score => {
+      // Filter data
+      filteredScoresData = allScoresData.filter(score => {
         const matchesSearch = score.name.toLowerCase().includes(searchTerm);
         const matchesRegion = regionFilter === 'all' || score.region === regionFilter;
         const matchesScore = score.score >= minScore;
@@ -1333,7 +1413,7 @@
       
       // Apply sorting
       if (currentSort.column) {
-        filtered.sort((a, b) => {
+        filteredScoresData.sort((a, b) => {
           let aVal = a[currentSort.column];
           let bVal = b[currentSort.column];
           
@@ -1347,11 +1427,22 @@
           return 0;
         });
       }
+
+      // Update filtered count
+      document.getElementById('filtered-count').textContent = filteredScoresData.length;
+      
+      // Calculate pagination
+      const totalPages = Math.ceil(filteredScoresData.length / pageSize);
+      const startIdx = (currentPage - 1) * pageSize;
+      const endIdx = Math.min(startIdx + pageSize, filteredScoresData.length);
+      const pageData = filteredScoresData.slice(startIdx, endIdx);
+      
+      // Update pagination UI
+      updatePaginationUI(filteredScoresData.length, totalPages, startIdx, endIdx);
       
       const tbody = document.getElementById('scores-tbody');
-      document.getElementById('filtered-count').textContent = filtered.length;
       
-      if (filtered.length === 0) {
+      if (filteredScoresData.length === 0) {
         tbody.innerHTML = `
           <tr>
             <td colspan="6" class="empty-state">
@@ -1363,7 +1454,7 @@
         return;
       }
       
-      const html = filtered.map(score => {
+      const html = pageData.map(score => {
         const badgeClass = score.region === 'East' ? 'region-east' : 
                           score.region === 'EU' ? 'region-eu' : 'region-global';
         const lastSeen = score.seenAt 
@@ -1383,8 +1474,8 @@
             <td>${lastSeen}</td>
             <td>
               <div class="table-actions">
-                <button class="btn-small btn-edit" onclick="editScore('${score.name}', '${score.region}')">Edit</button>
-                <button class="btn-small btn-delete" onclick="deleteScore('${score.name}', '${score.region}')">Delete</button>
+                <button class="btn-small btn-edit" onclick="editScore('${score.name.replace(/'/g, "\\'")}', '${score.region}')">Edit</button>
+                <button class="btn-small btn-delete" onclick="deleteScore('${score.name.replace(/'/g, "\\'")}', '${score.region}')">Delete</button>
               </div>
             </td>
           </tr>
@@ -1393,6 +1484,46 @@
       
       tbody.innerHTML = html;
     }
+
+    function updatePaginationUI(totalFiltered, totalPages, startIdx, endIdx) {
+      document.getElementById('total-filtered').textContent = totalFiltered;
+      document.getElementById('page-start').textContent = totalFiltered > 0 ? startIdx + 1 : 0;
+      document.getElementById('page-end').textContent = endIdx;
+      document.getElementById('current-page').textContent = currentPage;
+      document.getElementById('total-pages').textContent = totalPages || 1;
+      
+      // Update button states
+      document.getElementById('first-page-btn').disabled = currentPage === 1;
+      document.getElementById('prev-page-btn').disabled = currentPage === 1;
+      document.getElementById('next-page-btn').disabled = currentPage >= totalPages;
+      document.getElementById('last-page-btn').disabled = currentPage >= totalPages;
+    }
+
+    window.nextPage = function() {
+      const totalPages = Math.ceil(filteredScoresData.length / pageSize);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderScoresTable();
+      }
+    };
+
+    window.previousPage = function() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderScoresTable();
+      }
+    };
+
+    window.goToFirstPage = function() {
+      currentPage = 1;
+      renderScoresTable();
+    };
+
+    window.goToLastPage = function() {
+      const totalPages = Math.ceil(filteredScoresData.length / pageSize);
+      currentPage = totalPages;
+      renderScoresTable();
+    };
 
     function renderVotesTable() {
       const searchTerm = document.getElementById('vote-search-input')?.value.toLowerCase() || '';
@@ -1468,10 +1599,24 @@
     }
 
     // Event Listeners
-    document.getElementById('search-input')?.addEventListener('input', renderScoresTable);
-    document.getElementById('region-filter')?.addEventListener('change', renderScoresTable);
-    document.getElementById('min-score')?.addEventListener('input', renderScoresTable);
+    document.getElementById('search-input')?.addEventListener('input', async () => {
+      currentPage = 1;
+      await loadScoresPage();
+    });
+    document.getElementById('region-filter')?.addEventListener('change', async () => {
+      currentPage = 1;
+      await loadScoresPage();
+    });
+    document.getElementById('min-score')?.addEventListener('input', async () => {
+      currentPage = 1;
+      await loadScoresPage();
+    });
     document.getElementById('vote-search-input')?.addEventListener('input', renderVotesTable);
+    document.getElementById('page-size')?.addEventListener('change', () => {
+      pageSize = parseInt(document.getElementById('page-size').value);
+      currentPage = 1;
+      renderScoresTable();
+    });
     
     // Table sorting
     document.querySelectorAll('#scores-table th.sortable').forEach(th => {
@@ -1528,7 +1673,8 @@
     // Global functions
     window.refreshData = async function() {
       showToast('Refreshing data...', 'warning');
-      await loadAllData();
+      await loadScoreStats();
+      await loadScoresPage();
       showToast('Data refreshed successfully', 'success');
     };
 
@@ -1538,10 +1684,51 @@
       showToast('Votes refreshed successfully', 'success');
     };
 
-    window.exportData = function() {
+    window.exportData = async function() {
+      // If we have filtered data, export that
+      // Otherwise, fetch all data for export
+      let dataToExport = allScoresData;
+      
+      if (allScoresData.length === 0) {
+        showToast('Loading all data for export...', 'warning');
+        
+        // Temporarily fetch all data just for export
+        try {
+          const snapshot = await get(ref(database, 'config/bdTopScores'));
+          if (!snapshot.exists()) {
+            showToast('No data to export', 'error');
+            return;
+          }
+          
+          const data = snapshot.val();
+          dataToExport = [];
+          
+          ['global', 'East', 'EU'].forEach(region => {
+            if (data[region]) {
+              Object.entries(data[region]).forEach(([encodedKey, scoreData]) => {
+                if (!scoreData || typeof scoreData !== 'object') return;
+                
+                let playerName = scoreData.name || decodeURIComponent(encodedKey.replace(/%2E/g, '.'));
+                
+                dataToExport.push({
+                  name: playerName,
+                  score: scoreData.score || 0,
+                  region,
+                  server: scoreData.serverName || '',
+                  seenAt: scoreData.seenAt || Date.now()
+                });
+              });
+            }
+          });
+        } catch (error) {
+          showToast('Error loading data for export: ' + error.message, 'error');
+          return;
+        }
+      }
+      
       const csv = [
         ['Player Name', 'Score', 'Region', 'Server', 'Last Seen'],
-        ...allScoresData.map(s => [
+        ...dataToExport.map(s => [
           s.name,
           s.score,
           s.region,
@@ -1558,7 +1745,7 @@
       a.click();
       URL.revokeObjectURL(url);
       
-      showToast('CSV exported successfully', 'success');
+      showToast(`CSV exported successfully (${dataToExport.length} records)`, 'success');
     };
 
     window.exportVotes = function() {
@@ -1661,7 +1848,7 @@
         // Remove from local data
         allScoresData = allScoresData.filter(s => !(s.name === name && s.region === region));
         
-        updateStats();
+        await loadScoreStats();
         renderScoresTable();
         calculateAnalytics();
         showToast('Score deleted successfully', 'success');
@@ -1744,7 +1931,7 @@
           };
         }
         
-        updateStats();
+        await loadScoreStats();
         renderScoresTable();
         calculateAnalytics();
         closeModal('edit-modal');
@@ -1789,7 +1976,7 @@
           encodedKey
         });
         
-        updateStats();
+        await loadScoreStats();
         renderScoresTable();
         calculateAnalytics();
         closeModal('add-modal');
