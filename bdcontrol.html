@@ -1845,12 +1845,9 @@
           }
         }
         
-        // Remove from local data
-        allScoresData = allScoresData.filter(s => !(s.name === name && s.region === region));
-        
+        // Reload the data to reflect changes
         await loadScoreStats();
-        renderScoresTable();
-        calculateAnalytics();
+        await loadScoresPage();
         showToast('Score deleted successfully', 'success');
       } catch (error) {
         console.error('Delete error:', error);
@@ -1916,24 +1913,9 @@
           await set(ref(database, `config/bdTopScores/global/${newEncodedKey}`), scoreData);
         }
         
-        // Update local data
-        const index = allScoresData.findIndex(s => 
-          s.name === originalName && s.region === originalRegion
-        );
-        if (index !== -1) {
-          allScoresData[index] = {
-            name: newName,
-            score,
-            region,
-            server,
-            seenAt: Date.now(),
-            encodedKey: newEncodedKey
-          };
-        }
-        
+        // Reload the data to reflect changes
         await loadScoreStats();
-        renderScoresTable();
-        calculateAnalytics();
+        await loadScoresPage();
         closeModal('edit-modal');
         showToast('Score updated successfully', 'success');
       } catch (error) {
@@ -1967,18 +1949,9 @@
           await set(ref(database, `config/bdTopScores/global/${encodedKey}`), scoreData);
         }
         
-        allScoresData.push({
-          name,
-          score,
-          region,
-          server,
-          seenAt: Date.now(),
-          encodedKey
-        });
-        
+        // Reload the data to reflect changes
         await loadScoreStats();
-        renderScoresTable();
-        calculateAnalytics();
+        await loadScoresPage();
         closeModal('add-modal');
         showToast('Score added successfully', 'success');
       } catch (error) {
