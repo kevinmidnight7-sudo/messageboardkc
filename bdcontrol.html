@@ -565,10 +565,16 @@
           <span>Firebase: <span id="firebase-status-text">Connecting...</span></span>
         </div>
         <div class="status-item">
+          <span>User: <strong id="current-user-email">Not logged in</strong></span>
+        </div>
+        <div class="status-item">
           <span>Total Scores: <strong id="total-scores">0</strong></span>
         </div>
         <div class="status-item">
           <span>Last Updated: <strong id="last-updated">Never</strong></span>
+        </div>
+        <div class="status-item">
+          <button onclick="handleLogout()" id="logout-btn" style="display: none; padding: 8px 16px; font-size: 0.85em;">🚪 Logout</button>
         </div>
       </div>
     </header>
@@ -961,11 +967,13 @@
     };
 
     // Initialize Firebase
-    let app, database;
+    let app, database, auth;
     let allScoresData = [];
     let allVotesData = [];
     let currentSort = { column: null, direction: 'asc' };
     let currentVoteSort = { column: null, direction: 'asc' };
+    let currentUser = null;
+    let isAdmin = false;
 
     // URL encoding function matching the bot's toRtdbKey
     function toRtdbKey(raw) {
@@ -979,13 +987,121 @@
     try {
       app = initializeApp(firebaseConfig);
       database = getDatabase(app);
-      updateStatus(true, 'Connected');
-      loadAllData();
+      auth = getAuth(app);
+      
+      // Auth state listener
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          console.log('User logged in:', user.email);
+          document.getElementById('current-user-email').textContent = user.email;
+          document.getElementById('logout-btn').style.display = 'block';
+          
+          // Check if user is admin
+          try {
+            const adminSnap = await get(ref(database, `admins/${user.uid}`));
+            const sessionAdminSnap = await get(ref(database, `sessionAdmins/${user.uid}`));
+            isAdmin = adminSnap.val() === true || sessionAdminSnap.val() === true;
+            
+            if (isAdmin) {
+              updateStatus(true, 'Connected (Admin)');
+              document.getElementById('login-modal').classList.remove('active');
+              loadAllData();
+            } else {
+              updateStatus(false, 'Not authorized');
+              showToast('You do not have admin privileges', 'error');
+              await signOut(auth);
+            }
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            updateStatus(false, 'Error checking permissions');
+          }
+        } else {
+          currentUser = null;
+          isAdmin = false;
+          document.getElementById('current-user-email').textContent = 'Not logged in';
+          document.getElementById('logout-btn').style.display = 'none';
+          updateStatus(false, 'Not logged in');
+          document.getElementById('login-modal').classList.add('active');
+        }
+      });
+      
     } catch (error) {
       console.error('Firebase initialization error:', error);
       updateStatus(false, 'Error: ' + error.message);
       showToast('Failed to connect to Firebase', 'error');
     }
+
+    // Login handler
+    window.handleLogin = async function(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const loginBtn = document.getElementById('login-btn');
+      const loginBtnText = document.getElementById('login-btn-text');
+      const loginBtnLoading = document.getElementById('login-btn-loading');
+      const loginError = document.getElementById('login-error');
+      
+      // Hide previous errors
+      loginError.style.display = 'none';
+      
+      // Show loading state
+      loginBtn.disabled = true;
+      loginBtnText.style.display = 'none';
+      loginBtnLoading.style.display = 'inline';
+      
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        // Success is handled by onAuthStateChanged
+        document.getElementById('login-form').reset();
+      } catch (error) {
+        console.error('Login error:', error);
+        
+        let errorMessage = 'Failed to sign in. Please check your credentials.';
+        
+        if (error.code === 'auth/invalid-email') {
+          errorMessage = 'Invalid email address format.';
+        } else if (error.code === 'auth/user-disabled') {
+          errorMessage = 'This account has been disabled.';
+        } else if (error.code === 'auth/user-not-found') {
+          errorMessage = 'No account found with this email.';
+        } else if (error.code === 'auth/wrong-password') {
+          errorMessage = 'Incorrect password.';
+        } else if (error.code === 'auth/invalid-credential') {
+          errorMessage = 'Invalid credentials. Please check your email and password.';
+        } else if (error.code === 'auth/too-many-requests') {
+          errorMessage = 'Too many failed login attempts. Please try again later.';
+        }
+        
+        loginError.textContent = errorMessage;
+        loginError.style.display = 'block';
+        
+        // Reset button state
+        loginBtn.disabled = false;
+        loginBtnText.style.display = 'inline';
+        loginBtnLoading.style.display = 'none';
+      }
+    };
+
+    // Logout handler
+    window.handleLogout = async function() {
+      if (!confirm('Are you sure you want to log out?')) return;
+      
+      try {
+        await signOut(auth);
+        showToast('Logged out successfully', 'success');
+        
+        // Clear data
+        allScoresData = [];
+        allVotesData = [];
+        renderScoresTable();
+        renderVotesTable();
+      } catch (error) {
+        console.error('Logout error:', error);
+        showToast('Error logging out: ' + error.message, 'error');
+      }
+    };
 
     // Expose functions to global scope
     window.database = database;
@@ -1458,11 +1574,20 @@
     };
 
     window.showAddModal = function() {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to add scores', 'error');
+        return;
+      }
       document.getElementById('add-modal').classList.add('active');
       document.getElementById('add-form').reset();
     };
 
     window.editScore = function(name, region) {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to edit scores', 'error');
+        return;
+      }
+      
       const score = allScoresData.find(s => s.name === name && s.region === region);
       if (!score) return;
       
@@ -1477,6 +1602,11 @@
     };
 
     window.editVote = function(uid) {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to edit votes', 'error');
+        return;
+      }
+      
       const vote = allVotesData.find(v => v.uid === uid);
       if (!vote) return;
       
@@ -1491,6 +1621,11 @@
     };
 
     window.deleteScore = async function(name, region) {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to delete scores', 'error');
+        return;
+      }
+      
       if (!confirm(`Delete score for ${name} (${region})? This cannot be undone.`)) return;
       
       try {
@@ -1525,6 +1660,11 @@
     };
 
     window.deleteVote = async function(uid) {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to delete votes', 'error');
+        return;
+      }
+      
       if (!confirm(`Delete vote from ${uid}? This cannot be undone.`)) return;
       
       try {
