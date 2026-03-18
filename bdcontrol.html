@@ -997,19 +997,31 @@
           document.getElementById('current-user-email').textContent = user.email;
           document.getElementById('logout-btn').style.display = 'block';
           
-          // Check if user is admin
+          // Check if user is admin (supports both UID and email-based entries)
           try {
+            // Check UID-based admin entry
             const adminSnap = await get(ref(database, `admins/${user.uid}`));
             const sessionAdminSnap = await get(ref(database, `sessionAdmins/${user.uid}`));
-            isAdmin = adminSnap.val() === true || sessionAdminSnap.val() === true;
+            
+            // Check email-based admin entry (replace . with ,)
+            let emailBasedAdmin = false;
+            if (user.email) {
+              const emailKey = user.email.replace(/\./g, ',');
+              const emailAdminSnap = await get(ref(database, `admins/${emailKey}`));
+              emailBasedAdmin = emailAdminSnap.val() === true;
+            }
+            
+            isAdmin = adminSnap.val() === true || sessionAdminSnap.val() === true || emailBasedAdmin;
             
             if (isAdmin) {
               updateStatus(true, 'Connected (Admin)');
               document.getElementById('login-modal').classList.remove('active');
               loadAllData();
+              console.log('Admin access granted');
             } else {
               updateStatus(false, 'Not authorized');
               showToast('You do not have admin privileges', 'error');
+              console.log('Admin check failed - UID:', user.uid, 'Email:', user.email);
               await signOut(auth);
             }
           } catch (error) {
