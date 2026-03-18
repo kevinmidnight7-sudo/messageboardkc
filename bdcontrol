@@ -909,10 +909,48 @@
     </div>
   </div>
 
+  <!-- Login Modal -->
+  <div class="modal active" id="login-modal" style="backdrop-filter: blur(10px);">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header" style="border-bottom: none;">
+        <h2 class="modal-title">🔐 Admin Login</h2>
+      </div>
+      <p style="color: var(--text-secondary); margin-bottom: 25px;">Sign in with your admin credentials to access the Battledome Admin Hub</p>
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="login-email" required placeholder="admin@example.com" autocomplete="email">
+        </div>
+        
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="login-password" required placeholder="Enter your password" autocomplete="current-password">
+        </div>
+        
+        <div id="login-error" style="display: none; background: rgba(255, 51, 102, 0.1); border: 1px solid var(--danger); border-radius: 8px; padding: 12px; margin-bottom: 20px; color: var(--danger); font-size: 0.9em;">
+        </div>
+        
+        <div class="form-actions" style="border-top: none; padding-top: 0;">
+          <button type="submit" id="login-btn" style="width: 100%;">
+            <span id="login-btn-text">🔓 Sign In</span>
+            <span id="login-btn-loading" style="display: none;">
+              <span class="spinner" style="width: 16px; height: 16px; border-width: 2px; display: inline-block; vertical-align: middle; margin-right: 8px;"></span>
+              Signing in...
+            </span>
+          </button>
+        </div>
+      </form>
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center; color: var(--text-secondary); font-size: 0.85em;">
+        <p>Need help? Contact your system administrator</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, get, set, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
     // Firebase Configuration
     const firebaseConfig = {
