@@ -631,6 +631,7 @@
               <button onclick="refreshData()">🔄 Refresh</button>
               <button onclick="exportData()">📥 Export CSV</button>
               <button onclick="showAddModal()">➕ Add Score</button>
+              <button onclick="showBulkDeleteModal()" class="danger">🗑️ Bulk Delete</button>
             </div>
           </div>
         </div>
@@ -977,6 +978,61 @@
       <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center; color: var(--text-secondary); font-size: 0.85em;">
         <p>Need help? Contact your system administrator</p>
       </div>
+    </div>
+  </div>
+
+  <!-- Bulk Delete Modal -->
+  <div class="modal" id="bulk-delete-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2 class="modal-title">🗑️ Bulk Delete Scores</h2>
+        <button class="close-modal" onclick="closeModal('bulk-delete-modal')">×</button>
+      </div>
+      
+      <div style="background: rgba(255, 51, 102, 0.1); border: 1px solid var(--danger); border-radius: 8px; padding: 15px; margin-bottom: 25px;">
+        <strong style="color: var(--danger);">⚠️ Warning:</strong> This action cannot be undone! Make sure you understand what will be deleted.
+      </div>
+
+      <form id="bulk-delete-form" onsubmit="executeBulkDelete(event)">
+        <div class="form-group">
+          <label>Delete all scores below this threshold</label>
+          <input type="number" id="bulk-delete-threshold" required min="0" placeholder="e.g., 20" value="20">
+          <small style="color: var(--text-secondary); display: block; margin-top: 8px;">
+            All scores with a value less than this number will be permanently deleted.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Select Regions</label>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: none;">
+              <input type="checkbox" id="bulk-delete-global" checked style="width: auto; cursor: pointer;">
+              <span>Global</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: none;">
+              <input type="checkbox" id="bulk-delete-east" checked style="width: auto; cursor: pointer;">
+              <span>East Coast</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; text-transform: none;">
+              <input type="checkbox" id="bulk-delete-eu" checked style="width: auto; cursor: pointer;">
+              <span>EU</span>
+            </label>
+          </div>
+        </div>
+
+        <div id="bulk-delete-preview" style="background: var(--bg-tertiary); border-radius: 8px; padding: 15px; margin-top: 20px; display: none;">
+          <h3 style="font-size: 1.1em; margin-bottom: 10px; color: var(--accent);">Preview</h3>
+          <p id="bulk-delete-count" style="font-size: 1.2em; color: var(--text-primary);"></p>
+          <button type="button" onclick="previewBulkDelete()" style="margin-top: 10px; padding: 8px 16px; font-size: 0.9em;">🔍 Refresh Preview</button>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="danger" id="bulk-delete-btn">
+            🗑️ Delete Scores
+          </button>
+          <button type="button" onclick="closeModal('bulk-delete-modal')">Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1454,7 +1510,7 @@
         return;
       }
       
-      const html = pageData.map(score => {
+      const html = pageData.map((score, idx) => {
         const badgeClass = score.region === 'East' ? 'region-east' : 
                           score.region === 'EU' ? 'region-eu' : 'region-global';
         const lastSeen = score.seenAt 
@@ -1465,8 +1521,11 @@
           ? score.name.replace(new RegExp(searchTerm, 'gi'), match => `<span class="search-highlight">${match}</span>`)
           : score.name;
         
+        // Use data attributes instead of onclick to avoid escaping issues
+        const rowId = `score-row-${startIdx + idx}`;
+        
         return `
-          <tr>
+          <tr id="${rowId}">
             <td>${highlightedName}</td>
             <td><strong>${score.score.toLocaleString()}</strong></td>
             <td><span class="region-badge ${badgeClass}">${score.region}</span></td>
@@ -1474,8 +1533,8 @@
             <td>${lastSeen}</td>
             <td>
               <div class="table-actions">
-                <button class="btn-small btn-edit" onclick="editScore('${score.name.replace(/'/g, "\\'")}', '${score.region}')">Edit</button>
-                <button class="btn-small btn-delete" onclick="deleteScore('${score.name.replace(/'/g, "\\'")}', '${score.region}')">Delete</button>
+                <button class="btn-small btn-edit" data-name="${score.name}" data-region="${score.region}">Edit</button>
+                <button class="btn-small btn-delete" data-name="${score.name}" data-region="${score.region}">Delete</button>
               </div>
             </td>
           </tr>
@@ -1483,6 +1542,19 @@
       }).join('');
       
       tbody.innerHTML = html;
+      
+      // Add event listeners to the buttons
+      tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => {
+          editScore(btn.dataset.name, btn.dataset.region);
+        });
+      });
+      
+      tbody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+          deleteScore(btn.dataset.name, btn.dataset.region);
+        });
+      });
     }
 
     function updatePaginationUI(totalFiltered, totalPages, startIdx, endIdx) {
@@ -1996,6 +2068,160 @@
       }
     };
 
+    window.showBulkDeleteModal = async function() {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to bulk delete scores', 'error');
+        return;
+      }
+      
+      document.getElementById('bulk-delete-modal').classList.add('active');
+      document.getElementById('bulk-delete-preview').style.display = 'none';
+      
+      // Auto-preview
+      setTimeout(() => previewBulkDelete(), 100);
+    };
+
+    window.previewBulkDelete = async function() {
+      const threshold = parseInt(document.getElementById('bulk-delete-threshold').value) || 0;
+      const includeGlobal = document.getElementById('bulk-delete-global').checked;
+      const includeEast = document.getElementById('bulk-delete-east').checked;
+      const includeEU = document.getElementById('bulk-delete-eu').checked;
+      
+      if (!includeGlobal && !includeEast && !includeEU) {
+        showToast('Please select at least one region', 'warning');
+        return;
+      }
+      
+      try {
+        // Fetch all data to count what will be deleted
+        const snapshot = await get(ref(database, 'config/bdTopScores'));
+        if (!snapshot.exists()) {
+          document.getElementById('bulk-delete-count').textContent = 'No scores found in database';
+          document.getElementById('bulk-delete-preview').style.display = 'block';
+          return;
+        }
+        
+        const data = snapshot.val();
+        let deleteCount = 0;
+        const regions = [];
+        if (includeGlobal) regions.push('global');
+        if (includeEast) regions.push('East');
+        if (includeEU) regions.push('EU');
+        
+        regions.forEach(region => {
+          if (data[region]) {
+            Object.entries(data[region]).forEach(([key, scoreData]) => {
+              if (scoreData && scoreData.score < threshold) {
+                deleteCount++;
+              }
+            });
+          }
+        });
+        
+        document.getElementById('bulk-delete-count').textContent = 
+          `${deleteCount} score${deleteCount !== 1 ? 's' : ''} will be deleted (below ${threshold})`;
+        document.getElementById('bulk-delete-preview').style.display = 'block';
+        
+        if (deleteCount === 0) {
+          showToast('No scores found below this threshold', 'warning');
+        }
+      } catch (error) {
+        console.error('Preview error:', error);
+        showToast('Error previewing: ' + error.message, 'error');
+      }
+    };
+
+    window.executeBulkDelete = async function(event) {
+      event.preventDefault();
+      
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin', 'error');
+        return;
+      }
+      
+      const threshold = parseInt(document.getElementById('bulk-delete-threshold').value) || 0;
+      const includeGlobal = document.getElementById('bulk-delete-global').checked;
+      const includeEast = document.getElementById('bulk-delete-east').checked;
+      const includeEU = document.getElementById('bulk-delete-eu').checked;
+      
+      if (!includeGlobal && !includeEast && !includeEU) {
+        showToast('Please select at least one region', 'warning');
+        return;
+      }
+      
+      const confirmMessage = `⚠️ ARE YOU ABSOLUTELY SURE?\n\nThis will PERMANENTLY DELETE all scores below ${threshold} in the selected regions.\n\nThis action CANNOT be undone!\n\nType "DELETE" to confirm.`;
+      
+      const userConfirm = prompt(confirmMessage);
+      
+      if (userConfirm !== 'DELETE') {
+        showToast('Bulk delete cancelled', 'warning');
+        return;
+      }
+      
+      const deleteBtn = document.getElementById('bulk-delete-btn');
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = '⏳ Deleting...';
+      
+      try {
+        // Fetch all data
+        const snapshot = await get(ref(database, 'config/bdTopScores'));
+        if (!snapshot.exists()) {
+          showToast('No scores found', 'warning');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = '🗑️ Delete Scores';
+          return;
+        }
+        
+        const data = snapshot.val();
+        const regions = [];
+        if (includeGlobal) regions.push('global');
+        if (includeEast) regions.push('East');
+        if (includeEU) regions.push('EU');
+        
+        let deleteCount = 0;
+        const deletePromises = [];
+        
+        regions.forEach(region => {
+          if (data[region]) {
+            Object.entries(data[region]).forEach(([encodedKey, scoreData]) => {
+              if (scoreData && scoreData.score < threshold) {
+                deleteCount++;
+                deletePromises.push(
+                  remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`))
+                );
+              }
+            });
+          }
+        });
+        
+        if (deletePromises.length === 0) {
+          showToast('No scores found below threshold', 'warning');
+          deleteBtn.disabled = false;
+          deleteBtn.textContent = '🗑️ Delete Scores';
+          return;
+        }
+        
+        // Execute all deletions
+        await Promise.all(deletePromises);
+        
+        // Reload data
+        await loadScoreStats();
+        await loadScoresPage();
+        
+        closeModal('bulk-delete-modal');
+        showToast(`Successfully deleted ${deleteCount} score${deleteCount !== 1 ? 's' : ''}`, 'success');
+        
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = '🗑️ Delete Scores';
+        
+      } catch (error) {
+        console.error('Bulk delete error:', error);
+        showToast('Error during bulk delete: ' + error.message, 'error');
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = '🗑️ Delete Scores';
+      }
+    };
+
     window.closeModal = function(modalId) {
       document.getElementById(modalId).classList.remove('active');
     };
@@ -2027,6 +2253,27 @@
           modal.classList.remove('active');
         }
       });
+    });
+
+    // Auto-preview on bulk delete threshold change
+    document.addEventListener('DOMContentLoaded', () => {
+      const bulkDeleteThreshold = document.getElementById('bulk-delete-threshold');
+      const bulkDeleteGlobal = document.getElementById('bulk-delete-global');
+      const bulkDeleteEast = document.getElementById('bulk-delete-east');
+      const bulkDeleteEU = document.getElementById('bulk-delete-eu');
+      
+      if (bulkDeleteThreshold) {
+        bulkDeleteThreshold.addEventListener('input', previewBulkDelete);
+      }
+      if (bulkDeleteGlobal) {
+        bulkDeleteGlobal.addEventListener('change', previewBulkDelete);
+      }
+      if (bulkDeleteEast) {
+        bulkDeleteEast.addEventListener('change', previewBulkDelete);
+      }
+      if (bulkDeleteEU) {
+        bulkDeleteEU.addEventListener('change', previewBulkDelete);
+      }
     });
   </script>
 </body>
