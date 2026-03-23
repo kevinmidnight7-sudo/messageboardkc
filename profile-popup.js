@@ -38,12 +38,16 @@
             animation: kcZoomIn 0.3s cubic-bezier(0.25,1,0.5,1);
             position: relative;
             background: #f1f3f5;
+            transition: width 0.45s cubic-bezier(0.4,0,0.2,1),
+                        max-width 0.45s cubic-bezier(0.4,0,0.2,1);
         }
+        .kc-popup-card.kc-two-col { width: 720px; max-width: 95vw; }
         @keyframes kcZoomIn { from { transform:scale(0.9); opacity:0 } to { transform:scale(1); opacity:1 } }
 
-        #kcContentWrapper { display: flex; flex-direction: column; }
+        /* Always row so the posts panel can slide in from the right */
+        #kcContentWrapper { display: flex; flex-direction: row; }
 
-        /* ── Clips collapsible section ── */
+        /* ── Clips toggle button ── */
         .kc-clips-toggle {
             display: flex;
             align-items: center;
@@ -69,17 +73,12 @@
         .kc-clips-arrow {
             display: inline-block;
             font-style: normal;
-            font-size: 0.65rem;
+            font-size: 0.8rem;
             line-height: 1;
-            transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
+            transition: transform 0.42s cubic-bezier(0.4,0,0.2,1);
         }
+        /* Arrow points right by default (›), rotates 180° to point left when open */
         .kc-clips-toggle.kc-open .kc-clips-arrow { transform: rotate(180deg); }
-
-        .kc-clips-panel {
-            overflow: hidden;
-            max-height: 0;
-            transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1);
-        }
 
         .kc-popup-banner {
             height: 120px;
@@ -136,7 +135,14 @@
         }
         .kc-close-btn:hover { background: rgba(0,0,0,0.5); }
 
-        .kc-popup-info-col { flex: 1; overflow-y: auto; }
+        /* Info col: fixed width, scrollable */
+        .kc-popup-info-col {
+            width: 360px;
+            min-width: 0;
+            flex-shrink: 0;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
 
         .kc-popup-body {
             padding: 12px 16px 16px;
@@ -211,12 +217,21 @@
         }
         .kc-stat-value { font-weight: 700; color: #111827; }
 
-        /* Posts column */
+        /* Posts/clips column – slides in from the right via width transition */
         .kc-popup-posts-col {
-            flex: 1;
-            overflow-y: auto;
+            width: 0;
+            min-width: 0;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             border-left: 1px solid rgba(0,0,0,0.1);
-            display: none;
+            transition: width 0.45s cubic-bezier(0.4,0,0.2,1);
+        }
+        .kc-popup-card.kc-two-col .kc-popup-posts-col {
+            width: 360px;
+            overflow-y: auto;
+            max-height: 90vh;
         }
         .kc-posts-list {
             padding: 0.5rem;
@@ -570,44 +585,37 @@
                 streakSec.style.display = 'block';
             }
 
-            // ── Clips collapsible section (diamond / emerald / content users) ──
+            // ── Clips toggle button + right-side panel ──
             const isEligible = !!(u.codesUnlocked?.diamond || u.codesUnlocked?.emerald || u.codesUnlocked?.content);
             if (isEligible) {
+                // Button inside the info column body
                 const clipsSection = document.createElement('div');
                 clipsSection.id = 'kcClipsSection';
                 clipsSection.innerHTML = `
                     <button class="kc-clips-toggle" id="kcClipsToggleBtn">
                         <span class="kc-clips-toggle-label">🎬 <span>CLIPS</span></span>
-                        <span class="kc-clips-arrow">▼</span>
-                    </button>
-                    <div class="kc-clips-panel" id="kcClipsPanel">
-                        <div class="kc-section" style="margin-bottom:10px">
-                            <div id="kcPostsContainer" class="kc-posts-list"></div>
-                            <div class="kc-page-btns">
-                                <button id="kcPrevPost" class="kc-page-btn" disabled>&#8592;</button>
-                                <button id="kcNextPost" class="kc-page-btn" disabled>&#8594;</button>
-                            </div>
-                        </div>
-                    </div>`;
+                        <span class="kc-clips-arrow">›</span>
+                    </button>`;
                 document.getElementById('kcPopupBody').appendChild(clipsSection);
 
+                // Populate the right-side posts column
+                postsCol.innerHTML = `
+                    <h4 class="kc-section-title" style="padding:1rem 1rem 0.5rem">CLIPS</h4>
+                    <div id="kcPostsContainer" class="kc-posts-list"></div>
+                    <div class="kc-page-btns">
+                        <button id="kcPrevPost" class="kc-page-btn" disabled>&#8592;</button>
+                        <button id="kcNextPost" class="kc-page-btn" disabled>&#8594;</button>
+                    </div>`;
+
+                // Toggle: slide the posts col in/out to the right
                 document.getElementById('kcClipsToggleBtn').addEventListener('click', function () {
-                    const panel = document.getElementById('kcClipsPanel');
-                    const isOpen = this.classList.contains('kc-open');
+                    const isOpen = card.classList.contains('kc-two-col');
                     if (isOpen) {
-                        // Collapse: pin to current height, then animate to 0
-                        panel.style.maxHeight = panel.scrollHeight + 'px';
-                        panel.offsetHeight; // force reflow
-                        panel.style.maxHeight = '0';
+                        card.classList.remove('kc-two-col');
                         this.classList.remove('kc-open');
                     } else {
-                        // Expand: animate to content height, then free for dynamic resizing
+                        card.classList.add('kc-two-col');
                         this.classList.add('kc-open');
-                        panel.style.maxHeight = panel.scrollHeight + 'px';
-                        panel.addEventListener('transitionend', function freeHeight() {
-                            if (panel.style.maxHeight !== '0px') panel.style.maxHeight = 'none';
-                            panel.removeEventListener('transitionend', freeHeight);
-                        });
                     }
                 });
 
