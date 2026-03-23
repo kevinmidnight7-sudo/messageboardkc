@@ -14,6 +14,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <!-- Universal KC profile popup (after Firebase SDKs, before inline script) -->
+    <script src="profile-popup.js"></script>
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -1116,131 +1118,9 @@
         }
 
         // --- PLAYLISTS & POST OVERLAYS ---
+        // Delegate to the universal KC profile popup (profile-popup.js)
         function openUserProfile(uid) {
-            const u = userProfiles[uid] || {};
-            const hasCust = !!(u.codesUnlocked && (u.codesUnlocked.diamond || u.codesUnlocked.emerald));
-            const gradient = u.profileCustomization?.gradient;
-            const nameColor = hasCust ? (u.profileCustomization?.nameColor || '#fff') : '#fff';
-            
-            const cardEl = document.getElementById('userPopupCard');
-            if (hasCust && gradient) {
-              cardEl.style.background = gradient;
-            } else {
-              cardEl.style.background = ''; // fall back to class bg-slate-800
-            }
-
-            const ring = document.getElementById('profAvatarRing');
-            if (hasCust && gradient) {
-              ring.classList.add('diamond-border');
-              ring.style.setProperty('--gradient', gradient);
-            } else {
-              ring.classList.remove('diamond-border');
-              ring.style.removeProperty('--gradient');
-            }
-
-            // Banner: use custom banner if available; else neutral bg.
-            const bannerEl = document.getElementById('popupBanner');
-            const banner = u.profileCustomization?.banner;
-            if (banner && /^https?:\/\//i.test(banner)) {
-                bannerEl.style.backgroundImage = `url(${banner})`;
-            } else if (u.profileCustomization?.gradient) {
-                bannerEl.style.background = u.profileCustomization.gradient;
-                bannerEl.style.backgroundImage = '';
-            } else {
-                bannerEl.style.background = '';
-                bannerEl.style.backgroundImage = '';
-            }
-
-            // Header
-            document.getElementById('popupAvatar').src = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-            document.getElementById('popupUserName').innerHTML = `<span style="color:${nameColor}">${escapeHtml(u.displayName || 'Anonymous')}</span>`;
-            
-            const aboutText = (u.about && String(u.about).trim()) || (u.aboutMe && String(u.aboutMe).trim()) ||  '';
-            document.getElementById('popupAboutMe').textContent = aboutText;
-            
-            document.getElementById('popupStreak').textContent = u.loginStreak ? `Current streak: ${u.loginStreak}🔥` : 'No streak yet';
-
-            // Badges
-            const badgesEl = document.getElementById('profBadges');
-            badgesEl.innerHTML = '';
-            const badgeSpecs = {
-              verified: { label: 'Verified', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/verified.png', bg: '#2dd4bf' },
-              offence:  { label: 'Best Offence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      bg: '#ff6b6b' },
-              defence:  { label: 'Best Defence', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     bg: '#74c0fc' },
-              overall:  { label: 'Overall Winner', icon: 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', bg: '#f9c74f' }
-            };
-            const addBadge = (spec, text, insertFirst = false) => {
-              const div = document.createElement('div');
-              div.className = 'popup-badge';
-              div.style.background = spec.bg;
-              div.innerHTML = `<img src="${spec.icon}" alt=""><span>${text}</span>`;
-              if (insertFirst && badgesEl.firstChild) badgesEl.insertBefore(div, badgesEl.firstChild);
-              else badgesEl.appendChild(div);
-            };
-            const toBool = v => v === true || v === 'true' || v === 1 || v === '1';
-            
-            if (toBool(u.emailVerified)) addBadge(badgeSpecs.verified, 'Verified', true);
-            
-            db.ref(`badges/${uid}`).once('value').then(snap => {
-              const base = snap.val() || {};
-              ['offence','defence','overall'].forEach(k => {
-                const count = parseInt(base[k] || 0) || 0;
-                if (count > 0) addBadge(badgeSpecs[k], `${badgeSpecs[k].label} x${count}`);
-              });
-            });
-            
-            if (u.codesUnlocked?.diamond) {
-              const div = document.createElement('div');
-              div.className = 'popup-badge';
-              div.style.background = '#55d9e5';
-              div.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/diamond.png" alt=""><span>Diamond User</span>`;
-              badgesEl.appendChild(div);
-            }
-            if (u.codesUnlocked?.emerald) {
-              const div = document.createElement('div');
-              div.className = 'popup-badge';
-              div.style.background = '#22c55e';
-              div.innerHTML = `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/emerald.png" alt=""><span>Emerald User</span>`;
-              badgesEl.appendChild(div);
-            }
-            
-            const customs = u.customBadges ? Object.values(u.customBadges) : [];
-            customs.forEach(b => {
-              const div = document.createElement('div');
-              div.className = 'popup-badge';
-              div.style.background = `linear-gradient(90deg,${b.grad1||'#6b7280'} 30%,${b.grad2||'#6b7280'} 100%)`;
-              div.style.color = b.textColor || '#fff';
-              div.innerHTML = `<span class="emoji-icon">${b.icon || '🏷️'}</span><span>${b.name || 'Badge'}</span>`;
-              badgesEl.appendChild(div);
-            });
-            if (!badgesEl.children.length) {
-              badgesEl.textContent = 'No badges to display.';
-            }
-
-            // User’s clips in right column
-            const mine = allPosts.filter(p => p.createdBy === uid).sort((a,b)=> b.createdAt - a.createdAt);
-            const postsCol = document.getElementById('popupPostsColumn');
-            postsCol.innerHTML = `
-                <div class="post-list">
-                  ${mine.map(p => {
-                    const thumb = p.ytId
-                      ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg`
-                      : 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                    return `
-                      <div class="post-tile" tabindex="0" onclick="openPostDetails('${uid}','${p.postId}')">
-                        <img src="${thumb}" alt="" class="w-full h-40 object-cover">
-                        <div class="post-caption">${escapeHtml(p.caption || 'Untitled')}</div>
-                        <div class="post-timestamp">${new Date(p.createdAt).toLocaleDateString()}</div>
-                      </div>`;
-                  }).join('')}
-                </div>`;
-
-            // Two-column layout on md+ when there are posts
-            cardEl.classList.toggle('two-column', mine.length > 0);
-
-            // Show overlay
-            const popup = document.getElementById('userPopup');
-            popup.style.display = 'flex';
+            window.openKcProfile(uid);
         }
         
         document.getElementById('closeUserPopup').onclick = () => { document.getElementById('userPopup').style.display = 'none'; };
