@@ -129,6 +129,12 @@
             .main-grid { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
             body { overflow-y: auto; }
         }
+        @media (max-width: 768px) {
+            #view-home .grid.grid-cols-3 { grid-template-columns: 1fr 1fr; }
+            .fixed.bottom-32.right-8 { display: none; }
+            #welcome-card > .flex.items-center { flex-direction: column; text-align: center; }
+            #welcome-economy-stats { margin-top: 0.75rem; }
+        }
     </style>
 </head>
 <body class="p-6 md:p-10">
@@ -213,11 +219,11 @@
                         <span class="font-bold tracking-wide">Shop</span>
                     </button>
 
-                    <button onclick="openMyProfile()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-400 text-3xl group-hover:scale-110 transition">
-                            <i class="fa-solid fa-user"></i>
+                    <button onclick="openAchievements()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-medal"></i>
                         </div>
-                        <span class="font-bold tracking-wide">My Profile</span>
+                        <span class="font-bold tracking-wide">Achievements</span>
                     </button>
                 </div>
 
@@ -353,6 +359,10 @@
                 <i class="fa-solid fa-dice text-green-400"></i>
                 <span class="font-bold text-sm">Games</span>
             </button>
+            <button onclick="openMyProfile()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+                <i class="fa-solid fa-user text-teal-400"></i>
+                <span class="font-bold text-sm">My Profile</span>
+            </button>
         </div>
     </div>
 
@@ -386,11 +396,13 @@
                     renderUserHeader(data, user);
                     if (activeTab === 'profile') loadProfileLite();
                 });
+                initPersonalActivityListener();
             } else {
                 renderUserHeader({}, null);
             }
             initFeedListeners();
             loadClipsPreview();
+            checkBattledomeStatus();
         });
 
         // --- HELPER FUNCTIONS ---
@@ -589,7 +601,25 @@
             });
         }
 
+        function checkBattledomeStatus() {
+            db.ref('battledome/status').once('value').then(snap => {
+                const status = snap.val();
+                const bdButton = document.querySelector('[onclick="openBattledome()"]');
+                if (!bdButton) return;
+                if (status && status.online) {
+                    bdButton.classList.remove('cursor-not-allowed', 'opacity-60');
+                    bdButton.onclick = () => { window.location.href = 'https://kcevents.uk/#battledome'; };
+                    const badge = bdButton.querySelector('.bg-red-500\\/20');
+                    if (badge) {
+                        badge.className = 'text-[10px] bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full font-black uppercase';
+                        badge.textContent = 'ONLINE';
+                    }
+                }
+            });
+        }
+
         function addFeedItem(item) {
+            if (!item.timestamp) item.timestamp = Date.now();
             feedItems.unshift(item);
             if (feedItems.length > 20) feedItems.pop();
             renderFeed();
@@ -640,7 +670,7 @@
                             <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${item.color}"><i class="fa-solid ${item.icon}"></i></div>
                             <div>
                                 <h4 class="text-xs font-bold text-white">${item.title}</h4>
-                                <p class="text-[9px] text-gray-500 uppercase font-black">${item.time}</p>
+                                <p class="text-[9px] text-gray-500 uppercase font-black">${item.timestamp ? timeAgo(item.timestamp) : item.time}</p>
                             </div>
                         </div>
                         <i class="fa-solid fa-chevron-down text-[10px] text-gray-600"></i>
@@ -860,11 +890,13 @@
                     : Promise.resolve({});
                 Promise.all([
                     economyPromise,
-                    db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value')
-                ]).then(([economy, unlockSnap]) => {
+                    db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value'),
+                    db.ref(`users/${currentUser.uid}/customBadge`).once('value')
+                ]).then(([economy, unlockSnap, customBadgeSnap]) => {
                     const points = economy.points || 0;
                     const inventory = economy.inventory || {};
                     const hasCustomization = unlockSnap.val() === true;
+                    const hasCustomBadge = customBadgeSnap.exists();
                     openModal('Economy Shop', `
                         <div class="space-y-6">
                             <div class="text-center glass p-4 rounded-2xl">
@@ -891,6 +923,13 @@
                                             </div>
                                         </div>
                                     </div>
+                                `}
+                                ${hasCustomBadge ? `
+                                    <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
+                                        <p class="font-bold text-green-400">✅ Custom Badge Created</p>
+                                        <p class="text-xs text-gray-400">Edit for 1,000 pts with /buy edit_custom_badge</p>
+                                    </div>
+                                ` : `
                                     <div class="glass p-4 rounded-2xl">
                                         <div class="flex items-center justify-between">
                                             <div>
@@ -1010,6 +1049,93 @@
                     </div>
                 `;
                 openModal(`Player Dossier`, content);
+            });
+        }
+
+        window.openKcProfile = function(uid) {
+            if (!uid) return;
+            if (typeof openProfilePopup === 'function') {
+                openProfilePopup(uid, firebase.database());
+            } else {
+                openPlayerCard(uid);
+            }
+        };
+
+        function openAchievements() {
+            if (!currentUser) return openAuthModal();
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                if (!discordId) {
+                    return openModal('Achievements', `
+                        <div class="text-center py-10">
+                            <i class="fa-solid fa-link-slash text-6xl text-gray-600 mb-6"></i>
+                            <p class="text-gray-400">Link your Discord account in the bot to track achievements!</p>
+                            <p class="text-sm text-gray-500 mt-4">Use /link command in Discord</p>
+                        </div>
+                    `);
+                }
+                db.ref(`userEconomy/${discordId}/badges`).once('value').then(snap => {
+                    const badges = snap.val() || {};
+                    const badgeList = Object.entries(badges).map(([id, timestamp]) => ({ id, timestamp }));
+                    const badgeDefs = {
+                        first_win:        { emoji: '🎯', name: 'First Win',        desc: 'Won your first game' },
+                        blackjack_master:  { emoji: '🃏', name: 'Blackjack Master', desc: '10 blackjack wins' },
+                        high_roller:       { emoji: '💎', name: 'High Roller',      desc: 'Bet 1000+ points' },
+                        consistent:        { emoji: '📅', name: 'Consistent',       desc: '7 day login streak' },
+                        dedicated:         { emoji: '⭐', name: 'Dedicated',        desc: '30 day login streak' },
+                        legend:            { emoji: '👑', name: 'Legend',           desc: '100 day login streak' },
+                        eternal:           { emoji: '♾️', name: 'Eternal',          desc: '365 day login streak' },
+                        lucky_seven:       { emoji: '🎰', name: 'Lucky Seven',      desc: 'Triple 7s on slots' },
+                        millionaire:       { emoji: '💰', name: 'Millionaire',      desc: 'Earned 1M points total' }
+                    };
+                    const listHTML = badgeList.length > 0
+                        ? badgeList.map(b => {
+                            const def = badgeDefs[b.id] || { emoji: '🏅', name: b.id, desc: 'Unknown achievement' };
+                            return `
+                                <div class="glass p-4 rounded-3xl flex items-center gap-4 hover:bg-white/10 transition">
+                                    <div class="text-5xl">${def.emoji}</div>
+                                    <div class="flex-1">
+                                        <p class="font-bold">${def.name}</p>
+                                        <p class="text-sm text-gray-400">${def.desc}</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500">${new Date(b.timestamp).toLocaleDateString()}</p>
+                                </div>
+                            `;
+                        }).join('')
+                        : `<div class="text-center py-10 text-gray-500 italic">No achievements unlocked yet. Play games to earn badges!</div>`;
+                    openModal('Your Achievements', `
+                        <div class="space-y-4">
+                            <div class="text-center glass p-4 rounded-2xl">
+                                <p class="text-gray-400 text-sm">Total Unlocked</p>
+                                <p class="text-4xl font-bold text-yellow-400">${badgeList.length}</p>
+                            </div>
+                            <div class="space-y-3 max-h-[50vh] overflow-y-auto custom-scroll">
+                                ${listHTML}
+                            </div>
+                        </div>
+                    `);
+                });
+            });
+        }
+
+        function initPersonalActivityListener() {
+            if (!currentUser) return;
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                if (!discordId) return;
+                // New achievements
+                db.ref(`userEconomy/${discordId}/badges`).on('child_added', snap => {
+                    if (Date.now() - snap.val() < 10000) {
+                        showToast(`🏆 Achievement Unlocked: ${snap.key}`, 'success', 5000);
+                    }
+                });
+                // Points increases
+                let lastPoints = null;
+                db.ref(`userEconomy/${discordId}/points`).on('value', snap => {
+                    const newPoints = snap.val() || 0;
+                    if (lastPoints !== null && newPoints > lastPoints) {
+                        showToast(`💰 +${(newPoints - lastPoints).toLocaleString()} points earned!`, 'success', 3000);
+                    }
+                    lastPoints = newPoints;
+                });
             });
         }
 
