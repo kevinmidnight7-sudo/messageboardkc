@@ -41,11 +41,44 @@
         }
         @keyframes kcZoomIn { from { transform:scale(0.9); opacity:0 } to { transform:scale(1); opacity:1 } }
 
-        @media (min-width: 768px) {
-            .kc-popup-card.kc-two-col {
-                width: 720px;
-                display: flex;
-            }
+        #kcContentWrapper { display: flex; flex-direction: column; }
+
+        /* ── Clips collapsible section ── */
+        .kc-clips-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 12px;
+            background: rgba(255,255,255,0.5);
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .kc-clips-toggle:hover { background: rgba(255,255,255,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .kc-clips-toggle-label { display: flex; align-items: center; gap: 6px; }
+        .kc-clips-arrow {
+            display: inline-block;
+            font-style: normal;
+            font-size: 0.65rem;
+            line-height: 1;
+            transition: transform 0.38s cubic-bezier(0.4,0,0.2,1);
+        }
+        .kc-clips-toggle.kc-open .kc-clips-arrow { transform: rotate(180deg); }
+
+        .kc-clips-panel {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1);
         }
 
         .kc-popup-banner {
@@ -237,7 +270,7 @@
     const HTML = `
         <div id="kcProfilePopup">
             <div class="kc-popup-card" id="kcPopupCard">
-                <div id="kcContentWrapper" style="display:flex;flex-direction:column">
+                <div id="kcContentWrapper">
                     <div class="kc-popup-info-col" id="kcPopupInfoCol">
                         <div class="kc-popup-banner" id="kcPopupBanner"></div>
                         <div class="kc-popup-hdr">
@@ -501,6 +534,7 @@
         postsCol.style.display = 'none';
         postsCol.innerHTML = '';
         card.classList.remove('kc-two-col');
+        document.getElementById('kcClipsSection')?.remove();
         document.getElementById('kcBdSection')?.remove();
         document.getElementById('kcEconSection')?.remove();
 
@@ -536,18 +570,47 @@
                 streakSec.style.display = 'block';
             }
 
-            // ── Posts column (diamond / emerald / content users) ──
+            // ── Clips collapsible section (diamond / emerald / content users) ──
             const isEligible = !!(u.codesUnlocked?.diamond || u.codesUnlocked?.emerald || u.codesUnlocked?.content);
             if (isEligible) {
-                card.classList.add('kc-two-col');
-                postsCol.style.display = 'block';
-                postsCol.innerHTML = `
-                    <h4 class="kc-section-title" style="padding:1rem 1rem 0.5rem">POSTS</h4>
-                    <div id="kcPostsContainer" class="kc-posts-list"></div>
-                    <div class="kc-page-btns">
-                        <button id="kcPrevPost" class="kc-page-btn" disabled>&#8592;</button>
-                        <button id="kcNextPost" class="kc-page-btn" disabled>&#8594;</button>
+                const clipsSection = document.createElement('div');
+                clipsSection.id = 'kcClipsSection';
+                clipsSection.innerHTML = `
+                    <button class="kc-clips-toggle" id="kcClipsToggleBtn">
+                        <span class="kc-clips-toggle-label">🎬 <span>CLIPS</span></span>
+                        <span class="kc-clips-arrow">▼</span>
+                    </button>
+                    <div class="kc-clips-panel" id="kcClipsPanel">
+                        <div class="kc-section" style="margin-bottom:10px">
+                            <div id="kcPostsContainer" class="kc-posts-list"></div>
+                            <div class="kc-page-btns">
+                                <button id="kcPrevPost" class="kc-page-btn" disabled>&#8592;</button>
+                                <button id="kcNextPost" class="kc-page-btn" disabled>&#8594;</button>
+                            </div>
+                        </div>
                     </div>`;
+                document.getElementById('kcPopupBody').appendChild(clipsSection);
+
+                document.getElementById('kcClipsToggleBtn').addEventListener('click', function () {
+                    const panel = document.getElementById('kcClipsPanel');
+                    const isOpen = this.classList.contains('kc-open');
+                    if (isOpen) {
+                        // Collapse: pin to current height, then animate to 0
+                        panel.style.maxHeight = panel.scrollHeight + 'px';
+                        panel.offsetHeight; // force reflow
+                        panel.style.maxHeight = '0';
+                        this.classList.remove('kc-open');
+                    } else {
+                        // Expand: animate to content height, then free for dynamic resizing
+                        this.classList.add('kc-open');
+                        panel.style.maxHeight = panel.scrollHeight + 'px';
+                        panel.addEventListener('transitionend', function freeHeight() {
+                            if (panel.style.maxHeight !== '0px') panel.style.maxHeight = 'none';
+                            panel.removeEventListener('transitionend', freeHeight);
+                        });
+                    }
+                });
+
                 document.getElementById('kcPrevPost').addEventListener('click', function () {
                     if (_postPage > 0) { _postPage--; renderKcPosts(); }
                 });
