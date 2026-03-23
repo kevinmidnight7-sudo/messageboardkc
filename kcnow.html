@@ -112,6 +112,12 @@
 
         .feed-chip.active { background-color: var(--accent-blue); color: white; opacity: 1; }
 
+        @keyframes slideInRight {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slideInRight { animation: slideInRight 0.3s ease-out; }
+
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 380px;
@@ -166,27 +172,51 @@
                 </div>
 
                 <!-- Hub Buttons -->
-                <div class="grid grid-cols-3 gap-6 h-56">
-                    <button onclick="openLeaderboard()" class="glass glass-hover rounded-[32px] flex flex-col items-center justify-center gap-4 group">
+                <div class="grid grid-cols-3 gap-6">
+                    <!-- Row 1 -->
+                    <button onclick="openLeaderboard()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
                         <div class="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-trophy"></i>
                         </div>
                         <span class="font-bold tracking-wide">Leaderboard</span>
                     </button>
-                    
-                    <button onclick="battledomeOpen()" class="glass glass-hover rounded-[32px] flex flex-col items-center justify-center gap-4 group cursor-not-allowed opacity-60">
+
+                    <button onclick="openBattledome()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group cursor-not-allowed opacity-60 transition">
                         <div class="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 text-3xl">
                             <i class="fa-solid fa-sword"></i>
                         </div>
                         <span class="font-bold tracking-wide">Battledome</span>
                         <div class="text-[10px] bg-red-500/20 text-red-400 px-3 py-0.5 rounded-full font-black uppercase">Offline</div>
                     </button>
-                    
-                    <button onclick="openClanBattles()" class="glass glass-hover rounded-[32px] flex flex-col items-center justify-center gap-4 group">
+
+                    <button onclick="openClanBattles()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
                         <div class="w-16 h-16 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-shield-halved"></i>
                         </div>
                         <span class="font-bold tracking-wide">Clan Battles</span>
+                    </button>
+
+                    <!-- Row 2 -->
+                    <button onclick="openGamesHub()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-dice"></i>
+                        </div>
+                        <span class="font-bold tracking-wide">Games</span>
+                        <div class="text-[10px] bg-purple-500/20 text-purple-400 px-3 py-0.5 rounded-full font-black uppercase">Casino</div>
+                    </button>
+
+                    <button onclick="openEconomyShop()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <span class="font-bold tracking-wide">Shop</span>
+                    </button>
+
+                    <button onclick="openMyProfile()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-400 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <span class="font-bold tracking-wide">My Profile</span>
                     </button>
                 </div>
 
@@ -279,7 +309,7 @@
                 </div>
                 <!-- Stats Panel -->
                 <div id="rightpanel-stats" class="hidden flex-1 overflow-y-auto custom-scroll p-4">
-                    <iframe src="stats.html" style="width:100%;height:100%;border:0;border-radius:28px;"></iframe>
+                    <!-- Populated dynamically by loadStatsPanel() -->
                 </div>
             </div>
         </aside>
@@ -298,6 +328,30 @@
                 </button>
             </div>
             <div id="modal-body" class="p-8 overflow-y-auto custom-scroll flex-1"></div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-24 right-8 z-[200] space-y-3" style="max-width:350px;pointer-events:none;"></div>
+
+    <!-- Quick Actions Floating Menu -->
+    <div class="fixed bottom-32 right-8 z-50">
+        <button onclick="toggleQuickActions()" id="quick-actions-btn" class="w-16 h-16 rounded-full bg-blue-600 hover:bg-blue-500 shadow-2xl shadow-blue-900/60 flex items-center justify-center text-white text-2xl transition" style="transition: transform 0.3s;">
+            <i class="fa-solid fa-bolt"></i>
+        </button>
+        <div id="quick-actions-menu" class="hidden absolute bottom-20 right-0 space-y-3">
+            <button onclick="claimDaily()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+                <i class="fa-solid fa-gift text-blue-400"></i>
+                <span class="font-bold text-sm">Claim Daily</span>
+            </button>
+            <button onclick="openEconomyShop()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+                <i class="fa-solid fa-store text-purple-400"></i>
+                <span class="font-bold text-sm">Shop</span>
+            </button>
+            <button onclick="openGamesHub()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+                <i class="fa-solid fa-dice text-green-400"></i>
+                <span class="font-bold text-sm">Games</span>
+            </button>
         </div>
     </div>
 
@@ -325,7 +379,6 @@
         auth.onAuthStateChanged(async (user) => {
             currentUser = user;
             if (user) {
-                // reload user to get latest emailVerified flag
                 try { await user.reload(); } catch (e) {}
                 db.ref(`users/${user.uid}`).on('value', snap => {
                     const data = snap.val() || {};
@@ -335,10 +388,33 @@
             } else {
                 renderUserHeader({}, null);
             }
-            // Reset feed listeners and load clips preview on auth change
             initFeedListeners();
             loadClipsPreview();
         });
+
+        // --- HELPER FUNCTIONS ---
+        async function getDiscordIdFromKcUid(kcUid) {
+            const linksSnapshot = await db.ref('discordLinks').once('value');
+            const links = linksSnapshot.val() || {};
+            for (const [discordId, data] of Object.entries(links)) {
+                if (data.uid === kcUid) return discordId;
+            }
+            return null;
+        }
+
+        function timeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+            return `${Math.floor(seconds / 86400)}d ago`;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
 
         // --- Greeting Function ---
         function getGreeting() {
@@ -361,7 +437,6 @@
             greetingEl.textContent = getGreeting() + ',';
 
             if (user) {
-                // Determine avatar and customization
                 const avatarUrl = data.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
                 const nameColor = (data.profileCustomizationUnlocked && data.profileCustomization && data.profileCustomization.nameColor) ? data.profileCustomization.nameColor : '#ffffff';
                 const customGradient = (data.profileCustomizationUnlocked && data.profileCustomization && data.profileCustomization.gradient) ? data.profileCustomization.gradient : null;
@@ -373,7 +448,6 @@
                 avatarEl.src = avatarUrl;
                 ind.classList.remove('hidden');
 
-                // Apply gradient background if available
                 if (customGradient) {
                     welcomeCard.style.background = customGradient;
                     welcomeCard.classList.remove('glass');
@@ -382,16 +456,62 @@
                     welcomeCard.classList.add('glass');
                 }
 
-                // Render badges
                 let badges = '';
                 if (isVerified) badges += `<i class="fa-solid fa-circle-check text-blue-400 text-xs" title="Verified"></i>`;
                 if (isStaff) badges += `<i class="fa-solid fa-shield-halved text-red-500 text-xs" title="Staff"></i>`;
                 badgeEl.innerHTML = badges;
 
-                // Auth actions (sign out)
-                actions.innerHTML = `<button onclick="auth.signOut()" class="px-6 py-2 border border-red-500/20 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-xs">SIGN OUT</button>`;
+                // Show about text
+                const existingAbout = document.getElementById('welcome-about');
+                if (existingAbout) existingAbout.remove();
+                if (data.about) {
+                    const aboutDiv = document.createElement('p');
+                    aboutDiv.id = 'welcome-about';
+                    aboutDiv.className = 'text-sm text-gray-400 italic mt-2 max-w-md';
+                    aboutDiv.textContent = `"${data.about}"`;
+                    nameEl.parentElement.appendChild(aboutDiv);
+                }
+
+                // Auth actions with daily button and economy stats placeholder
+                actions.innerHTML = `
+                    <div class="flex flex-col items-end gap-3">
+                        <div id="welcome-economy-stats"></div>
+                        <button onclick="claimDaily()" class="glass px-5 py-2 rounded-2xl font-bold text-blue-400 hover:bg-blue-500/20 transition text-sm">
+                            <i class="fa-solid fa-gift mr-2"></i> Claim Daily
+                        </button>
+                        <button onclick="auth.signOut()" class="px-5 py-2 border border-red-500/20 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-xs">SIGN OUT</button>
+                    </div>
+                `;
+
+                // Fetch Discord economy stats
+                getDiscordIdFromKcUid(user.uid).then(discordId => {
+                    const statsEl = document.getElementById('welcome-economy-stats');
+                    if (!statsEl || !discordId) return;
+                    db.ref(`userEconomy/${discordId}`).once('value').then(snap => {
+                        const economy = snap.val() || {};
+                        const streak = economy.streaks?.login?.current || 0;
+                        const points = economy.points || 0;
+                        const rank = economy.rank || 'N/A';
+                        statsEl.innerHTML = `
+                            <div class="glass px-4 py-2 rounded-2xl inline-block text-right">
+                                <p class="text-xs text-gray-400 uppercase">Economy</p>
+                                <p class="text-lg font-bold text-blue-400">${points.toLocaleString()} pts</p>
+                                <p class="text-xs text-gray-400">Rank #${rank}</p>
+                            </div>
+                            ${streak > 0 ? `<div class="mt-2 glass px-4 py-2 rounded-2xl inline-block">
+                                <p class="text-sm font-bold">🔥 ${streak} day streak</p>
+                            </div>` : ''}
+                        `;
+                    });
+                    // Add BD badge if available
+                    db.ref(`users/${user.uid}/bdHighscore`).once('value').then(bdSnap => {
+                        const bdScore = bdSnap.val() || 0;
+                        if (bdScore > 0) {
+                            badgeEl.innerHTML += ` <span class="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full font-bold">BD: ${bdScore.toLocaleString()}</span>`;
+                        }
+                    });
+                });
             } else {
-                // Guest view
                 nameEl.textContent = "Welcome, Guest";
                 nameEl.style.color = "#ffffff";
                 avatarEl.src = "https://via.placeholder.com/100?text=?";
@@ -399,6 +519,8 @@
                 ind.classList.add('hidden');
                 welcomeCard.style.background = '';
                 welcomeCard.classList.add('glass');
+                const existingAbout = document.getElementById('welcome-about');
+                if (existingAbout) existingAbout.remove();
                 actions.innerHTML = `<button onclick="openAuthModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-900/40">SIGN IN</button>`;
             }
         }
@@ -406,16 +528,16 @@
         // --- TAB SYSTEM ---
         function switchTab(tabId) {
             activeTab = tabId;
-            // hide all view containers with id starting with view-
             document.querySelectorAll('[id^="view-"]').forEach(v => v.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`view-${tabId}`).classList.remove('hidden');
             document.getElementById(`tab-${tabId}`).classList.add('active');
+            if (tabId === 'profile') loadProfileLite();
+            if (tabId === 'clans') loadAllClans();
         }
 
         // --- RIGHT PANEL TAB SYSTEM ---
         function switchRightTab(tab) {
-            // Toggle tab button classes
             document.getElementById('righttab-feed').classList.remove('active');
             document.getElementById('righttab-stats').classList.remove('active');
             document.getElementById('rightpanel-feed').classList.add('hidden');
@@ -426,25 +548,43 @@
             } else if (tab === 'stats') {
                 document.getElementById('righttab-stats').classList.add('active');
                 document.getElementById('rightpanel-stats').classList.remove('hidden');
+                loadStatsPanel();
             }
         }
 
         // --- FEED ADAPTER (Live Events) ---
         function initFeedListeners() {
-            // Clear previous listeners and feed items
             feedItems = [];
-            // Remove existing listeners if any by off() - ensures no duplicates
             db.ref('social_posts').off();
             db.ref('users').off();
-            // Subscribe to social posts for feed (latest 5)
+            db.ref('recentActivity').off();
+
             db.ref('social_posts').limitToLast(5).on('child_added', snap => {
                 const p = snap.val();
                 addFeedItem({ type:'clips', title:'New Clip!', user:p.userName, detail:p.caption, time:'Just now', color:'text-blue-400', icon:'fa-clapperboard' });
             });
-            // Subscribe to new users
+
             db.ref('users').limitToLast(3).on('child_added', snap => {
                 const u = snap.val();
                 addFeedItem({ type:'users', title:'New Player!', user:u.displayName, detail:'Joined the KC community.', time:'New', color:'text-green-400', icon:'fa-user-plus' });
+            });
+
+            db.ref('recentActivity').limitToLast(10).on('child_added', snap => {
+                const activity = snap.val();
+                switch (activity.type) {
+                    case 'milestone':
+                        addFeedItem({ type:'users', title:`${activity.days} Day Streak!`, user:activity.userName, detail:`Reached ${activity.milestoneName} milestone!`, time:'Just now', color:'text-orange-400', icon:'fa-fire' });
+                        break;
+                    case 'achievement':
+                        addFeedItem({ type:'users', title:'Achievement Unlocked!', user:activity.userName, detail:`Earned "${activity.badgeName}" badge`, time:'Just now', color:'text-purple-400', icon:'fa-trophy' });
+                        break;
+                    case 'bd_improvement':
+                        addFeedItem({ type:'users', title:'BD Record!', user:activity.bdName, detail:`New highscore: ${(activity.newScore||0).toLocaleString()}`, time:'Just now', color:'text-red-400', icon:'fa-sword' });
+                        break;
+                    case 'shop_purchase':
+                        addFeedItem({ type:'users', title:'Shop Purchase', user:activity.userName, detail:`Bought ${activity.itemName}`, time:'Just now', color:'text-blue-400', icon:'fa-shopping-cart' });
+                        break;
+                }
             });
         }
 
@@ -452,6 +592,30 @@
             feedItems.unshift(item);
             if (feedItems.length > 20) feedItems.pop();
             renderFeed();
+            showToast(`${item.title} — ${item.user}`, 'info', 3000);
+        }
+
+        // --- TOAST NOTIFICATIONS ---
+        function showToast(message, type = 'info', duration = 5000) {
+            const colors = {
+                info: 'border-blue-500/50 text-blue-400',
+                success: 'border-green-500/50 text-green-400',
+                warning: 'border-yellow-500/50 text-yellow-400',
+                error: 'border-red-500/50 text-red-400'
+            };
+            const icons = { info:'fa-info-circle', success:'fa-check-circle', warning:'fa-exclamation-triangle', error:'fa-times-circle' };
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.style.pointerEvents = 'all';
+            toast.className = `glass ${colors[type]} border p-4 rounded-2xl flex items-center gap-3 shadow-xl animate-slideInRight`;
+            toast.innerHTML = `
+                <i class="fa-solid ${icons[type]} text-xl flex-shrink-0"></i>
+                <p class="text-sm font-bold flex-1">${message}</p>
+                <button onclick="this.parentElement.remove()" class="text-xs opacity-60 hover:opacity-100"><i class="fa-solid fa-times"></i></button>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => { if (toast.parentElement) toast.remove(); }, duration);
         }
 
         function filterFeed(f) {
@@ -562,6 +726,63 @@
             ref.transaction(cur => (cur || 0) + 1).then(() => loadClipsFull());
         };
 
+        // --- STATS PANEL ---
+        function loadStatsPanel() {
+            const statsPanel = document.getElementById('rightpanel-stats');
+            statsPanel.innerHTML = `
+                <div class="space-y-4">
+                    <div class="glass p-4 rounded-3xl">
+                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Server Stats</p>
+                        <div id="server-stats" class="space-y-2">
+                            <div class="animate-pulse bg-white/5 h-8 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="glass p-4 rounded-3xl">
+                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Top Players</p>
+                        <div id="top-players" class="space-y-2">
+                            <div class="animate-pulse bg-white/5 h-8 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="glass p-4 rounded-3xl">
+                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Active Now</p>
+                        <div id="active-users" class="space-y-2">
+                            <p class="text-xs text-gray-500 italic text-center">Real-time tracking coming soon</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            Promise.all([
+                db.ref('users').once('value'),
+                db.ref('clans').once('value'),
+                db.ref('social_posts').once('value')
+            ]).then(([usersSnap, clansSnap, postsSnap]) => {
+                const el = document.getElementById('server-stats');
+                if (el) el.innerHTML = `
+                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${usersSnap.numChildren()}</span></div>
+                    <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${clansSnap.numChildren()}</span></div>
+                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${postsSnap.numChildren()}</span></div>
+                `;
+            });
+
+            db.ref('users').orderByChild('totalPoints').limitToLast(5).once('value').then(snap => {
+                const players = [];
+                snap.forEach(child => {
+                    players.unshift({ name: child.val().displayName || 'Unknown', points: child.val().totalPoints || 0 });
+                });
+                const el = document.getElementById('top-players');
+                if (el) el.innerHTML = players.map((p, i) => `
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                            <span class="text-sm font-bold">${p.name}</span>
+                        </div>
+                        <span class="text-xs text-gray-400">${p.points.toLocaleString()} pts</span>
+                    </div>
+                `).join('') || '<p class="text-xs text-gray-500 text-center">No data yet</p>';
+            });
+        }
+
         // --- MODAL & MISC ---
         function openModal(title, body) {
             document.getElementById('modal-title').textContent = title;
@@ -579,16 +800,186 @@
         }
 
         function openLeaderboard() {
-            // Embed leaderboard.html inside modal via iframe
             openModal("Leaderboard", `<iframe src="leaderboard.html" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
         }
 
         function openClanBattles() {
-            // Embed clans.html battles modal inside modal via iframe
             openModal("Clan Battles", `<iframe src="clans.html?open=battles" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
         }
 
-        function battledomeOpen() { console.log("Battledome is locked."); }
+        function openBattledome() { console.log("Battledome is offline."); }
+
+        function openGamesHub() {
+            if (!currentUser) return openAuthModal();
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                const pointsPromise = discordId
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val()?.points || 0)
+                    : Promise.resolve(0);
+                pointsPromise.then(points => {
+                    openModal('Games Hub', `
+                        <div class="space-y-6">
+                            <div class="text-center">
+                                <p class="text-gray-400 mb-2">Your Balance</p>
+                                <p class="text-4xl font-bold text-blue-400">${points.toLocaleString()} pts</p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="glass p-6 rounded-3xl text-center">
+                                    <i class="fa-solid fa-spade text-4xl mb-3 block"></i>
+                                    <p class="font-bold">Blackjack</p>
+                                    <p class="text-xs text-gray-400">Use /blackjack in Discord</p>
+                                </div>
+                                <div class="glass p-6 rounded-3xl text-center">
+                                    <i class="fa-solid fa-coins text-4xl mb-3 block text-yellow-400"></i>
+                                    <p class="font-bold">Slots</p>
+                                    <p class="text-xs text-gray-400">Use /slots in Discord</p>
+                                </div>
+                                <div class="glass p-6 rounded-3xl text-center">
+                                    <i class="fa-solid fa-dice text-4xl mb-3 block text-green-400"></i>
+                                    <p class="font-bold">Dice Duel</p>
+                                    <p class="text-xs text-gray-400">Use /dice in Discord</p>
+                                </div>
+                                <div class="glass p-6 rounded-3xl text-center">
+                                    <i class="fa-solid fa-brain text-4xl mb-3 block text-purple-400"></i>
+                                    <p class="font-bold">Trivia</p>
+                                    <p class="text-xs text-gray-400">Use /trivia in Discord</p>
+                                </div>
+                            </div>
+                            <p class="text-center text-xs text-gray-500 italic">Games require Discord bot. Use commands in the KC Discord server.</p>
+                        </div>
+                    `);
+                });
+            });
+        }
+
+        function openEconomyShop() {
+            if (!currentUser) return openAuthModal();
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                const economyPromise = discordId
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {})
+                    : Promise.resolve({});
+                Promise.all([
+                    economyPromise,
+                    db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value')
+                ]).then(([economy, unlockSnap]) => {
+                    const points = economy.points || 0;
+                    const inventory = economy.inventory || {};
+                    const hasCustomization = unlockSnap.val() === true;
+                    openModal('Economy Shop', `
+                        <div class="space-y-6">
+                            <div class="text-center glass p-4 rounded-2xl">
+                                <p class="text-gray-400 text-sm">Your Balance</p>
+                                <p class="text-3xl font-bold text-blue-400">${points.toLocaleString()} pts</p>
+                            </div>
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-bold">🎨 Customization</h3>
+                                ${hasCustomization ? `
+                                    <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
+                                        <p class="font-bold text-green-400">✅ Profile Customization</p>
+                                        <p class="text-xs text-gray-400">Unlocked! Use Discord /customize command</p>
+                                    </div>
+                                ` : `
+                                    <div class="glass p-4 rounded-2xl border-2 border-blue-500/30">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-bold">Profile Customization</p>
+                                                <p class="text-xs text-gray-400">Unlock colors, gradients & banners</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xl font-bold text-blue-400">15,000 pts</p>
+                                                <p class="text-xs text-gray-500">Use /buy in Discord</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="glass p-4 rounded-2xl">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-bold">Custom Badge</p>
+                                                <p class="text-xs text-gray-400">Create your own badge</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xl font-bold text-blue-400">10,000 pts</p>
+                                                <p class="text-xs text-gray-500">Use /buy in Discord</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-bold">🎮 Gameplay Items</h3>
+                                <div class="glass p-4 rounded-2xl">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-bold">Streak Protection</p>
+                                            <p class="text-xs text-gray-400">Auto-saves your streak if missed</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-xl font-bold text-blue-400">1,000 pts</p>
+                                            <p class="text-xs text-gray-500">Owned: ${inventory.streak_protection || 0}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="glass p-4 rounded-2xl">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-bold">2x Points Boost (24h)</p>
+                                            <p class="text-xs text-gray-400">Double all earnings for one day</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-xl font-bold text-blue-400">2,000 pts</p>
+                                            <p class="text-xs text-gray-500">Owned: ${inventory.points_boost || 0}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Use Discord bot commands (/buy, /shop) to purchase items</p>
+                        </div>
+                    `);
+                });
+            });
+        }
+
+        function openMyProfile() {
+            if (!currentUser) return openAuthModal();
+            window.location.href = `https://kcevents.uk/#loginpage?uid=${currentUser.uid}`;
+        }
+
+        function claimDaily() {
+            if (!currentUser) return openAuthModal();
+            openModal('Daily Login', `
+                <div class="text-center space-y-6">
+                    <i class="fa-solid fa-gift text-6xl text-blue-400"></i>
+                    <p class="text-gray-400">Daily rewards are claimed through the Discord bot.</p>
+                    <p class="text-sm text-gray-500">Use the <code class="bg-white/5 px-2 py-1 rounded">/daily</code> command in Discord to claim your reward!</p>
+                    <div class="glass p-4 rounded-2xl">
+                        <p class="text-xs text-gray-500 mb-2">Your Current Streak</p>
+                        <p id="daily-streak-display" class="text-3xl font-bold text-orange-400">Loading...</p>
+                    </div>
+                </div>
+            `);
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                const el = document.getElementById('daily-streak-display');
+                if (!el) return;
+                if (discordId) {
+                    db.ref(`userEconomy/${discordId}/streaks/login/current`).once('value').then(snap => {
+                        el.textContent = `${snap.val() || 0} days 🔥`;
+                    });
+                } else {
+                    el.textContent = 'Link Discord to track';
+                }
+            });
+        }
+
+        function toggleQuickActions() {
+            const menu = document.getElementById('quick-actions-menu');
+            const btn = document.getElementById('quick-actions-btn');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                btn.style.transform = 'rotate(180deg)';
+            } else {
+                menu.classList.add('hidden');
+                btn.style.transform = 'rotate(0deg)';
+            }
+        }
 
         function openPlayerCard(uid) {
             // Legacy: keep as is for clan view players or other use
@@ -622,29 +1013,78 @@
         }
 
         function loadProfileLite() {
-            if(!currentUser) return;
-            db.ref(`users/${currentUser.uid}`).once('value', snap => {
-                const u = snap.val() || {};
-                document.getElementById('profile-lite-content').innerHTML = `
-                    <div class="glass p-6 rounded-3xl flex items-center gap-4">
-                        <img src="${u.profilePicture || 'https://kcevents.uk/default-avatar.png'}" class="w-16 h-16 rounded-full border-2 border-white/5">
-                        <div>
-                            <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Authenticated As</p>
-                            <p class="font-bold" style="color:${u.nameColor||'#fff'}">${u.displayName || 'Explorer'}</p>
+            if (!currentUser) return;
+            const container = document.getElementById('profile-lite-content');
+            container.innerHTML = `<div class="col-span-2 animate-pulse bg-white/5 h-24 rounded-3xl"></div>`;
+
+            Promise.all([
+                db.ref(`users/${currentUser.uid}`).once('value'),
+                getDiscordIdFromKcUid(currentUser.uid)
+            ]).then(([userSnap, discordId]) => {
+                const u = userSnap.val() || {};
+                const economyPromise = discordId
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(snap => snap.val() || {})
+                    : Promise.resolve({});
+
+                economyPromise.then(economy => {
+                    const streak = economy.streaks?.login?.current || 0;
+                    const points = economy.points || 0;
+                    const rank = economy.rank || 'N/A';
+                    const badges = Object.keys(economy.badges || {}).length;
+
+                    container.innerHTML = `
+                        <div class="glass p-6 rounded-3xl flex items-center gap-4 col-span-2">
+                            <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-20 h-20 rounded-full border-2 border-white/10">
+                            <div class="flex-1">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-1">Authenticated As</p>
+                                <p class="text-2xl font-bold" style="color:${u.profileCustomization?.nameColor || '#fff'}">${u.displayName || 'Explorer'}</p>
+                                ${u.about ? `<p class="text-sm text-gray-400 italic mt-1">"${u.about}"</p>` : ''}
+                            </div>
                         </div>
-                    </div>
-                    <div class="glass p-6 rounded-3xl">
-                        <p class="text-[10px] text-gray-500 font-black uppercase mb-1">Current Ranking</p>
-                        <p class="text-xl font-black text-blue-400">${u.rank || 'Member'}</p>
-                    </div>
-                    <div class="glass p-6 rounded-3xl col-span-2">
-                        <p class="text-[10px] text-gray-500 font-black uppercase mb-2">Member Statistics</p>
-                        <div class="flex gap-8">
-                            <div><p class="text-xs text-gray-400 uppercase">XP</p><p class="text-lg font-bold">${u.totalPoints || 0}</p></div>
-                            <div><p class="text-xs text-gray-400 uppercase">Streak</p><p class="text-lg font-bold text-orange-400">${u.streak || 0}🔥</p></div>
+                        <div class="glass p-6 rounded-3xl">
+                            <p class="text-xs text-gray-500 font-black uppercase mb-3">KC Badges</p>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span class="text-sm text-gray-400">Overall</span><span class="font-bold text-blue-400">${u.overall || 0}</span></div>
+                                <div class="flex justify-between"><span class="text-sm text-gray-400">Offence</span><span class="font-bold text-red-400">${u.offence || 0}</span></div>
+                                <div class="flex justify-between"><span class="text-sm text-gray-400">Defence</span><span class="font-bold text-green-400">${u.defence || 0}</span></div>
+                            </div>
                         </div>
-                    </div>
-                `;
+                        ${discordId ? `
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-3">Discord Stats</p>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Points</span><span class="font-bold text-blue-400">${points.toLocaleString()}</span></div>
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Rank</span><span class="font-bold">#${rank}</span></div>
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Streak</span><span class="font-bold text-orange-400">${streak} 🔥</span></div>
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Badges</span><span class="font-bold text-purple-400">${badges}</span></div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-3">Discord Stats</p>
+                                <p class="text-sm text-gray-400 italic">Link Discord in bot to see economy stats</p>
+                            </div>
+                        `}
+                        <div class="glass p-6 rounded-3xl">
+                            <p class="text-xs text-gray-500 font-black uppercase mb-3">Battledome</p>
+                            <div class="space-y-2">
+                                <div class="flex justify-between"><span class="text-sm text-gray-400">Highscore</span><span class="font-bold text-red-400">${(u.bdHighscore || 0).toLocaleString()}</span></div>
+                            </div>
+                        </div>
+                        ${u.customBadge ? `
+                            <div class="glass p-6 rounded-3xl col-span-2">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-3">Custom Badge</p>
+                                <div class="flex items-center gap-3">
+                                    <span class="text-4xl">${u.customBadge.emoji}</span>
+                                    <div>
+                                        <p class="font-bold">${u.customBadge.name}</p>
+                                        <p class="text-sm text-gray-400">${u.customBadge.description}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    `;
+                });
             });
         }
 
