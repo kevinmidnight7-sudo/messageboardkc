@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <script src="profile-popup.js"></script>
 
     <style>
         :root {
@@ -561,12 +562,12 @@
 
             db.ref('social_posts').limitToLast(5).on('child_added', snap => {
                 const p = snap.val();
-                addFeedItem({ type:'clips', title:'New Clip!', user:p.userName, detail:p.caption, time:'Just now', color:'text-blue-400', icon:'fa-clapperboard' });
+                addFeedItem({ type:'clips', title:'New Clip!', user:p.userName, uid:p.createdBy, detail:p.caption, time:'Just now', color:'text-blue-400', icon:'fa-clapperboard' });
             });
 
             db.ref('users').limitToLast(3).on('child_added', snap => {
                 const u = snap.val();
-                addFeedItem({ type:'users', title:'New Player!', user:u.displayName, detail:'Joined the KC community.', time:'New', color:'text-green-400', icon:'fa-user-plus' });
+                addFeedItem({ type:'users', title:'New Player!', user:u.displayName, uid:snap.key, detail:'Joined the KC community.', time:'New', color:'text-green-400', icon:'fa-user-plus' });
             });
 
             db.ref('recentActivity').limitToLast(10).on('child_added', snap => {
@@ -645,7 +646,7 @@
                         <i class="fa-solid fa-chevron-down text-[10px] text-gray-600"></i>
                     </div>
                     <div class="pt-4 border-t border-white/5">
-                        <p class="text-[11px] text-blue-400 font-bold mb-1">${item.user}</p>
+                        <p class="text-[11px] text-blue-400 font-bold mb-1">${item.uid ? `<span class="cursor-pointer hover:underline" onclick="event.stopPropagation();window.openKcProfile('${item.uid}')">${item.user}</span>` : item.user}</p>
                         <p class="text-xs text-gray-400 leading-relaxed">${item.detail || ''}</p>
                     </div>
                 </div>
@@ -1037,7 +1038,7 @@
                             <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-20 h-20 rounded-full border-2 border-white/10">
                             <div class="flex-1">
                                 <p class="text-xs text-gray-500 font-black uppercase mb-1">Authenticated As</p>
-                                <p class="text-2xl font-bold" style="color:${u.profileCustomization?.nameColor || '#fff'}">${u.displayName || 'Explorer'}</p>
+                                <p class="text-2xl font-bold cursor-pointer hover:underline" style="color:${u.profileCustomization?.nameColor || '#fff'}" onclick="window.openKcProfile && window.openKcProfile('${currentUser.uid}')">${u.displayName || 'Explorer'}</p>
                                 ${u.about ? `<p class="text-sm text-gray-400 italic mt-1">"${u.about}"</p>` : ''}
                             </div>
                         </div>
@@ -1096,7 +1097,7 @@
                     h += `<div class="relative bg-black/40 rounded-3xl overflow-hidden aspect-video border border-white/5">
                             ${p.mediaUrl ? `<img src="${p.mediaUrl}" class="w-full h-full object-cover opacity-60">` : ''}
                             <div class="absolute inset-0 flex items-center justify-center"><i class="fa-solid fa-play-circle text-4xl text-white/40"></i></div>
-                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white">${p.userName}</p></div>
+                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white cursor-pointer hover:underline" onclick="window.openKcProfile('${p.createdBy}')">${p.userName}</p></div>
                         </div>`;
                 });
                 document.getElementById('home-clips-preview').innerHTML = h || '<p class="col-span-2 opacity-20 text-center text-xs">No media found.</p>';
