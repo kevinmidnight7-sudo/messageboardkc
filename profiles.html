@@ -452,6 +452,29 @@
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* Discord integration stats styles */
+        .discord-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .discord-stat-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88rem;
+        }
+        .stat-icon { font-size: 1rem; flex-shrink: 0; }
+        .stat-label {
+            color: #6b7280;
+            font-size: 0.78rem;
+            font-weight: 600;
+            min-width: 90px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .stat-value { font-weight: 700; color: #111827; }
+
         /* New post creation UI styles */
         .add-post-btn {
             width: 60px;
@@ -729,7 +752,7 @@
                         <div class="custom-grid-card-inner">
                             <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="${avatarClasses}" style="${avatarStyles}">
                             <h2 class="text-xl font-bold mb-1" style="color: ${textColor};">${user.displayName}</h2>
-                            <p class="text-gray-400 text-sm mb-4 bio-text" style="color: ${textColor};">${user.aboutMe || 'No "About Me" set.'}</p>
+                            <p class="text-gray-400 text-sm mb-4 bio-text" style="color: ${textColor};">${user.about || user.aboutMe || 'No "About Me" set.'}</p>
                             <div class="flex flex-wrap gap-2 justify-center">
                                 ${badgesHtml}
                             </div>
@@ -741,7 +764,7 @@
                     <div class="glass-card p-6 flex flex-col items-center text-center" data-uid="${user.uid}">
                         <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" alt="${user.displayName}'s avatar" class="avatar">
                         <h2 class="text-xl font-bold mb-1">${user.displayName}</h2>
-                        <p class="text-gray-400 text-sm mb-4 bio-text">${user.aboutMe || 'No "About Me" set.'}</p>
+                        <p class="text-gray-400 text-sm mb-4 bio-text">${user.about || user.aboutMe || 'No "About Me" set.'}</p>
                         <div class="flex flex-wrap gap-2 justify-center">
                             ${badgesHtml}
                         </div>
@@ -873,6 +896,7 @@
                         uid: userUid,
                         displayName: userData.displayName || 'Anonymous User',
                         aboutMe: userData.aboutMe,
+                        about: userData.about,
                         avatar: userData.avatar,
                         isVerified: isVerified,
                         badges: badgeData,
@@ -1248,6 +1272,103 @@
             });
         }
 
+        // --- Discord Integration Helpers ---
+        async function getDiscordIdFromKcUid(kcUid) {
+            try {
+                const linksSnap = await db.ref('discordLinks').once('value');
+                const links = linksSnap.val() || {};
+                for (const [discordId, data] of Object.entries(links)) {
+                    if (data.uid === kcUid) return discordId;
+                }
+            } catch (e) {
+                console.error('getDiscordIdFromKcUid error:', e);
+            }
+            return null;
+        }
+
+        async function loadDiscordStats(uid, userData) {
+            const popupBody = document.querySelector('#popupInfoColumn .popup-body');
+            if (!popupBody) return;
+
+            // Remove stale sections from a previous profile open
+            document.getElementById('popup-bd-section')?.remove();
+            document.getElementById('popup-economy-section')?.remove();
+
+            // Bot custom badge (users/{uid}/customBadge — single badge from /createbadge command)
+            const botBadge = userData.customBadge;
+            if (botBadge && botBadge.emoji && botBadge.name) {
+                const badgesContainer = document.getElementById('popupBadges');
+                if (badgesContainer) {
+                    if (badgesContainer.textContent === 'No badges to display.') {
+                        badgesContainer.innerHTML = '';
+                    }
+                    const div = document.createElement('div');
+                    div.className = 'popup-badge';
+                    div.style.background = 'linear-gradient(90deg,#7c3aed,#2563eb)';
+                    div.title = botBadge.description || '';
+                    div.innerHTML = `<span class="emoji-icon">${botBadge.emoji}</span><span>${botBadge.name}</span>`;
+                    badgesContainer.appendChild(div);
+                }
+            }
+
+            const bdHighscore = userData.bdHighscore || 0;
+            const discordId = await getDiscordIdFromKcUid(uid);
+
+            // BD username from playerLinks
+            let bdName = null;
+            if (discordId) {
+                try {
+                    const linksSnap = await db.ref(`config/playerLinks/${discordId}`).once('value');
+                    bdName = linksSnap.val()?.bdName || null;
+                } catch (e) {}
+            }
+
+            // Battledome section
+            if (bdHighscore > 0 || bdName) {
+                const bdSection = document.createElement('div');
+                bdSection.id = 'popup-bd-section';
+                bdSection.className = 'popup-section';
+                bdSection.innerHTML = `
+                    <h4 class="popup-section-title">BATTLEDOME</h4>
+                    <div class="discord-stats">
+                        ${bdName ? `<div class="discord-stat-row"><span class="stat-icon">⚔️</span><span class="stat-label">Username</span><span class="stat-value">${bdName}</span></div>` : ''}
+                        ${bdHighscore > 0 ? `<div class="discord-stat-row"><span class="stat-icon">🏆</span><span class="stat-label">Highscore</span><span class="stat-value">${bdHighscore.toLocaleString()}</span></div>` : ''}
+                    </div>`;
+                popupBody.appendChild(bdSection);
+            }
+
+            // Economy section
+            if (discordId) {
+                try {
+                    const economySnap = await db.ref(`userEconomy/${discordId}`).once('value');
+                    const economy = economySnap.val();
+                    if (economy) {
+                        const points = economy.points || 0;
+                        const rank = economy.rank;
+                        const streak = economy.streaks?.login?.current || 0;
+                        const achievementCount = Object.keys(economy.badges || {}).length;
+
+                        let statsHtml = '<div class="discord-stats">';
+                        if (points > 0) statsHtml += `<div class="discord-stat-row"><span class="stat-icon">💰</span><span class="stat-label">Points</span><span class="stat-value">${points.toLocaleString()}</span></div>`;
+                        if (rank) statsHtml += `<div class="discord-stat-row"><span class="stat-icon">🏅</span><span class="stat-label">Rank</span><span class="stat-value">#${rank}</span></div>`;
+                        if (streak > 0) statsHtml += `<div class="discord-stat-row"><span class="stat-icon">🔥</span><span class="stat-label">Discord Streak</span><span class="stat-value">${streak} days</span></div>`;
+                        if (achievementCount > 0) statsHtml += `<div class="discord-stat-row"><span class="stat-icon">🎖️</span><span class="stat-label">Achievements</span><span class="stat-value">${achievementCount}</span></div>`;
+                        statsHtml += '</div>';
+
+                        if (points > 0 || rank || streak > 0 || achievementCount > 0) {
+                            const econSection = document.createElement('div');
+                            econSection.id = 'popup-economy-section';
+                            econSection.className = 'popup-section';
+                            econSection.innerHTML = `<h4 class="popup-section-title">DISCORD STATS</h4>${statsHtml}`;
+                            popupBody.appendChild(econSection);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Economy stats load error:', e);
+                }
+            }
+        }
+
         // Main function to load the user profile
         function loadUserProfile(uid) {
             profileOwnerUid = uid; // Set the global owner UID
@@ -1329,7 +1450,7 @@ if (isEligible) {
 
                 usernameEl.textContent = userData.displayName || 'Anonymous User';
                 avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                aboutEl.textContent = userData.aboutMe || 'No "About Me" has been set.';
+                aboutEl.textContent = userData.about || userData.aboutMe || 'No "About Me" has been set.';
 
                 const streakNum = typeof userData.loginStreak === 'number' ? userData.loginStreak : (parseInt(userData.loginStreak) || 0);
                 if (streakNum > 0) {
@@ -1435,6 +1556,9 @@ const hasCustomization =
                     if (!hasAnyBadge) {
                         badgesContainer.textContent = 'No badges to display.';
                     }
+
+                    // Load Discord bot data (BD stats, economy, bot custom badge)
+                    loadDiscordStats(uid, userData);
                 }).catch(err => {
                     console.error('Badge load error:', err);
                     badgesContainer.textContent = 'Failed to load badges.';

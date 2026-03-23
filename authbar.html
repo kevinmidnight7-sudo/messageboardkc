@@ -159,14 +159,26 @@
             return 'Good evening';
         }
 
+        // --- Discord helper: get Discord ID from KC UID ---
+        async function getDiscordIdFromKcUid(kcUid) {
+            try {
+                const linksSnap = await db.ref('discordLinks').once('value');
+                const links = linksSnap.val() || {};
+                for (const [discordId, data] of Object.entries(links)) {
+                    if (data.uid === kcUid) return discordId;
+                }
+            } catch (e) {}
+            return null;
+        }
+
         // --- Auth State Listener (main logic) ---
         auth.onAuthStateChanged(user => {
             // First, remove the loading skeleton
             loadingSpinner.classList.add('hidden');
-            
+
             if (user) {
                 // Fetch the current user's data once, then listen for changes
-                db.ref(`users/${user.uid}`).on('value', snap => {
+                db.ref(`users/${user.uid}`).on('value', async snap => {
                     const userData = snap.val() || {};
                     const name = userData.displayName || user.displayName || user.email;
                     const avatarUrl = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
@@ -207,6 +219,7 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-white text-base font-semibold truncate max-w-xs" ${usernameColorStyle}>${name}</span>
                                         ${badgesHtml}
+                                        <span id="authStreakBadge" class="text-xs text-yellow-300 hidden"></span>
                                     </div>
                                 </div>
                             </a>
@@ -217,6 +230,21 @@
                         e.preventDefault();
                         auth.signOut();
                     };
+
+                    // Async: load Discord streak and update badge
+                    try {
+                        const discordId = await getDiscordIdFromKcUid(user.uid);
+                        if (discordId) {
+                            const streakSnap = await db.ref(`userEconomy/${discordId}/streaks/login/current`).once('value');
+                            const streak = streakSnap.val() || 0;
+                            const streakEl = document.getElementById('authStreakBadge');
+                            if (streakEl && streak > 0) {
+                                streakEl.textContent = `🔥 ${streak}`;
+                                streakEl.title = `${streak} day login streak`;
+                                streakEl.classList.remove('hidden');
+                            }
+                        }
+                    } catch (e) {}
                 });
             } else {
                 authBarContainer.innerHTML = `
