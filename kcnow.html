@@ -135,6 +135,31 @@
             #welcome-card > .flex.items-center { flex-direction: column; text-align: center; }
             #welcome-economy-stats { margin-top: 0.75rem; }
         }
+
+        /* ===== Phase 4 Animations ===== */
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in-up { animation: fadeInUp 0.3s ease-out both; }
+
+        .glow-on-hover { transition: all 0.3s; }
+        .glow-on-hover:hover { box-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 40px rgba(59,130,246,0.1); transform: translateY(-2px); }
+
+        .btn-press { transition: transform 0.1s; }
+        .btn-press:active { transform: scale(0.95); }
+
+        @keyframes pulseSlow { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+        .pulse-slow { animation: pulseSlow 2s ease-in-out infinite; }
+
+        @keyframes dealCard {
+            from { opacity: 0; transform: translateY(-24px) scale(0.85) rotate(-4deg); }
+            to   { opacity: 1; transform: translateY(0)    scale(1)    rotate(0deg); }
+        }
+        .deal-card { animation: dealCard 0.28s ease-out both; }
+
+        @keyframes reelSpin { 0% { transform:translateY(0); } 100% { transform:translateY(-100%); } }
+        .slot-reel { transition: font-size 0.1s; }
+
+        @keyframes jackpotFlash { 0%,100%{background:rgba(234,179,8,0.0)} 50%{background:rgba(234,179,8,0.25)} }
+        .jackpot-flash { animation: jackpotFlash 0.4s ease-in-out 3; }
     </style>
 </head>
 <body class="p-6 md:p-10">
@@ -181,26 +206,27 @@
                 <!-- Hub Buttons -->
                 <div class="grid grid-cols-3 gap-6">
                     <!-- Row 1 -->
-                    <button onclick="openLeaderboard()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                    <button onclick="renderLeaderboard()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
                         <div class="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-trophy"></i>
                         </div>
                         <span class="font-bold tracking-wide">Leaderboard</span>
                     </button>
 
-                    <button onclick="openBattledome()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group cursor-not-allowed opacity-60 transition">
-                        <div class="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 text-3xl">
+                    <button onclick="renderBattledome()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-sword"></i>
                         </div>
                         <span class="font-bold tracking-wide">Battledome</span>
-                        <div class="text-[10px] bg-red-500/20 text-red-400 px-3 py-0.5 rounded-full font-black uppercase">Offline</div>
+                        <div class="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-0.5 rounded-full font-black uppercase">Live</div>
                     </button>
 
-                    <button onclick="openClanBattles()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-400 text-3xl group-hover:scale-110 transition">
-                            <i class="fa-solid fa-shield-halved"></i>
+                    <button onclick="openSlitherServers()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-400 text-3xl group-hover:scale-110 transition">
+                            <i class="fa-solid fa-worm"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Clan Battles</span>
+                        <span class="font-bold tracking-wide">Slither.io</span>
+                        <div class="text-[10px] bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full font-black uppercase">Servers</div>
                     </button>
 
                     <!-- Row 2 -->
@@ -905,19 +931,104 @@
             };
         }
 
-        function openLeaderboard() {
-            openModal("Leaderboard", `<iframe src="leaderboard.html" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
+        async function renderLeaderboard(category) {
+            category = category || 'overall';
+            const modal = openModalWithLoading('🏅 Leaderboard', 'Loading rankings...');
+            if (!modal) return;
+            try {
+                const snapshot = await db.ref('users').orderByChild(category).limitToLast(20).once('value');
+                const users = [];
+                snapshot.forEach(child => users.unshift({ uid: child.key, ...child.val() }));
+                const labels = { overall:'Overall', offence:'Offence', defence:'Defence', bdHighscore:'BD Score', totalPoints:'Economy' };
+                modal.update(`
+                    <div class="space-y-4">
+                        <div class="flex gap-2 flex-wrap">
+                            ${Object.entries(labels).map(([k,l]) => `
+                                <button onclick="renderLeaderboard('${k}')" class="btn-press text-xs px-3 py-2 rounded-xl font-bold transition ${k===category?'bg-blue-600':'glass hover:bg-white/10'}">${l}</button>
+                            `).join('')}
+                        </div>
+                        <div class="space-y-2">
+                            ${users.filter(u => (u[category]||0) > 0).slice(0,15).map((u,i) => {
+                                const isMe = currentUser && u.uid === currentUser.uid;
+                                const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
+                                return `
+                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="openKcProfile('${u.uid}')">
+                                        <span class="w-8 text-center font-black">${medal}</span>
+                                        <img src="${u.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
+                                        <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName||'Unknown'}${isMe?' (you)':''}</span>
+                                        <span class="text-blue-400 font-bold">${(u[category]||0).toLocaleString()}</span>
+                                    </div>`;
+                            }).join('') || '<p class="text-gray-400 text-center py-8">No data yet</p>'}
+                        </div>
+                    </div>`);
+            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load leaderboard</div>'); }
         }
+
+        function openLeaderboard() { renderLeaderboard(); }
 
         function openClanBattles() {
             openModal("Clan Battles", `<iframe src="clans.html?open=battles" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
         }
 
-        function openBattledome() { console.log("Battledome is offline."); }
+        async function renderBattledome() {
+            if (!currentUser) return openAuthModal();
+            const modal = openModalWithLoading('⚔️ Battledome', 'Fetching battle data...');
+            if (!modal) return;
+            try {
+                const [statusSnap, topSnap] = await Promise.all([
+                    db.ref('battledome/status').once('value'),
+                    db.ref('bdTop/global').orderByChild('score').limitToLast(10).once('value')
+                ]);
+                const status = statusSnap.val() || {};
+                const topEntries = [];
+                topSnap.forEach(child => topEntries.unshift({ key: child.key, ...child.val() }));
+
+                let userBdName = null;
+                const discordId = await getDiscordIdFromKcUid(currentUser.uid);
+                if (discordId) {
+                    const bdSnap = await db.ref(`config/playerLinks/${discordId}/bdName`).once('value');
+                    userBdName = bdSnap.val();
+                }
+
+                const isOnline = status.online === true;
+                modal.update(`
+                    <div class="space-y-5">
+                        <div class="glass p-4 rounded-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full ${isOnline?'bg-green-400 pulse-slow':'bg-red-400'}"></div>
+                                <span class="font-bold">${status.serverName||'Battledome'}</span>
+                                ${isOnline?`<span class="text-xs text-gray-400">${status.playerCount||0} players</span>`:'<span class="text-xs text-red-400">Offline</span>'}
+                            </div>
+                            <button onclick="renderBattledome()" class="btn-press text-xs glass px-3 py-2 rounded-xl hover:bg-white/10 transition"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
+                        </div>
+                        ${userBdName?`
+                            <div class="glass p-3 rounded-2xl">
+                                <p class="text-xs text-gray-400 mb-1">Your BD Username</p>
+                                <p class="font-bold text-blue-400">${userBdName}</p>
+                            </div>`:''}
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">🏆 Global Top 10</h3>
+                            <div class="space-y-2">
+                                ${topEntries.length===0?'<p class="text-gray-400 text-center py-6">No leaderboard data yet</p>':
+                                    topEntries.map((e,i)=>{
+                                        const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500">#${i+1}</span>`;
+                                        return `<div class="glass p-3 rounded-2xl flex items-center gap-3 fade-in-up ${i<3?'border border-yellow-500/20':''}" style="animation-delay:${i*40}ms">
+                                            <span class="w-8 text-center font-black">${medal}</span>
+                                            <span class="flex-1 font-bold">${e.name||e.key}</span>
+                                            <span class="text-blue-400 font-bold">${(e.score||0).toLocaleString()}</span>
+                                        </div>`;
+                                    }).join('')}
+                            </div>
+                        </div>
+                    </div>`);
+            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load Battledome data</div>'); }
+        }
+
+        function openBattledome() { renderBattledome(); }
 
         function openGamesHub() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('Games Hub', 'Loading game stats...');
+            const modal = openModalWithLoading('🎮 Games Hub', 'Loading game stats...');
             if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const dataPromise = discordId
@@ -928,42 +1039,44 @@
                     : Promise.resolve({ points: 0, gameStats: {} });
                 dataPromise.then(data => {
                     const bjWins = data.gameStats?.blackjack?.wins || 0;
+                    const bjPlays = data.gameStats?.blackjack?.plays || 0;
                     const slotsPlays = data.gameStats?.slots?.plays || 0;
+                    const slotsWins = data.gameStats?.slots?.wins || 0;
                     const triviaCorrect = data.gameStats?.trivia?.correct || 0;
                     modal.update(`
-                        <div class="space-y-6">
-                            <div class="text-center">
-                                <p class="text-gray-400 mb-2">Your Balance</p>
+                        <div class="space-y-5">
+                            <div class="text-center glass p-4 rounded-2xl">
+                                <p class="text-gray-400 text-sm mb-1">Your Balance</p>
                                 <p class="text-4xl font-bold text-blue-400">${data.points.toLocaleString()} pts</p>
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('blackjack')">
-                                    <i class="fa-solid fa-spade text-4xl mb-3 block"></i>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openBlackjackGame,200)">
+                                    <div class="text-4xl mb-2">🃏</div>
                                     <p class="font-bold">Blackjack</p>
-                                    <p class="text-xs text-gray-400">Wins: ${bjWins}</p>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/blackjack</code>
+                                    <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjPlays} plays</p>
+                                    <div class="mt-3 py-2 bg-blue-600/30 rounded-xl text-xs font-bold text-blue-300">▶ Play Now</div>
                                 </div>
-                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('slots')">
-                                    <i class="fa-solid fa-coins text-4xl mb-3 block text-yellow-400"></i>
+                                <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openSlotsGame,200)">
+                                    <div class="text-4xl mb-2">🎰</div>
                                     <p class="font-bold">Slots</p>
-                                    <p class="text-xs text-gray-400">Plays: ${slotsPlays}</p>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/slots</code>
+                                    <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsPlays} plays</p>
+                                    <div class="mt-3 py-2 bg-yellow-600/30 rounded-xl text-xs font-bold text-yellow-300">▶ Play Now</div>
                                 </div>
-                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('dice')">
-                                    <i class="fa-solid fa-dice text-4xl mb-3 block text-green-400"></i>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('dice')">
+                                    <div class="text-4xl mb-2">🎲</div>
                                     <p class="font-bold">Dice Duel</p>
-                                    <p class="text-xs text-gray-400">Daily competition</p>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/roll</code>
+                                    <p class="text-xs text-gray-400 mt-1">Daily competition</p>
+                                    <code class="mt-2 inline-block text-xs bg-white/5 px-2 py-1 rounded">/roll</code>
                                 </div>
-                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('trivia')">
-                                    <i class="fa-solid fa-brain text-4xl mb-3 block text-purple-400"></i>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('trivia')">
+                                    <div class="text-4xl mb-2">🧠</div>
                                     <p class="font-bold">Trivia</p>
-                                    <p class="text-xs text-gray-400">Correct: ${triviaCorrect}</p>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/trivia</code>
+                                    <p class="text-xs text-gray-400 mt-1">Correct: ${triviaCorrect}</p>
+                                    <code class="mt-2 inline-block text-xs bg-white/5 px-2 py-1 rounded">/trivia</code>
                                 </div>
                             </div>
-                            <div class="glass p-4 rounded-2xl">
-                                <p class="text-xs text-gray-400 mb-2">🎮 More Commands</p>
+                            <div class="glass p-3 rounded-2xl">
+                                <p class="text-xs text-gray-400 mb-2">More Discord Games</p>
                                 <div class="flex flex-wrap gap-2">
                                     <code class="text-xs bg-white/5 px-2 py-1 rounded">/coinflip</code>
                                     <code class="text-xs bg-white/5 px-2 py-1 rounded">/hangman</code>
@@ -972,7 +1085,7 @@
                                     <code class="text-xs bg-white/5 px-2 py-1 rounded">/rps</code>
                                 </div>
                             </div>
-                            <p class="text-center text-xs text-gray-500 italic">All games require Discord bot. Click a card for tips!</p>
+                            <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
                     `);
                 });
@@ -981,12 +1094,353 @@
 
         function showGameInfo(game) {
             const info = {
-                blackjack: { title: 'Blackjack', desc: 'Classic 21 card game. Beat the dealer without going over!',    tip: 'Stand on 17+ vs dealer 2-6 • Always split Aces & 8s • Double on 10-11' },
-                slots:     { title: 'Slots',      desc: 'Spin the reels for a chance at big wins!',                   tip: 'Triple 7s = Jackpot! • Match 3 symbols for payouts • Higher bets = bigger rewards' },
-                dice:      { title: 'Dice Duel',  desc: 'Daily competition. Highest roll wins the pot!',              tip: 'One roll per day • Top 3 win prizes • Prize pool grows with players' },
-                trivia:    { title: 'Trivia',      desc: 'Test your knowledge across multiple categories!',            tip: '5 min cooldown between games • Earn bonus for streaks • Multiple categories' }
+                blackjack: { title: 'Blackjack', tip: 'Stand on 17+ vs dealer 2-6 • Always split Aces & 8s • Double on 10-11' },
+                slots:     { title: 'Slots',      tip: 'Triple 7s = Jackpot! • Match 3 symbols for payouts • Higher bets = bigger rewards' },
+                dice:      { title: 'Dice Duel',  tip: 'One roll per day • Top 3 win prizes • Prize pool grows with players' },
+                trivia:    { title: 'Trivia',      tip: '5 min cooldown between games • Earn bonus for streaks • Multiple categories' }
             }[game];
             if (info) showToast(`${info.title}: ${info.tip}`, 'info', 6000);
+        }
+
+        // ===== BLACKJACK GAME (Phase 4) =====
+        let bjDeck=[], bjPlayerHand=[], bjDealerHand=[], bjBet=100, bjGameOver=false;
+
+        function bjCreateDeck() {
+            const suits=['♠','♥','♦','♣'], vals=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+            const deck=[];
+            suits.forEach(s=>vals.forEach(v=>deck.push({s,v})));
+            for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+            return deck;
+        }
+
+        function bjVal(card) {
+            if(['J','Q','K'].includes(card.v)) return 10;
+            if(card.v==='A') return 11;
+            return parseInt(card.v);
+        }
+
+        function bjTotal(hand) {
+            let t=0,a=0;
+            hand.forEach(c=>{t+=bjVal(c);if(c.v==='A')a++;});
+            while(t>21&&a>0){t-=10;a--;}
+            return t;
+        }
+
+        function bjCardHTML(card, hidden, delay) {
+            delay=delay||0;
+            if(hidden) return `<div class="deal-card inline-flex items-center justify-center w-12 h-16 rounded-lg mx-1 text-2xl" style="animation-delay:${delay}ms;background:linear-gradient(135deg,#1e3a5f,#0f2037);border:1px solid rgba(255,255,255,0.2);">🂠</div>`;
+            const red=['♥','♦'].includes(card.s);
+            return `<div class="deal-card inline-flex flex-col justify-between w-12 h-16 rounded-lg mx-1 p-1 text-xs font-black" style="animation-delay:${delay}ms;background:linear-gradient(135deg,#f8fafc,#e2e8f0);color:${red?'#ef4444':'#1e293b'};border:1px solid #cbd5e1;">
+                <span>${card.v}${card.s}</span><span style="transform:rotate(180deg)">${card.v}${card.s}</span>
+            </div>`;
+        }
+
+        function bjRender(showAll) {
+            const pt=bjTotal(bjPlayerHand), dt=bjTotal(bjDealerHand);
+            const pCards=bjPlayerHand.map((c,i)=>bjCardHTML(c,false,i*100)).join('');
+            const dCards=bjDealerHand.map((c,i)=>bjCardHTML(c,!showAll&&i===1,i*100)).join('');
+            const actions=bjGameOver?'':`
+                <div class="flex gap-2 justify-center mt-4 flex-wrap">
+                    <button onclick="bjHit()" class="btn-press px-5 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">Hit</button>
+                    <button onclick="bjStand()" class="btn-press px-5 py-3 bg-gray-600 hover:bg-gray-500 rounded-2xl font-bold transition">Stand</button>
+                    ${bjPlayerHand.length===2?'<button onclick="bjDouble()" class="btn-press px-5 py-3 bg-yellow-600 hover:bg-yellow-500 rounded-2xl font-bold transition text-sm">Double</button>':''}
+                </div>`;
+            const el=document.getElementById('bj-area');
+            if(el) el.innerHTML=`
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-400 uppercase font-bold mb-2">Dealer ${showAll?'('+dt+')':''}</p>
+                        <div class="flex justify-center flex-wrap">${dCards}</div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-400 uppercase font-bold mb-2">You (${pt})</p>
+                        <div class="flex justify-center flex-wrap">${pCards}</div>
+                    </div>
+                    ${actions}
+                </div>`;
+            if(!bjGameOver){
+                if(pt>21) bjEnd('bust');
+                else if(pt===21&&bjPlayerHand.length===2) bjStand();
+            }
+        }
+
+        function bjHit(){if(!bjGameOver){bjPlayerHand.push(bjDeck.pop());bjRender(false);}}
+
+        function bjDouble(){
+            if(!bjGameOver&&bjPlayerHand.length===2){
+                bjBet*=2;
+                const label=document.getElementById('bj-bet-label');
+                if(label) label.textContent='Bet: '+bjBet+' pts';
+                bjPlayerHand.push(bjDeck.pop());
+                bjStand();
+            }
+        }
+
+        function bjStand(){
+            if(bjGameOver) return;
+            while(bjTotal(bjDealerHand)<17) bjDealerHand.push(bjDeck.pop());
+            const pt=bjTotal(bjPlayerHand), dt=bjTotal(bjDealerHand);
+            bjEnd(dt>21||pt>dt?'win':pt===dt?'push':'lose');
+        }
+
+        function bjEnd(result){
+            bjGameOver=true;
+            const pt=bjTotal(bjPlayerHand);
+            const natural=result==='win'&&bjPlayerHand.length===2&&pt===21;
+            const mult=natural?1.5:result==='win'?1:result==='push'?0:-1;
+            const delta=Math.floor(bjBet*mult);
+            const msgs={bust:'💥 BUST!',win:natural?'🃏 BLACKJACK!':'🎉 WIN!',push:'🤝 PUSH',lose:'😞 LOSE'};
+            const colors={bust:'text-red-400',win:'text-green-400',push:'text-blue-400',lose:'text-red-400'};
+            if(natural) colors.win='text-yellow-400';
+            const dt=bjTotal(bjDealerHand);
+            const el=document.getElementById('bj-area');
+            if(el) el.innerHTML=`
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <p class="text-xs text-gray-400 uppercase font-bold mb-2">Dealer (${dt})</p>
+                        <div class="flex justify-center flex-wrap">${bjDealerHand.map((c,i)=>bjCardHTML(c,false,i*80)).join('')}</div>
+                    </div>
+                    <div class="text-center">
+                        <p class="text-xs text-gray-400 uppercase font-bold mb-2">You (${pt})</p>
+                        <div class="flex justify-center flex-wrap">${bjPlayerHand.map((c,i)=>bjCardHTML(c,false,i*80)).join('')}</div>
+                    </div>
+                    <div class="text-center py-3 fade-in-up">
+                        <p class="text-3xl font-black ${colors[result]} mb-1">${msgs[result]}</p>
+                        <p class="text-sm ${delta>=0?'text-green-400':'text-red-400'}">${delta>=0?'+':''}${delta} pts</p>
+                    </div>
+                    <div class="flex gap-3 justify-center">
+                        <button onclick="openBlackjackGame()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">Play Again</button>
+                        <button onclick="closeModal()" class="btn-press px-6 py-3 glass rounded-2xl font-bold transition">Exit</button>
+                    </div>
+                </div>`;
+            if(delta!==0 && currentUser){
+                getDiscordIdFromKcUid(currentUser.uid).then(did=>{
+                    if(!did) return;
+                    db.ref(`userEconomy/${did}`).transaction(eco=>{
+                        if(!eco) return eco;
+                        eco.points=Math.max(0,(eco.points||0)+delta);
+                        if(!eco.gameStats) eco.gameStats={};
+                        if(!eco.gameStats.blackjack) eco.gameStats.blackjack={wins:0,losses:0,plays:0};
+                        eco.gameStats.blackjack.plays=(eco.gameStats.blackjack.plays||0)+1;
+                        if(result==='win') eco.gameStats.blackjack.wins=(eco.gameStats.blackjack.wins||0)+1;
+                        if(result==='lose'||result==='bust') eco.gameStats.blackjack.losses=(eco.gameStats.blackjack.losses||0)+1;
+                        return eco;
+                    });
+                });
+            }
+            showToast(`${msgs[result]} ${delta>=0?'+':''}${delta} pts`, result==='win'?'success':'error', 3000);
+        }
+
+        function openBlackjackGame(){
+            if(!currentUser) return openAuthModal();
+            bjGameOver=false; bjBet=100;
+            openModal('♠ Blackjack',`
+                <div class="space-y-4">
+                    <div class="glass p-3 rounded-2xl flex items-center justify-between">
+                        <span id="bj-bet-label" class="font-bold text-blue-400">Bet: 100 pts</span>
+                        <div class="flex gap-2">
+                            ${[50,100,250,500].map(b=>`<button onclick="bjBet=${b};document.getElementById('bj-bet-label').textContent='Bet: ${b} pts'" class="btn-press text-xs glass px-3 py-1 rounded-xl hover:bg-white/10 transition">${b}</button>`).join('')}
+                        </div>
+                    </div>
+                    <button onclick="bjDeal()" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg transition glow-on-hover">🃏 DEAL</button>
+                    <div id="bj-area"></div>
+                </div>`);
+        }
+
+        function bjDeal(){
+            bjGameOver=false;
+            bjDeck=bjCreateDeck();
+            bjPlayerHand=[bjDeck.pop(),bjDeck.pop()];
+            bjDealerHand=[bjDeck.pop(),bjDeck.pop()];
+            const body=document.getElementById('modal-body');
+            if(body) body.innerHTML=`
+                <div class="space-y-4">
+                    <div class="glass p-3 rounded-2xl flex items-center justify-between">
+                        <span id="bj-bet-label" class="font-bold text-blue-400">Bet: ${bjBet} pts</span>
+                        <span class="text-xs text-gray-400">Hit or Stand</span>
+                    </div>
+                    <div id="bj-area"></div>
+                </div>`;
+            bjRender(false);
+        }
+
+        // ===== SLOTS GAME (Phase 4) =====
+        const SLOT_SYMS=['🍒','🍋','🍊','⭐','💎','🎰','7️⃣'];
+        const SLOT_PAY={'🍒':2,'🍋':3,'🍊':4,'⭐':5,'💎':10,'🎰':20,'7️⃣':50};
+        let slotsSpinning=false, slotsBet=50;
+
+        function openSlotsGame(){
+            if(!currentUser) return openAuthModal();
+            slotsSpinning=false; slotsBet=50;
+            openModal('🎰 Slots',`
+                <div class="space-y-5 text-center">
+                    <div class="flex justify-center gap-3">
+                        ${[0,1,2].map(i=>`<div id="slot-${i}" class="slot-reel w-20 h-20 glass rounded-2xl flex items-center justify-center text-4xl border-2 border-white/10">🎰</div>`).join('')}
+                    </div>
+                    <div>
+                        <p class="text-gray-400 text-sm mb-2">Bet Amount</p>
+                        <div class="flex gap-2 justify-center">
+                            ${[25,50,100,250].map(b=>`<button onclick="slotsBet=${b};slotsHighlight(${b})" id="sbtn-${b}" class="btn-press glass px-3 py-2 rounded-xl text-sm font-bold hover:bg-white/10 transition ${b===50?'bg-blue-600/50':''}">${b}</button>`).join('')}
+                        </div>
+                    </div>
+                    <div id="slots-result" class="text-sm text-gray-400 min-h-[22px]"></div>
+                    <button id="slots-spin-btn" onclick="slotsSpin()" class="btn-press w-full py-4 bg-yellow-600 hover:bg-yellow-500 rounded-2xl font-black text-lg transition glow-on-hover">🎰 SPIN!</button>
+                    <div class="glass p-3 rounded-2xl text-xs text-gray-400 text-left">
+                        <span class="text-white font-bold">Payouts (3 of a kind):</span>
+                        💎×10 • 7️⃣×50 • 🎰×20 • ⭐×5 • 🍊×4 • 🍋×3 • 🍒×2 • Pair: ½ bet back
+                    </div>
+                </div>`);
+        }
+
+        function slotsHighlight(active){
+            [25,50,100,250].forEach(b=>{
+                const btn=document.getElementById(`sbtn-${b}`);
+                if(btn) btn.className=`btn-press glass px-3 py-2 rounded-xl text-sm font-bold transition ${b===active?'bg-blue-600/50':'hover:bg-white/10'}`;
+            });
+        }
+
+        function slotsSpin(){
+            if(slotsSpinning) return;
+            slotsSpinning=true;
+            const btn=document.getElementById('slots-spin-btn');
+            if(btn){btn.disabled=true;btn.textContent='Spinning...';}
+            document.getElementById('slots-result').textContent='';
+
+            const finals=[0,1,2].map(()=>SLOT_SYMS[Math.floor(Math.random()*SLOT_SYMS.length)]);
+            const stopAt=[1400,1700,2000];
+            const ivals=[0,1,2].map(i=>setInterval(()=>{
+                const el=document.getElementById(`slot-${i}`);
+                if(el) el.textContent=SLOT_SYMS[Math.floor(Math.random()*SLOT_SYMS.length)];
+            },90));
+
+            [0,1,2].forEach(i=>setTimeout(()=>{
+                clearInterval(ivals[i]);
+                const el=document.getElementById(`slot-${i}`);
+                if(el){el.textContent=finals[i];el.classList.add('fade-in-up');}
+            },stopAt[i]));
+
+            setTimeout(()=>{
+                slotsSpinning=false;
+                if(btn){btn.disabled=false;btn.textContent='🎰 SPIN!';}
+                const [a,b,c]=finals;
+                let delta=-slotsBet, msg='';
+                if(a===b&&b===c){
+                    const mult=SLOT_PAY[a]||2;
+                    delta=slotsBet*mult;
+                    msg=a==='7️⃣'?`🎉 JACKPOT! +${delta} pts`:`🎉 TRIPLE ${a}! +${delta} pts`;
+                    [0,1,2].forEach(i=>{const el=document.getElementById(`slot-${i}`);if(el)el.classList.add('jackpot-flash');});
+                } else if(a===b||b===c||a===c){
+                    delta=Math.floor(slotsBet*0.5);
+                    msg=`✨ Pair! +${delta} pts`;
+                } else {
+                    msg=`😞 No match. -${slotsBet} pts`;
+                }
+                const res=document.getElementById('slots-result');
+                if(res){res.textContent=msg;res.className=`text-sm font-bold min-h-[22px] ${delta>0?'text-green-400':'text-red-400'}`;}
+                if(currentUser){
+                    getDiscordIdFromKcUid(currentUser.uid).then(did=>{
+                        if(!did) return;
+                        db.ref(`userEconomy/${did}`).transaction(eco=>{
+                            if(!eco) return eco;
+                            eco.points=Math.max(0,(eco.points||0)+delta);
+                            if(!eco.gameStats) eco.gameStats={};
+                            if(!eco.gameStats.slots) eco.gameStats.slots={plays:0,wins:0};
+                            eco.gameStats.slots.plays=(eco.gameStats.slots.plays||0)+1;
+                            if(delta>0) eco.gameStats.slots.wins=(eco.gameStats.slots.wins||0)+1;
+                            return eco;
+                        });
+                    });
+                }
+                showToast(msg, delta>0?'success':'error', 3000);
+            }, 2100);
+        }
+
+        // ===== SLITHER SERVERS (Phase 4) =====
+        async function openSlitherServers() {
+            const modal = openModalWithLoading('🐍 Slither.io Servers', 'Fetching servers...');
+            if (!modal) return;
+            try {
+                const snap = await db.ref('slitherServers').once('value');
+                const raw = snap.val() || {};
+                const list = Object.entries(raw).map(([k,v])=>({key:k,...v}));
+                if(list.length===0){
+                    modal.update('<div class="text-center py-10 text-gray-400"><div class="text-5xl mb-3">🐍</div><p>No active servers found</p><p class="text-xs mt-2">Check back later or ask staff to start a server</p></div>');
+                    return;
+                }
+                modal.update(`
+                    <div class="space-y-3">
+                        ${list.map((s,i)=>`
+                            <div class="glass p-4 rounded-2xl flex items-center justify-between glow-on-hover transition fade-in-up" style="animation-delay:${i*50}ms">
+                                <div>
+                                    <p class="font-bold">${s.name||s.key}</p>
+                                    <div class="flex gap-3 mt-1 flex-wrap">
+                                        <span class="text-xs text-gray-400"><i class="fa-solid fa-users mr-1"></i>${s.playerCount||0} players</span>
+                                        ${s.region?`<span class="text-xs text-gray-400"><i class="fa-solid fa-globe mr-1"></i>${s.region}</span>`:''}
+                                        ${s.ping?`<span class="text-xs text-green-400"><i class="fa-solid fa-signal mr-1"></i>${s.ping}ms</span>`:''}
+                                    </div>
+                                </div>
+                                ${s.joinLink?`<a href="${s.joinLink}" target="_blank" class="btn-press px-4 py-2 bg-green-600 hover:bg-green-500 rounded-xl font-bold text-sm transition">Join</a>`:''}
+                            </div>`).join('')}
+                    </div>`);
+            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load servers</div>'); }
+        }
+
+        // ===== CLAN DETAILS (Phase 4) =====
+        async function openClanDetails(clanId) {
+            const modal = openModalWithLoading('🛡 Clan', 'Loading clan...');
+            if (!modal) return;
+            try {
+                const clanSnap = await db.ref(`clans/${clanId}`).once('value');
+                const clan = clanSnap.val();
+                if(!clan){modal.update('<div class="text-center py-10 text-red-400">Clan not found</div>');return;}
+                const memberUids = Object.keys(clan.members||{});
+                const profiles = await Promise.all(memberUids.map(uid=>db.ref(`users/${uid}`).once('value').then(s=>({uid,...(s.val()||{})}))));
+                const isLeader = currentUser && clan.leaderId===currentUser.uid;
+                const isMember = currentUser && memberUids.includes(currentUser.uid);
+                modal.update(`
+                    <div class="space-y-5">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl"><i class="fa-solid fa-shield-halved text-blue-400"></i></div>
+                            <h2 class="text-2xl font-black">${clan.name||'Unnamed Clan'}</h2>
+                            ${clan.description?`<p class="text-sm text-gray-400 mt-1">${clan.description}</p>`:''}
+                            <div class="flex gap-2 justify-center mt-2">
+                                <span class="text-xs glass px-2 py-1 rounded-lg">${memberUids.length} members</span>
+                                <span class="text-xs glass px-2 py-1 rounded-lg ${clan.isOpen?'text-green-400':'text-red-400'}">${clan.isOpen?'Open':'Invite Only'}</span>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            ${!isMember&&clan.isOpen&&currentUser?`<button onclick="clanJoin('${clanId}')" class="btn-press flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">Join Clan</button>`:''}
+                            ${isMember&&!isLeader?`<button onclick="clanLeave('${clanId}')" class="btn-press flex-1 py-3 bg-red-600/50 hover:bg-red-500/50 rounded-2xl font-bold transition">Leave Clan</button>`:''}
+                            ${isLeader?`<button onclick="showToast('Clan management coming soon!','info')" class="btn-press flex-1 py-3 bg-purple-600 hover:bg-purple-500 rounded-2xl font-bold transition"><i class="fa-solid fa-gear mr-2"></i>Manage</button>`:''}
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Members (${memberUids.length})</h3>
+                            <div class="space-y-2">
+                                ${profiles.map((m,i)=>`
+                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up" style="animation-delay:${i*40}ms" onclick="openKcProfile('${m.uid}')">
+                                        <img src="${m.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
+                                        <span class="flex-1 font-bold">${m.displayName||'Unknown'}</span>
+                                        ${m.uid===clan.leaderId?'<span class="text-xs text-yellow-400 font-bold"><i class="fa-solid fa-crown mr-1"></i>Leader</span>':''}
+                                        ${m.overall?`<span class="text-xs text-gray-400">${m.overall}</span>`:''}
+                                    </div>`).join('')}
+                            </div>
+                        </div>
+                    </div>`);
+            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load clan</div>'); }
+        }
+
+        function clanJoin(clanId){
+            if(!currentUser) return openAuthModal();
+            db.ref(`clans/${clanId}/members/${currentUser.uid}`).set(true)
+                .then(()=>{db.ref(`users/${currentUser.uid}/clanId`).set(clanId);showToast('Joined clan!','success');openClanDetails(clanId);})
+                .catch(()=>showToast('Failed to join clan','error'));
+        }
+
+        function clanLeave(clanId){
+            if(!currentUser) return;
+            db.ref(`clans/${clanId}/members/${currentUser.uid}`).remove()
+                .then(()=>{db.ref(`users/${currentUser.uid}/clanId`).remove();showToast('Left clan','success');closeModal();})
+                .catch(()=>showToast('Failed to leave clan','error'));
         }
 
         function openEconomyShop() {
@@ -1512,11 +1966,15 @@
                 else if (e.key === 's') openEconomyShop();
                 else if (e.key === 'a') openAchievements();
                 else if (e.key === 'd' && currentUser) claimDaily();
+                else if (e.key === 'b') renderBattledome();
+                else if (e.key === 'l') renderLeaderboard();
+                else if (e.key === 'j') openBlackjackGame();
+                else if (e.key === 'm') openSlotsGame();
             });
-            if (!localStorage.getItem('kcnow_shortcuts_seen')) {
+            if (!localStorage.getItem('kcnow_shortcuts_v2')) {
                 setTimeout(() => {
-                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • S=Shop • A=Achievements • D=Daily', 'info', 8000);
-                    localStorage.setItem('kcnow_shortcuts_seen', 'true');
+                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=Battledome • L=Leaderboard', 'info', 9000);
+                    localStorage.setItem('kcnow_shortcuts_v2', 'true');
                 }, 2000);
             }
         };
