@@ -363,6 +363,10 @@
                 <i class="fa-solid fa-user text-teal-400"></i>
                 <span class="font-bold text-sm">My Profile</span>
             </button>
+            <button onclick="openAnalytics()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+                <i class="fa-solid fa-chart-line text-yellow-400"></i>
+                <span class="font-bold text-sm">Analytics</span>
+            </button>
         </div>
     </div>
 
@@ -370,6 +374,7 @@
         // --- DATA & STATE ---
         var currentUser = null, activeTab = 'home', auth, db, storage;
         var allUsersData = [], allClansData = {}, allPostsData = [], feedItems = [];
+        const discordIdCache = new Map();
 
         // --- Firebase Config (KC Killers Company) ---
         const firebaseConfig = {
@@ -407,11 +412,16 @@
 
         // --- HELPER FUNCTIONS ---
         async function getDiscordIdFromKcUid(kcUid) {
+            if (discordIdCache.has(kcUid)) return discordIdCache.get(kcUid);
             const linksSnapshot = await db.ref('discordLinks').once('value');
             const links = linksSnapshot.val() || {};
             for (const [discordId, data] of Object.entries(links)) {
-                if (data.uid === kcUid) return discordId;
+                if (data.uid === kcUid) {
+                    discordIdCache.set(kcUid, discordId);
+                    return discordId;
+                }
             }
+            discordIdCache.set(kcUid, null);
             return null;
         }
 
@@ -580,6 +590,26 @@
             db.ref('users').limitToLast(3).on('child_added', snap => {
                 const u = snap.val();
                 addFeedItem({ type:'users', title:'New Player!', user:u.displayName, uid:snap.key, detail:'Joined the KC community.', time:'New', color:'text-green-400', icon:'fa-user-plus' });
+            });
+
+            db.ref('clans').off();
+            db.ref('clans').on('child_changed', snap => {
+                const clan = snap.val();
+                if (!clan || !clan.members) return;
+                const members = Object.keys(clan.members);
+                if (members.length === 0) return;
+                const latestMember = members[members.length - 1];
+                db.ref(`users/${latestMember}/displayName`).once('value').then(nameSnap => {
+                    addFeedItem({
+                        type: 'clans',
+                        title: 'Clan Join',
+                        user: nameSnap.val() || 'Unknown',
+                        uid: latestMember,
+                        detail: `Joined ${clan.name}`,
+                        color: 'text-teal-400',
+                        icon: 'fa-shield-halved'
+                    });
+                });
             });
 
             db.ref('recentActivity').limitToLast(10).on('child_added', snap => {
@@ -769,15 +799,21 @@
                         </div>
                     </div>
                     <div class="glass p-4 rounded-3xl">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Top Players</p>
-                        <div id="top-players" class="space-y-2">
+                        <p class="text-xs text-gray-500 font-black uppercase mb-3">🏆 Top BD Scores</p>
+                        <div id="bd-leaderboard" class="space-y-2">
                             <div class="animate-pulse bg-white/5 h-8 rounded"></div>
                         </div>
                     </div>
                     <div class="glass p-4 rounded-3xl">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Active Now</p>
-                        <div id="active-users" class="space-y-2">
-                            <p class="text-xs text-gray-500 italic text-center">Real-time tracking coming soon</p>
+                        <p class="text-xs text-gray-500 font-black uppercase mb-3">💰 Top Economy</p>
+                        <div id="top-economy" class="space-y-2">
+                            <div class="animate-pulse bg-white/5 h-8 rounded"></div>
+                        </div>
+                    </div>
+                    <div class="glass p-4 rounded-3xl">
+                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Recent Activity</p>
+                        <div id="recent-activity-stats" class="space-y-2">
+                            <p class="text-xs text-gray-500 italic text-center">Live feed shows recent events</p>
                         </div>
                     </div>
                 </div>
@@ -796,19 +832,39 @@
                 `;
             });
 
+            db.ref('bdTop/global').orderByChild('score').limitToLast(5).once('value').then(snap => {
+                const bdPlayers = [];
+                snap.forEach(child => {
+                    bdPlayers.unshift({ name: child.key, score: child.val().score || 0 });
+                });
+                const el = document.getElementById('bd-leaderboard');
+                if (el) el.innerHTML = bdPlayers.length > 0
+                    ? bdPlayers.map((p, i) => `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                                <span class="text-sm font-bold">${p.name}</span>
+                            </div>
+                            <span class="text-xs text-red-400">${p.score.toLocaleString()}</span>
+                        </div>
+                    `).join('')
+                    : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
+            });
+
             db.ref('users').orderByChild('totalPoints').limitToLast(5).once('value').then(snap => {
                 const players = [];
                 snap.forEach(child => {
-                    players.unshift({ name: child.val().displayName || 'Unknown', points: child.val().totalPoints || 0 });
+                    const d = child.val();
+                    players.unshift({ name: d.displayName || 'Unknown', points: d.totalPoints || 0, uid: child.key });
                 });
-                const el = document.getElementById('top-players');
+                const el = document.getElementById('top-economy');
                 if (el) el.innerHTML = players.map((p, i) => `
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-2">
                             <span class="text-xs">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                            <span class="text-sm font-bold">${p.name}</span>
+                            <span class="text-sm font-bold cursor-pointer hover:underline" onclick="window.openKcProfile('${p.uid}')">${p.name}</span>
                         </div>
-                        <span class="text-xs text-gray-400">${p.points.toLocaleString()} pts</span>
+                        <span class="text-xs text-blue-400">${p.points.toLocaleString()}</span>
                     </div>
                 `).join('') || '<p class="text-xs text-gray-500 text-center">No data yet</p>';
             });
@@ -826,8 +882,27 @@
         function closeModal() {
             const m = document.getElementById('global-modal');
             m.classList.add('hidden'); m.classList.remove('flex');
-            // Restore overflow depending on screen size
             document.body.style.overflow = window.innerWidth < 1024 ? 'auto' : 'hidden';
+            modalLoading = false;
+        }
+
+        let modalLoading = false;
+        function openModalWithLoading(title, loadingText = 'Loading...') {
+            if (modalLoading) return null;
+            modalLoading = true;
+            openModal(title, `
+                <div class="py-20 text-center">
+                    <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p class="text-gray-400">${loadingText}</p>
+                </div>
+            `);
+            return {
+                update: (content) => {
+                    const body = document.getElementById('modal-body');
+                    if (body) body.innerHTML = content;
+                    modalLoading = false;
+                }
+            };
         }
 
         function openLeaderboard() {
@@ -842,44 +917,76 @@
 
         function openGamesHub() {
             if (!currentUser) return openAuthModal();
+            const modal = openModalWithLoading('Games Hub', 'Loading game stats...');
+            if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
-                const pointsPromise = discordId
-                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val()?.points || 0)
-                    : Promise.resolve(0);
-                pointsPromise.then(points => {
-                    openModal('Games Hub', `
+                const dataPromise = discordId
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => {
+                        const eco = s.val() || {};
+                        return { points: eco.points || 0, gameStats: eco.gameStats || {} };
+                    })
+                    : Promise.resolve({ points: 0, gameStats: {} });
+                dataPromise.then(data => {
+                    const bjWins = data.gameStats?.blackjack?.wins || 0;
+                    const slotsPlays = data.gameStats?.slots?.plays || 0;
+                    const triviaCorrect = data.gameStats?.trivia?.correct || 0;
+                    modal.update(`
                         <div class="space-y-6">
                             <div class="text-center">
                                 <p class="text-gray-400 mb-2">Your Balance</p>
-                                <p class="text-4xl font-bold text-blue-400">${points.toLocaleString()} pts</p>
+                                <p class="text-4xl font-bold text-blue-400">${data.points.toLocaleString()} pts</p>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
-                                <div class="glass p-6 rounded-3xl text-center">
+                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('blackjack')">
                                     <i class="fa-solid fa-spade text-4xl mb-3 block"></i>
                                     <p class="font-bold">Blackjack</p>
-                                    <p class="text-xs text-gray-400">Use /blackjack in Discord</p>
+                                    <p class="text-xs text-gray-400">Wins: ${bjWins}</p>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/blackjack</code>
                                 </div>
-                                <div class="glass p-6 rounded-3xl text-center">
+                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('slots')">
                                     <i class="fa-solid fa-coins text-4xl mb-3 block text-yellow-400"></i>
                                     <p class="font-bold">Slots</p>
-                                    <p class="text-xs text-gray-400">Use /slots in Discord</p>
+                                    <p class="text-xs text-gray-400">Plays: ${slotsPlays}</p>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/slots</code>
                                 </div>
-                                <div class="glass p-6 rounded-3xl text-center">
+                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('dice')">
                                     <i class="fa-solid fa-dice text-4xl mb-3 block text-green-400"></i>
                                     <p class="font-bold">Dice Duel</p>
-                                    <p class="text-xs text-gray-400">Use /dice in Discord</p>
+                                    <p class="text-xs text-gray-400">Daily competition</p>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/roll</code>
                                 </div>
-                                <div class="glass p-6 rounded-3xl text-center">
+                                <div class="glass p-6 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('trivia')">
                                     <i class="fa-solid fa-brain text-4xl mb-3 block text-purple-400"></i>
                                     <p class="font-bold">Trivia</p>
-                                    <p class="text-xs text-gray-400">Use /trivia in Discord</p>
+                                    <p class="text-xs text-gray-400">Correct: ${triviaCorrect}</p>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded mt-2 inline-block">/trivia</code>
                                 </div>
                             </div>
-                            <p class="text-center text-xs text-gray-500 italic">Games require Discord bot. Use commands in the KC Discord server.</p>
+                            <div class="glass p-4 rounded-2xl">
+                                <p class="text-xs text-gray-400 mb-2">🎮 More Commands</p>
+                                <div class="flex flex-wrap gap-2">
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/coinflip</code>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/hangman</code>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/minesweeper</code>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/connect4</code>
+                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/rps</code>
+                                </div>
+                            </div>
+                            <p class="text-center text-xs text-gray-500 italic">All games require Discord bot. Click a card for tips!</p>
                         </div>
                     `);
                 });
             });
+        }
+
+        function showGameInfo(game) {
+            const info = {
+                blackjack: { title: 'Blackjack', desc: 'Classic 21 card game. Beat the dealer without going over!',    tip: 'Stand on 17+ vs dealer 2-6 • Always split Aces & 8s • Double on 10-11' },
+                slots:     { title: 'Slots',      desc: 'Spin the reels for a chance at big wins!',                   tip: 'Triple 7s = Jackpot! • Match 3 symbols for payouts • Higher bets = bigger rewards' },
+                dice:      { title: 'Dice Duel',  desc: 'Daily competition. Highest roll wins the pot!',              tip: 'One roll per day • Top 3 win prizes • Prize pool grows with players' },
+                trivia:    { title: 'Trivia',      desc: 'Test your knowledge across multiple categories!',            tip: '5 min cooldown between games • Earn bonus for streaks • Multiple categories' }
+            }[game];
+            if (info) showToast(`${info.title}: ${info.tip}`, 'info', 6000);
         }
 
         function openEconomyShop() {
@@ -1210,7 +1317,157 @@
                                 </div>
                             </div>
                         ` : ''}
+                        ${(u.profileCustomization || u.profileCustomizationUnlocked) ? `
+                            <div class="glass p-6 rounded-3xl col-span-2">
+                                <div class="flex items-center justify-between mb-3">
+                                    <p class="text-xs text-gray-500 font-black uppercase">Customization Preview</p>
+                                    <button onclick="previewCustomization()" class="text-xs text-blue-400 font-bold hover:underline">
+                                        Preview <i class="fa-solid fa-eye ml-1"></i>
+                                    </button>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div class="flex-1 glass p-4 rounded-2xl">
+                                        <p class="text-xs text-gray-400 mb-2">Name Color</p>
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-lg border border-white/10" style="background:${u.profileCustomization?.nameColor || '#1992d4'}"></div>
+                                            <span class="text-xs font-mono">${u.profileCustomization?.nameColor || '#1992d4'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 glass p-4 rounded-2xl">
+                                        <p class="text-xs text-gray-400 mb-2">Gradient</p>
+                                        <div class="h-8 rounded-lg border border-white/10" style="background:${u.profileCustomization?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
                     `;
+                });
+            });
+        }
+
+        function previewCustomization() {
+            if (!currentUser) return;
+            db.ref(`users/${currentUser.uid}`).once('value').then(snap => {
+                const u = snap.val() || {};
+                const nameColor = u.profileCustomization?.nameColor || '#1992d4';
+                const gradient = u.profileCustomization?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                const banner = u.profileCustomization?.banner || null;
+                openModal('Customization Preview', `
+                    <div class="space-y-6">
+                        <div class="glass p-8 rounded-[40px] relative overflow-hidden" style="background: ${gradient}">
+                            ${banner ? `<img src="${banner}" class="absolute inset-0 w-full h-full object-cover opacity-30">` : ''}
+                            <div class="relative z-10 text-center">
+                                <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-24 h-24 rounded-full mx-auto border-4 border-white/20 mb-4">
+                                <h2 class="text-3xl font-bold mb-2" style="color: ${nameColor}">${u.displayName || 'Your Name'}</h2>
+                                <p class="text-sm text-white/80">${u.about || 'Your about me text'}</p>
+                            </div>
+                        </div>
+                        <div class="text-center text-sm text-gray-400">
+                            <p>This is how your profile appears across KC platforms</p>
+                            <p class="text-xs mt-2">Edit via Discord: <code class="bg-white/5 px-2 py-1 rounded">/customize</code></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="glass p-4 rounded-2xl">
+                                <p class="text-xs text-gray-500 mb-2">Name Color</p>
+                                <div class="flex items-center gap-2">
+                                    <div class="w-6 h-6 rounded border border-white/10" style="background:${nameColor}"></div>
+                                    <span class="text-xs font-mono">${nameColor}</span>
+                                </div>
+                            </div>
+                            <div class="glass p-4 rounded-2xl">
+                                <p class="text-xs text-gray-500 mb-2">Status</p>
+                                <p class="text-xs ${u.profileCustomizationUnlocked ? 'text-green-400' : 'text-gray-400'}">
+                                    ${u.profileCustomizationUnlocked ? '✅ Unlocked' : '🔒 Locked'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+
+        function openAnalytics() {
+            if (!currentUser) return openAuthModal();
+            const modal = openModalWithLoading('Your Analytics', 'Crunching your stats...');
+            if (!modal) return;
+            Promise.all([
+                db.ref(`users/${currentUser.uid}`).once('value'),
+                getDiscordIdFromKcUid(currentUser.uid)
+            ]).then(([userSnap, discordId]) => {
+                const u = userSnap.val() || {};
+                const economyPromise = discordId
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {})
+                    : Promise.resolve({});
+                economyPromise.then(economy => {
+                    const netWorth = economy.points || 0;
+                    const totalEarned = economy.totalEarned || 0;
+                    const totalSpent = economy.totalSpent || 0;
+                    const currentStreak = economy.streaks?.login?.current || 0;
+                    const longestStreak = economy.streaks?.login?.longest || 0;
+                    const badges = Object.keys(economy.badges || {}).length;
+                    const gs = economy.gameStats || {};
+                    const gamesPlayed = (gs.blackjack?.plays || 0) + (gs.slots?.plays || 0) + (gs.coinflip?.plays || 0);
+                    const winRate = gs.blackjack?.plays > 0
+                        ? ((gs.blackjack.wins || 0) / gs.blackjack.plays * 100).toFixed(1)
+                        : 0;
+                    const streakPct = longestStreak > 0 ? Math.min(currentStreak / longestStreak * 100, 100) : 0;
+                    modal.update(`
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="glass p-4 rounded-2xl text-center">
+                                    <p class="text-xs text-gray-400 mb-1">Net Worth</p>
+                                    <p class="text-2xl font-bold text-blue-400">${netWorth.toLocaleString()}</p>
+                                </div>
+                                <div class="glass p-4 rounded-2xl text-center">
+                                    <p class="text-xs text-gray-400 mb-1">Total Earned</p>
+                                    <p class="text-2xl font-bold text-green-400">${totalEarned.toLocaleString()}</p>
+                                </div>
+                                <div class="glass p-4 rounded-2xl text-center">
+                                    <p class="text-xs text-gray-400 mb-1">Total Spent</p>
+                                    <p class="text-2xl font-bold text-red-400">${totalSpent.toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🔥 Streak Performance</p>
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-sm text-gray-400">Current Streak</p>
+                                        <p class="text-3xl font-bold text-orange-400">${currentStreak} days</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm text-gray-400">Longest Streak</p>
+                                        <p class="text-3xl font-bold text-yellow-400">${longestStreak} days</p>
+                                    </div>
+                                </div>
+                                <div class="bg-white/5 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-gradient-to-r from-orange-500 to-yellow-500 h-full rounded-full" style="width:${streakPct}%"></div>
+                                </div>
+                            </div>
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🎮 Gaming Stats</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Games Played</span><span class="font-bold">${gamesPlayed}</span></div>
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Blackjack Win Rate</span><span class="font-bold text-green-400">${winRate}%</span></div>
+                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Achievements Unlocked</span><span class="font-bold text-purple-400">${badges}</span></div>
+                                </div>
+                            </div>
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4">💎 KC Profile</p>
+                                <div class="grid grid-cols-3 gap-3 text-center">
+                                    <div><p class="text-xs text-gray-400">Overall</p><p class="text-xl font-bold text-blue-400">${u.overall || 0}</p></div>
+                                    <div><p class="text-xs text-gray-400">Offence</p><p class="text-xl font-bold text-red-400">${u.offence || 0}</p></div>
+                                    <div><p class="text-xs text-gray-400">Defence</p><p class="text-xl font-bold text-green-400">${u.defence || 0}</p></div>
+                                </div>
+                            </div>
+                            <div class="glass p-6 rounded-3xl">
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🏟️ Battledome</p>
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-400 mb-2">Personal Best</p>
+                                    <p class="text-4xl font-bold text-red-400">${(u.bdHighscore || 0).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `);
                 });
             });
         }
@@ -1242,7 +1499,26 @@
 
         window.onload = () => {
             switchTab('home');
-            window.addEventListener('keydown', e => { if(e.key === 'Escape') closeModal(); });
+            window.addEventListener('keydown', e => {
+                if (e.key === 'Escape') { closeModal(); return; }
+                if (!document.getElementById('global-modal').classList.contains('hidden')) return;
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.key === '1') switchTab('home');
+                else if (e.key === '2') switchTab('profile');
+                else if (e.key === '3') switchTab('clans');
+                else if (e.key === '4') switchTab('players');
+                else if (e.key === '5') switchTab('clips');
+                else if (e.key === 'g') openGamesHub();
+                else if (e.key === 's') openEconomyShop();
+                else if (e.key === 'a') openAchievements();
+                else if (e.key === 'd' && currentUser) claimDaily();
+            });
+            if (!localStorage.getItem('kcnow_shortcuts_seen')) {
+                setTimeout(() => {
+                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • S=Shop • A=Achievements • D=Daily', 'info', 8000);
+                    localStorage.setItem('kcnow_shortcuts_seen', 'true');
+                }, 2000);
+            }
         };
     </script>
 </body>
