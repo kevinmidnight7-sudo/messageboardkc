@@ -41,11 +41,17 @@
         }
         @keyframes kcZoomIn { from { transform:scale(0.9); opacity:0 } to { transform:scale(1); opacity:1 } }
 
+        #kcContentWrapper { display: flex; flex-direction: column; }
+        .kc-popup-card { max-height: 90vh; overflow: hidden; }
+
         @media (min-width: 768px) {
             .kc-popup-card.kc-two-col {
                 width: 720px;
                 display: flex;
             }
+            .kc-popup-card.kc-two-col #kcContentWrapper { flex-direction: row; }
+            .kc-popup-card.kc-two-col .kc-popup-info-col { overflow-y: auto; max-height: 90vh; }
+            .kc-popup-card.kc-two-col .kc-popup-posts-col { overflow-y: auto; max-height: 90vh; }
         }
 
         .kc-popup-banner {
@@ -237,7 +243,7 @@
     const HTML = `
         <div id="kcProfilePopup">
             <div class="kc-popup-card" id="kcPopupCard">
-                <div id="kcContentWrapper" style="display:flex;flex-direction:column">
+                <div id="kcContentWrapper">
                     <div class="kc-popup-info-col" id="kcPopupInfoCol">
                         <div class="kc-popup-banner" id="kcPopupBanner"></div>
                         <div class="kc-popup-hdr">
