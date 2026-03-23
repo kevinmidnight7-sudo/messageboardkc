@@ -7,6 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Universal KC profile popup (after Firebase SDKs) -->
+  <script src="profile-popup.js"></script>
   <style>
     html, body {
       min-height: 100vh;
@@ -336,6 +338,7 @@
     data = Object.entries(users).map(([uid, u]) => {
       const b = badges[uid] || {};
       return {
+        uid: uid,
         name: u.displayName || u.email || '(unknown)',
         avatarUrl: u.avatar || DEFAULT_AVATAR,
         overallScore: b.overall || 0,
@@ -403,7 +406,7 @@
       
       const avatar = `<img src="${player.avatarUrl || DEFAULT_AVATAR}" alt="${player.name}'s avatar" class="w-10 h-10 rounded-full mr-3 bg-slate-100 object-cover border border-white/40"/>`;
       rows += `
-      <li class="flex items-center px-3 rounded-2xl hover:bg-white/10 transition ${rowHeight}">
+      <li class="flex items-center px-3 rounded-2xl hover:bg-white/10 transition cursor-pointer ${rowHeight}" onclick="openKcProfile('${player.uid}')">
         <div class="flex items-center min-w-0 flex-1">
           <div class="${rankStyle} ${fontSize} w-10 text-center mr-2">${rank}</div>
           ${avatar}

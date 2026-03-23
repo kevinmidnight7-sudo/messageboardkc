@@ -11,6 +11,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <!-- Universal KC profile popup (after Firebase SDKs) -->
+  <script src="profile-popup.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -614,6 +616,11 @@
     function avatarImg(src, cls=''){
       const safe = src || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
       return `<img referrerpolicy="no-referrer" src="${safe}" onerror="this.onerror=null;this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'" class="${cls}">`;
+    }
+
+    // Opens the universal KC profile popup for a clan member
+    function openProfileOverlay(uid) {
+        window.openKcProfile(uid);
     }
 
     function getUserScores(uid){
