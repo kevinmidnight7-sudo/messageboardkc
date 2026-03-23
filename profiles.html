@@ -12,6 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <script src="profile-popup.js"></script>
     <style>
         /* Custom CSS to match the glassmorphism aesthetic */
         body {
@@ -815,8 +816,7 @@
                 card.addEventListener('click', () => {
                     const uid = card.dataset.uid;
                     if (uid) {
-                        loadUserProfile(uid);
-                        userPopup.style.display = 'flex';
+                        openKcProfile(uid);
                     }
                 });
             });
