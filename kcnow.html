@@ -485,47 +485,47 @@
             <i class="fa-solid fa-bolt"></i>
         </button>
         <div id="quick-actions-menu" class="hidden absolute bottom-20 right-0 space-y-3">
-            <button onclick="claimDaily()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(claimDaily)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-gift text-blue-400"></i>
                 <span class="font-bold text-sm">Claim Daily</span>
             </button>
-            <button onclick="openEconomyShop()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openEconomyShop)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-store text-purple-400"></i>
                 <span class="font-bold text-sm">Shop</span>
             </button>
-            <button onclick="openGamesHub()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openGamesHub)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-dice text-green-400"></i>
                 <span class="font-bold text-sm">Games</span>
             </button>
-            <button onclick="openMyProfile()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openMyProfile)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-user text-teal-400"></i>
                 <span class="font-bold text-sm">My Profile</span>
             </button>
-            <button onclick="openAnalytics()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openAnalytics)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-chart-line text-yellow-400"></i>
                 <span class="font-bold text-sm">Analytics</span>
             </button>
 
             <!-- New quick actions added in Phase 5 -->
-            <button onclick="toggleTheme()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(toggleTheme)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-circle-half-stroke text-purple-400"></i>
                 <span class="font-bold text-sm">Toggle Theme</span>
             </button>
-            <button onclick="openFriendsList()" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openFriendsList)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-user-group text-green-400"></i>
                 <span class="font-bold text-sm">Friends</span>
             </button>
-            <button onclick="setTimeout(() => { openGlobalSearch(); }, 0)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openGlobalSearch)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-search text-blue-400"></i>
                 <span class="font-bold text-sm">Search</span>
             </button>
-            <button onclick="setTimeout(() => { openBackgroundSettings(); }, 0)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openBackgroundSettings)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-stars text-cyan-400"></i>
                 <span class="font-bold text-sm">Background</span>
             </button>
 
             <!-- Notification settings button (Phase 5) -->
-            <button onclick="setTimeout(() => { openNotificationSettings(); }, 0)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
+            <button onclick="runQuickAction(openNotificationSettings)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
                 <i class="fa-solid fa-bell text-yellow-400"></i>
                 <span class="font-bold text-sm">Notifications</span>
             </button>
@@ -818,19 +818,33 @@
             });
         }
 
+        /**
+         * Check Battledome status against the RTDB and update the lobby button accordingly.
+         * Phase 6 fix: Use the actual renderBattledome() button selector and update the badge
+         * element regardless of online/offline/unknown states. This ensures the badge
+         * accurately reflects the Battledome availability and avoids silently failing.
+         */
         function checkBattledomeStatus() {
             db.ref('battledome/status').once('value').then(snap => {
-                const status = snap.val();
-                const bdButton = document.querySelector('[onclick="openBattledome()"]');
+                const status = snap.val() || {};
+                // Target the actual home button that calls renderBattledome()
+                const bdButton = document.querySelector('[onclick="renderBattledome()"]');
                 if (!bdButton) return;
-                if (status && status.online) {
-                    bdButton.classList.remove('cursor-not-allowed', 'opacity-60');
-                    bdButton.onclick = () => { window.location.href = 'https://kcevents.uk/#battledome'; };
-                    const badge = bdButton.querySelector('.bg-red-500\\/20');
-                    if (badge) {
-                        badge.className = 'text-[10px] bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full font-black uppercase';
-                        badge.textContent = 'ONLINE';
-                    }
+                const badge = bdButton.querySelector('.text-\[10px\]');
+                if (!badge) return;
+                if (status.online) {
+                    badge.className = 'text-[10px] bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full font-black uppercase';
+                    badge.textContent = 'Online';
+                } else {
+                    badge.className = 'text-[10px] bg-red-500/20 text-red-400 px-3 py-0.5 rounded-full font-black uppercase';
+                    badge.textContent = 'Offline';
+                }
+            }).catch(() => {
+                const bdButton = document.querySelector('[onclick="renderBattledome()"]');
+                const badge = bdButton?.querySelector('.text-\[10px\]');
+                if (badge) {
+                    badge.className = 'text-[10px] bg-gray-500/20 text-gray-400 px-3 py-0.5 rounded-full font-black uppercase';
+                    badge.textContent = 'Unknown';
                 }
             });
         }
@@ -879,6 +893,62 @@
             if (lowerMsg.includes('streak') && !notificationPrefs.streaks) return;
             originalShowToast(message, type, duration);
         };
+
+        /**
+         * Determine whether a notification of a given category should be shown. Phase 6 introduces
+         * a single helper to centralise notification preference checks. Categories include:
+         * achievements, points, clans, clips, users, streaks and system. This function returns
+         * true when the category is enabled. If a preference hasn’t been toggled off it will
+         * default to true. Future notification entry points should call this helper before
+         * displaying messages.
+         *
+         * @param {string} category The notification category key
+         */
+        function canShowNotification(category) {
+            return notificationPrefs?.[category] !== false;
+        }
+
+        /**
+         * Lazy-load search datasets from Firebase into local arrays. Global search relies on
+         * datasets being present; Phase 6 ensures we attempt to load them only once per session.
+         * When Firebase is unavailable (e.g. offline), the arrays remain empty, but search will
+         * still operate safely on empty collections. This helper is idempotent and can be
+         * called repeatedly without refetching once data has been loaded.
+         */
+        async function ensureSearchDataLoaded() {
+            try {
+                // Load users
+                if (!allUsersData.length) {
+                    if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
+                        const usersSnap = await db.ref('users').once('value');
+                        allUsersData = [];
+                        usersSnap.forEach(child => {
+                            allUsersData.push({ uid: child.key, ...child.val() });
+                        });
+                    }
+                }
+                // Load clans
+                if (!Object.keys(allClansData || {}).length) {
+                    if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
+                        const clansSnap = await db.ref('clans').once('value');
+                        allClansData = clansSnap.val() || {};
+                    }
+                }
+                // Load posts/clips
+                if (!allPostsData.length) {
+                    if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
+                        const postsSnap = await db.ref('social_posts').limitToLast(100).once('value');
+                        allPostsData = [];
+                        postsSnap.forEach(child => {
+                            allPostsData.push({ id: child.key, ...child.val() });
+                        });
+                    }
+                }
+            } catch (err) {
+                // In offline/demo mode these requests may fail; ignore the error silently.
+                console.warn('ensureSearchDataLoaded error:', err);
+            }
+        }
 
         function filterFeed(f) {
             // Toggle only the category filter chips
@@ -1054,48 +1124,31 @@
             if (!query) return;
             const container = document.getElementById('search-results-container');
             container.innerHTML = '<div class="text-center py-10"><div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p class="mt-4 text-gray-400">Searching...</p></div>';
+            // Ensure local caches are populated before searching. This function will attempt to load
+            // data from Firebase on first run; if offline it will gracefully continue with empty arrays.
+            await ensureSearchDataLoaded();
             const results = { players: [], clans: [], clips: [] };
-            // Attempt to search remote data when Firebase is available. If unavailable, fall back to empty results.
-            try {
-                // Guard against undefined Firebase database in offline/demo environments. If db or its API is missing,
-                // this block will throw and fall through to the catch where we simply return empty results.
-                if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
-                    // Search players
-                    if (searchCategory === 'all' || searchCategory === 'players') {
-                        const usersSnap = await db.ref('users').once('value');
-                        usersSnap.forEach(child => {
-                            const user = child.val();
-                            if (user.displayName && user.displayName.toLowerCase().includes(query)) {
-                                results.players.push({ uid: child.key, ...user });
-                            }
-                        });
-                    }
-                    // Search clans
-                    if (searchCategory === 'all' || searchCategory === 'clans') {
-                        const clansSnap = await db.ref('clans').once('value');
-                        clansSnap.forEach(child => {
-                            const clan = child.val();
-                            if (clan.name && clan.name.toLowerCase().includes(query)) {
-                                results.clans.push({ id: child.key, ...clan });
-                            }
-                        });
-                    }
-                    // Search clips
-                    if (searchCategory === 'all' || searchCategory === 'clips') {
-                        const clipsSnap = await db.ref('social_posts').once('value');
-                        clipsSnap.forEach(child => {
-                            const clip = child.val();
-                            if ((clip.caption && clip.caption.toLowerCase().includes(query)) ||
-                                (clip.userName && clip.userName.toLowerCase().includes(query))) {
-                                results.clips.push({ id: child.key, ...clip });
-                            }
-                        });
-                    }
-                }
-            } catch (err) {
-                // Log the error for debugging and continue with empty results. In a production environment this could be
-                // reported to an error logging service but here we silently ignore it to avoid blocking the UI.
-                console.warn('Global search error or offline: ', err);
+            // Perform local search across cached datasets. This avoids repeated remote requests and
+            // gracefully handles offline usage. When datasets are empty the results remain empty.
+            const lowerQuery = query;
+            // Search players
+            if (searchCategory === 'all' || searchCategory === 'players') {
+                results.players = allUsersData.filter(u => {
+                    return u.displayName && u.displayName.toLowerCase().includes(lowerQuery);
+                });
+            }
+            // Search clans
+            if (searchCategory === 'all' || searchCategory === 'clans') {
+                results.clans = Object.entries(allClansData).filter(([, clan]) => {
+                    return clan.name && clan.name.toLowerCase().includes(lowerQuery);
+                }).map(([id, clan]) => ({ id, ...clan }));
+            }
+            // Search clips
+            if (searchCategory === 'all' || searchCategory === 'clips') {
+                results.clips = allPostsData.filter(c => {
+                    return (c.caption && c.caption.toLowerCase().includes(lowerQuery)) ||
+                           (c.userName && c.userName.toLowerCase().includes(lowerQuery));
+                });
             }
             let html = '';
             // Players section
@@ -1170,20 +1223,14 @@
             }
         }
 
+        /**
+         * Toggle between light and dark themes. In Phase 6 we unify theme handling by routing all
+         * changes through setTheme() rather than manually flipping classes. This ensures that
+         * automatic (auto) mode also works correctly and persists the choice reliably.
+         */
         function toggleTheme() {
-            // Determine the new theme by checking the current class on the <html> element. We toggle the
-            // `light-theme` class directly so that the visual state always reflects the internal state.
-            const isCurrentlyLight = document.documentElement.classList.contains('light-theme');
-            if (isCurrentlyLight) {
-                document.documentElement.classList.remove('light-theme');
-                currentTheme = 'dark';
-            } else {
-                document.documentElement.classList.add('light-theme');
-                currentTheme = 'light';
-            }
-            // Persist the theme choice so it survives reloads. This key is read in initTheme().
-            localStorage.setItem('kc-theme', currentTheme);
-            showToast(`Switched to ${currentTheme} theme`, 'success', 2000);
+            const next = document.documentElement.classList.contains('light-theme') ? 'dark' : 'light';
+            setTheme(next);
         }
 
         function openThemeSettings() {
@@ -1191,7 +1238,7 @@
                 <div class="space-y-6">
                     <p class="text-center text-gray-400">Customize your KC NOW experience</p>
                     <div class="space-y-4">
-                        <button onclick="setTheme('dark')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'dark' ? 'border-2 border-blue-500' : ''}">
+                        <button onclick="setTheme('dark', true)" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'dark' ? 'border-2 border-blue-500' : ''}">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white">
                                     <i class="fa-solid fa-moon"></i>
@@ -1203,7 +1250,7 @@
                                 ${currentTheme === 'dark' ? '<i class="fa-solid fa-check text-blue-400 ml-auto"></i>' : ''}
                             </div>
                         </button>
-                        <button onclick="setTheme('light')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'light' ? 'border-2 border-blue-500' : ''}">
+                        <button onclick="setTheme('light', true)" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'light' ? 'border-2 border-blue-500' : ''}">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-white flex items-center justify-center text-gray-900">
                                     <i class="fa-solid fa-sun"></i>
@@ -1215,7 +1262,7 @@
                                 ${currentTheme === 'light' ? '<i class="fa-solid fa-check text-blue-400 ml-auto"></i>' : ''}
                             </div>
                         </button>
-                        <button onclick="setTheme('auto')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'auto' ? 'border-2 border-blue-500' : ''}">
+                        <button onclick="setTheme('auto', true)" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'auto' ? 'border-2 border-blue-500' : ''}">
                             <div class="flex items-center gap-4">
                                 <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 via-blue-500 to-blue-100 flex items-center justify-center text-white">
                                     <i class="fa-solid fa-circle-half-stroke"></i>
@@ -1232,7 +1279,7 @@
             `);
         }
 
-        function setTheme(theme) {
+        function setTheme(theme, showSettings = false) {
             currentTheme = theme;
             localStorage.setItem('kc-theme', theme);
             let effective = theme;
@@ -1245,7 +1292,8 @@
             } else {
                 document.documentElement.classList.remove('light-theme');
             }
-            openThemeSettings();
+            // Only reopen the theme settings modal when explicitly requested (e.g. from the settings UI)
+            if (showSettings) openThemeSettings();
         }
 
         // === Notification Preferences (Phase 5) ===
@@ -1509,7 +1557,11 @@
             `;
             backgroundScene = document.getElementById('bg-3d-root');
             applyBackgroundPreset(backgroundPrefs.preset);
-            attachBackgroundMotion();
+            // Only attach pointer-based parallax when reduced motion is off and the screen is wide
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || backgroundPrefs.reducedMotion;
+            if (!reduceMotion && window.innerWidth > 640) {
+                attachBackgroundMotion();
+            }
             startBackgroundLoop();
         }
 
@@ -1583,6 +1635,16 @@
                             </button>
                         `).join('')}
                     </div>
+                    <!-- Phase 6: Reduced Motion toggle for performance-sensitive users -->
+                    <div class="glass p-4 rounded-2xl flex items-center justify-between gap-4 border border-blue-500/20">
+                        <div>
+                            <p class="font-bold">Reduced Motion</p>
+                            <p class="text-xs text-gray-400 mt-1">Disable heavy 3D parallax for better performance.</p>
+                        </div>
+                        <button onclick="toggleReducedMotion()" class="px-4 py-2 rounded-xl ${backgroundPrefs.reducedMotion ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-300'} font-bold text-xs">
+                            ${backgroundPrefs.reducedMotion ? 'On' : 'Off'}
+                        </button>
+                    </div>
                 </div>
             `);
         }
@@ -1598,6 +1660,31 @@
             openBackgroundSettings();
             showToast('Background updated', 'success');
         }
+
+        /**
+         * Toggle the reduced motion preference. When enabled, 3D backgrounds will avoid heavy
+         * parallax and rely solely on auto drift, improving performance on low-power devices
+         * or for users sensitive to motion. The setting persists in local storage and re-
+         * initialises the background immediately.
+         */
+        function toggleReducedMotion() {
+            backgroundPrefs.reducedMotion = !backgroundPrefs.reducedMotion;
+            saveBackgroundPrefs();
+            initDynamicBackground();
+            openBackgroundSettings();
+        }
+
+        // Pause the background animation when the tab is hidden and resume when visible. This
+        // conserves CPU/GPU on inactive tabs and prevents runaway animations when the user
+        // switches away from KC NOW. Resuming will restart the loop only if it isn't running.
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (backgroundAnimationId) cancelAnimationFrame(backgroundAnimationId);
+                backgroundAnimationId = null;
+            } else {
+                if (!backgroundAnimationId && backgroundScene) startBackgroundLoop();
+            }
+        });
 
         function renderDiamondCustomizationStatus() {
             const container = document.getElementById('diamond-customization-status');
@@ -1657,10 +1744,10 @@
                         </div>
                         <div>
                             <p class="font-bold text-yellow-300">Discord Not Linked</p>
-                            <p class="text-xs text-gray-400 mt-1">Link your Discord to sync economy, Battledome, and Slither stats correctly.</p>
+                            <p class="text-xs text-gray-400 mt-1">Link your Discord to unlock economy sync, Battledome rankings and Slither tracking.</p>
                         </div>
                     </div>
-                    <button onclick="openDiscordLinkHelp()" class="px-4 py-2 rounded-xl bg-yellow-500/15 text-yellow-300 font-bold text-xs hover:bg-yellow-500/25 transition">How to Link</button>
+                    <button onclick="openDiscordLinkHelp()" class="px-4 py-2 rounded-xl bg-yellow-500/15 text-yellow-300 font-bold text-xs hover:bg-yellow-500/25 transition">Link Now</button>
                 </div>
             `;
             const html = status.linked ? htmlLinked : htmlNotLinked;
@@ -1673,11 +1760,15 @@
                 <div class="space-y-5">
                     <div class="glass p-4 rounded-2xl">
                         <p class="font-bold">Why link Discord?</p>
-                        <p class="text-sm text-gray-400 mt-2">Your linked Discord identity is what lets KC NOW connect your profile to bot-driven systems like economy, Battledome, dashboards, and Slither tracking.</p>
+                        <p class="text-sm text-gray-400 mt-2">Linking your Discord unlocks economy sync, Battledome rankings, Slither server tracking and other bot-powered features. Without linking, KC NOW can only show a subset of your data.</p>
                     </div>
                     <div class="glass p-4 rounded-2xl">
-                        <p class="font-bold">Next step</p>
-                        <p class="text-sm text-gray-400 mt-2">Use the Discord bot link command in the KC Discord, then return here and refresh your profile status.</p>
+                        <p class="font-bold">How to link</p>
+                        <p class="text-sm text-gray-400 mt-2">Open the KC Discord and run the <code class="bg-white/5 px-2 py-1 rounded text-xs">/link</code> command. Follow the instructions to pair your Discord account with your KC NOW profile.</p>
+                    </div>
+                    <div class="glass p-4 rounded-2xl">
+                        <p class="font-bold">What gets synced?</p>
+                        <p class="text-sm text-gray-400 mt-2">After linking, your points, game stats, Battledome performance, Slither server presence and other bot-driven data will automatically appear here.</p>
                     </div>
                 </div>
             `);
@@ -2102,10 +2193,11 @@
                     })
                     : Promise.resolve({ points: 0, gameStats: {} });
                 dataPromise.then(data => {
+                    // Align game stats with bot-side schema. Phase 6 uses gamesPlayed and totalSpins instead of plays.
                     const bjWins = data.gameStats?.blackjack?.wins || 0;
-                    const bjPlays = data.gameStats?.blackjack?.plays || 0;
-                    const slotsPlays = data.gameStats?.slots?.plays || 0;
+                    const bjGames = data.gameStats?.blackjack?.gamesPlayed || 0;
                     const slotsWins = data.gameStats?.slots?.wins || 0;
+                    const slotsSpins = data.gameStats?.slots?.totalSpins || 0;
                     const triviaCorrect = data.gameStats?.trivia?.correct || 0;
                     modal.update(`
                         <div class="space-y-5">
@@ -2117,37 +2209,33 @@
                                 <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openBlackjackGame,200)">
                                     <div class="text-4xl mb-2">🃏</div>
                                     <p class="font-bold">Blackjack</p>
-                                    <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjPlays} plays</p>
+                                    <!-- Phase 6: Use 'games' instead of 'plays' to reflect gamesPlayed metric -->
+                                    <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjGames} games</p>
                                     <div class="mt-3 py-2 bg-blue-600/30 rounded-xl text-xs font-bold text-blue-300">▶ Play Now</div>
                                 </div>
                                 <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openSlotsGame,200)">
                                     <div class="text-4xl mb-2">🎰</div>
                                     <p class="font-bold">Slots</p>
-                                    <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsPlays} plays</p>
+                                    <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsSpins} spins</p>
                                     <div class="mt-3 py-2 bg-yellow-600/30 rounded-xl text-xs font-bold text-yellow-300">▶ Play Now</div>
                                 </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('dice')">
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Dice Duel','/roll','Roll against friends and climb the daily leaderboard.')">
                                     <div class="text-4xl mb-2">🎲</div>
                                     <p class="font-bold">Dice Duel</p>
                                     <p class="text-xs text-gray-400 mt-1">Daily competition</p>
-                                    <code class="mt-2 inline-block text-xs bg-white/5 px-2 py-1 rounded">/roll</code>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
                                 </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showGameInfo('trivia')">
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Trivia','/trivia','Test your knowledge and earn points for correct answers.')">
                                     <div class="text-4xl mb-2">🧠</div>
                                     <p class="font-bold">Trivia</p>
                                     <p class="text-xs text-gray-400 mt-1">Correct: ${triviaCorrect}</p>
-                                    <code class="mt-2 inline-block text-xs bg-white/5 px-2 py-1 rounded">/trivia</code>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
                                 </div>
                             </div>
-                            <div class="glass p-3 rounded-2xl">
-                                <p class="text-xs text-gray-400 mb-2">More Discord Games</p>
-                                <div class="flex flex-wrap gap-2">
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/coinflip</code>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/hangman</code>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/minesweeper</code>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/connect4</code>
-                                    <code class="text-xs bg-white/5 px-2 py-1 rounded">/rps</code>
-                                </div>
+                            <!-- Phase 6: Honest partial release card for Discord-only games -->
+                            <div class="glass p-4 rounded-2xl border border-yellow-500/20">
+                                <p class="font-bold text-yellow-300">More games live in Discord</p>
+                                <p class="text-xs text-gray-400 mt-1">Blackjack and Slots are playable in KC NOW. Other games still use Discord commands for now.</p>
                             </div>
                             <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
@@ -2164,6 +2252,27 @@
                 trivia:    { title: 'Trivia',      tip: '5 min cooldown between games • Earn bonus for streaks • Multiple categories' }
             }[game];
             if (info) showToast(`${info.title}: ${info.tip}`, 'info', 6000);
+        }
+
+        /**
+         * Display a modal instructing the user to play a game via Discord. When a game is not
+         * implemented natively in KC NOW, this helper opens a modal with the bot command and
+         * a short description. This prevents dead-end buttons and provides clear next steps.
+         *
+         * @param {string} title The game name to display in the modal header
+         * @param {string} command The slash command users should run in Discord
+         * @param {string} description Description of the game and any rules or context
+         */
+        function showDiscordGameCommand(title, command, description) {
+            openModal(title, `
+                <div class="space-y-4">
+                    <div class="glass p-4 rounded-2xl">
+                        <p class="font-bold">Use this command in Discord</p>
+                        <code class="mt-2 inline-block text-sm bg-white/5 px-3 py-2 rounded-xl">${command}</code>
+                    </div>
+                    <p class="text-sm text-gray-400">${description}</p>
+                </div>
+            `);
         }
 
         // ===== BLACKJACK GAME (Phase 4) =====
@@ -2280,14 +2389,17 @@
             if(delta!==0 && currentUser){
                 getDiscordIdFromKcUid(currentUser.uid).then(did=>{
                     if(!did) return;
-                    db.ref(`userEconomy/${did}`).transaction(eco=>{
-                        if(!eco) return eco;
-                        eco.points=Math.max(0,(eco.points||0)+delta);
-                        if(!eco.gameStats) eco.gameStats={};
-                        if(!eco.gameStats.blackjack) eco.gameStats.blackjack={wins:0,losses:0,plays:0};
-                        eco.gameStats.blackjack.plays=(eco.gameStats.blackjack.plays||0)+1;
-                        if(result==='win') eco.gameStats.blackjack.wins=(eco.gameStats.blackjack.wins||0)+1;
-                        if(result==='lose'||result==='bust') eco.gameStats.blackjack.losses=(eco.gameStats.blackjack.losses||0)+1;
+                    db.ref(`userEconomy/${did}`).transaction(eco => {
+                        if (!eco) return eco;
+                        // Update economy balance
+                        eco.points = Math.max(0, (eco.points || 0) + delta);
+                        // Ensure nested objects exist
+                        if (!eco.gameStats) eco.gameStats = {};
+                        if (!eco.gameStats.blackjack) eco.gameStats.blackjack = { wins: 0, losses: 0, gamesPlayed: 0 };
+                        // Increment counters according to Phase 6 schema
+                        eco.gameStats.blackjack.gamesPlayed = (eco.gameStats.blackjack.gamesPlayed || 0) + 1;
+                        if (result === 'win') eco.gameStats.blackjack.wins = (eco.gameStats.blackjack.wins || 0) + 1;
+                        if (result === 'lose' || result === 'bust') eco.gameStats.blackjack.losses = (eco.gameStats.blackjack.losses || 0) + 1;
                         return eco;
                     });
                 });
@@ -2404,15 +2516,18 @@
                 if(currentUser){
                     getDiscordIdFromKcUid(currentUser.uid).then(did=>{
                         if(!did) return;
-                        db.ref(`userEconomy/${did}`).transaction(eco=>{
-                            if(!eco) return eco;
-                            eco.points=Math.max(0,(eco.points||0)+delta);
-                            if(!eco.gameStats) eco.gameStats={};
-                            if(!eco.gameStats.slots) eco.gameStats.slots={plays:0,wins:0};
-                            eco.gameStats.slots.plays=(eco.gameStats.slots.plays||0)+1;
-                            if(delta>0) eco.gameStats.slots.wins=(eco.gameStats.slots.wins||0)+1;
-                            return eco;
-                        });
+                            db.ref(`userEconomy/${did}`).transaction(eco => {
+                                if (!eco) return eco;
+                                // Update economy balance
+                                eco.points = Math.max(0, (eco.points || 0) + delta);
+                                // Ensure nested objects exist
+                                if (!eco.gameStats) eco.gameStats = {};
+                                if (!eco.gameStats.slots) eco.gameStats.slots = { totalSpins: 0, wins: 0 };
+                                // Increment counters using Phase 6 schema
+                                eco.gameStats.slots.totalSpins = (eco.gameStats.slots.totalSpins || 0) + 1;
+                                if (delta > 0) eco.gameStats.slots.wins = (eco.gameStats.slots.wins || 0) + 1;
+                                return eco;
+                            });
                     });
                 }
                 showToast(msg, delta>0?'success':'error', 3000);
@@ -2644,6 +2759,30 @@
             } else {
                 menu.classList.add('hidden');
                 btn.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        /**
+         * Helper to run a quick action cleanly. Closes the floating menu and resets
+         * the toggle button, then invokes the provided function asynchronously.
+         * This avoids leaving the menu open and improves user experience.
+         * @param {Function} action Function to invoke after the menu closes
+         */
+        function runQuickAction(action) {
+            try {
+                const menu = document.getElementById('quick-actions-menu');
+                const btn = document.getElementById('quick-actions-btn');
+                if (menu && !menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
+                }
+                if (btn) {
+                    btn.style.transform = 'rotate(0deg)';
+                }
+                if (typeof action === 'function') {
+                    setTimeout(action, 0);
+                }
+            } catch (err) {
+                console.error('runQuickAction error:', err);
             }
         }
 
@@ -2925,9 +3064,10 @@
                     const longestStreak = economy.streaks?.login?.longest || 0;
                     const badges = Object.keys(economy.badges || {}).length;
                     const gs = economy.gameStats || {};
-                    const gamesPlayed = (gs.blackjack?.plays || 0) + (gs.slots?.plays || 0) + (gs.coinflip?.plays || 0);
-                    const winRate = gs.blackjack?.plays > 0
-                        ? ((gs.blackjack.wins || 0) / gs.blackjack.plays * 100).toFixed(1)
+                    // Phase 6: Use gamesPlayed and totalSpins instead of plays
+                    const gamesPlayed = (gs.blackjack?.gamesPlayed || 0) + (gs.slots?.totalSpins || 0) + (gs.coinflip?.gamesPlayed || gs.coinflip?.plays || 0);
+                    const winRate = gs.blackjack?.gamesPlayed > 0
+                        ? (((gs.blackjack.wins || 0) / gs.blackjack.gamesPlayed) * 100).toFixed(1)
                         : 0;
                     const streakPct = longestStreak > 0 ? Math.min(currentStreak / longestStreak * 100, 100) : 0;
                     modal.update(`
