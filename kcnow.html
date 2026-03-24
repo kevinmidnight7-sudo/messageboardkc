@@ -1860,12 +1860,16 @@
             `);
         }
 
-        // === Slither Server Browser (Phase 5 / Phase 6 enhanced) ===
+        // === Slither Server Browser ===
+        // NOTE: The KC Discord bot fetches Slither servers live from ntl-slither.com/ss/rs.php
+        // using cheerio server-side. This data is NOT stored in Firebase (CORS blocks browser
+        // direct access). Use the /slitherservers Discord command to see live servers.
+        // If a future integration writes server data to Firebase, it will appear here automatically.
         async function openSlitherServers() {
             const modal = openModalWithLoading('🐍 Slither.io Servers', 'Checking for active servers...');
             if (!modal) return;
             try {
-                // Try primary path first, then fallback
+                // Check if the bot has written any cached server data to Firebase
                 let snap = await db.ref('slitherServers').once('value');
                 if (!snap.exists()) snap = await db.ref('slither/servers').once('value');
                 const raw = snap.val() || {};
@@ -1881,26 +1885,57 @@
                 list.sort((a, b) => (b.playerCount || 0) - (a.playerCount || 0));
                 lastSlitherServers = list;
                 lastSlitherModal = modal;
-                if (list.length === 0) {
-                    modal.update(`
-                        <div class="text-center py-16">
-                            <div class="text-6xl mb-4">🐍</div>
-                            <p class="text-xl font-bold mb-2">No Active Servers</p>
-                            <p class="text-gray-400 text-sm mb-6">Check back later or ask staff to start a server</p>
-                            <button onclick="openSlitherServers()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">
-                                <i class="fa-solid fa-rotate-right mr-2"></i> Refresh
-                            </button>
-                        </div>
-                    `);
+                if (list.length > 0) {
+                    // Firebase has cached data — display it
+                    renderSlitherServerBrowser(modal, list);
                     return;
                 }
-                renderSlitherServerBrowser(modal, list);
+                // No Firebase data — servers are fetched live by the Discord bot only
+                modal.update(`
+                    <div class="space-y-6">
+                        <div class="text-center py-6">
+                            <div class="text-7xl mb-4">🐍</div>
+                            <p class="text-xl font-bold mb-2">Live Servers via Discord Bot</p>
+                            <p class="text-gray-400 text-sm max-w-sm mx-auto">
+                                Slither.io server listings are fetched live from the NTL network by the KC Discord bot.
+                                Use the command below in the KC Discord server to see active servers in real time.
+                            </p>
+                        </div>
+                        <div class="glass rounded-2xl p-5 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl flex-shrink-0">
+                                <i class="fa-brands fa-discord"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-sm mb-1">Discord Slash Command</p>
+                                <code class="text-green-400 text-sm font-mono bg-black/30 px-3 py-1.5 rounded-xl select-all">/slitherservers</code>
+                            </div>
+                        </div>
+                        <div class="glass rounded-2xl p-5 space-y-3">
+                            <p class="text-xs font-black uppercase text-gray-500 tracking-wider">What you can do</p>
+                            <div class="flex items-start gap-3 text-sm">
+                                <i class="fa-solid fa-circle-check text-green-400 mt-0.5 flex-shrink-0"></i>
+                                <span>Run <code class="text-green-400 font-mono">/slitherservers</code> in Discord to get a live list of active KC Slither servers</span>
+                            </div>
+                            <div class="flex items-start gap-3 text-sm">
+                                <i class="fa-solid fa-circle-check text-green-400 mt-0.5 flex-shrink-0"></i>
+                                <span>Ask staff in Discord to start a new server for the community</span>
+                            </div>
+                            <div class="flex items-start gap-3 text-sm">
+                                <i class="fa-solid fa-circle-check text-green-400 mt-0.5 flex-shrink-0"></i>
+                                <span>Track your Slither appearances and high scores via the bot</span>
+                            </div>
+                        </div>
+                        <button onclick="openSlitherServers()" class="btn-press w-full px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition text-sm">
+                            <i class="fa-solid fa-rotate-right mr-2"></i> Check Again
+                        </button>
+                    </div>
+                `);
             } catch (err) {
                 console.error('[Slither] Failed to load servers:', err);
                 modal.update(`
                     <div class="text-center py-16">
                         <i class="fa-solid fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-                        <p class="text-xl font-bold text-red-400 mb-2">Failed to Load Servers</p>
+                        <p class="text-xl font-bold text-red-400 mb-2">Failed to Load</p>
                         <p class="text-gray-400 text-sm mb-6">${err.message || 'Network error'}</p>
                         <button onclick="openSlitherServers()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">
                             <i class="fa-solid fa-rotate-right mr-2"></i> Try Again
