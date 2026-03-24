@@ -2149,7 +2149,9 @@
                     const posts = u.posts;
                     if (posts) {
                         Object.entries(posts).forEach(([postId, p]) => {
-                            if (p && (p.ytId || p.videoId || p.mediaUrl)) {
+                            // Match socialfeed.html: exclude drafts and unpublished scheduled posts
+                            const now = Date.now();
+                            if (p && !p.draft && (!p.publishAt || p.publishAt <= now)) {
                                 clipsAllPosts.push({ ...p, postId, createdBy: userSnap.key });
                             }
                         });
@@ -2178,8 +2180,9 @@
                 if (btn) btn.className = `btn-press px-4 py-2 rounded-xl text-sm font-bold transition ${t === clipsCurrentTab ? 'bg-blue-600 text-white' : 'glass hover:bg-white/10'}`;
             });
             let posts = clipsAllPosts;
-            if (clipsCurrentTab === 'youtube') posts = clipsAllPosts.filter(p => p.ytId);
-            if (clipsCurrentTab === 'tiktok') posts = clipsAllPosts.filter(p => p.videoId);
+            // socialfeed.html uses p.type === 'youtube'/'tiktok' as the canonical filter
+            if (clipsCurrentTab === 'youtube') posts = clipsAllPosts.filter(p => p.type === 'youtube');
+            if (clipsCurrentTab === 'tiktok') posts = clipsAllPosts.filter(p => p.type === 'tiktok');
             if (posts.length === 0) {
                 container.className = 'col-span-full';
                 container.innerHTML = '<div class="text-center py-20 text-gray-500">No clips yet in this category.</div>';
