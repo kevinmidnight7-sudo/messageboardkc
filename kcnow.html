@@ -28,9 +28,13 @@
             --bg-secondary: #1e293b;
             --accent-blue: #3b82f6;
             --brand-gradient: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --bg-primary: #080c14;
+            --bg-secondary: #1e293b;
         }
 
-        /* Light theme overrides applied when .light-theme is on <html> */
+        /* ===== Phase 5: Light Theme (overrides applied when .light-theme is on <html>) ===== */
         .light-theme {
             --glass-bg: rgba(255, 255, 255, 0.9);
             --glass-border: rgba(0, 0, 0, 0.1);
@@ -40,6 +44,12 @@
             --bg-secondary: #e2e8f0;
             --accent-blue: #2563eb;
         }
+        .light-theme #bg-canvas { background: radial-gradient(circle at 50% 50%, #e2e8f0 0%, #f1f5f9 100%) !important; }
+        .light-theme .animated-gradient { background: radial-gradient(circle at 20% 30%, rgba(59,130,246,0.08) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(45,212,191,0.05) 0%, transparent 40%) !important; }
+        .light-theme .vignette { background: radial-gradient(circle, transparent 40%, rgba(255,255,255,0.5) 100%) !important; }
+        .light-theme .text-gray-400 { color: var(--text-secondary) !important; }
+        .light-theme .text-gray-500 { color: var(--text-secondary) !important; }
+        .light-theme .text-gray-300 { color: var(--text-primary) !important; }
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -431,7 +441,10 @@
             <div class="glass rounded-[40px] border-white/5 flex flex-col h-full overflow-hidden">
                 <div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
                     <h3 class="font-black text-sm tracking-widest">KC NOW</h3>
-                    <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    <div class="flex items-center gap-3">
+                        <button onclick="openFeedFilters()" class="text-xs text-blue-400 hover:text-blue-300 transition" title="Filter feed"><i class="fa-solid fa-filter"></i></button>
+                        <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+                    </div>
                 </div>
                 <!-- Tabs for right panel -->
                 <div class="p-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
@@ -859,6 +872,15 @@
 
         // --- TOAST NOTIFICATIONS ---
         function showToast(message, type = 'info', duration = 5000) {
+            // Phase 5B: Respect notification preferences
+            const lowerMsg = message.toLowerCase();
+            if (lowerMsg.includes('achievement') && !notificationPrefs.achievements) return;
+            if (lowerMsg.includes('points') && !notificationPrefs.points) return;
+            if ((lowerMsg.includes('clan') || lowerMsg.includes('joined')) && !notificationPrefs.clans) return;
+            if (lowerMsg.includes('clip') && !notificationPrefs.clips) return;
+            if (lowerMsg.includes('new player') && !notificationPrefs.users) return;
+            if (lowerMsg.includes('streak') && !notificationPrefs.streaks) return;
+
             const colors = {
                 info: 'border-blue-500/50 text-blue-400',
                 success: 'border-green-500/50 text-green-400',
@@ -965,7 +987,7 @@
             const el = document.getElementById('lobby-notification-feed');
             // Build base list filtered by type
             let data = filter === 'all' ? feedItems : feedItems.filter(i => i.type === filter);
-            // Apply search filter
+            // Apply search filter (Phase 5D)
             if (feedSearchQuery) {
                 const q = feedSearchQuery.toLowerCase();
                 data = data.filter(item => {
@@ -974,7 +996,7 @@
                            (item.detail && item.detail.toLowerCase().includes(q));
                 });
             }
-            // Apply date filter
+            // Apply date filter (Phase 5D)
             const now = Date.now();
             if (feedDateFilter === 'today') {
                 data = data.filter(item => now - item.timestamp < 86400000);
@@ -1001,7 +1023,7 @@
                         <p class="text-xs text-gray-400 leading-relaxed">${item.detail || ''}</p>
                     </div>
                 </div>
-            `).join('') || `<div class="p-10 text-center opacity-20 text-xs italic">No matching events...</div>`;
+            `).join('') || `<div class="p-10 text-center opacity-20 text-xs italic">${feedSearchQuery || feedDateFilter !== 'all' ? 'No matching events...' : 'Awaiting events...'}</div>`;
         }
 
         function toggleFeedItem(el) {
@@ -3156,6 +3178,407 @@
 
         function kcAlert(msg) { openModal("Notification", `<div class="p-10 text-center font-bold">${msg}</div>`); }
 
+        // ===== PHASE 5A: THEME SYSTEM =====
+        function initTheme() {
+            const stored = localStorage.getItem('kc-theme') || 'dark';
+            currentTheme = stored;
+            applyTheme(stored);
+        }
+
+        function applyTheme(theme) {
+            let effectiveTheme = theme;
+            if (theme === 'auto') {
+                effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            if (effectiveTheme === 'light') {
+                document.documentElement.classList.add('light-theme');
+            } else {
+                document.documentElement.classList.remove('light-theme');
+            }
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('kc-theme', currentTheme);
+            applyTheme(currentTheme);
+            showToast(`Switched to ${currentTheme} theme`, 'success', 2000);
+        }
+
+        function setTheme(theme) {
+            currentTheme = theme;
+            localStorage.setItem('kc-theme', theme);
+            applyTheme(theme);
+            openThemeSettings();
+        }
+
+        function openThemeSettings() {
+            openModal('Theme Settings', `
+                <div class="space-y-6">
+                    <p class="text-center text-gray-400">Customize your KC NOW experience</p>
+                    <div class="space-y-4">
+                        <button onclick="setTheme('dark')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'dark' ? 'border-2 border-blue-500' : ''}">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white flex-shrink-0">
+                                    <i class="fa-solid fa-moon"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-bold">Dark Theme</p>
+                                    <p class="text-xs text-gray-400">Classic KC NOW look</p>
+                                </div>
+                                ${currentTheme === 'dark' ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
+                            </div>
+                        </button>
+                        <button onclick="setTheme('light')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'light' ? 'border-2 border-blue-500' : ''}">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-white flex items-center justify-center text-gray-900 flex-shrink-0">
+                                    <i class="fa-solid fa-sun"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-bold">Light Theme</p>
+                                    <p class="text-xs text-gray-400">Easy on the eyes</p>
+                                </div>
+                                ${currentTheme === 'light' ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
+                            </div>
+                        </button>
+                        <button onclick="setTheme('auto')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'auto' ? 'border-2 border-blue-500' : ''}">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 via-blue-500 to-blue-100 flex items-center justify-center text-white flex-shrink-0">
+                                    <i class="fa-solid fa-circle-half-stroke"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="font-bold">Auto Theme</p>
+                                    <p class="text-xs text-gray-400">Match system preference</p>
+                                </div>
+                                ${currentTheme === 'auto' ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            `);
+        }
+
+        // ===== PHASE 5B: NOTIFICATION PREFERENCES =====
+        function saveNotificationPrefs() {
+            localStorage.setItem('kc-notifications', JSON.stringify(notificationPrefs));
+        }
+
+        function openNotificationSettings() {
+            openModal('Notification Settings', `
+                <div class="space-y-6">
+                    <p class="text-center text-gray-400">Choose what notifications you want to see</p>
+                    <div class="space-y-3">
+                        ${[
+                            { key: 'achievements', icon: 'fa-trophy', color: 'text-yellow-400', label: 'Achievements', desc: 'New badges and milestones' },
+                            { key: 'points', icon: 'fa-coins', color: 'text-blue-400', label: 'Point Changes', desc: 'Economy updates' },
+                            { key: 'clans', icon: 'fa-shield-halved', color: 'text-teal-400', label: 'Clan Activity', desc: 'Joins, battles, events' },
+                            { key: 'clips', icon: 'fa-clapperboard', color: 'text-purple-400', label: 'New Clips', desc: 'Social feed posts' },
+                            { key: 'users', icon: 'fa-user-plus', color: 'text-green-400', label: 'New Players', desc: 'Community joins' },
+                            { key: 'streaks', icon: 'fa-fire', color: 'text-orange-400', label: 'Streak Milestones', desc: 'Login streak achievements' }
+                        ].map(n => `
+                            <div class="glass p-4 rounded-2xl flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid ${n.icon} ${n.color}"></i>
+                                    <div>
+                                        <p class="font-bold">${n.label}</p>
+                                        <p class="text-xs text-gray-400">${n.desc}</p>
+                                    </div>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" ${notificationPrefs[n.key] ? 'checked' : ''} onchange="toggleNotification('${n.key}')" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="setAllNotifications(true)" class="flex-1 glass px-4 py-3 rounded-xl font-bold hover:bg-white/10">Enable All</button>
+                        <button onclick="setAllNotifications(false)" class="flex-1 glass px-4 py-3 rounded-xl font-bold hover:bg-white/10">Disable All</button>
+                    </div>
+                </div>
+            `);
+        }
+
+        function toggleNotification(type) {
+            notificationPrefs[type] = !notificationPrefs[type];
+            saveNotificationPrefs();
+        }
+
+        function setAllNotifications(enabled) {
+            Object.keys(notificationPrefs).forEach(key => { notificationPrefs[key] = enabled; });
+            saveNotificationPrefs();
+            openNotificationSettings();
+        }
+
+        // ===== PHASE 5C: FRIEND SYSTEM =====
+        function loadFriends() {
+            if (!currentUser) return;
+            db.ref(`users/${currentUser.uid}/friends`).on('value', snap => {
+                const friendIds = snap.val() || {};
+                const uids = Object.keys(friendIds);
+                if (uids.length === 0) { friendsList = []; renderFriendsPanel(); return; }
+                Promise.all(
+                    uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))
+                ).then(friends => {
+                    friendsList = friends;
+                    renderFriendsPanel();
+                });
+            });
+        }
+
+        function renderFriendsPanel() {
+            const panel = document.getElementById('friends-panel');
+            if (!panel) return;
+            panel.innerHTML = friendsList.length > 0 ? friendsList.map(friend => `
+                <div class="flex items-center gap-3 p-3 glass rounded-2xl hover:bg-white/10 cursor-pointer" onclick="window.openKcProfile('${friend.uid}')">
+                    <div class="relative">
+                        <img src="${friend.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover">
+                        <div class="absolute bottom-0 right-0 w-3 h-3 ${friend.online ? 'bg-green-500' : 'bg-gray-500'} rounded-full border-2 border-[#1e293b]"></div>
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-sm">${friend.displayName || 'Unknown'}</p>
+                        <p class="text-xs text-gray-500">${friend.online ? 'Online' : 'Offline'}</p>
+                    </div>
+                    <button onclick="event.stopPropagation();removeFriend('${friend.uid}')" class="text-xs text-red-400 hover:text-red-300 p-2">
+                        <i class="fa-solid fa-user-minus"></i>
+                    </button>
+                </div>
+            `).join('') : '<p class="text-center text-gray-500 text-xs py-4">No friends yet. Search to add some!</p>';
+        }
+
+        function openFriendsList() {
+            if (!currentUser) return openAuthModal();
+            openModal('Friends', `
+                <div class="space-y-6">
+                    <div class="flex gap-2">
+                        <input type="text" id="friend-search" placeholder="Search by username..."
+                               class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none focus:border-blue-500">
+                        <button onclick="searchFriendUsers()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">
+                            Search
+                        </button>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500 font-black uppercase mb-2">Your Friends</p>
+                        <div id="friends-panel" class="space-y-2 max-h-48 overflow-y-auto custom-scroll">
+                            <p class="text-center py-6 text-gray-500 text-xs">Loading...</p>
+                        </div>
+                    </div>
+                    <div id="friend-search-results" class="space-y-2 hidden"></div>
+                </div>
+            `);
+            loadFriends();
+        }
+
+        function searchFriendUsers() {
+            const query = (document.getElementById('friend-search').value || '').toLowerCase().trim();
+            if (!query) return;
+            const resultsPanel = document.getElementById('friend-search-results');
+            if (resultsPanel) { resultsPanel.classList.remove('hidden'); resultsPanel.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Searching...</p>'; }
+            db.ref('users').once('value').then(snap => {
+                const results = [];
+                snap.forEach(child => {
+                    const user = child.val();
+                    if (user.displayName && user.displayName.toLowerCase().includes(query)) {
+                        results.push({ uid: child.key, ...user });
+                    }
+                });
+                if (!resultsPanel) return;
+                resultsPanel.classList.remove('hidden');
+                resultsPanel.innerHTML = results.length > 0 ? `
+                    <p class="text-xs text-gray-500 font-black uppercase mb-2">Search Results</p>
+                    ${results.slice(0, 10).map(user => `
+                        <div class="flex items-center gap-3 p-3 glass rounded-2xl">
+                            <img src="${user.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover">
+                            <div class="flex-1">
+                                <p class="font-bold text-sm">${user.displayName}</p>
+                            </div>
+                            ${currentUser && user.uid !== currentUser.uid ? `
+                                <button onclick="addFriend('${user.uid}')" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl text-xs transition">
+                                    Add
+                                </button>
+                            ` : '<span class="text-xs text-gray-500">You</span>'}
+                        </div>
+                    `).join('')}
+                ` : '<p class="text-center text-gray-500 text-sm py-4">No users found</p>';
+            });
+        }
+
+        function addFriend(uid) {
+            if (!currentUser) return;
+            if (uid === currentUser.uid) { showToast("You can't add yourself!", 'error'); return; }
+            db.ref(`users/${currentUser.uid}/friends/${uid}`).set(true).then(() => {
+                showToast('Friend added!', 'success');
+            }).catch(() => showToast('Failed to add friend', 'error'));
+        }
+
+        function removeFriend(uid) {
+            if (!currentUser) return;
+            if (confirm('Remove this friend?')) {
+                db.ref(`users/${currentUser.uid}/friends/${uid}`).remove().then(() => {
+                    showToast('Friend removed', 'info');
+                }).catch(() => showToast('Failed to remove friend', 'error'));
+            }
+        }
+
+        // ===== PHASE 5D: FEED FILTERS =====
+        function openFeedFilters() {
+            openModal('Feed Filters', `
+                <div class="space-y-6">
+                    <div>
+                        <p class="text-sm text-gray-400 mb-2">Search Events</p>
+                        <input type="text" id="feed-search-input" value="${feedSearchQuery.replace(/"/g, '&quot;')}"
+                               placeholder="Search by title, user, or description..."
+                               class="w-full px-4 py-3 glass rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-400 mb-2">Time Period</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="setDateFilter('all')" class="glass px-4 py-3 rounded-xl font-bold hover:bg-white/10 transition ${feedDateFilter === 'all' ? 'border-2 border-blue-500' : ''}">All Time</button>
+                            <button onclick="setDateFilter('today')" class="glass px-4 py-3 rounded-xl font-bold hover:bg-white/10 transition ${feedDateFilter === 'today' ? 'border-2 border-blue-500' : ''}">Today</button>
+                            <button onclick="setDateFilter('week')" class="glass px-4 py-3 rounded-xl font-bold hover:bg-white/10 transition ${feedDateFilter === 'week' ? 'border-2 border-blue-500' : ''}">This Week</button>
+                            <button onclick="setDateFilter('month')" class="glass px-4 py-3 rounded-xl font-bold hover:bg-white/10 transition ${feedDateFilter === 'month' ? 'border-2 border-blue-500' : ''}">This Month</button>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="applyFeedFilters()" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">Apply Filters</button>
+                        <button onclick="clearFeedFilters()" class="px-6 py-3 glass font-bold rounded-2xl hover:bg-white/10 transition">Clear</button>
+                    </div>
+                    ${(feedSearchQuery || feedDateFilter !== 'all') ? '<p class="text-center text-xs text-blue-400">⚡ Filters active</p>' : ''}
+                </div>
+            `);
+        }
+
+        function setDateFilter(filter) {
+            feedDateFilter = filter;
+            openFeedFilters();
+        }
+
+        function applyFeedFilters() {
+            const input = document.getElementById('feed-search-input');
+            if (input) feedSearchQuery = input.value;
+            closeModal();
+            const activeEl = document.querySelector('[id^="feed-filter-"].active');
+            renderFeed(activeEl ? activeEl.id.replace('feed-filter-', '') : 'all');
+            showToast('Filters applied', 'success', 2000);
+        }
+
+        function clearFeedFilters() {
+            feedSearchQuery = '';
+            feedDateFilter = 'all';
+            closeModal();
+            renderFeed('all');
+            showToast('Filters cleared', 'info', 2000);
+        }
+
+        // ===== PHASE 5E: GLOBAL SEARCH =====
+        function openGlobalSearch() {
+            openModal('Search KC NOW', `
+                <div class="space-y-4">
+                    <div class="flex gap-2">
+                        <input type="text" id="global-search-input" placeholder="Search players, clans, clips..."
+                               class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none focus:border-blue-500"
+                               onkeypress="if(event.key==='Enter')performGlobalSearch()">
+                        <button onclick="performGlobalSearch()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">
+                            <i class="fa-solid fa-search"></i>
+                        </button>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto no-scrollbar">
+                        <button onclick="setSearchCategory('all')" id="search-cat-all" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap bg-blue-600 text-white text-sm">All</button>
+                        <button onclick="setSearchCategory('players')" id="search-cat-players" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm">Players</button>
+                        <button onclick="setSearchCategory('clans')" id="search-cat-clans" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm">Clans</button>
+                        <button onclick="setSearchCategory('clips')" id="search-cat-clips" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm">Clips</button>
+                    </div>
+                    <div id="search-results-container" class="min-h-[200px]">
+                        <div class="text-center py-16 text-gray-500 text-sm">
+                            <i class="fa-solid fa-search text-4xl mb-4 block opacity-20"></i>
+                            Enter a search query above
+                        </div>
+                    </div>
+                </div>
+            `);
+            // Reset category highlight
+            searchCategory = 'all';
+        }
+
+        function setSearchCategory(cat) {
+            searchCategory = cat;
+            ['all','players','clans','clips'].forEach(c => {
+                const btn = document.getElementById(`search-cat-${c}`);
+                if (btn) btn.className = `px-4 py-2 rounded-xl font-bold whitespace-nowrap text-sm ${c === cat ? 'bg-blue-600 text-white' : 'glass text-gray-400'}`;
+            });
+        }
+
+        async function performGlobalSearch() {
+            const input = document.getElementById('global-search-input');
+            const query = (input ? input.value : '').toLowerCase().trim();
+            if (!query) return;
+            const container = document.getElementById('search-results-container');
+            if (!container) return;
+            container.innerHTML = '<div class="text-center py-10"><div class="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p class="mt-4 text-gray-400 text-sm">Searching...</p></div>';
+            const results = { players: [], clans: [], clips: [] };
+            try {
+                if (searchCategory === 'all' || searchCategory === 'players') {
+                    const usersSnap = await db.ref('users').once('value');
+                    usersSnap.forEach(child => {
+                        const user = child.val();
+                        if (user.displayName && user.displayName.toLowerCase().includes(query)) {
+                            results.players.push({ uid: child.key, ...user });
+                        }
+                    });
+                }
+                if (searchCategory === 'all' || searchCategory === 'clans') {
+                    const clansSnap = await db.ref('clans').once('value');
+                    clansSnap.forEach(child => {
+                        const clan = child.val();
+                        if (clan.name && clan.name.toLowerCase().includes(query)) {
+                            results.clans.push({ id: child.key, ...clan });
+                        }
+                    });
+                }
+                if (searchCategory === 'all' || searchCategory === 'clips') {
+                    const clipsSnap = await db.ref('social_posts').once('value');
+                    clipsSnap.forEach(child => {
+                        const clip = child.val();
+                        if ((clip.caption && clip.caption.toLowerCase().includes(query)) ||
+                            (clip.userName && clip.userName.toLowerCase().includes(query))) {
+                            results.clips.push({ id: child.key, ...clip });
+                        }
+                    });
+                }
+                let html = '';
+                if (results.players.length > 0) {
+                    html += `<div class="mb-5"><p class="text-xs text-gray-500 font-black uppercase mb-3">Players (${results.players.length})</p><div class="space-y-2">
+                        ${results.players.slice(0, 5).map(p => `
+                            <div class="glass p-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 cursor-pointer transition" onclick="window.openKcProfile('${p.uid}')">
+                                <img src="${p.avatar || 'https://via.placeholder.com/40'}" class="w-9 h-9 rounded-full object-cover">
+                                <div class="flex-1"><p class="font-bold text-sm">${p.displayName}</p><p class="text-xs text-gray-400">Overall: ${p.overall || 0}</p></div>
+                            </div>`).join('')}
+                    </div></div>`;
+                }
+                if (results.clans.length > 0) {
+                    html += `<div class="mb-5"><p class="text-xs text-gray-500 font-black uppercase mb-3">Clans (${results.clans.length})</p><div class="space-y-2">
+                        ${results.clans.slice(0, 5).map(c => `
+                            <div class="glass p-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 cursor-pointer transition" onclick="openClanDetails('${c.id}')">
+                                <div class="w-9 h-9 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-400 font-black flex-shrink-0">${c.name.charAt(0)}</div>
+                                <div class="flex-1"><p class="font-bold text-sm">${c.name}</p><p class="text-xs text-gray-400">${Object.keys(c.members || {}).length} members</p></div>
+                            </div>`).join('')}
+                    </div></div>`;
+                }
+                if (results.clips.length > 0) {
+                    html += `<div class="mb-5"><p class="text-xs text-gray-500 font-black uppercase mb-3">Clips (${results.clips.length})</p><div class="space-y-2">
+                        ${results.clips.slice(0, 5).map(c => `
+                            <div class="glass p-3 rounded-2xl hover:bg-white/10 transition cursor-pointer" onclick="window.openKcProfile('${c.createdBy || ''}')">
+                                <p class="font-bold text-sm">${c.caption || 'Untitled'}</p>
+                                <p class="text-xs text-gray-400">by ${c.userName || 'Unknown'}</p>
+                            </div>`).join('')}
+                    </div></div>`;
+                }
+                if (!html) html = '<div class="text-center py-16 text-gray-500 text-sm">No results found</div>';
+                container.innerHTML = html;
+            } catch(e) {
+                container.innerHTML = '<div class="text-center py-10 text-red-400">Search failed. Please try again.</div>';
+            }
+        }
+
         window.onload = () => {
             initTheme();
             initDynamicBackground();
@@ -3164,6 +3587,7 @@
                 if (e.key === 'Escape') { closeModal(); return; }
                 if (!document.getElementById('global-modal').classList.contains('hidden')) return;
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                if (e.key === '/') { e.preventDefault(); openGlobalSearch(); return; }
                 if (e.key === '1') switchTab('home');
                 else if (e.key === '2') switchTab('profile');
                 else if (e.key === '3') switchTab('clans');
@@ -3177,15 +3601,13 @@
                 else if (e.key === 'l') renderLeaderboard();
                 else if (e.key === 'j') openBlackjackGame();
                 else if (e.key === 'm') openSlotsGame();
-                else if (e.key === '/') {
-                    e.preventDefault();
-                    openGlobalSearch();
-                }
+                else if (e.key === 'f') openFriendsList();
+                else if (e.key === 't') toggleTheme();
             });
-            if (!localStorage.getItem('kcnow_shortcuts_v2')) {
+            if (!localStorage.getItem('kcnow_shortcuts_v3')) {
                 setTimeout(() => {
-                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=Battledome • L=Leaderboard', 'info', 9000);
-                    localStorage.setItem('kcnow_shortcuts_v2', 'true');
+                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • T=Theme • F=Friends', 'info', 9000);
+                    localStorage.setItem('kcnow_shortcuts_v3', 'true');
                 }, 2000);
             }
         };
