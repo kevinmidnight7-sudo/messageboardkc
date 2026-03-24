@@ -437,8 +437,8 @@
                     <!-- Discord link status banner in profile -->
                     <div id="discord-link-status-profile" class="mt-8 space-y-4"></div>
                     <div class="mt-12 flex justify-center">
-                        <a href="https://kcevents.uk/#loginpage" target="_blank" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl">
-                            Full Profile Options <i class="fa-solid fa-arrow-right ml-2"></i>
+                        <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl flex items-center gap-2 justify-center" title="Opens kcevents.uk in a new tab">
+                            Full Profile Options <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1 opacity-60"></i>
                         </a>
                     </div>
                 </div>
@@ -2112,10 +2112,11 @@
         window.joinClan = (id) => {
             if(!currentUser) return openAuthModal();
             const c = allClansData[id];
+            if(!c) return showToast('Clan data not loaded yet. Please wait.', 'error');
             if(c.isOpen) {
                 db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => loadAllClans());
             } else {
-                db.ref(`clans/${id}/requests/${currentUser.uid}`).set(true).then(() => kcAlert("Request Sent!"));
+                db.ref(`clans/${id}/requests/${currentUser.uid}`).set(true).then(() => showToast('Join request sent!', 'success'));
             }
         };
 
@@ -2277,22 +2278,27 @@
 
             Promise.all([
                 db.ref('users').once('value'),
-                db.ref('clans').once('value'),
-                db.ref('social_posts').once('value')
-            ]).then(([usersSnap, clansSnap, postsSnap]) => {
+                db.ref('clans').once('value')
+            ]).then(([usersSnap, clansSnap]) => {
+                // Count posts across all users (posts live at users/{uid}/posts, not social_posts)
+                let postCount = 0;
+                usersSnap.forEach(u => { const p = u.child('posts').val(); if (p) postCount += Object.keys(p).length; });
                 const el = document.getElementById('server-stats');
                 if (el) el.innerHTML = `
                     <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${usersSnap.numChildren()}</span></div>
                     <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${clansSnap.numChildren()}</span></div>
-                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${postsSnap.numChildren()}</span></div>
+                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${postCount}</span></div>
                 `;
-            });
+            }).catch(() => {});
 
-            db.ref('bdTop/global').orderByChild('score').limitToLast(5).once('value').then(snap => {
+            // Fetch bdTop/global without orderByChild (no index required) — sort client-side
+            db.ref('bdTop/global').limitToLast(5).once('value').then(snap => {
                 const bdPlayers = [];
                 snap.forEach(child => {
-                    bdPlayers.unshift({ name: child.key, score: child.val().score || 0 });
+                    const val = child.val();
+                    bdPlayers.push({ name: child.key, score: (typeof val === 'object' ? val.score : val) || 0 });
                 });
+                bdPlayers.sort((a, b) => b.score - a.score);
                 const el = document.getElementById('bd-leaderboard');
                 if (el) el.innerHTML = bdPlayers.length > 0
                     ? bdPlayers.map((p, i) => `
@@ -2305,7 +2311,7 @@
                         </div>
                     `).join('')
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
-            });
+            }).catch(() => {});
 
             db.ref('users').orderByChild('totalPoints').limitToLast(5).once('value').then(snap => {
                 const players = [];
@@ -4031,7 +4037,7 @@
                 if (!html) html = '<div class="text-center py-16 text-gray-500 text-sm">No results found</div>';
                 container.innerHTML = html;
             } catch(e) {
-                container.innerHTML = '<div class="text-center py-10 text-red-400">Search failed. Please try again.</div>';
+                container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fa-solid fa-wifi-slash text-3xl mb-3 block text-gray-600"></i>Couldn\'t reach KC servers.<br><span class="text-sm">Check your connection and try again.</span></div>';
             }
         }
 
