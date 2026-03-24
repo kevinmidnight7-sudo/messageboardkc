@@ -205,6 +205,54 @@
         @keyframes jackpotFlash { 0%,100%{background:rgba(234,179,8,0.0)} 50%{background:rgba(234,179,8,0.25)} }
         .jackpot-flash { animation: jackpotFlash 0.4s ease-in-out 3; }
 
+        /* ===== Phase 6: Comprehensive Light Theme Overrides ===== */
+        .light-theme .glass {
+            background: var(--glass-bg);
+            border-color: var(--glass-border);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+        .light-theme body { color: var(--text-primary); }
+        .light-theme .text-white { color: #0f172a !important; }
+        .light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4 { color: #0f172a; }
+        .light-theme .tab-btn { color: rgba(15, 23, 42, 0.4); }
+        .light-theme .tab-btn.active { color: #0f172a; }
+        .light-theme .tab-btn.active::after { background: var(--accent-blue); box-shadow: 0 0 15px var(--accent-blue); }
+        .light-theme #welcome-card { background: white !important; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
+        .light-theme .bottom-banner { background: rgba(255,255,255,0.95) !important; border-color: rgba(0,0,0,0.08) !important; box-shadow: 0 -4px 20px rgba(0,0,0,0.06); }
+        .light-theme .bottom-banner .text-white { color: #0f172a !important; }
+        .light-theme .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
+        .light-theme .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
+        .light-theme .bg-white\/5 { background: rgba(0,0,0,0.03) !important; }
+        .light-theme .bg-white\/10 { background: rgba(0,0,0,0.06) !important; }
+        .light-theme .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+        .light-theme #global-modal { background: rgba(0,0,0,0.3); }
+        .light-theme .animate-slideInRight { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+
+        /* ===== Phase 6: Enhanced Mobile Layout ===== */
+        @media (max-width: 768px) {
+            #view-home .grid.grid-cols-3 { grid-template-columns: 1fr 1fr; }
+            #view-home .grid.grid-cols-3 > button { height: 120px; }
+            #view-home .grid.grid-cols-3 span.font-bold { font-size: 0.8rem; }
+            #welcome-card { flex-direction: column; text-align: center; }
+            #welcome-card .flex.items-center.gap-8 { flex-direction: column; gap: 1rem; }
+            #user-display-name { font-size: 1.75rem !important; }
+            #welcome-economy-stats { margin-top: 0.75rem; }
+            .bottom-banner { bottom: 12px; padding: 8px 40px; }
+            #global-modal .glass.w-full { max-width: 95vw; max-height: 90vh; }
+            #toast-container { top: 80px; right: 12px; left: 12px; max-width: none; }
+            .fixed.bottom-32.right-8 { bottom: 100px; right: 12px; }
+        }
+        @media (max-width: 540px) {
+            #view-home .grid.grid-cols-3 { grid-template-columns: 1fr; }
+            header nav { gap: 1rem; padding: 0.75rem 1.5rem; }
+            .tab-btn { font-size: 0.6rem; letter-spacing: 1px; }
+            body { padding: 1rem; }
+        }
+
+        /* ===== Phase 6: Smooth Modal & Tab Transitions ===== */
+        #global-modal.flex > .glass { animation: modalIn 0.25s ease-out; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.92) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
         /* ===== Dynamic 3D Background Layers ===== */
         #bg-canvas {
             position: fixed;
@@ -419,17 +467,30 @@
                 </div>
             </div>
 
-            <!-- CLIPS VIEW (Lite Social Feed as iframe) -->
-            <div id="view-clips" class="view-transition hidden space-y-8">
-                <div class="glass p-8 rounded-[40px]">
-                    <h2 class="text-3xl font-bold mb-8">Social Clips Feed</h2>
-                    <div class="w-full overflow-hidden rounded-[32px] mb-8" style="height: calc(100vh - 320px);">
-                        <iframe src="clipssocial.html" class="w-full h-full" style="border:0;"></iframe>
+            <!-- CLIPS VIEW (Native Social Feed) -->
+            <div id="view-clips" class="view-transition hidden space-y-6">
+                <div class="glass p-6 rounded-[40px]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold flex items-center gap-3">
+                            <i class="fa-solid fa-clapperboard text-blue-400"></i> Community Clips
+                        </h2>
+                        <button onclick="clipsLoaded=false;initClipsView()" class="btn-press text-xs glass px-3 py-2 rounded-xl hover:bg-white/10 transition">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                        </button>
                     </div>
-                    <div class="mt-12 flex justify-center">
-                        <a href="https://kcevents.uk/#socialfeed" target="_blank" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl">
-                            Full Social Application <i class="fa-solid fa-arrow-right ml-2"></i>
-                        </a>
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <button id="clips-tab-all" onclick="switchClipsTab('all')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition bg-blue-600 text-white">All</button>
+                        <button id="clips-tab-youtube" onclick="switchClipsTab('youtube')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition glass hover:bg-white/10">
+                            <i class="fa-brands fa-youtube mr-1 text-red-400"></i> YouTube
+                        </button>
+                        <button id="clips-tab-tiktok" onclick="switchClipsTab('tiktok')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition glass hover:bg-white/10">
+                            <i class="fa-brands fa-tiktok mr-1"></i> TikTok
+                        </button>
+                    </div>
+                    <div id="clips-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="col-span-full flex justify-center py-20">
+                            <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -757,6 +818,7 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
             if (tabId === 'profile') loadProfileLite();
             if (tabId === 'clans') loadAllClans();
+            if (tabId === 'clips') initClipsView();
         }
 
         // --- RIGHT PANEL TAB SYSTEM ---
@@ -840,26 +902,31 @@
         function checkBattledomeStatus() {
             db.ref('battledome/status').once('value').then(snap => {
                 const status = snap.val() || {};
-                // Target the actual home button that calls renderBattledome()
-                const bdButton = document.querySelector('[onclick="renderBattledome()"]');
-                if (!bdButton) return;
-                const badge = bdButton.querySelector('.text-\[10px\]');
-                if (!badge) return;
-                if (status.online) {
-                    badge.className = 'text-[10px] bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full font-black uppercase';
-                    badge.textContent = 'Online';
-                } else {
-                    badge.className = 'text-[10px] bg-red-500/20 text-red-400 px-3 py-0.5 rounded-full font-black uppercase';
-                    badge.textContent = 'Offline';
-                }
-            }).catch(() => {
-                const bdButton = document.querySelector('[onclick="renderBattledome()"]');
-                const badge = bdButton?.querySelector('.text-\[10px\]');
-                if (badge) {
-                    badge.className = 'text-[10px] bg-gray-500/20 text-gray-400 px-3 py-0.5 rounded-full font-black uppercase';
-                    badge.textContent = 'Unknown';
-                }
+                _applyBattledomeStatusBadge(status.online === true ? 'online' : 'offline');
+                console.log('[BD] Status:', status.online ? 'ONLINE' : 'OFFLINE');
+            }).catch(err => {
+                console.error('[BD] Status check failed:', err);
+                _applyBattledomeStatusBadge('unknown');
             });
+        }
+
+        function _applyBattledomeStatusBadge(state) {
+            // Find the BD button robustly — match any button whose onclick calls renderBattledome
+            const bdButton = document.querySelector('[onclick="renderBattledome()"]');
+            if (!bdButton) return;
+            // Find badge: look for a div child that has rounded-full and font-black (the status pill)
+            const badge = Array.from(bdButton.querySelectorAll('div')).find(el =>
+                el.className.includes('rounded-full') && el.className.includes('font-black')
+            );
+            if (!badge) return;
+            const styles = {
+                online:  { cls: 'bg-green-500/20 text-green-400', text: 'ONLINE' },
+                offline: { cls: 'bg-red-500/20 text-red-400',   text: 'OFFLINE' },
+                unknown: { cls: 'bg-gray-500/20 text-gray-400',  text: 'UNKNOWN' }
+            };
+            const s = styles[state] || styles.unknown;
+            badge.className = `text-[10px] ${s.cls} px-3 py-0.5 rounded-full font-black uppercase`;
+            badge.textContent = s.text;
         }
 
         function addFeedItem(item) {
@@ -1617,16 +1684,27 @@
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || backgroundPrefs.reducedMotion;
             function tick(ts) {
                 if (!backgroundScene) return;
-                bgAutoDrift.time = ts * 0.0002;
-                bgAutoDrift.x = Math.sin(bgAutoDrift.time) * 0.18;
-                bgAutoDrift.y = Math.cos(bgAutoDrift.time * 0.8) * 0.14;
-                mouseParallax.x += (mouseParallax.tx - mouseParallax.x) * 0.06;
-                mouseParallax.y += (mouseParallax.ty - mouseParallax.y) * 0.06;
-                const motionX = reduceMotion ? bgAutoDrift.x : (mouseParallax.x + bgAutoDrift.x);
-                const motionY = reduceMotion ? bgAutoDrift.y : (mouseParallax.y + bgAutoDrift.y);
-                backgroundScene.style.setProperty('--mx', motionX.toFixed(4));
-                backgroundScene.style.setProperty('--my', motionY.toFixed(4));
-                backgroundScene.style.setProperty('--drift', String(Math.sin(bgAutoDrift.time)));
+                // Smoother auto-drift using two-frequency sine waves for organic feel
+                bgAutoDrift.time = ts * 0.0001;
+                bgAutoDrift.x = Math.sin(bgAutoDrift.time) * 0.25 + Math.sin(bgAutoDrift.time * 0.41) * 0.08;
+                bgAutoDrift.y = Math.cos(bgAutoDrift.time * 0.7) * 0.20 + Math.cos(bgAutoDrift.time * 0.33) * 0.06;
+                // Eased mouse parallax (lerp toward target)
+                mouseParallax.x += (mouseParallax.tx - mouseParallax.x) * 0.08;
+                mouseParallax.y += (mouseParallax.ty - mouseParallax.y) * 0.08;
+                // Blend motion sources
+                const motionX = reduceMotion ? bgAutoDrift.x : (mouseParallax.x * 0.8 + bgAutoDrift.x);
+                const motionY = reduceMotion ? bgAutoDrift.y : (mouseParallax.y * 0.8 + bgAutoDrift.y);
+                backgroundScene.style.setProperty('--mx', motionX.toFixed(6));
+                backgroundScene.style.setProperty('--my', motionY.toFixed(6));
+                backgroundScene.style.setProperty('--drift', Math.sin(bgAutoDrift.time).toFixed(4));
+                // Pulse the glow layer for depth perception
+                if (!reduceMotion) {
+                    const glowLayer = backgroundScene.querySelector('.kc-bg-glow');
+                    if (glowLayer) {
+                        const pulse = Math.sin(ts * 0.0008) * 0.15 + 0.55;
+                        glowLayer.style.opacity = pulse.toFixed(3);
+                    }
+                }
                 backgroundAnimationId = requestAnimationFrame(tick);
             }
             backgroundAnimationId = requestAnimationFrame(tick);
@@ -1796,21 +1874,88 @@
             `);
         }
 
-        // === Slither Server Browser (Phase 5) ===
+        // === Slither Server Browser ===
+        // NOTE: The KC Discord bot fetches Slither servers live from ntl-slither.com/ss/rs.php
+        // using cheerio server-side. This data is NOT stored in Firebase (CORS blocks browser
+        // direct access). Use the /slitherservers Discord command to see live servers.
+        // If a future integration writes server data to Firebase, it will appear here automatically.
         async function openSlitherServers() {
-            const modal = openModalWithLoading('🐍 Slither.io Servers', 'Fetching servers...');
+            const modal = openModalWithLoading('🐍 Slither.io Servers', 'Checking for active servers...');
             if (!modal) return;
             try {
-                const snap = await db.ref('slitherServers').once('value');
+                // Check if the bot has written any cached server data to Firebase
+                let snap = await db.ref('slitherServers').once('value');
+                if (!snap.exists()) snap = await db.ref('slither/servers').once('value');
                 const raw = snap.val() || {};
-                const list = Object.entries(raw).map(([key, value]) => ({ key, ...value }));
+                const list = Object.entries(raw).map(([key, value]) => ({
+                    key,
+                    name: value.name || value.serverName || `Server ${key}`,
+                    playerCount: value.playerCount || value.players || 0,
+                    region: value.region || '',
+                    ping: value.ping || null,
+                    joinLink: value.joinLink || value.url || null,
+                    ...value
+                }));
+                list.sort((a, b) => (b.playerCount || 0) - (a.playerCount || 0));
                 lastSlitherServers = list;
                 lastSlitherModal = modal;
-                renderSlitherServerBrowser(modal, list);
-            } catch (e) {
-                // If we fail to fetch servers (e.g. offline), still render the browser with an empty list so the
-                // search/filter UI is displayed and communicates that no servers are available.
-                renderSlitherServerBrowser(modal, []);
+                if (list.length > 0) {
+                    // Firebase has cached data — display it
+                    renderSlitherServerBrowser(modal, list);
+                    return;
+                }
+                // No Firebase data — servers are fetched live by the Discord bot only
+                modal.update(`
+                    <div class="space-y-6">
+                        <div class="text-center py-6">
+                            <div class="text-7xl mb-4">🐍</div>
+                            <p class="text-xl font-bold mb-2">Live Servers via Discord Bot</p>
+                            <p class="text-gray-400 text-sm max-w-sm mx-auto">
+                                Slither.io server listings are fetched live from the NTL network by the KC Discord bot.
+                                Use the command below in the KC Discord server to see active servers in real time.
+                            </p>
+                        </div>
+                        <div class="glass rounded-2xl p-5 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl flex-shrink-0">
+                                <i class="fa-brands fa-discord"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-bold text-sm mb-1">Discord Slash Command</p>
+                                <code class="text-green-400 text-sm font-mono bg-black/30 px-3 py-1.5 rounded-xl select-all">/slitherservers</code>
+                            </div>
+                        </div>
+                        <div class="glass rounded-2xl p-5 space-y-3">
+                            <p class="text-xs font-black uppercase text-gray-500 tracking-wider">What you can do</p>
+                            <div class="flex items-start gap-3 text-sm">
+                                <i class="fa-solid fa-circle-check text-green-400 mt-0.5 flex-shrink-0"></i>
+                                <span>Run <code class="text-green-400 font-mono">/slitherservers</code> in Discord to get a live list of active KC Slither servers</span>
+                            </div>
+                            <div class="flex items-start gap-3 text-sm">
+                                <i class="fa-solid fa-circle-check text-green-400 mt-0.5 flex-shrink-0"></i>
+                                <span>Ask staff in Discord to start a new server for the community</span>
+                            </div>
+                            <div class="flex items-start gap-3 text-sm">
+                                <i class="fa-solid fa-circle-check text-green-400 mt-0.5 flex-shrink-0"></i>
+                                <span>Track your Slither appearances and high scores via the bot</span>
+                            </div>
+                        </div>
+                        <button onclick="openSlitherServers()" class="btn-press w-full px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition text-sm">
+                            <i class="fa-solid fa-rotate-right mr-2"></i> Check Again
+                        </button>
+                    </div>
+                `);
+            } catch (err) {
+                console.error('[Slither] Failed to load servers:', err);
+                modal.update(`
+                    <div class="text-center py-16">
+                        <i class="fa-solid fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                        <p class="text-xl font-bold text-red-400 mb-2">Failed to Load</p>
+                        <p class="text-gray-400 text-sm mb-6">${err.message || 'Network error'}</p>
+                        <button onclick="openSlitherServers()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">
+                            <i class="fa-solid fa-rotate-right mr-2"></i> Try Again
+                        </button>
+                    </div>
+                `);
             }
         }
 
@@ -1979,16 +2124,124 @@
             db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => loadAllClans());
         };
 
-        // --- SUB-MODULE: CLIPS (legacy) ---
-        function loadClipsFull() {
-            // Do nothing since clipssocial.html handles everything inside iframe.
+        // --- SUB-MODULE: CLIPS (legacy stub) ---
+        function loadClipsFull() { /* replaced by native initClipsView */ }
+
+        // === NATIVE CLIPS VIEW ===
+        let clipsAllPosts = [];
+        let clipsUserProfiles = {};
+        let clipsCurrentTab = 'all';
+        let clipsLoaded = false;
+
+        async function initClipsView() {
+            const container = document.getElementById('clips-grid');
+            if (!container) return;
+            if (clipsLoaded) { renderClipsContent(); return; }
+            container.className = 'col-span-full';
+            container.innerHTML = `<div class="flex justify-center py-20"><div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>`;
+            try {
+                const usersSnap = await db.ref('users').once('value');
+                clipsUserProfiles = {};
+                clipsAllPosts = [];
+                usersSnap.forEach(userSnap => {
+                    const u = userSnap.val() || {};
+                    clipsUserProfiles[userSnap.key] = u;
+                    const posts = u.posts;
+                    if (posts) {
+                        Object.entries(posts).forEach(([postId, p]) => {
+                            // Match socialfeed.html: exclude drafts and unpublished scheduled posts
+                            const now = Date.now();
+                            if (p && !p.draft && (!p.publishAt || p.publishAt <= now)) {
+                                clipsAllPosts.push({ ...p, postId, createdBy: userSnap.key });
+                            }
+                        });
+                    }
+                });
+                clipsAllPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                clipsLoaded = true;
+                renderClipsContent();
+            } catch(err) {
+                console.error('[Clips] load failed:', err);
+                container.innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Failed to load clips. <button onclick="initClipsView()" class="underline ml-1">Retry</button></div>`;
+            }
         }
 
-        window.likePost = (id) => {
-            if(!currentUser) return openAuthModal();
-            const ref = db.ref(`social_posts/${id}/likes`);
-            ref.transaction(cur => (cur || 0) + 1).then(() => loadClipsFull());
-        };
+        function switchClipsTab(tab) {
+            clipsCurrentTab = tab;
+            renderClipsContent();
+        }
+
+        function renderClipsContent() {
+            const container = document.getElementById('clips-grid');
+            if (!container) return;
+            // Update tab button styles
+            ['all', 'youtube', 'tiktok'].forEach(t => {
+                const btn = document.getElementById(`clips-tab-${t}`);
+                if (btn) btn.className = `btn-press px-4 py-2 rounded-xl text-sm font-bold transition ${t === clipsCurrentTab ? 'bg-blue-600 text-white' : 'glass hover:bg-white/10'}`;
+            });
+            let posts = clipsAllPosts;
+            // socialfeed.html uses p.type === 'youtube'/'tiktok' as the canonical filter
+            if (clipsCurrentTab === 'youtube') posts = clipsAllPosts.filter(p => p.type === 'youtube');
+            if (clipsCurrentTab === 'tiktok') posts = clipsAllPosts.filter(p => p.type === 'tiktok');
+            if (posts.length === 0) {
+                container.className = 'col-span-full';
+                container.innerHTML = '<div class="text-center py-20 text-gray-500">No clips yet in this category.</div>';
+                return;
+            }
+            container.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+            container.innerHTML = posts.slice(0, 30).map((p, i) => {
+                const user = clipsUserProfiles[p.createdBy] || {};
+                const thumb = p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : (p.mediaUrl || null);
+                const ytBadge = p.ytId ? `<span class="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">YouTube</span>` : '';
+                const ttBadge = p.videoId ? `<span class="text-[10px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full font-bold">TikTok</span>` : '';
+                return `<div class="glass rounded-3xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform fade-in-up" style="animation-delay:${i*25}ms" onclick="openClipDetail('${p.createdBy}','${p.postId}')">
+                    <div class="relative aspect-video bg-black/40">
+                        ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">` : '<div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-film text-4xl text-white/20"></i></div>'}
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                            <i class="fa-solid fa-circle-play text-5xl text-white/80 drop-shadow-lg"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-7 h-7 rounded-full object-cover flex-shrink-0">
+                            <span class="text-sm font-bold truncate">${user.displayName || 'Anonymous'}</span>
+                            ${ytBadge}${ttBadge}
+                        </div>
+                        <p class="text-sm text-gray-400 truncate">${p.caption || ''}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openClipDetail(ownerUid, postId) {
+            const post = clipsAllPosts.find(p => p.postId === postId && p.createdBy === ownerUid);
+            if (!post) return;
+            const user = clipsUserProfiles[ownerUid] || {};
+            let mediaHtml = '';
+            if (post.ytId) {
+                mediaHtml = `<div class="aspect-video w-full"><iframe class="w-full h-full rounded-2xl" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            } else if (post.videoId) {
+                mediaHtml = `<div class="aspect-video w-full"><iframe class="w-full h-full rounded-2xl" src="https://www.tiktok.com/embed/v2/${post.videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+            } else if (post.mediaUrl) {
+                mediaHtml = `<img src="${post.mediaUrl}" class="w-full rounded-2xl object-cover max-h-96">`;
+            }
+            openModal(`${user.displayName || 'Anonymous'}'s Clip`, `
+                <div class="space-y-4">
+                    ${mediaHtml || '<div class="aspect-video bg-black/30 rounded-2xl flex items-center justify-center text-gray-600"><i class="fa-solid fa-film text-5xl"></i></div>'}
+                    <div class="flex items-center gap-3">
+                        <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <p class="font-bold">${user.displayName || 'Anonymous'}</p>
+                            <p class="text-xs text-gray-400">${post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</p>
+                        </div>
+                    </div>
+                    ${post.caption ? `<p class="text-gray-300 text-sm leading-relaxed">${post.caption}</p>` : ''}
+                </div>
+            `);
+        }
+
+        window.likePost = (id) => { /* legacy - no-op */ };
 
         // --- STATS PANEL ---
         function loadStatsPanel() {
@@ -2090,6 +2343,24 @@
         }
 
         let modalLoading = false;
+
+        function openModalWithSkeleton(title, rows = 3) {
+            openModal(title, `
+                <div class="space-y-4">
+                    ${Array.from({length: rows}, (_, i) => `
+                        <div class="animate-pulse flex gap-4" style="animation-delay:${i * 80}ms">
+                            <div class="w-12 h-12 bg-white/5 rounded-xl flex-shrink-0"></div>
+                            <div class="flex-1 space-y-2 pt-1">
+                                <div class="h-4 bg-white/5 rounded w-3/4"></div>
+                                <div class="h-3 bg-white/5 rounded w-1/2"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `);
+            return { update: (content) => { const b = document.getElementById('modal-body'); if (b) b.innerHTML = content; modalLoading = false; } };
+        }
+
         function openModalWithLoading(title, loadingText = 'Loading...') {
             if (modalLoading) return null;
             modalLoading = true;
@@ -2113,10 +2384,27 @@
             const modal = openModalWithLoading('🏅 Leaderboard', 'Loading rankings...');
             if (!modal) return;
             try {
-                const snapshot = await db.ref('users').orderByChild(category).limitToLast(20).once('value');
-                const users = [];
-                snapshot.forEach(child => users.unshift({ uid: child.key, ...child.val() }));
-                const labels = { overall:'Overall', offence:'Offence', defence:'Defence', bdHighscore:'BD Score', totalPoints:'Economy' };
+                // Read users + badges separately (like leaderboard.html) — scores live in badges, not users
+                const [usersSnap, badgesSnap] = await Promise.all([
+                    db.ref('users').once('value'),
+                    db.ref('badges').once('value').catch(() => ({ val: () => ({}) }))
+                ]);
+                const usersData = usersSnap.val() || {};
+                const badgesData = badgesSnap.val ? badgesSnap.val() : (badgesSnap || {});
+                const users = Object.entries(usersData).map(([uid, u]) => {
+                    const b = badgesData[uid] || {};
+                    return {
+                        uid,
+                        displayName: u.displayName || u.email || 'Unknown',
+                        photoURL: u.avatar || u.photoURL || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png',
+                        overall: b.overall || 0,
+                        offence: b.offence || 0,
+                        defence: b.defence || 0,
+                        bdHighscore: u.bdHighscore || 0,
+                    };
+                });
+                users.sort((a, b) => (b[category] || 0) - (a[category] || 0));
+                const labels = { overall:'Overall', offence:'Offence', defence:'Defence', bdHighscore:'BD Score' };
                 modal.update(`
                     <div class="space-y-4">
                         <div class="flex gap-2 flex-wrap">
@@ -2131,14 +2419,17 @@
                                 return `
                                     <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="openKcProfile('${u.uid}')">
                                         <span class="w-8 text-center font-black">${medal}</span>
-                                        <img src="${u.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
-                                        <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName||'Unknown'}${isMe?' (you)':''}</span>
+                                        <img src="${u.photoURL}" class="w-8 h-8 rounded-full object-cover">
+                                        <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName}${isMe?' (you)':''}</span>
                                         <span class="text-blue-400 font-bold">${(u[category]||0).toLocaleString()}</span>
                                     </div>`;
                             }).join('') || '<p class="text-gray-400 text-center py-8">No data yet</p>'}
                         </div>
                     </div>`);
-            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load leaderboard</div>'); }
+            } catch(e) {
+                console.error('[Leaderboard]', e);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load leaderboard</div>');
+            }
         }
 
         function openLeaderboard() { renderLeaderboard(); }
@@ -2149,56 +2440,104 @@
 
         async function renderBattledome() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('⚔️ Battledome', 'Fetching battle data...');
+            const modal = openModalWithLoading('⚔️ Battledome', 'Loading battle arena...');
             if (!modal) return;
             try {
-                const [statusSnap, topSnap] = await Promise.all([
-                    db.ref('battledome/status').once('value'),
-                    db.ref('bdTop/global').orderByChild('score').limitToLast(10).once('value')
+                // Fetch each path independently — one failure won't break the whole modal
+                const [status, topEntries, userBdScore, userBdName] = await Promise.all([
+                    db.ref('battledome/status').once('value').then(s => s.val() || {}).catch(() => ({})),
+                    db.ref('bdTop/global').once('value').then(snap => {
+                        const entries = [];
+                        snap.forEach(child => {
+                            const val = child.val();
+                            entries.push({ key: child.key, name: child.key, score: (typeof val === 'object' ? val.score : val) || 0 });
+                        });
+                        return entries.sort((a, b) => b.score - a.score).slice(0, 10);
+                    }).catch(() => []),
+                    db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
+                    getDiscordIdFromKcUid(currentUser.uid).then(did => {
+                        if (!did) return null;
+                        return db.ref(`config/playerLinks/${did}/bdName`).once('value').then(s => s.val());
+                    }).catch(() => null)
                 ]);
-                const status = statusSnap.val() || {};
-                const topEntries = [];
-                topSnap.forEach(child => topEntries.unshift({ key: child.key, ...child.val() }));
-
-                let userBdName = null;
-                const discordId = await getDiscordIdFromKcUid(currentUser.uid);
-                if (discordId) {
-                    const bdSnap = await db.ref(`config/playerLinks/${discordId}/bdName`).once('value');
-                    userBdName = bdSnap.val();
-                }
 
                 const isOnline = status.online === true;
+                const serverName = status.serverName || status.name || 'Battledome Arena';
+                const playerCount = status.playerCount || status.players || 0;
+
                 modal.update(`
                     <div class="space-y-5">
-                        <div class="glass p-4 rounded-2xl flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full ${isOnline?'bg-green-400 pulse-slow':'bg-red-400'}"></div>
-                                <span class="font-bold">${status.serverName||'Battledome'}</span>
-                                ${isOnline?`<span class="text-xs text-gray-400">${status.playerCount||0} players</span>`:'<span class="text-xs text-red-400">Offline</span>'}
+                        <!-- Status banner -->
+                        <div class="glass p-5 rounded-3xl ${isOnline ? 'border-2 border-green-500/30' : 'border-2 border-red-500/30'}">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-4 h-4 rounded-full flex-shrink-0 ${isOnline ? 'bg-green-500 pulse-slow' : 'bg-red-500'}"></div>
+                                    <div>
+                                        <p class="font-bold">${serverName}</p>
+                                        <p class="text-xs ${isOnline ? 'text-gray-400' : 'text-red-400'}">
+                                            ${isOnline ? `${playerCount} player${playerCount !== 1 ? 's' : ''} online` : 'Server offline'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onclick="renderBattledome()" class="btn-press px-4 py-2 glass rounded-xl hover:bg-white/10 transition text-sm">
+                                    <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                                </button>
                             </div>
-                            <button onclick="renderBattledome()" class="btn-press text-xs glass px-3 py-2 rounded-xl hover:bg-white/10 transition"><i class="fa-solid fa-rotate-right"></i> Refresh</button>
                         </div>
-                        ${userBdName?`
-                            <div class="glass p-3 rounded-2xl">
-                                <p class="text-xs text-gray-400 mb-1">Your BD Username</p>
-                                <p class="font-bold text-blue-400">${userBdName}</p>
-                            </div>`:''}
+
+                        ${userBdName ? `
+                        <!-- User stats -->
+                        <div class="glass p-5 rounded-3xl">
+                            <p class="text-xs text-gray-400 uppercase font-bold mb-3">Your Battledome Stats</p>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-gray-400">BD Username</p>
+                                    <p class="text-xl font-bold text-blue-400">${userBdName}</p>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-400">Personal Best</p>
+                                    <p class="text-xl font-bold text-red-400">${userBdScore.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                        ` : `
+                        <div class="glass p-4 rounded-2xl border border-yellow-500/20">
+                            <p class="font-bold text-yellow-300 text-sm mb-1">Link Your Battledome Account</p>
+                            <p class="text-xs text-gray-400">Use <code class="bg-white/5 px-1.5 py-0.5 rounded">/linktokc bd</code> in Discord to track your BD stats here.</p>
+                        </div>
+                        `}
+
+                        <!-- Global leaderboard -->
                         <div>
-                            <h3 class="text-sm font-bold text-gray-300 uppercase tracking-wider mb-3">🏆 Global Top 10</h3>
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="font-bold text-sm uppercase tracking-wider">🏆 Global Top 10</h3>
+                                ${isOnline ? `<a href="https://kcevents.uk/#battledome" target="_blank" class="text-xs text-blue-400 hover:underline">Play Now →</a>` : ''}
+                            </div>
                             <div class="space-y-2">
-                                ${topEntries.length===0?'<p class="text-gray-400 text-center py-6">No leaderboard data yet</p>':
-                                    topEntries.map((e,i)=>{
-                                        const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500">#${i+1}</span>`;
-                                        return `<div class="glass p-3 rounded-2xl flex items-center gap-3 fade-in-up ${i<3?'border border-yellow-500/20':''}" style="animation-delay:${i*40}ms">
-                                            <span class="w-8 text-center font-black">${medal}</span>
-                                            <span class="flex-1 font-bold">${e.name||e.key}</span>
-                                            <span class="text-blue-400 font-bold">${(e.score||0).toLocaleString()}</span>
-                                        </div>`;
-                                    }).join('')}
+                                ${topEntries.length > 0 ? topEntries.map((e, i) => {
+                                    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
+                                    const isUser = userBdName && e.name === userBdName;
+                                    return `<div class="glass p-3 rounded-2xl flex items-center gap-3 fade-in-up ${i<3?'border border-yellow-500/20':''} ${isUser?'border-2 border-blue-500/50':''}" style="animation-delay:${i*40}ms">
+                                        <span class="w-8 text-center font-black text-lg">${medal}</span>
+                                        <span class="flex-1 font-bold ${isUser?'text-blue-400':''}">${e.name}${isUser?' 👤':''}</span>
+                                        <span class="font-bold text-red-400">${e.score.toLocaleString()}</span>
+                                    </div>`;
+                                }).join('') : '<p class="text-gray-400 text-center py-8 text-sm">No scores recorded yet</p>'}
                             </div>
                         </div>
-                    </div>`);
-            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load Battledome data</div>'); }
+                    </div>
+                `);
+            } catch(err) {
+                console.error('[BD] renderBattledome error:', err);
+                modal.update(`
+                    <div class="text-center py-16 space-y-4">
+                        <i class="fa-solid fa-exclamation-triangle text-5xl text-red-500"></i>
+                        <p class="text-xl font-bold text-red-400">Failed to Load</p>
+                        <p class="text-sm text-gray-400">${err.message || 'Unknown error'}</p>
+                        <button onclick="renderBattledome()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">Try Again</button>
+                    </div>
+                `);
+            }
         }
 
         function openBattledome() { renderBattledome(); }
@@ -2262,7 +2601,13 @@
                             <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
                     `);
+                }).catch(err => {
+                    console.error('[GamesHub] data load failed:', err);
+                    modal.update('<div class="text-center py-10 text-red-400">Failed to load game stats. Close and try again.</div>');
                 });
+            }).catch(err => {
+                console.error('[GamesHub] discordId lookup failed:', err);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load game stats. Close and try again.</div>');
             });
         }
 
@@ -2429,20 +2774,66 @@
             showToast(`${msgs[result]} ${delta>=0?'+':''}${delta} pts`, result==='win'?'success':'error', 3000);
         }
 
-        function openBlackjackGame(){
-            if(!currentUser) return openAuthModal();
-            bjGameOver=false; bjBet=100;
-            openModal('♠ Blackjack',`
-                <div class="space-y-4">
-                    <div class="glass p-3 rounded-2xl flex items-center justify-between">
-                        <span id="bj-bet-label" class="font-bold text-blue-400">Bet: 100 pts</span>
-                        <div class="flex gap-2">
-                            ${[50,100,250,500].map(b=>`<button onclick="bjBet=${b};document.getElementById('bj-bet-label').textContent='Bet: ${b} pts'" class="btn-press text-xs glass px-3 py-1 rounded-xl hover:bg-white/10 transition">${b}</button>`).join('')}
+        function openBlackjackGame() {
+            if (!currentUser) return openAuthModal();
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                if (!discordId) {
+                    return openModal('Link Discord', `
+                        <div class="text-center py-10 space-y-4">
+                            <i class="fa-brands fa-discord text-6xl text-[#5865f2]"></i>
+                            <p class="text-gray-400">Link your Discord account to play games and earn points!</p>
+                            <p class="text-sm text-gray-500">Use <code class="bg-white/5 px-2 py-1 rounded">/link</code> in the KC Discord server</p>
                         </div>
-                    </div>
-                    <button onclick="bjDeal()" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg transition glow-on-hover">🃏 DEAL</button>
-                    <div id="bj-area"></div>
-                </div>`);
+                    `);
+                }
+                db.ref(`userEconomy/${discordId}/points`).once('value').then(snap => {
+                    const points = snap.val() || 0;
+                    if (points < 50) {
+                        return openModal('Insufficient Points', `
+                            <div class="text-center py-10 space-y-4">
+                                <i class="fa-solid fa-coins text-6xl text-yellow-500"></i>
+                                <p class="font-bold text-xl">Need 50+ pts to play</p>
+                                <p class="text-gray-400">Current balance: <span class="text-blue-400 font-bold">${points.toLocaleString()} pts</span></p>
+                                <p class="text-sm text-gray-500">Earn points via /daily or games in Discord</p>
+                            </div>
+                        `);
+                    }
+                    bjGameOver = false;
+                    bjBet = Math.min(100, Math.floor(points / 2), points);
+                    openModal('♠ Blackjack', `
+                        <div class="space-y-4">
+                            <div class="glass p-4 rounded-2xl">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-sm text-gray-400">Your Balance</span>
+                                    <span class="text-xl font-bold text-blue-400">${points.toLocaleString()} pts</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span id="bj-bet-label" class="font-bold text-green-400">Bet: ${bjBet} pts</span>
+                                    <div class="flex gap-2 flex-wrap justify-end">
+                                        ${[50, 100, 250, 500].filter(b => b <= points).map(b =>
+                                            `<button onclick="bjSetBet(${b})" class="btn-press text-xs glass px-3 py-1.5 rounded-xl hover:bg-white/10 transition ${b === bjBet ? 'bg-blue-600' : ''}">${b}</button>`
+                                        ).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="bjDeal()" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg transition glow-on-hover">
+                                🃏 DEAL CARDS
+                            </button>
+                            <div id="bj-area" class="min-h-[200px]"></div>
+                        </div>
+                    `);
+                });
+            });
+        }
+
+        function bjSetBet(amount) {
+            bjBet = amount;
+            const label = document.getElementById('bj-bet-label');
+            if (label) label.textContent = `Bet: ${amount} pts`;
+            document.querySelectorAll('[onclick^="bjSetBet"]').forEach(btn => {
+                const btnAmt = parseInt(btn.getAttribute('onclick').match(/\d+/)[0]);
+                btn.className = `btn-press text-xs glass px-3 py-1.5 rounded-xl hover:bg-white/10 transition ${btnAmt === amount ? 'bg-blue-600' : ''}`;
+            });
         }
 
         function bjDeal(){
@@ -2467,27 +2858,73 @@
         const SLOT_PAY={'🍒':2,'🍋':3,'🍊':4,'⭐':5,'💎':10,'🎰':20,'7️⃣':50};
         let slotsSpinning=false, slotsBet=50;
 
-        function openSlotsGame(){
-            if(!currentUser) return openAuthModal();
-            slotsSpinning=false; slotsBet=50;
-            openModal('🎰 Slots',`
-                <div class="space-y-5 text-center">
-                    <div class="flex justify-center gap-3">
-                        ${[0,1,2].map(i=>`<div id="slot-${i}" class="slot-reel w-20 h-20 glass rounded-2xl flex items-center justify-center text-4xl border-2 border-white/10">🎰</div>`).join('')}
-                    </div>
-                    <div>
-                        <p class="text-gray-400 text-sm mb-2">Bet Amount</p>
-                        <div class="flex gap-2 justify-center">
-                            ${[25,50,100,250].map(b=>`<button onclick="slotsBet=${b};slotsHighlight(${b})" id="sbtn-${b}" class="btn-press glass px-3 py-2 rounded-xl text-sm font-bold hover:bg-white/10 transition ${b===50?'bg-blue-600/50':''}">${b}</button>`).join('')}
+        function openSlotsGame() {
+            if (!currentUser) return openAuthModal();
+            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
+                if (!discordId) {
+                    return openModal('Link Discord', `
+                        <div class="text-center py-10 space-y-4">
+                            <i class="fa-brands fa-discord text-6xl text-[#5865f2]"></i>
+                            <p class="text-gray-400">Link your Discord account to play games!</p>
+                            <p class="text-sm text-gray-500">Use <code class="bg-white/5 px-2 py-1 rounded">/link</code> in Discord</p>
                         </div>
-                    </div>
-                    <div id="slots-result" class="text-sm text-gray-400 min-h-[22px]"></div>
-                    <button id="slots-spin-btn" onclick="slotsSpin()" class="btn-press w-full py-4 bg-yellow-600 hover:bg-yellow-500 rounded-2xl font-black text-lg transition glow-on-hover">🎰 SPIN!</button>
-                    <div class="glass p-3 rounded-2xl text-xs text-gray-400 text-left">
-                        <span class="text-white font-bold">Payouts (3 of a kind):</span>
-                        💎×10 • 7️⃣×50 • 🎰×20 • ⭐×5 • 🍊×4 • 🍋×3 • 🍒×2 • Pair: ½ bet back
-                    </div>
-                </div>`);
+                    `);
+                }
+                db.ref(`userEconomy/${discordId}/points`).once('value').then(snap => {
+                    const points = snap.val() || 0;
+                    if (points < 25) {
+                        return openModal('Insufficient Points', `
+                            <div class="text-center py-10 space-y-4">
+                                <i class="fa-solid fa-coins text-6xl text-yellow-500"></i>
+                                <p class="font-bold text-xl">Need 25+ pts to play</p>
+                                <p class="text-gray-400">Current balance: <span class="text-blue-400 font-bold">${points.toLocaleString()} pts</span></p>
+                            </div>
+                        `);
+                    }
+                    slotsSpinning = false;
+                    slotsBet = Math.min(50, points);
+                    openModal('🎰 Slots', `
+                        <div class="space-y-5 text-center">
+                            <div class="glass p-4 rounded-2xl flex items-center justify-between">
+                                <span class="text-sm text-gray-400">Balance</span>
+                                <span class="text-xl font-bold text-blue-400">${points.toLocaleString()} pts</span>
+                            </div>
+                            <div class="flex justify-center gap-3">
+                                ${[0,1,2].map(i=>`<div id="slot-${i}" class="slot-reel w-20 h-20 glass rounded-2xl flex items-center justify-center text-4xl border-2 border-white/10 transition-all">🎰</div>`).join('')}
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-sm mb-2">Bet Amount</p>
+                                <div class="flex gap-2 justify-center flex-wrap">
+                                    ${[25, 50, 100, 250].filter(b => b <= points).map(b =>
+                                        `<button onclick="slotsSetBet(${b})" id="sbtn-${b}" class="btn-press glass px-3 py-2 rounded-xl text-sm font-bold transition ${b === slotsBet ? 'bg-yellow-600' : 'hover:bg-white/10'}">${b}</button>`
+                                    ).join('')}
+                                </div>
+                            </div>
+                            <div id="slots-result" class="text-sm text-gray-400 min-h-[24px]"></div>
+                            <button id="slots-spin-btn" onclick="slotsSpin()" class="btn-press w-full py-4 bg-yellow-600 hover:bg-yellow-500 rounded-2xl font-black text-lg transition glow-on-hover">
+                                🎰 SPIN!
+                            </button>
+                            <div class="glass p-3 rounded-2xl text-xs text-left">
+                                <p class="font-bold mb-2">Payouts (3 of a kind):</p>
+                                <div class="grid grid-cols-2 gap-1 text-gray-400">
+                                    <span>💎 Diamond ×10</span><span>7️⃣ Seven ×50</span>
+                                    <span>🎰 Slots ×20</span><span>⭐ Star ×5</span>
+                                    <span>🍊 Orange ×4</span><span>🍋 Lemon ×3</span>
+                                    <span>🍒 Cherry ×2</span><span>Pair: ½ bet back</span>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                });
+            });
+        }
+
+        function slotsSetBet(amount) {
+            slotsBet = amount;
+            [25, 50, 100, 250].forEach(b => {
+                const btn = document.getElementById(`sbtn-${b}`);
+                if (btn) btn.className = `btn-press glass px-3 py-2 rounded-xl text-sm font-bold transition ${b === amount ? 'bg-yellow-600' : 'hover:bg-white/10'}`;
+            });
         }
 
         function slotsHighlight(active){
@@ -2647,20 +3084,23 @@
 
         function openEconomyShop() {
             if (!currentUser) return openAuthModal();
+            const modal = openModalWithLoading('🛒 Economy Shop', 'Loading your balance...');
+            if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const economyPromise = discordId
                     ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {})
                     : Promise.resolve({});
-                Promise.all([
+                return Promise.all([
                     economyPromise,
                     db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value'),
                     db.ref(`users/${currentUser.uid}/customBadge`).once('value')
-                ]).then(([economy, unlockSnap, customBadgeSnap]) => {
+                ]);
+            }).then(([economy, unlockSnap, customBadgeSnap]) => {
                     const points = economy.points || 0;
                     const inventory = economy.inventory || {};
                     const hasCustomization = unlockSnap.val() === true;
                     const hasCustomBadge = customBadgeSnap.exists();
-                    openModal('Economy Shop', `
+                    modal.update(`
                         <div class="space-y-6">
                             <div class="text-center glass p-4 rounded-2xl">
                                 <p class="text-gray-400 text-sm">Your Balance</p>
@@ -2737,7 +3177,9 @@
                             <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Use Discord bot commands (/buy, /shop) to purchase items</p>
                         </div>
                     `);
-                });
+            }).catch(err => {
+                console.error('[Shop]', err);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load shop. Close and try again.</div>');
             });
         }
 
@@ -3154,17 +3596,31 @@
         }
 
         function loadClipsPreview() {
-            db.ref('social_posts').limitToLast(2).once('value').then(snap => {
+            // Posts live at users/{uid}/posts/{postId}, not social_posts
+            db.ref('users').limitToLast(30).once('value').then(snap => {
+                const allPosts = [];
+                snap.forEach(userSnap => {
+                    const posts = userSnap.child('posts').val();
+                    if (posts) {
+                        Object.entries(posts).forEach(([postId, p]) => {
+                            allPosts.push({ ...p, postId, createdBy: userSnap.key, _displayName: (userSnap.val() || {}).displayName || 'Anonymous' });
+                        });
+                    }
+                });
+                allPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                const recent = allPosts.slice(0, 2);
                 let h = '';
-                snap.forEach(c => {
-                    const p = c.val();
-                    h += `<div class="relative bg-black/40 rounded-3xl overflow-hidden aspect-video border border-white/5">
-                            ${p.mediaUrl ? `<img src="${p.mediaUrl}" class="w-full h-full object-cover opacity-60">` : ''}
+                recent.forEach(p => {
+                    const thumb = p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : (p.mediaUrl || null);
+                    h += `<div class="relative bg-black/40 rounded-3xl overflow-hidden aspect-video border border-white/5 cursor-pointer" onclick="switchTab('clips')">
+                            ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover opacity-70" onerror="this.style.display='none'">` : ''}
                             <div class="absolute inset-0 flex items-center justify-center"><i class="fa-solid fa-play-circle text-4xl text-white/40"></i></div>
-                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white cursor-pointer hover:underline" onclick="window.openKcProfile('${p.createdBy}')">${p.userName}</p></div>
+                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white">${p._displayName}</p></div>
                         </div>`;
                 });
-                document.getElementById('home-clips-preview').innerHTML = h || '<p class="col-span-2 opacity-20 text-center text-xs">No media found.</p>';
+                document.getElementById('home-clips-preview').innerHTML = h || '<p class="col-span-2 opacity-20 text-center text-xs py-8">No clips yet.</p>';
+            }).catch(() => {
+                document.getElementById('home-clips-preview').innerHTML = '<p class="col-span-2 opacity-20 text-center text-xs py-8">No clips yet.</p>';
             });
         }
 
