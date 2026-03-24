@@ -11,6 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+  <script src="profile-popup.js"></script>
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -1562,7 +1563,7 @@ const hasCustomization =
 
     if (target.closest('img, .username')) {
       const uid = target.closest('[data-uid]').dataset.uid;
-      loadUserProfile(uid); // Use the new function here
+      openKcProfile(uid);
     } else if (target.closest('.likeBtn')) {
       db.ref(`${path}/likedBy/${u.uid}`).transaction(current => current ? null : true);
       db.ref(`${path}/likes`).transaction(current => {
