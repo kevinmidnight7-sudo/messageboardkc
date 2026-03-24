@@ -467,17 +467,30 @@
                 </div>
             </div>
 
-            <!-- CLIPS VIEW (Lite Social Feed as iframe) -->
-            <div id="view-clips" class="view-transition hidden space-y-8">
-                <div class="glass p-8 rounded-[40px]">
-                    <h2 class="text-3xl font-bold mb-8">Social Clips Feed</h2>
-                    <div class="w-full overflow-hidden rounded-[32px] mb-8" style="height: calc(100vh - 320px);">
-                        <iframe src="clipssocial.html" class="w-full h-full" style="border:0;"></iframe>
+            <!-- CLIPS VIEW (Native Social Feed) -->
+            <div id="view-clips" class="view-transition hidden space-y-6">
+                <div class="glass p-6 rounded-[40px]">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold flex items-center gap-3">
+                            <i class="fa-solid fa-clapperboard text-blue-400"></i> Community Clips
+                        </h2>
+                        <button onclick="clipsLoaded=false;initClipsView()" class="btn-press text-xs glass px-3 py-2 rounded-xl hover:bg-white/10 transition">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                        </button>
                     </div>
-                    <div class="mt-12 flex justify-center">
-                        <a href="https://kcevents.uk/#socialfeed" target="_blank" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl">
-                            Full Social Application <i class="fa-solid fa-arrow-right ml-2"></i>
-                        </a>
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <button id="clips-tab-all" onclick="switchClipsTab('all')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition bg-blue-600 text-white">All</button>
+                        <button id="clips-tab-youtube" onclick="switchClipsTab('youtube')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition glass hover:bg-white/10">
+                            <i class="fa-brands fa-youtube mr-1 text-red-400"></i> YouTube
+                        </button>
+                        <button id="clips-tab-tiktok" onclick="switchClipsTab('tiktok')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition glass hover:bg-white/10">
+                            <i class="fa-brands fa-tiktok mr-1"></i> TikTok
+                        </button>
+                    </div>
+                    <div id="clips-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="col-span-full flex justify-center py-20">
+                            <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -805,6 +818,7 @@
             document.getElementById(`tab-${tabId}`).classList.add('active');
             if (tabId === 'profile') loadProfileLite();
             if (tabId === 'clans') loadAllClans();
+            if (tabId === 'clips') initClipsView();
         }
 
         // --- RIGHT PANEL TAB SYSTEM ---
@@ -2110,16 +2124,121 @@
             db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => loadAllClans());
         };
 
-        // --- SUB-MODULE: CLIPS (legacy) ---
-        function loadClipsFull() {
-            // Do nothing since clipssocial.html handles everything inside iframe.
+        // --- SUB-MODULE: CLIPS (legacy stub) ---
+        function loadClipsFull() { /* replaced by native initClipsView */ }
+
+        // === NATIVE CLIPS VIEW ===
+        let clipsAllPosts = [];
+        let clipsUserProfiles = {};
+        let clipsCurrentTab = 'all';
+        let clipsLoaded = false;
+
+        async function initClipsView() {
+            const container = document.getElementById('clips-grid');
+            if (!container) return;
+            if (clipsLoaded) { renderClipsContent(); return; }
+            container.className = 'col-span-full';
+            container.innerHTML = `<div class="flex justify-center py-20"><div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>`;
+            try {
+                const usersSnap = await db.ref('users').once('value');
+                clipsUserProfiles = {};
+                clipsAllPosts = [];
+                usersSnap.forEach(userSnap => {
+                    const u = userSnap.val() || {};
+                    clipsUserProfiles[userSnap.key] = u;
+                    const posts = u.posts;
+                    if (posts) {
+                        Object.entries(posts).forEach(([postId, p]) => {
+                            if (p && (p.ytId || p.videoId || p.mediaUrl)) {
+                                clipsAllPosts.push({ ...p, postId, createdBy: userSnap.key });
+                            }
+                        });
+                    }
+                });
+                clipsAllPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                clipsLoaded = true;
+                renderClipsContent();
+            } catch(err) {
+                console.error('[Clips] load failed:', err);
+                container.innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Failed to load clips. <button onclick="initClipsView()" class="underline ml-1">Retry</button></div>`;
+            }
         }
 
-        window.likePost = (id) => {
-            if(!currentUser) return openAuthModal();
-            const ref = db.ref(`social_posts/${id}/likes`);
-            ref.transaction(cur => (cur || 0) + 1).then(() => loadClipsFull());
-        };
+        function switchClipsTab(tab) {
+            clipsCurrentTab = tab;
+            renderClipsContent();
+        }
+
+        function renderClipsContent() {
+            const container = document.getElementById('clips-grid');
+            if (!container) return;
+            // Update tab button styles
+            ['all', 'youtube', 'tiktok'].forEach(t => {
+                const btn = document.getElementById(`clips-tab-${t}`);
+                if (btn) btn.className = `btn-press px-4 py-2 rounded-xl text-sm font-bold transition ${t === clipsCurrentTab ? 'bg-blue-600 text-white' : 'glass hover:bg-white/10'}`;
+            });
+            let posts = clipsAllPosts;
+            if (clipsCurrentTab === 'youtube') posts = clipsAllPosts.filter(p => p.ytId);
+            if (clipsCurrentTab === 'tiktok') posts = clipsAllPosts.filter(p => p.videoId);
+            if (posts.length === 0) {
+                container.className = 'col-span-full';
+                container.innerHTML = '<div class="text-center py-20 text-gray-500">No clips yet in this category.</div>';
+                return;
+            }
+            container.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
+            container.innerHTML = posts.slice(0, 30).map((p, i) => {
+                const user = clipsUserProfiles[p.createdBy] || {};
+                const thumb = p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : (p.mediaUrl || null);
+                const ytBadge = p.ytId ? `<span class="text-[10px] bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full font-bold">YouTube</span>` : '';
+                const ttBadge = p.videoId ? `<span class="text-[10px] bg-pink-500/20 text-pink-400 px-2 py-0.5 rounded-full font-bold">TikTok</span>` : '';
+                return `<div class="glass rounded-3xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform fade-in-up" style="animation-delay:${i*25}ms" onclick="openClipDetail('${p.createdBy}','${p.postId}')">
+                    <div class="relative aspect-video bg-black/40">
+                        ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'">` : '<div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-film text-4xl text-white/20"></i></div>'}
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                            <i class="fa-solid fa-circle-play text-5xl text-white/80 drop-shadow-lg"></i>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-7 h-7 rounded-full object-cover flex-shrink-0">
+                            <span class="text-sm font-bold truncate">${user.displayName || 'Anonymous'}</span>
+                            ${ytBadge}${ttBadge}
+                        </div>
+                        <p class="text-sm text-gray-400 truncate">${p.caption || ''}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openClipDetail(ownerUid, postId) {
+            const post = clipsAllPosts.find(p => p.postId === postId && p.createdBy === ownerUid);
+            if (!post) return;
+            const user = clipsUserProfiles[ownerUid] || {};
+            let mediaHtml = '';
+            if (post.ytId) {
+                mediaHtml = `<div class="aspect-video w-full"><iframe class="w-full h-full rounded-2xl" src="https://www.youtube.com/embed/${post.ytId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            } else if (post.videoId) {
+                mediaHtml = `<div class="aspect-video w-full"><iframe class="w-full h-full rounded-2xl" src="https://www.tiktok.com/embed/v2/${post.videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+            } else if (post.mediaUrl) {
+                mediaHtml = `<img src="${post.mediaUrl}" class="w-full rounded-2xl object-cover max-h-96">`;
+            }
+            openModal(`${user.displayName || 'Anonymous'}'s Clip`, `
+                <div class="space-y-4">
+                    ${mediaHtml || '<div class="aspect-video bg-black/30 rounded-2xl flex items-center justify-center text-gray-600"><i class="fa-solid fa-film text-5xl"></i></div>'}
+                    <div class="flex items-center gap-3">
+                        <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
+                        <div>
+                            <p class="font-bold">${user.displayName || 'Anonymous'}</p>
+                            <p class="text-xs text-gray-400">${post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ''}</p>
+                        </div>
+                    </div>
+                    ${post.caption ? `<p class="text-gray-300 text-sm leading-relaxed">${post.caption}</p>` : ''}
+                </div>
+            `);
+        }
+
+        window.likePost = (id) => { /* legacy - no-op */ };
 
         // --- STATS PANEL ---
         function loadStatsPanel() {
@@ -2262,10 +2381,27 @@
             const modal = openModalWithLoading('🏅 Leaderboard', 'Loading rankings...');
             if (!modal) return;
             try {
-                const snapshot = await db.ref('users').orderByChild(category).limitToLast(20).once('value');
-                const users = [];
-                snapshot.forEach(child => users.unshift({ uid: child.key, ...child.val() }));
-                const labels = { overall:'Overall', offence:'Offence', defence:'Defence', bdHighscore:'BD Score', totalPoints:'Economy' };
+                // Read users + badges separately (like leaderboard.html) — scores live in badges, not users
+                const [usersSnap, badgesSnap] = await Promise.all([
+                    db.ref('users').once('value'),
+                    db.ref('badges').once('value').catch(() => ({ val: () => ({}) }))
+                ]);
+                const usersData = usersSnap.val() || {};
+                const badgesData = badgesSnap.val ? badgesSnap.val() : (badgesSnap || {});
+                const users = Object.entries(usersData).map(([uid, u]) => {
+                    const b = badgesData[uid] || {};
+                    return {
+                        uid,
+                        displayName: u.displayName || u.email || 'Unknown',
+                        photoURL: u.avatar || u.photoURL || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png',
+                        overall: b.overall || 0,
+                        offence: b.offence || 0,
+                        defence: b.defence || 0,
+                        bdHighscore: u.bdHighscore || 0,
+                    };
+                });
+                users.sort((a, b) => (b[category] || 0) - (a[category] || 0));
+                const labels = { overall:'Overall', offence:'Offence', defence:'Defence', bdHighscore:'BD Score' };
                 modal.update(`
                     <div class="space-y-4">
                         <div class="flex gap-2 flex-wrap">
@@ -2280,14 +2416,17 @@
                                 return `
                                     <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="openKcProfile('${u.uid}')">
                                         <span class="w-8 text-center font-black">${medal}</span>
-                                        <img src="${u.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
-                                        <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName||'Unknown'}${isMe?' (you)':''}</span>
+                                        <img src="${u.photoURL}" class="w-8 h-8 rounded-full object-cover">
+                                        <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName}${isMe?' (you)':''}</span>
                                         <span class="text-blue-400 font-bold">${(u[category]||0).toLocaleString()}</span>
                                     </div>`;
                             }).join('') || '<p class="text-gray-400 text-center py-8">No data yet</p>'}
                         </div>
                     </div>`);
-            } catch(e) { modal.update('<div class="text-center py-10 text-red-400">Failed to load leaderboard</div>'); }
+            } catch(e) {
+                console.error('[Leaderboard]', e);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load leaderboard</div>');
+            }
         }
 
         function openLeaderboard() { renderLeaderboard(); }
@@ -2301,29 +2440,23 @@
             const modal = openModalWithLoading('⚔️ Battledome', 'Loading battle arena...');
             if (!modal) return;
             try {
-                const [statusSnap, topSnap, userSnap] = await Promise.all([
-                    db.ref('battledome/status').once('value'),
-                    db.ref('bdTop/global').orderByChild('score').limitToLast(10).once('value'),
-                    db.ref(`users/${currentUser.uid}`).once('value')
+                // Fetch each path independently — one failure won't break the whole modal
+                const [status, topEntries, userBdScore, userBdName] = await Promise.all([
+                    db.ref('battledome/status').once('value').then(s => s.val() || {}).catch(() => ({})),
+                    db.ref('bdTop/global').once('value').then(snap => {
+                        const entries = [];
+                        snap.forEach(child => {
+                            const val = child.val();
+                            entries.push({ key: child.key, name: child.key, score: (typeof val === 'object' ? val.score : val) || 0 });
+                        });
+                        return entries.sort((a, b) => b.score - a.score).slice(0, 10);
+                    }).catch(() => []),
+                    db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
+                    getDiscordIdFromKcUid(currentUser.uid).then(did => {
+                        if (!did) return null;
+                        return db.ref(`config/playerLinks/${did}/bdName`).once('value').then(s => s.val());
+                    }).catch(() => null)
                 ]);
-                const status = statusSnap.val() || {};
-                const userData = userSnap.val() || {};
-
-                // Parse leaderboard — handle both {score:N} and raw number formats
-                const topEntries = [];
-                topSnap.forEach(child => {
-                    const val = child.val();
-                    topEntries.unshift({ key: child.key, name: child.key, score: (typeof val === 'object' ? val.score : val) || 0 });
-                });
-
-                // Resolve Discord-linked BD username
-                const discordId = await getDiscordIdFromKcUid(currentUser.uid);
-                let userBdName = null;
-                if (discordId) {
-                    const bdSnap = await db.ref(`config/playerLinks/${discordId}/bdName`).once('value');
-                    userBdName = bdSnap.val();
-                }
-                const userBdScore = userData.bdHighscore || 0;
 
                 const isOnline = status.online === true;
                 const serverName = status.serverName || status.name || 'Battledome Arena';
@@ -2465,7 +2598,13 @@
                             <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
                     `);
+                }).catch(err => {
+                    console.error('[GamesHub] data load failed:', err);
+                    modal.update('<div class="text-center py-10 text-red-400">Failed to load game stats. Close and try again.</div>');
                 });
+            }).catch(err => {
+                console.error('[GamesHub] discordId lookup failed:', err);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load game stats. Close and try again.</div>');
             });
         }
 
@@ -2942,20 +3081,23 @@
 
         function openEconomyShop() {
             if (!currentUser) return openAuthModal();
+            const modal = openModalWithLoading('🛒 Economy Shop', 'Loading your balance...');
+            if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const economyPromise = discordId
                     ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {})
                     : Promise.resolve({});
-                Promise.all([
+                return Promise.all([
                     economyPromise,
                     db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value'),
                     db.ref(`users/${currentUser.uid}/customBadge`).once('value')
-                ]).then(([economy, unlockSnap, customBadgeSnap]) => {
+                ]);
+            }).then(([economy, unlockSnap, customBadgeSnap]) => {
                     const points = economy.points || 0;
                     const inventory = economy.inventory || {};
                     const hasCustomization = unlockSnap.val() === true;
                     const hasCustomBadge = customBadgeSnap.exists();
-                    openModal('Economy Shop', `
+                    modal.update(`
                         <div class="space-y-6">
                             <div class="text-center glass p-4 rounded-2xl">
                                 <p class="text-gray-400 text-sm">Your Balance</p>
@@ -3032,7 +3174,9 @@
                             <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Use Discord bot commands (/buy, /shop) to purchase items</p>
                         </div>
                     `);
-                });
+            }).catch(err => {
+                console.error('[Shop]', err);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load shop. Close and try again.</div>');
             });
         }
 
@@ -3449,17 +3593,31 @@
         }
 
         function loadClipsPreview() {
-            db.ref('social_posts').limitToLast(2).once('value').then(snap => {
+            // Posts live at users/{uid}/posts/{postId}, not social_posts
+            db.ref('users').limitToLast(30).once('value').then(snap => {
+                const allPosts = [];
+                snap.forEach(userSnap => {
+                    const posts = userSnap.child('posts').val();
+                    if (posts) {
+                        Object.entries(posts).forEach(([postId, p]) => {
+                            allPosts.push({ ...p, postId, createdBy: userSnap.key, _displayName: (userSnap.val() || {}).displayName || 'Anonymous' });
+                        });
+                    }
+                });
+                allPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                const recent = allPosts.slice(0, 2);
                 let h = '';
-                snap.forEach(c => {
-                    const p = c.val();
-                    h += `<div class="relative bg-black/40 rounded-3xl overflow-hidden aspect-video border border-white/5">
-                            ${p.mediaUrl ? `<img src="${p.mediaUrl}" class="w-full h-full object-cover opacity-60">` : ''}
+                recent.forEach(p => {
+                    const thumb = p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : (p.mediaUrl || null);
+                    h += `<div class="relative bg-black/40 rounded-3xl overflow-hidden aspect-video border border-white/5 cursor-pointer" onclick="switchTab('clips')">
+                            ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover opacity-70" onerror="this.style.display='none'">` : ''}
                             <div class="absolute inset-0 flex items-center justify-center"><i class="fa-solid fa-play-circle text-4xl text-white/40"></i></div>
-                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white cursor-pointer hover:underline" onclick="window.openKcProfile('${p.createdBy}')">${p.userName}</p></div>
+                            <div class="absolute bottom-4 left-4"><p class="text-[10px] font-bold text-white">${p._displayName}</p></div>
                         </div>`;
                 });
-                document.getElementById('home-clips-preview').innerHTML = h || '<p class="col-span-2 opacity-20 text-center text-xs">No media found.</p>';
+                document.getElementById('home-clips-preview').innerHTML = h || '<p class="col-span-2 opacity-20 text-center text-xs py-8">No clips yet.</p>';
+            }).catch(() => {
+                document.getElementById('home-clips-preview').innerHTML = '<p class="col-span-2 opacity-20 text-center text-xs py-8">No clips yet.</p>';
             });
         }
 
