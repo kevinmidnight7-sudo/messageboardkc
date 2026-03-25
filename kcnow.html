@@ -65,6 +65,7 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -2;
+            overflow: hidden;
             background: radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
         }
 
@@ -702,27 +703,49 @@
         // --- HELPER FUNCTIONS ---
         async function getDiscordIdFromKcUid(kcUid) {
             if (discordIdCache.has(kcUid)) return discordIdCache.get(kcUid);
-            try {
-                // Fast path: Discord ID stored directly on the user profile
-                const directSnap = await db.ref(`users/${kcUid}/discordId`).once('value');
-                if (directSnap.val()) {
-                    discordIdCache.set(kcUid, directSnap.val());
-                    return directSnap.val();
+
+            // Helper: cache result and optionally persist to users/{uid}/discordId for future fast lookups
+            const _found = (discordId, persist) => {
+                discordIdCache.set(kcUid, discordId);
+                if (persist && discordId) {
+                    db.ref(`users/${kcUid}/discordId`).set(discordId).catch(() => {});
                 }
-                // Fallback: scan discordLinks mapping (may be permission-denied on some deployments)
+                return discordId;
+            };
+
+            // 1. Fast path: Discord ID stored directly on the user profile
+            try {
+                const directSnap = await db.ref(`users/${kcUid}/discordId`).once('value');
+                if (directSnap.val()) return _found(directSnap.val(), false);
+            } catch(e) { /* no read access */ }
+
+            // 2. Scan config/playerLinks — bot writes kcUid here during /linktokc
+            try {
+                const plSnap = await db.ref('config/playerLinks').once('value');
+                const pl = plSnap.val() || {};
+                for (const [discordId, data] of Object.entries(pl)) {
+                    if (data && data.kcUid === kcUid) {
+                        return _found(discordId, true); // persist so future calls skip this scan
+                    }
+                }
+            } catch(e) {
+                console.warn('[getDiscordIdFromKcUid] config/playerLinks scan failed:', e.code || e.message);
+            }
+
+            // 3. Fallback: scan discordLinks (may be permission-denied)
+            try {
                 const linksSnapshot = await db.ref('discordLinks').once('value');
                 const links = linksSnapshot.val() || {};
                 for (const [discordId, data] of Object.entries(links)) {
                     if (data && data.uid === kcUid) {
-                        discordIdCache.set(kcUid, discordId);
-                        return discordId;
+                        return _found(discordId, true); // persist so future calls skip scan
                     }
                 }
-            } catch (e) {
-                console.warn('[getDiscordIdFromKcUid] lookup failed:', e.code || e.message);
+            } catch(e) {
+                console.warn('[getDiscordIdFromKcUid] discordLinks scan failed:', e.code || e.message);
             }
-            discordIdCache.set(kcUid, null);
-            return null;
+
+            return _found(null, false);
         }
 
         function timeAgo(timestamp) {
@@ -1669,22 +1692,35 @@
         }
 
         // ── Geometric Shape Palette ──
+        // Per-preset shape type distributions — gives each theme its own visual language
+        const BG_SHAPE_TYPES = {
+            default:   ['triangle','hexagon','circle','rect','diamond'],
+            aurora:    ['hexagon','circle','hexagon','circle','diamond','circle'],    // soft rounded aurora feel
+            sunrise:   ['circle','diamond','circle','rect','circle','diamond'],       // soft blobs + gems
+            deepsea:   ['circle','circle','hexagon','circle','ring','circle'],        // mostly circles/blobs
+            void:      ['triangle','diamond','triangle','hexagon','triangle','rect'], // sharp angular
+            prism:     ['triangle','diamond','triangle','diamond','triangle','hexagon'], // aggressive sharp prism
+            starlight: ['star','hexagon','star','circle','diamond','star','hexagon']  // stars + hexagons
+        };
+
         const BG_SHAPE_PALETTES = {
-            default:   ['rgba(59,130,246,',  'rgba(45,212,191,', 'rgba(99,102,241,',  'rgba(168,85,247,'],
-            aurora:    ['rgba(34,211,238,',  'rgba(59,130,246,', 'rgba(45,212,191,',  'rgba(99,102,241,'],
-            sunrise:   ['rgba(252,165,165,', 'rgba(253,186,116,','rgba(253,224,71,',  'rgba(249,168,212,'],
-            deepsea:   ['rgba(52,211,153,',  'rgba(147,51,234,', 'rgba(20,184,166,',  'rgba(99,102,241,'],
-            void:      ['rgba(99,102,241,',  'rgba(168,85,247,', 'rgba(139,92,246,',  'rgba(59,130,246,'],
-            prism:     ['rgba(236,72,153,',  'rgba(59,130,246,', 'rgba(16,185,129,',  'rgba(245,158,11,'],
-            starlight: ['rgba(99,102,241,',  'rgba(45,212,191,', 'rgba(168,85,247,',  'rgba(59,130,246,']
+            default:   ['rgba(59,130,246,',  'rgba(45,212,191,', 'rgba(99,102,241,',  'rgba(168,85,247,',  'rgba(14,165,233,'],
+            aurora:    ['rgba(34,211,238,',  'rgba(16,185,129,', 'rgba(59,130,246,',  'rgba(45,212,191,',  'rgba(6,182,212,'],
+            sunrise:   ['rgba(251,113,133,', 'rgba(253,186,116,','rgba(251,191,36,',  'rgba(249,115,22,',  'rgba(244,63,94,'],
+            deepsea:   ['rgba(6,182,212,',   'rgba(52,211,153,', 'rgba(5,150,105,',   'rgba(99,102,241,',  'rgba(14,116,144,'],
+            void:      ['rgba(124,58,237,',  'rgba(139,92,246,', 'rgba(167,139,250,', 'rgba(76,29,149,',   'rgba(192,132,252,'],
+            prism:     ['rgba(236,72,153,',  'rgba(245,158,11,', 'rgba(16,185,129,',  'rgba(239,68,68,',   'rgba(59,130,246,'],
+            starlight: ['rgba(165,180,252,', 'rgba(196,181,253,','rgba(147,197,253,', 'rgba(167,243,208,', 'rgba(253,230,138,']
         };
 
         function _initBgShapes(preset) {
             bgShapes = [];
             const palette = BG_SHAPE_PALETTES[preset] || BG_SHAPE_PALETTES.default;
-            const w = window.innerWidth, h = window.innerHeight;
-            const count = Math.max(14, Math.min(26, Math.floor(w * h / 38000)));
-            const types = ['triangle','hexagon','circle','rect','diamond'];
+            const shapeTypes = BG_SHAPE_TYPES[preset] || BG_SHAPE_TYPES.default;
+            // Use extended canvas size (120% of viewport) so shapes fill the larger area
+            const w = window.innerWidth * 1.2, h = window.innerHeight * 1.2;
+            const count = Math.max(18, Math.min(34, Math.floor(w * h / 38000)));
+            const types = shapeTypes;
             for (let i = 0; i < count; i++) {
                 const z = Math.pow(Math.random(), 0.7); // bias toward mid-depth
                 bgShapes.push({
@@ -1740,6 +1776,30 @@
                     ctx.moveTo(0, -r); ctx.lineTo(r*0.58, 0);
                     ctx.lineTo(0, r);  ctx.lineTo(-r*0.58, 0);
                     break;
+                case 'star': {
+                    const outerR = r, innerR = r * 0.42, pts = 5;
+                    for (let i = 0; i < pts * 2; i++) {
+                        const a = (i * Math.PI) / pts - Math.PI / 2;
+                        const rad = i % 2 === 0 ? outerR : innerR;
+                        i === 0 ? ctx.moveTo(rad*Math.cos(a), rad*Math.sin(a))
+                                : ctx.lineTo(rad*Math.cos(a), rad*Math.sin(a));
+                    }
+                    break;
+                }
+                case 'ring': {
+                    // draw as filled arc stroke (donut) — use two arcs approach
+                    ctx.restore();
+                    ctx.save();
+                    ctx.translate(s.x, s.y);
+                    ctx.rotate(s.rot);
+                    ctx.strokeStyle = s.colorBase + Math.min(s.opacity * 4, 0.4) + ')';
+                    ctx.lineWidth = r * 0.22 + s.z * 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.restore();
+                    return; // skip close/fill/stroke below
+                }
             }
             ctx.closePath();
             ctx.fill();
@@ -1750,14 +1810,16 @@
         function _tickBgShapes(ts) {
             if (!bgShapesCtx || !bgShapesCanvas) return;
             const ctx = bgShapesCtx;
-            const w = bgShapesCanvas.width, h = bgShapesCanvas.height;
+            // Use CSS dimensions (not pixel dimensions) for shape coords
+            const w = parseFloat(bgShapesCanvas.style.width) || bgShapesCanvas.width;
+            const h = parseFloat(bgShapesCanvas.style.height) || bgShapesCanvas.height;
             ctx.clearRect(0, 0, w, h);
             const reduce = backgroundPrefs.reducedMotion;
             const pmx = reduce ? 0 : mouseParallax.x;
             const pmy = reduce ? 0 : mouseParallax.y;
             const dx  = reduce ? 0 : bgAutoDrift.x * 28;
             const dy  = reduce ? 0 : bgAutoDrift.y * 18;
-            const margin = 120;
+            const margin = 80;
             for (const s of bgShapes) {
                 if (!reduce) {
                     s.x += s.vx; s.y += s.vy; s.rot += s.rotSpeed;
@@ -1791,14 +1853,17 @@
             applyBackgroundPreset(backgroundPrefs.preset);
 
             // Add floating-shapes canvas on top of gradient layers
+            // Extend 10% beyond viewport on each side so shapes don't pop in/out at edges
+            const _cw = Math.ceil(window.innerWidth * 1.2), _ch = Math.ceil(window.innerHeight * 1.2);
+            const _dpr = window.devicePixelRatio || 1;
             bgShapesCanvas = document.createElement('canvas');
-            bgShapesCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;';
-            bgShapesCanvas.width  = Math.ceil(window.innerWidth  * (window.devicePixelRatio || 1));
-            bgShapesCanvas.height = Math.ceil(window.innerHeight * (window.devicePixelRatio || 1));
-            bgShapesCanvas.style.width  = window.innerWidth  + 'px';
-            bgShapesCanvas.style.height = window.innerHeight + 'px';
+            bgShapesCanvas.style.cssText = 'position:absolute;top:-10%;left:-10%;width:120%;height:120%;pointer-events:none;';
+            bgShapesCanvas.width  = Math.ceil(_cw * _dpr);
+            bgShapesCanvas.height = Math.ceil(_ch * _dpr);
+            bgShapesCanvas.style.width  = _cw + 'px';
+            bgShapesCanvas.style.height = _ch + 'px';
             bgShapesCtx = bgShapesCanvas.getContext('2d');
-            bgShapesCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+            bgShapesCtx.scale(_dpr, _dpr);
             container.appendChild(bgShapesCanvas);
             _initBgShapes(backgroundPrefs.preset);
 
@@ -1834,10 +1899,11 @@
         function _onBgCanvasResize() {
             if (!bgShapesCanvas) return;
             const dpr = window.devicePixelRatio || 1;
-            bgShapesCanvas.width  = Math.ceil(window.innerWidth  * dpr);
-            bgShapesCanvas.height = Math.ceil(window.innerHeight * dpr);
-            bgShapesCanvas.style.width  = window.innerWidth  + 'px';
-            bgShapesCanvas.style.height = window.innerHeight + 'px';
+            const cw = Math.ceil(window.innerWidth * 1.2), ch = Math.ceil(window.innerHeight * 1.2);
+            bgShapesCanvas.width  = Math.ceil(cw * dpr);
+            bgShapesCanvas.height = Math.ceil(ch * dpr);
+            bgShapesCanvas.style.width  = cw + 'px';
+            bgShapesCanvas.style.height = ch + 'px';
             bgShapesCtx = bgShapesCanvas.getContext('2d');
             bgShapesCtx.scale(dpr, dpr);
             _initBgShapes(backgroundPrefs.preset);
@@ -3475,15 +3541,18 @@
                 const econSnap = await db.ref(`userEconomy/${discordId}`).once('value');
                 const eco = econSnap.val() || {};
                 const streak = eco.streaks?.login || {};
-                const lastClaim = streak.lastClaim || 0;
+                // Bot uses lastDaily (top-level) as the primary claim timestamp
+                const lastDaily   = eco.lastDaily || streak.lastCheckin || streak.lastClaim || 0;
                 const currentStreak = streak.current || 0;
+                const longestStreak = streak.longest || 0;
                 const points = eco.points || 0;
+                const inventory = eco.inventory || {};
                 const now = Date.now();
-                const msIn24h = 86400000;
-                const msIn48h = 172800000;
-                const timeSinceClaim = now - lastClaim;
-                const alreadyClaimed = timeSinceClaim < msIn24h;
-                const msUntilNext = msIn24h - timeSinceClaim;
+                const msIn24h  = 86400000;
+                const msIn36h  = 129600000; // bot's grace period
+                const timeSince = now - lastDaily;
+                const alreadyClaimed = timeSince < msIn24h;
+                const msUntilNext = msIn24h - timeSince;
 
                 if (alreadyClaimed) {
                     const h = Math.floor(msUntilNext / 3600000);
@@ -3510,17 +3579,27 @@
                     return;
                 }
 
-                // Calculate new streak: if last claim was within 48h, extend streak; otherwise reset to 1
-                const newStreak = (lastClaim > 0 && timeSinceClaim < msIn48h) ? currentStreak + 1 : 1;
-                // Reward: 100 base + 10 per streak day, capped at 500
-                const reward = Math.min(100 + (newStreak - 1) * 10, 500);
+                // Streak logic: within 36h grace = extend, has streak protection & missed = extend, else reset
+                const withinGrace = lastDaily > 0 && timeSince < msIn36h;
+                const hasProtection = (inventory.streak_protection || 0) > 0;
+                const newStreak = withinGrace ? currentStreak + 1 : (hasProtection && lastDaily > 0 ? currentStreak + 1 : 1);
+                const newLongest = Math.max(newStreak, longestStreak);
+                const usedProtection = !withinGrace && hasProtection && lastDaily > 0;
+
+                // Bot reward: DAILY_LOGIN(100) + currentStreak * STREAK_BONUS(50)
+                let reward = 100 + newStreak * 50;
+                // Milestone bonuses matching bot: day 7=+500, 30=+2000, 100=+10000, 365=+50000
+                const MILESTONES = { 7: 500, 30: 2000, 100: 10000, 365: 50000 };
+                const milestoneBonus = MILESTONES[newStreak] || 0;
+                reward += milestoneBonus;
 
                 modal.update(`
                     <div class="space-y-5">
                         <div class="text-center space-y-3">
                             <div class="text-6xl animate-bounce">🎁</div>
                             <p class="text-xl font-bold">Claim Your Daily Reward</p>
-                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak bonus</p>
+                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak${milestoneBonus ? ` — <span class="text-yellow-400 font-bold">🏆 Milestone Bonus +${milestoneBonus}!</span>` : ''}</p>
+                            ${usedProtection ? `<p class="text-xs text-purple-400">🛡 Streak protection used to maintain streak</p>` : ''}
                         </div>
                         <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                             <div>
@@ -3532,7 +3611,7 @@
                                 <p class="text-3xl font-black text-yellow-400">+${reward} 💰</p>
                             </div>
                         </div>
-                        <button id="daily-claim-btn" onclick="executeDailyClaim('${discordId}',${newStreak},${reward},${points})" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 font-black text-lg rounded-2xl transition">
+                        <button id="daily-claim-btn" onclick="executeDailyClaim('${discordId}',${newStreak},${newLongest},${reward},${points},${usedProtection})" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 font-black text-lg rounded-2xl transition">
                             Claim Reward
                         </button>
                     </div>
@@ -3543,16 +3622,25 @@
             }
         }
 
-        async function executeDailyClaim(discordId, newStreak, reward, oldPoints) {
+        async function executeDailyClaim(discordId, newStreak, newLongest, reward, oldPoints, usedProtection) {
             const btn = document.getElementById('daily-claim-btn');
             if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
             try {
                 const now = Date.now();
-                await Promise.all([
-                    db.ref(`userEconomy/${discordId}/points`).set(oldPoints + reward),
-                    db.ref(`userEconomy/${discordId}/streaks/login/current`).set(newStreak),
-                    db.ref(`userEconomy/${discordId}/streaks/login/lastClaim`).set(now)
-                ]);
+                const updates = {
+                    'points': oldPoints + reward,
+                    'lastDaily': now,                            // matches bot's primary field
+                    'streaks/login/current': newStreak,
+                    'streaks/login/longest': newLongest,
+                    'streaks/login/lastCheckin': now             // matches bot's secondary field
+                };
+                // Consume streak protection if it was used
+                if (usedProtection) {
+                    const protSnap = await db.ref(`userEconomy/${discordId}/inventory/streak_protection`).once('value');
+                    const cur = protSnap.val() || 0;
+                    if (cur > 0) updates['inventory/streak_protection'] = cur - 1;
+                }
+                await db.ref(`userEconomy/${discordId}`).update(updates);
                 // Update modal to success state
                 const modal = document.getElementById('global-modal');
                 if (modal) {
@@ -3874,42 +3962,171 @@
             });
         }
 
+        // Gradient and banner options matching login.html
+        const _CUST_GRADIENTS = [
+            'linear-gradient(135deg,rgb(246,211,101) 0%,rgb(253,160,133) 100%)',
+            'linear-gradient(135deg,rgb(161,196,253) 0%,rgb(194,233,251) 100%)',
+            'linear-gradient(135deg,rgb(255,154,158) 0%,rgb(254,207,239) 100%)',
+            'linear-gradient(135deg,rgb(132,250,176) 0%,rgb(143,211,244) 100%)',
+            'linear-gradient(135deg,rgb(137,247,254) 0%,rgb(102,166,255) 100%)',
+            'linear-gradient(135deg,rgb(254,225,64) 0%,rgb(250,112,154) 100%)',
+            'linear-gradient(135deg,rgb(186,255,201) 0%,rgb(83,201,255) 100%)',
+            'linear-gradient(135deg,rgb(216,180,254) 0%,rgb(134,182,246) 100%)',
+            'linear-gradient(135deg,rgb(120,115,245) 0%,rgb(236,72,153) 100%)',
+            'linear-gradient(135deg,rgb(0,210,255) 0%,rgb(58,123,213) 100%)',
+            'linear-gradient(135deg,rgb(255,0,204) 0%,rgb(51,0,102) 100%)',
+            'linear-gradient(135deg,rgb(17,153,142) 0%,rgb(56,239,125) 100%)',
+            'linear-gradient(135deg,rgb(255,48,48) 0%,rgb(255,200,55) 100%)',
+            'linear-gradient(135deg,rgb(238,119,82) 0%,rgb(231,60,126) 100%)',
+            'linear-gradient(135deg,rgb(29,67,80) 0%,rgb(106,17,203) 100%)',
+            'linear-gradient(135deg,rgb(67,198,172) 0%,rgb(248,255,174) 100%)',
+            'linear-gradient(135deg,rgb(72,85,99) 0%,rgb(41,50,60) 100%)',
+            'linear-gradient(135deg,rgb(0,242,96) 0%,rgb(5,117,230) 100%)',
+        ];
+        const _CUST_BANNERS = [
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/cyberpunk.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/sea.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/fire.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/car.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/slither.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/city.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/hexagon.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/kcbanner.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/forest.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/lambo.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/cats.png',
+            'https://kevinmidnight7-sudo.github.io/messageboardkc/dogs.png',
+        ];
+        const _CUST_COLORS = [
+            '#ffffff','#f3f4f6','#38bdf8','#34d399','#f59e0b','#f43f5e',
+            '#a78bfa','#fb7185','#fbbf24','#14b8a6','#6366f1','#84cc16',
+            '#1992d4','#ef4444','#ec4899','#8b5cf6','#f97316','#0ea5e9',
+        ];
+
+        // Shared state for the customization editor (avoids closures in onclick strings)
+        let _custState = { nameColor: '#1992d4', gradient: _CUST_GRADIENTS[0], banner: null };
+
+        function _custUpdatePreview() {
+            const card = document.getElementById('cust-preview-card');
+            const nameEl = document.getElementById('cust-preview-name');
+            const bannerEl = document.getElementById('cust-preview-banner');
+            if (!card) return;
+            card.style.background = _custState.gradient;
+            if (nameEl) nameEl.style.color = _custState.nameColor;
+            if (bannerEl) {
+                bannerEl.style.backgroundImage = _custState.banner ? `url('${_custState.banner}')` : 'none';
+                bannerEl.style.display = _custState.banner ? 'block' : 'none';
+            }
+        }
+
+        function _custPickColor(color) {
+            _custState.nameColor = color;
+            // Update swatch highlights
+            document.querySelectorAll('.cust-color-swatch').forEach(el => {
+                el.style.outline = el.dataset.color === color ? '3px solid #fff' : 'none';
+            });
+            _custUpdatePreview();
+        }
+
+        function _custPickGradient(idx) {
+            _custState.gradient = _CUST_GRADIENTS[idx];
+            document.querySelectorAll('.cust-grad-swatch').forEach((el, i) => {
+                el.style.outline = i === idx ? '3px solid #fff' : 'none';
+            });
+            _custUpdatePreview();
+        }
+
+        function _custPickBanner(url) {
+            _custState.banner = _custState.banner === url ? null : url; // toggle off if same
+            document.querySelectorAll('.cust-banner-thumb').forEach(el => {
+                el.style.outline = el.dataset.url === _custState.banner ? '3px solid #fff' : 'none';
+            });
+            _custUpdatePreview();
+        }
+
+        async function _custSave() {
+            if (!currentUser) return;
+            const btn = document.getElementById('cust-save-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            try {
+                await db.ref(`users/${currentUser.uid}/profileCustomization`).update({
+                    nameColor: _custState.nameColor,
+                    gradient:  _custState.gradient,
+                    banner:    _custState.banner || null
+                });
+                showToast('Profile customization saved!', 'success');
+                // Refresh welcome card name color live
+                const nameEl = document.getElementById('user-display-name');
+                if (nameEl) nameEl.style.color = _custState.nameColor;
+                const welcomeCard = document.getElementById('welcome-card');
+                if (welcomeCard) welcomeCard.style.background = _custState.gradient;
+                if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+            } catch(e) {
+                console.error('[custSave]', e);
+                showToast('Save failed. Try again.', 'error');
+                if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+            }
+        }
+
         function previewCustomization() {
             if (!currentUser) return;
             db.ref(`users/${currentUser.uid}`).once('value').then(snap => {
                 const u = snap.val() || {};
-                const nameColor = u.profileCustomization?.nameColor || '#1992d4';
-                const gradient = u.profileCustomization?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                const banner = u.profileCustomization?.banner || null;
-                openModal('Customization Preview', `
+                // Seed state from existing customization
+                _custState.nameColor = u.profileCustomization?.nameColor || '#1992d4';
+                _custState.gradient  = u.profileCustomization?.gradient  || _CUST_GRADIENTS[0];
+                _custState.banner    = u.profileCustomization?.banner    || null;
+
+                const colorSwatches = _CUST_COLORS.map(c =>
+                    `<div class="cust-color-swatch w-8 h-8 rounded-lg cursor-pointer hover:scale-110 transition" data-color="${c}" style="background:${c};outline:${c===_custState.nameColor?'3px solid #fff':'none'}" onclick="_custPickColor('${c}')"></div>`
+                ).join('');
+
+                const gradSwatches = _CUST_GRADIENTS.map((g, i) =>
+                    `<div class="cust-grad-swatch w-10 h-10 rounded-xl cursor-pointer hover:scale-110 transition" style="background:${g};outline:${g===_custState.gradient?'3px solid #fff':'none'}" onclick="_custPickGradient(${i})"></div>`
+                ).join('');
+
+                const bannerThumbs = _CUST_BANNERS.map(url =>
+                    `<div class="cust-banner-thumb relative cursor-pointer rounded-xl overflow-hidden hover:scale-105 transition" data-url="${url}" style="aspect-ratio:16/7;outline:${url===_custState.banner?'3px solid #fff':'none'}" onclick="_custPickBanner('${url}')">
+                        <img src="${url}" class="w-full h-full object-cover">
+                     </div>`
+                ).join('');
+
+                const locked = !u.profileCustomizationUnlocked;
+
+                openModal('Profile Customization', `
                     <div class="space-y-6">
-                        <div class="glass p-8 rounded-[40px] relative overflow-hidden" style="background: ${gradient}">
-                            ${banner ? `<img src="${banner}" class="absolute inset-0 w-full h-full object-cover opacity-30">` : ''}
+                        ${locked ? `<div class="glass p-4 rounded-2xl border border-yellow-500/30 text-sm text-yellow-300 text-center">🔒 Unlock customization via Discord: <code class="bg-white/5 px-2 rounded">/customize</code></div>` : ''}
+                        <!-- Live Preview Card -->
+                        <div id="cust-preview-card" class="rounded-[30px] relative overflow-hidden min-h-[120px] flex flex-col items-center justify-center py-6 px-8" style="background:${_custState.gradient}">
+                            <div id="cust-preview-banner" class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image:${_custState.banner ? `url('${_custState.banner}')` : 'none'};display:${_custState.banner ? 'block' : 'none'}"></div>
                             <div class="relative z-10 text-center">
-                                <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-24 h-24 rounded-full mx-auto border-4 border-white/20 mb-4">
-                                <h2 class="text-3xl font-bold mb-2" style="color: ${nameColor}">${u.displayName || 'Your Name'}</h2>
-                                <p class="text-sm text-white/80">${u.about || 'Your about me text'}</p>
+                                <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-16 h-16 rounded-full mx-auto border-2 border-white/20 mb-3 object-cover">
+                                <h2 id="cust-preview-name" class="text-2xl font-bold" style="color:${_custState.nameColor}">${u.displayName || 'Your Name'}</h2>
+                                <p class="text-xs text-white/60 mt-1">${u.about || 'Your profile tagline'}</p>
                             </div>
                         </div>
-                        <div class="text-center text-sm text-gray-400">
-                            <p>This is how your profile appears across KC platforms</p>
-                            <p class="text-xs mt-2">Edit via Discord: <code class="bg-white/5 px-2 py-1 rounded">/customize</code></p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="glass p-4 rounded-2xl">
-                                <p class="text-xs text-gray-500 mb-2">Name Color</p>
-                                <div class="flex items-center gap-2">
-                                    <div class="w-6 h-6 rounded border border-white/10" style="background:${nameColor}"></div>
-                                    <span class="text-xs font-mono">${nameColor}</span>
-                                </div>
-                            </div>
-                            <div class="glass p-4 rounded-2xl">
-                                <p class="text-xs text-gray-500 mb-2">Status</p>
-                                <p class="text-xs ${u.profileCustomizationUnlocked ? 'text-green-400' : 'text-gray-400'}">
-                                    ${u.profileCustomizationUnlocked ? '✅ Unlocked' : '🔒 Locked'}
-                                </p>
+                        <!-- Name Color -->
+                        <div class="glass p-5 rounded-3xl space-y-3">
+                            <p class="text-xs text-gray-500 font-black uppercase tracking-widest">Name Color</p>
+                            <div class="flex flex-wrap gap-2">${colorSwatches}</div>
+                            <div class="flex items-center gap-3 mt-1">
+                                <input type="color" id="cust-color-custom" value="${_custState.nameColor}" oninput="_custPickColor(this.value)" class="w-10 h-10 rounded-lg cursor-pointer border-0 bg-transparent" title="Custom color">
+                                <span class="text-xs text-gray-400">Custom color picker</span>
                             </div>
                         </div>
+                        <!-- Gradient -->
+                        <div class="glass p-5 rounded-3xl space-y-3">
+                            <p class="text-xs text-gray-500 font-black uppercase tracking-widest">Card Gradient</p>
+                            <div class="flex flex-wrap gap-2">${gradSwatches}</div>
+                        </div>
+                        <!-- Banner -->
+                        <div class="glass p-5 rounded-3xl space-y-3">
+                            <p class="text-xs text-gray-500 font-black uppercase tracking-widest">Banner Image <span class="text-gray-600 font-normal normal-case">(optional — click to toggle)</span></p>
+                            <div class="grid grid-cols-3 gap-2">${bannerThumbs}</div>
+                        </div>
+                        <button id="cust-save-btn" onclick="_custSave()" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 font-black text-base rounded-2xl transition ${locked ? 'opacity-50 pointer-events-none' : ''}">
+                            Save Changes
+                        </button>
                     </div>
                 `);
             });
