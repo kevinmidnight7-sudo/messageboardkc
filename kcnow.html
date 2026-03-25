@@ -320,6 +320,56 @@
                         radial-gradient(circle at 70% 40%, rgba(147,51,234,0.20), transparent 30%),
                         radial-gradient(circle at 50% 75%, rgba(13,148,136,0.18), transparent 36%);
         }
+        /* ===== 3D GAME CARDS ===== */
+        .games-3d-stage {
+            perspective: 1400px;
+            perspective-origin: 50% 40%;
+        }
+        .game-card-3d {
+            transform-style: preserve-3d;
+            transition: transform 0.18s cubic-bezier(0.23,1,0.32,1), box-shadow 0.18s ease;
+            will-change: transform;
+            animation: gcFloat 4s ease-in-out infinite;
+            backface-visibility: hidden;
+        }
+        .game-card-3d:nth-child(2)  { animation-delay: -0.8s; }
+        .game-card-3d:nth-child(3)  { animation-delay: -1.6s; }
+        .game-card-3d:nth-child(4)  { animation-delay: -2.4s; }
+        .game-card-3d:nth-child(5)  { animation-delay: -1.0s; }
+        .game-card-3d:nth-child(6)  { animation-delay: -2.0s; }
+        .game-card-3d:nth-child(7)  { animation-delay: -0.4s; }
+        .game-card-3d:nth-child(8)  { animation-delay: -1.8s; }
+        .game-card-3d:nth-child(9)  { animation-delay: -3.0s; }
+        .game-card-3d:nth-child(10) { animation-delay: -0.6s; }
+        .game-card-3d:nth-child(11) { animation-delay: -2.2s; }
+        .game-card-3d:nth-child(12) { animation-delay: -1.4s; }
+        @keyframes gcFloat {
+            0%,100% { translate: 0 0px; }
+            50%      { translate: 0 -5px; }
+        }
+        .game-card-3d.is-tilting { animation-play-state: paused; }
+        .game-card-3d .gc-emoji {
+            display: block;
+            transform: translateZ(18px);
+            transition: transform 0.18s ease;
+            font-size: 2.4rem;
+            line-height: 1;
+            margin-bottom: 0.4rem;
+        }
+        .game-card-3d:hover .gc-emoji { transform: translateZ(30px) scale(1.1); }
+        .game-card-3d .gc-badge {
+            transform: translateZ(10px);
+            transition: transform 0.18s ease;
+        }
+        .game-card-3d:hover .gc-badge { transform: translateZ(18px); }
+        .gc-hologram {
+            background: linear-gradient(135deg,
+                rgba(59,130,246,0.18) 0%,
+                rgba(99,102,241,0.14) 40%,
+                rgba(139,92,246,0.18) 100%);
+            border: 1px solid rgba(99,102,241,0.35);
+            box-shadow: 0 0 30px rgba(99,102,241,0.12), inset 0 0 20px rgba(255,255,255,0.03);
+        }
     </style>
 </head>
 <body class="p-6 md:p-10">
@@ -2922,101 +2972,114 @@
                     const stockTrades = gs?.stocks?.trades || 0;
                     modal.update(`
                         <div class="space-y-5">
-                            <div class="text-center glass p-4 rounded-2xl">
+                            <div class="text-center gc-hologram p-4 rounded-2xl">
                                 <p class="text-gray-400 text-sm mb-1">Your Balance</p>
-                                <p class="text-4xl font-bold text-blue-400">${data.points.toLocaleString()} pts</p>
+                                <p class="text-4xl font-bold text-blue-300">${data.points.toLocaleString()} pts</p>
+                                <p class="text-xs text-indigo-400/70 mt-1">Hover cards to interact</p>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openBlackjackGame,200)">
-                                    <div class="text-4xl mb-2">🃏</div>
-                                    <p class="font-bold">Blackjack</p>
-                                    <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjGames} games</p>
-                                    <p class="text-xs text-gray-500">Bet 50–2,000 pts</p>
-                                    <div class="mt-3 py-2 bg-blue-600/30 rounded-xl text-xs font-bold text-blue-300">▶ Play Now</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openSlotsGame,200)">
-                                    <div class="text-4xl mb-2">🎰</div>
-                                    <p class="font-bold">Slots</p>
-                                    <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsSpins} spins</p>
-                                    <p class="text-xs text-gray-500">Bet 50–1,000 pts</p>
-                                    <div class="mt-3 py-2 bg-yellow-600/30 rounded-xl text-xs font-bold text-yellow-300">▶ Play Now</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Coinflip','/coinflip','Bet 50–5,000 pts on heads or tails. Win double your bet!')">
-                                    <div class="text-4xl mb-2">🪙</div>
-                                    <p class="font-bold">Coinflip</p>
-                                    <p class="text-xs text-gray-400 mt-1">${cfWins}W / ${cfFlips} flips</p>
-                                    <p class="text-xs text-gray-500">Bet 50–5,000 pts</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Dice Duel','/roll','Roll against friends and climb the daily leaderboard. One roll per day!')">
-                                    <div class="text-4xl mb-2">🎲</div>
-                                    <p class="font-bold">Dice Duel</p>
-                                    <p class="text-xs text-gray-400 mt-1">Daily competition</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Trivia','/trivia','Test your knowledge. Easy: 100 pts · Medium: 200 pts · Hard: 500 pts')">
-                                    <div class="text-4xl mb-2">🧠</div>
-                                    <p class="font-bold">Trivia</p>
-                                    <p class="text-xs text-gray-400 mt-1">${triviaOk} / ${triviaTotal} correct</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Higher / Lower','/highlow','Guess if the next number is higher or lower. Streak multiplies your reward!')">
-                                    <div class="text-4xl mb-2">📈</div>
-                                    <p class="font-bold">Higher / Lower</p>
-                                    <p class="text-xs text-gray-400 mt-1">Best streak: ${hlBest}</p>
-                                    <p class="text-xs text-gray-500">${hlGames} games</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Minesweeper','/minesweeper','Sweep without hitting a mine! Easy: 200 pts · Medium: 500 pts · Hard: 1,000 pts')">
-                                    <div class="text-4xl mb-2">💣</div>
-                                    <p class="font-bold">Minesweeper</p>
-                                    <p class="text-xs text-gray-400 mt-1">${msWins} wins</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Hangman','/hangman','Guess the word before running out of tries. Win 150 pts per correct game!')">
-                                    <div class="text-4xl mb-2">🪢</div>
-                                    <p class="font-bold">Hangman</p>
-                                    <p class="text-xs text-gray-400 mt-1">${hgWins}W / ${hgGames} games</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Rock Paper Scissors','/rps','Challenge someone to RPS. Bet 50–1,000 pts per match!')">
-                                    <div class="text-4xl mb-2">✊</div>
-                                    <p class="font-bold">Rock Paper Scissors</p>
-                                    <p class="text-xs text-gray-400 mt-1">${rpsWins}W / ${rpsGames} games</p>
-                                    <p class="text-xs text-gray-500">Bet 50–1,000 pts</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Color Conquest','/area','Claim territory on a grid. Win 500 pts for dominating!')">
-                                    <div class="text-4xl mb-2">🗺️</div>
-                                    <p class="font-bold">Color Conquest</p>
-                                    <p class="text-xs text-gray-400 mt-1">${areaWins} wins</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Connect Four','/connectfour','Drop pieces to connect 4 in a row. Win 300 pts!')">
-                                    <div class="text-4xl mb-2">🔴</div>
-                                    <p class="font-bold">Connect Four</p>
-                                    <p class="text-xs text-gray-400 mt-1">${c4Wins} wins</p>
-                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
-                                </div>
-                                ${data.specialGameUnlocked ? `
-                                    <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Stock Market','/stocks','Invest in volatile stocks. Buy low, sell high, and grow your portfolio!')">
-                                        <div class="text-4xl mb-2">📊</div>
-                                        <p class="font-bold">Stock Market</p>
-                                        <p class="text-xs text-gray-400 mt-1">${stockTrades} trades</p>
-                                        <div class="mt-3 py-2 bg-green-600/30 rounded-xl text-xs font-bold text-green-300">Discord Only</div>
+                            <div class="games-3d-stage">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="closeModal();setTimeout(openBlackjackGame,200)">
+                                        <span class="gc-emoji">🃏</span>
+                                        <p class="font-bold text-sm">Blackjack</p>
+                                        <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjGames} games</p>
+                                        <p class="text-xs text-gray-500">50–2,000 pts</p>
+                                        <div class="gc-badge mt-3 py-2 bg-blue-600/30 rounded-xl text-xs font-bold text-blue-300">▶ Play Now</div>
                                     </div>
-                                ` : `
-                                    <div class="glass p-5 rounded-3xl text-center opacity-50">
-                                        <div class="text-4xl mb-2">📊</div>
-                                        <p class="font-bold">Stock Market</p>
-                                        <p class="text-xs text-gray-400 mt-1">Locked</p>
-                                        <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-500">🔒 /buy special_game</div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="closeModal();setTimeout(openSlotsGame,200)">
+                                        <span class="gc-emoji">🎰</span>
+                                        <p class="font-bold text-sm">Slots</p>
+                                        <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsSpins} spins</p>
+                                        <p class="text-xs text-gray-500">50–1,000 pts</p>
+                                        <div class="gc-badge mt-3 py-2 bg-yellow-600/30 rounded-xl text-xs font-bold text-yellow-300">▶ Play Now</div>
                                     </div>
-                                `}
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Coinflip','/coinflip','Bet 50–5,000 pts on heads or tails. Win double your bet!')">
+                                        <span class="gc-emoji">🪙</span>
+                                        <p class="font-bold text-sm">Coinflip</p>
+                                        <p class="text-xs text-gray-400 mt-1">${cfWins}W / ${cfFlips} flips</p>
+                                        <p class="text-xs text-gray-500">50–5,000 pts</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Dice Duel','/roll','Roll against friends and climb the daily leaderboard. One roll per day!')">
+                                        <span class="gc-emoji">🎲</span>
+                                        <p class="font-bold text-sm">Dice Duel</p>
+                                        <p class="text-xs text-gray-400 mt-1">Daily competition</p>
+                                        <p class="text-xs text-gray-500">&nbsp;</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Trivia','/trivia','Test your knowledge. Easy: 100 pts · Medium: 200 pts · Hard: 500 pts')">
+                                        <span class="gc-emoji">🧠</span>
+                                        <p class="font-bold text-sm">Trivia</p>
+                                        <p class="text-xs text-gray-400 mt-1">${triviaOk} / ${triviaTotal} correct</p>
+                                        <p class="text-xs text-gray-500">&nbsp;</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Higher / Lower','/highlow','Guess if the next number is higher or lower. Streak multiplies your reward!')">
+                                        <span class="gc-emoji">📈</span>
+                                        <p class="font-bold text-sm">Higher / Lower</p>
+                                        <p class="text-xs text-gray-400 mt-1">Best streak: ${hlBest}</p>
+                                        <p class="text-xs text-gray-500">${hlGames} games</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Minesweeper','/minesweeper','Sweep without hitting a mine! Easy: 200 pts · Medium: 500 pts · Hard: 1,000 pts')">
+                                        <span class="gc-emoji">💣</span>
+                                        <p class="font-bold text-sm">Minesweeper</p>
+                                        <p class="text-xs text-gray-400 mt-1">${msWins} wins</p>
+                                        <p class="text-xs text-gray-500">&nbsp;</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Hangman','/hangman','Guess the word before running out of tries. Win 150 pts per correct game!')">
+                                        <span class="gc-emoji">🪢</span>
+                                        <p class="font-bold text-sm">Hangman</p>
+                                        <p class="text-xs text-gray-400 mt-1">${hgWins}W / ${hgGames} games</p>
+                                        <p class="text-xs text-gray-500">&nbsp;</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Rock Paper Scissors','/rps','Challenge someone to RPS. Bet 50–1,000 pts per match!')">
+                                        <span class="gc-emoji">✊</span>
+                                        <p class="font-bold text-sm">Rock Paper Scissors</p>
+                                        <p class="text-xs text-gray-400 mt-1">${rpsWins}W / ${rpsGames} games</p>
+                                        <p class="text-xs text-gray-500">50–1,000 pts</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Color Conquest','/area','Claim territory on a grid. Win 500 pts for dominating!')">
+                                        <span class="gc-emoji">🗺️</span>
+                                        <p class="font-bold text-sm">Color Conquest</p>
+                                        <p class="text-xs text-gray-400 mt-1">${areaWins} wins</p>
+                                        <p class="text-xs text-gray-500">&nbsp;</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Connect Four','/connectfour','Drop pieces to connect 4 in a row. Win 300 pts!')">
+                                        <span class="gc-emoji">🔴</span>
+                                        <p class="font-bold text-sm">Connect Four</p>
+                                        <p class="text-xs text-gray-400 mt-1">${c4Wins} wins</p>
+                                        <p class="text-xs text-gray-500">&nbsp;</p>
+                                        <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
+                                    </div>
+                                    ${data.specialGameUnlocked ? `
+                                        <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Stock Market','/stocks','Invest in volatile stocks. Buy low, sell high, grow your portfolio!')">
+                                            <span class="gc-emoji">📊</span>
+                                            <p class="font-bold text-sm">Stock Market</p>
+                                            <p class="text-xs text-gray-400 mt-1">${stockTrades} trades</p>
+                                            <p class="text-xs text-gray-500">&nbsp;</p>
+                                            <div class="gc-badge mt-3 py-2 bg-green-600/30 rounded-xl text-xs font-bold text-green-300">Discord</div>
+                                        </div>
+                                    ` : `
+                                        <div class="game-card-3d glass p-5 rounded-3xl text-center opacity-40" style="pointer-events:none">
+                                            <span class="gc-emoji">📊</span>
+                                            <p class="font-bold text-sm">Stock Market</p>
+                                            <p class="text-xs text-gray-400 mt-1">Locked</p>
+                                            <p class="text-xs text-gray-500">&nbsp;</p>
+                                            <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-500">🔒 100k pts</div>
+                                        </div>
+                                    `}
+                                </div>
                             </div>
                             <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
                     `);
+                    setTimeout(initGameCards3D, 50);
+
                 }).catch(err => {
                     console.error('[GamesHub] data load failed:', err);
                     modal.update('<div class="text-center py-10 text-red-400">Failed to load game stats. Close and try again.</div>');
@@ -3027,6 +3090,37 @@
             });
         }
 
+
+        function initGameCards3D() {
+            const cards = document.querySelectorAll('.game-card-3d');
+            cards.forEach(card => {
+                card.addEventListener('mousemove', e => {
+                    card.classList.add('is-tilting');
+                    const r = card.getBoundingClientRect();
+                    const cx = r.left + r.width  / 2;
+                    const cy = r.top  + r.height / 2;
+                    const rx = ((e.clientY - cy) / (r.height / 2)) * -14;
+                    const ry = ((e.clientX - cx) / (r.width  / 2)) *  14;
+                    const lift = 18;
+                    const sx = ry * -0.9;
+                    const sy = rx *  0.9;
+                    card.style.transform   = `perspective(700px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(${lift}px)`;
+                    card.style.boxShadow   = `${sx}px ${sy}px 35px rgba(0,0,0,0.55), 0 0 25px rgba(99,102,241,0.18)`;
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.classList.remove('is-tilting');
+                    card.style.transform  = '';
+                    card.style.boxShadow  = '';
+                });
+                card.addEventListener('mousedown', () => {
+                    const cur = card.style.transform;
+                    card.style.transform = cur + ' scale(0.93)';
+                });
+                card.addEventListener('mouseup', () => {
+                    card.style.transform = card.style.transform.replace(' scale(0.93)', '');
+                });
+            });
+        }
 
         function showGameInfo(game) {
             const info = {
