@@ -320,6 +320,37 @@
                         radial-gradient(circle at 70% 40%, rgba(147,51,234,0.20), transparent 30%),
                         radial-gradient(circle at 50% 75%, rgba(13,148,136,0.18), transparent 36%);
         }
+        /* ===== GLOBAL BUTTON HOVER LIFT ===== */
+        .btn-lift {
+            transition: transform 0.15s cubic-bezier(0.23,1,0.32,1), box-shadow 0.15s ease;
+        }
+        .btn-lift:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 16px rgba(99,102,241,0.12);
+        }
+        .btn-lift:active { transform: translateY(0) scale(0.97); }
+
+        /* tab-btn refinement */
+        .tab-btn {
+            transition: transform 0.15s ease, color 0.15s ease;
+        }
+        .tab-btn:hover:not(.active) {
+            transform: translateY(-1px);
+            color: #e2e8f0;
+        }
+
+        /* Quick-action tile pulse on hover */
+        .qa-tile:hover { background: rgba(255,255,255,0.08) !important; }
+
+        /* Glass card interactive states */
+        .glass-hover-lift {
+            transition: transform 0.18s cubic-bezier(0.23,1,0.32,1), box-shadow 0.18s ease;
+        }
+        .glass-hover-lift:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+        }
+
         /* ===== 3D GAME CARDS ===== */
         .games-3d-stage {
             perspective: 1400px;
@@ -488,26 +519,27 @@
                     <!-- Discord link status banner in profile -->
                     <div id="discord-link-status-profile" class="mt-8 space-y-4"></div>
                     <div class="mt-12 flex justify-center">
-                        <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl flex items-center gap-2 justify-center" title="Opens kcevents.uk in a new tab">
+                        <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="btn-lift px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl flex items-center gap-2 justify-center" title="Opens kcevents.uk in a new tab">
                             Full Profile Options <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1 opacity-60"></i>
                         </a>
                     </div>
                 </div>
             </div>
 
-            <!-- CLANS VIEW (Lite but Functional) -->
-            <div id="view-clans" class="view-transition hidden space-y-8">
-                <div class="glass p-10 rounded-[40px]">
-                    <div class="flex items-center justify-between mb-8">
-                        <h2 class="text-3xl font-bold">Clan Registry</h2>
-                        <button onclick="loadAllClans()" class="text-xs text-blue-400 font-bold uppercase hover:underline">Refresh List</button>
+            <!-- CLANS VIEW (Rich Visual Hub) -->
+            <div id="view-clans" class="view-transition hidden space-y-6">
+                <div class="glass p-8 rounded-[40px]">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-3xl font-black">Clan Registry</h2>
+                            <p class="text-xs text-gray-500 mt-1">Discover and join KC clans</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="loadAllClans(true)" class="btn-lift p-2.5 glass rounded-2xl text-gray-400 hover:text-white transition" title="Refresh"><i class="fa-solid fa-arrows-rotate text-sm"></i></button>
+                            <a href="https://kcevents.uk/#clans" target="_blank" class="btn-lift px-5 py-2.5 glass rounded-2xl text-xs font-bold text-teal-400 hover:bg-teal-500/10 transition flex items-center gap-2"><i class="fa-solid fa-up-right-from-square"></i>Full Hub</a>
+                        </div>
                     </div>
-                    <div id="clans-lite-content" class="space-y-4"></div>
-                    <div class="mt-12 flex justify-center">
-                        <a href="https://kcevents.uk/#clans" target="_blank" class="px-10 py-4 glass glass-hover border-teal-500/30 text-teal-400 font-bold rounded-2xl">
-                            Enter Full Clan Hub <i class="fa-solid fa-arrow-right ml-2"></i>
-                        </a>
-                    </div>
+                    <div id="clans-lite-content"></div>
                 </div>
             </div>
 
@@ -604,57 +636,58 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-24 right-8 z-[200] space-y-3" style="max-width:350px;pointer-events:none;"></div>
 
-    <!-- Quick Actions Floating Menu -->
-    <div class="fixed bottom-32 right-8 z-50">
-        <button onclick="toggleQuickActions()" id="quick-actions-btn" class="w-16 h-16 rounded-full bg-blue-600 hover:bg-blue-500 shadow-2xl shadow-blue-900/60 flex items-center justify-center text-white text-2xl transition" style="transition: transform 0.3s;">
-            <i class="fa-solid fa-bolt"></i>
-        </button>
-        <div id="quick-actions-menu" class="hidden absolute bottom-20 right-0 space-y-3">
-            <button onclick="runQuickAction(claimDaily)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-gift text-blue-400"></i>
-                <span class="font-bold text-sm">Claim Daily</span>
-            </button>
-            <button onclick="runQuickAction(openEconomyShop)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-store text-purple-400"></i>
-                <span class="font-bold text-sm">Shop</span>
-            </button>
-            <button onclick="runQuickAction(openGamesHub)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-dice text-green-400"></i>
-                <span class="font-bold text-sm">Games</span>
-            </button>
-            <button onclick="runQuickAction(openMyProfile)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-user text-teal-400"></i>
-                <span class="font-bold text-sm">My Profile</span>
-            </button>
-            <button onclick="runQuickAction(openAnalytics)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-chart-line text-yellow-400"></i>
-                <span class="font-bold text-sm">Analytics</span>
-            </button>
+    <!-- KC NOW Quick Actions Hub – bottom-center pill -->
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center" id="quick-actions-wrapper">
 
-            <!-- New quick actions added in Phase 5 -->
-            <button onclick="runQuickAction(toggleTheme)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-circle-half-stroke text-purple-400"></i>
-                <span class="font-bold text-sm">Toggle Theme</span>
-            </button>
-            <button onclick="runQuickAction(openFriendsList)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-user-group text-green-400"></i>
-                <span class="font-bold text-sm">Friends</span>
-            </button>
-            <button onclick="runQuickAction(openGlobalSearch)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-search text-blue-400"></i>
-                <span class="font-bold text-sm">Search</span>
-            </button>
-            <button onclick="runQuickAction(openBackgroundSettings)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-stars text-cyan-400"></i>
-                <span class="font-bold text-sm">Background</span>
-            </button>
-
-            <!-- Notification settings button (Phase 5) -->
-            <button onclick="runQuickAction(openNotificationSettings)" class="glass px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 transition whitespace-nowrap" style="pointer-events:all;">
-                <i class="fa-solid fa-bell text-yellow-400"></i>
-                <span class="font-bold text-sm">Notifications</span>
-            </button>
+        <!-- Expanded menu: 2-column icon grid, slides up above the button -->
+        <div id="quick-actions-menu" class="hidden mb-3 w-[320px]">
+            <div class="glass rounded-3xl p-4 shadow-2xl border border-white/10" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(24px);">
+                <p class="text-[10px] font-black uppercase text-gray-500 mb-3 text-center tracking-widest">Quick Access</p>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="runQuickAction(claimDaily)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-blue-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-gift text-xl text-blue-400 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Daily</span>
+                    </button>
+                    <button onclick="runQuickAction(openGamesHub)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-green-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-dice text-xl text-green-400 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Games</span>
+                    </button>
+                    <button onclick="runQuickAction(openEconomyShop)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-purple-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-store text-xl text-purple-400 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Shop</span>
+                    </button>
+                    <button onclick="runQuickAction(openAnalytics)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-yellow-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-chart-line text-xl text-yellow-400 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Stats</span>
+                    </button>
+                    <button onclick="runQuickAction(openFriendsList)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-teal-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-user-group text-xl text-teal-400 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Friends</span>
+                    </button>
+                    <button onclick="runQuickAction(openGlobalSearch)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-blue-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-search text-xl text-blue-300 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Search</span>
+                    </button>
+                    <button onclick="runQuickAction(openBackgroundSettings)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-cyan-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-wand-magic-sparkles text-xl text-cyan-400 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Theme</span>
+                    </button>
+                    <button onclick="runQuickAction(openNotificationSettings)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-yellow-500/20 transition group" style="pointer-events:all;">
+                        <i class="fa-solid fa-bell text-xl text-yellow-300 group-hover:scale-110 transition"></i>
+                        <span class="text-[10px] font-bold text-gray-400">Notifs</span>
+                    </button>
+                </div>
+            </div>
         </div>
+
+        <!-- The KC NOW pill button -->
+        <button onclick="toggleQuickActions()" id="quick-actions-btn"
+            class="flex items-center gap-3 px-8 py-3.5 rounded-full font-black text-sm tracking-wide text-white shadow-2xl shadow-blue-900/70 transition-all duration-300"
+            style="background: linear-gradient(135deg,#2563eb 0%,#4f46e5 100%); box-shadow: 0 8px 32px rgba(37,99,235,0.45), 0 0 0 1px rgba(255,255,255,0.08);">
+            <i class="fa-solid fa-bolt text-base" id="qa-icon"></i>
+            <span>KC NOW</span>
+            <i class="fa-solid fa-chevron-up text-xs opacity-60" id="qa-chevron" style="transition: transform 0.3s;"></i>
+        </button>
     </div>
 
     <script>
@@ -2373,62 +2406,177 @@
             // Do nothing since profiles.html handles everything inside iframe.
         }
 
-        // --- SUB-MODULE: CLANS (Lite but Functional) ---
+        // --- SUB-MODULE: CLANS (Rich Visual Hub) ---
+        let clansSearchFilter = '';
+        const CLAN_GRAD = ['from-blue-600 to-indigo-700','from-teal-600 to-cyan-700','from-purple-600 to-pink-700','from-orange-600 to-red-700','from-green-600 to-emerald-700','from-rose-600 to-pink-700'];
+
         function loadAllClans(forceRefresh) {
             const container = document.getElementById('clans-lite-content');
-            // If we already have clan data and aren't forced to refresh, just re-render
             if (!forceRefresh && Object.keys(allClansData).length) {
                 renderClansLite();
                 return;
             }
-            container.innerHTML = `<div class="p-10 text-center animate-pulse opacity-40">Polling Clan database...</div>`;
+            container.innerHTML = `<div class="p-10 text-center"><div class="inline-flex items-center gap-3 animate-pulse opacity-50"><div class="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin"></div><span class="text-sm">Loading clan registry...</span></div></div>`;
             db.ref('clans').once('value').then(snap => {
                 allClansData = snap.val() || {};
                 renderClansLite();
+            }).catch(() => {
+                container.innerHTML = `<p class="p-10 text-center text-red-400 opacity-60">Failed to load clans.</p>`;
             });
         }
 
         function renderClansLite() {
             const container = document.getElementById('clans-lite-content');
-            const clanIds = Object.keys(allClansData);
-            container.innerHTML = clanIds.map(id => {
+            const filter = clansSearchFilter.toLowerCase();
+            const clanIds = Object.keys(allClansData).filter(id => {
+                if (!filter) return true;
                 const c = allClansData[id];
-                const isMember = currentUser && c.members && c.members[currentUser.uid];
-                return `
-                    <div class="glass p-6 rounded-[32px] flex items-center justify-between border-white/5">
-                        <div class="flex items-center gap-6">
-                            <div class="w-14 h-14 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-400 text-2xl font-black">${c.name.charAt(0)}</div>
-                            <div>
-                                <h4 class="text-lg font-bold">${c.name}</h4>
-                                <p class="text-[10px] text-gray-500 uppercase font-black">${Object.keys(c.members||{}).length} Members • ${c.isOpen ? 'Open' : 'Invite Only'}</p>
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            ${isMember ? 
-                                `<button onclick="leaveClan('${id}')" class="px-5 py-2 bg-red-500/10 text-red-400 text-[10px] font-bold rounded-xl hover:bg-red-500/20">LEAVE</button>` :
-                                `<button onclick="joinClan('${id}')" class="px-5 py-2 bg-teal-500/10 text-teal-400 text-[10px] font-bold rounded-xl hover:bg-teal-500/20">JOIN</button>`
-                            }
-                        </div>
-                    </div>
-                `;
-            }).join('') || `<p class="p-10 text-center opacity-40">No clans registered.</p>`;
+                return (c.name||'').toLowerCase().includes(filter) || (c.description||'').toLowerCase().includes(filter);
+            });
+
+            // Build search bar + grid
+            container.innerHTML = `
+                <div class="relative mb-6">
+                    <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                    <input type="text" id="clans-search-box" value="${clansSearchFilter.replace(/"/g,'&quot;')}"
+                        placeholder="Search clans by name or description…"
+                        oninput="clansSearchFilter=this.value;renderClansLite()"
+                        class="w-full pl-11 pr-4 py-3 rounded-2xl text-sm font-medium outline-none"
+                        style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0">
+                </div>
+                ${clanIds.length === 0 ? `<p class="py-16 text-center text-gray-500 opacity-60">${filter ? 'No clans match your search.' : 'No clans registered yet.'}</p>` :
+                `<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">${clanIds.map((id, idx) => buildClanCard(id, idx)).join('')}</div>`}
+            `;
         }
 
-        window.joinClan = (id) => {
+        function buildClanCard(id, idx) {
+            const c = allClansData[id];
+            const isMember = currentUser && c.members && c.members[currentUser.uid];
+            const memberCount = Object.keys(c.members||{}).length;
+            const grad = CLAN_GRAD[idx % CLAN_GRAD.length];
+            const hasIcon = c.icon && !c.icon.includes('1.png');
+            const avatarHtml = hasIcon
+                ? `<img src="${c.icon}" class="w-14 h-14 rounded-2xl object-cover shadow-lg border border-white/10" onerror="this.outerHTML='<div class=\\'w-14 h-14 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-2xl font-black shadow-lg\\'>${(c.name||'?')[0].toUpperCase()}</div>'">`
+                : `<div class="w-14 h-14 rounded-2xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-2xl font-black shadow-lg">${(c.name||'?')[0].toUpperCase()}</div>`;
+            const desc = (c.description||'').length > 90 ? c.description.slice(0,90)+'…' : (c.description || 'No description.');
+            const statusBadge = c.isOpen
+                ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">Open</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">Invite Only</span>`;
+            const memberBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-gray-400 border border-white/10"><i class="fa-solid fa-users mr-1"></i>${memberCount}</span>`;
+
+            return `
+                <div class="clan-card-hub group glass rounded-[28px] p-5 flex flex-col gap-3 cursor-pointer transition-all duration-200 hover:-translate-y-1 border border-white/5 hover:border-white/10"
+                     style="hover:box-shadow:0 8px 32px rgba(0,0,0,0.4)"
+                     onclick="openClanModalHub('${id}')">
+                    <div class="flex items-start gap-4">
+                        ${avatarHtml}
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-black text-base truncate">${(c.name||'').replace(/</g,'&lt;')}</span>
+                                ${c.letterTag ? `<span class="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">[${c.letterTag}]</span>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2 mt-1 flex-wrap">${memberBadge}${statusBadge}</div>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">${(desc||'').replace(/</g,'&lt;')}</p>
+                    <div class="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
+                        <span class="text-xs text-gray-600">${c.region ? `<i class="fa-solid fa-globe mr-1"></i>${c.region}` : ''}</span>
+                        <div class="flex gap-2">
+                            ${isMember
+                                ? `<button onclick="event.stopPropagation();leaveClanHub('${id}')" class="btn-lift px-4 py-1.5 rounded-xl text-xs font-bold bg-red-500/10 text-red-400 hover:bg-red-500/20 transition">Leave</button>`
+                                : c.isOpen
+                                    ? `<button onclick="event.stopPropagation();joinClanHub('${id}')" class="btn-lift px-4 py-1.5 rounded-xl text-xs font-bold bg-teal-500 hover:bg-teal-400 text-white transition">Join</button>`
+                                    : `<button onclick="event.stopPropagation();joinClanHub('${id}')" class="btn-lift px-4 py-1.5 rounded-xl text-xs font-bold bg-white/10 hover:bg-white/15 text-gray-300 transition">Request</button>`
+                            }
+                            <button onclick="event.stopPropagation();openClanModalHub('${id}')" class="btn-lift px-3 py-1.5 rounded-xl text-xs font-bold glass hover:bg-white/10 transition"><i class="fa-solid fa-chevron-right text-gray-400"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.openClanModalHub = function(id) {
+            const c = allClansData[id];
+            if (!c) return;
+            const memberUids = Object.keys(c.members||{});
+            const isMember = currentUser && c.members && c.members[currentUser.uid];
+            const memberCount = memberUids.length;
+            const idx = Object.keys(allClansData).indexOf(id);
+            const grad = CLAN_GRAD[idx % CLAN_GRAD.length];
+            const hasIcon = c.icon && !c.icon.includes('1.png');
+            const avatarHtml = hasIcon
+                ? `<img src="${c.icon}" class="w-20 h-20 rounded-3xl object-cover border-2 border-white/10" onerror="this.outerHTML='<div class=\\'w-20 h-20 rounded-3xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-3xl font-black\\'>${(c.name||'?')[0]}</div>'">`
+                : `<div class="w-20 h-20 rounded-3xl bg-gradient-to-br ${grad} flex items-center justify-center text-white text-3xl font-black">${(c.name||'?')[0].toUpperCase()}</div>`;
+
+            const membersHtml = memberUids.length > 0
+                ? memberUids.slice(0,12).map(uid => {
+                    const u = allUsersData.find(x => x.uid === uid) || {};
+                    return `<div class="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/10 transition cursor-pointer" onclick="openPlayerCard('${uid}')">
+                        <img src="${u.profilePicture||u.avatar||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-9 h-9 rounded-full object-cover border border-white/10">
+                        <div><p class="text-sm font-bold">${(u.displayName||'Member').replace(/</g,'&lt;')}</p><p class="text-[10px] text-gray-500">${u.rank||'Player'}</p></div>
+                    </div>`;
+                  }).join('')
+                : `<p class="text-xs text-gray-500 text-center py-4">No members yet.</p>`;
+
+            openModal(`${c.name}`, `
+                <div class="space-y-5">
+                    <div class="flex items-center gap-5">
+                        ${avatarHtml}
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 class="text-2xl font-black">${(c.name||'').replace(/</g,'&lt;')}</h2>
+                                ${c.letterTag ? `<span class="text-xs font-bold text-gray-400 bg-white/5 px-2 py-0.5 rounded-full">[${c.letterTag}]</span>` : ''}
+                            </div>
+                            <div class="flex gap-2 flex-wrap mt-2">
+                                <span class="px-3 py-1 rounded-full text-xs font-bold bg-white/5 text-gray-300"><i class="fa-solid fa-users mr-1.5"></i>${memberCount} Members</span>
+                                ${c.isOpen ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-green-500/15 text-green-400">Open</span>` : `<span class="px-3 py-1 rounded-full text-xs font-bold bg-yellow-500/15 text-yellow-400">Invite Only</span>`}
+                                ${c.region ? `<span class="px-3 py-1 rounded-full text-xs font-bold bg-white/5 text-gray-400"><i class="fa-solid fa-globe mr-1"></i>${c.region}</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    ${c.description ? `<div class="glass p-4 rounded-2xl"><p class="text-sm text-gray-300 leading-relaxed">${c.description.replace(/</g,'&lt;')}</p></div>` : ''}
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold uppercase mb-3">Members</p>
+                        <div class="space-y-2 max-h-48 overflow-y-auto pr-1">${membersHtml}</div>
+                        ${memberUids.length > 12 ? `<p class="text-xs text-center text-gray-600 mt-2">+${memberUids.length-12} more members</p>` : ''}
+                    </div>
+                    ${currentUser ? `<div class="flex gap-3 pt-2">
+                        ${isMember
+                            ? `<button onclick="leaveClanHub('${id}');closeModal()" class="btn-lift flex-1 px-4 py-3 bg-red-500/10 text-red-400 font-bold rounded-2xl hover:bg-red-500/20 transition text-sm">Leave Clan</button>`
+                            : `<button onclick="joinClanHub('${id}');closeModal()" class="btn-lift flex-1 px-4 py-3 bg-teal-500 hover:bg-teal-400 text-white font-bold rounded-2xl transition text-sm">${c.isOpen ? 'Join Clan' : 'Request to Join'}</button>`
+                        }
+                        <a href="https://kcevents.uk/#clans" target="_blank" class="btn-lift px-4 py-3 glass font-bold rounded-2xl hover:bg-white/10 transition text-sm text-gray-300">Full Hub</a>
+                    </div>` : ''}
+                </div>
+            `);
+        };
+
+        window.joinClanHub = (id) => {
             if(!currentUser) return openAuthModal();
             const c = allClansData[id];
-            if(!c) return showToast('Clan data not loaded yet. Please wait.', 'error');
+            if(!c) return showToast('Clan not found', 'error');
             if(c.isOpen) {
-                db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => loadAllClans(true));
+                db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => {
+                    showToast(`Joined ${c.name}!`, 'success');
+                    loadAllClans(true);
+                }).catch(() => showToast('Join failed — try again', 'error'));
             } else {
                 db.ref(`clans/${id}/requests/${currentUser.uid}`).set(true).then(() => showToast('Join request sent!', 'success'));
             }
         };
 
-        window.leaveClan = (id) => {
+        window.leaveClanHub = (id) => {
             if(!currentUser) return;
-            db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => loadAllClans(true));
+            const c = allClansData[id];
+            db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => {
+                showToast(`Left ${c ? c.name : 'clan'}`, 'info');
+                loadAllClans(true);
+            }).catch(() => showToast('Failed to leave — try again', 'error'));
         };
+
+        // Legacy aliases
+        window.joinClan = window.joinClanHub;
+        window.leaveClan = window.leaveClanHub;
 
         // --- SUB-MODULE: CLIPS (legacy stub) ---
         function loadClipsFull() { /* replaced by native initClipsView */ }
@@ -3297,7 +3445,7 @@
                         </div>
                     `);
                 }
-                db.ref(`userEconomy/${discordId}/points`).once('value').then(snap => {
+                db.ref(`userEconomy/${discordId}/points`).once('value').catch(() => ({ val: () => 0 })).then(snap => {
                     const points = snap.val() || 0;
                     if (points < 50) {
                         return openModal('Insufficient Points', `
@@ -3327,7 +3475,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button onclick="bjDeal()" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg transition glow-on-hover">
+                            <button onclick="bjDeal()" class="btn-press btn-lift w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg transition glow-on-hover">
                                 🃏 DEAL CARDS
                             </button>
                             <div id="bj-area" class="min-h-[200px]"></div>
@@ -3593,7 +3741,39 @@
                 .catch(()=>showToast('Failed to leave clan','error'));
         }
 
-        function openEconomyShop() {
+        async function buyShopItem(itemKey, price, type) {
+            if (!currentUser) return openAuthModal();
+            const discordId = await getDiscordIdFromKcUid(currentUser.uid);
+            if (!discordId) return showToast('Link your Discord first (/linktokc)', 'error');
+            const ptsSnap = await db.ref(`userEconomy/${discordId}/points`).once('value').catch(() => null);
+            const pts = ptsSnap ? (ptsSnap.val() || 0) : 0;
+            if (pts < price) {
+                return showToast(`Need ${price.toLocaleString()} pts (you have ${pts.toLocaleString()})`, 'error');
+            }
+            const updates = { points: pts - price };
+            try {
+                if (type === 'consumable') {
+                    const iSnap = await db.ref(`userEconomy/${discordId}/inventory/${itemKey}`).once('value').catch(() => null);
+                    updates[`inventory/${itemKey}`] = (iSnap ? iSnap.val() || 0 : 0) + 1;
+                } else if (type === 'unlock_profile') {
+                    updates.profileCustomizationUnlocked = true;
+                } else if (type === 'unlock_bet') {
+                    updates.betLimitIncreased = true;
+                } else if (type === 'unlock_stock') {
+                    updates.specialGameUnlocked = true;
+                } else if (type === 'discord_only') {
+                    return showToast('Use /buy ' + itemKey + ' in Discord to configure this item', 'info');
+                }
+                await db.ref(`userEconomy/${discordId}`).update(updates);
+                showToast('Purchased! ✓', 'success');
+                closeModal();
+                setTimeout(openEconomyShop, 200);
+            } catch(e) {
+                showToast('Purchase failed — try again', 'error');
+            }
+        }
+
+                function openEconomyShop() {
             if (!currentUser) return openAuthModal();
             const modal = openModalWithLoading('🛒 Economy Shop', 'Loading your balance...');
             if (!modal) return;
@@ -3653,7 +3833,7 @@
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-xl font-bold text-blue-400">40,000 pts</p>
-                                                <p class="text-xs text-gray-500">/buy profile_customization</p>
+                                                <button onclick="buyShopItem('profile_customization',40000,'unlock_profile')" class="btn-lift mt-1 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button>
                                             </div>
                                         </div>
                                     </div>
@@ -3667,7 +3847,7 @@
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-sm font-bold text-blue-400">Edit: 1,000 pts</p>
-                                                <p class="text-xs text-gray-500">/buy edit_custom_badge</p>
+                                                <button onclick="buyShopItem('edit_custom_badge',1000,'discord_only')" class="btn-lift mt-1 px-4 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition">Edit in Discord</button>
                                             </div>
                                         </div>
                                     </div>
@@ -3680,7 +3860,7 @@
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-xl font-bold text-blue-400">20,000 pts</p>
-                                                <p class="text-xs text-gray-500">/buy custom_badge</p>
+                                                <button onclick="buyShopItem('custom_badge',20000,'discord_only')" class="btn-lift mt-1 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button>
                                             </div>
                                         </div>
                                     </div>
@@ -3702,7 +3882,7 @@
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-xl font-bold text-blue-400">30,000 pts</p>
-                                                <p class="text-xs text-gray-500">/buy increase_bet_limit</p>
+                                                <button onclick="buyShopItem('increase_bet_limit',30000,'unlock_bet')" class="btn-lift mt-1 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button>
                                             </div>
                                         </div>
                                     </div>
@@ -3721,7 +3901,7 @@
                                             </div>
                                             <div class="text-right">
                                                 <p class="text-xl font-bold text-blue-400">100,000 pts</p>
-                                                <p class="text-xs text-gray-500">/buy special_game</p>
+                                                <button onclick="buyShopItem('special_game',100000,'unlock_stock')" class="btn-lift mt-1 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button>
                                             </div>
                                         </div>
                                     </div>
@@ -3737,7 +3917,7 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xl font-bold text-blue-400">1,000 pts</p>
-                                            <p class="text-xs text-gray-500">Owned: ${inventory.streak_protection || 0} · /buy streak_protection</p>
+                                            <div class="flex items-center justify-between mt-1"><p class="text-xs text-gray-500">Owned: ${inventory.streak_protection || 0}</p><button onclick="buyShopItem('streak_protection',1000,'consumable')" class="btn-lift px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button></div>
                                         </div>
                                     </div>
                                 </div>
@@ -3749,7 +3929,7 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xl font-bold text-blue-400">500 pts</p>
-                                            <p class="text-xs text-gray-500">Owned: ${inventory.extra_slot || 0} · /buy extra_slot</p>
+                                            <div class="flex items-center justify-between mt-1"><p class="text-xs text-gray-500">Owned: ${inventory.extra_slot || 0}</p><button onclick="buyShopItem('extra_slot',500,'consumable')" class="btn-lift px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button></div>
                                         </div>
                                     </div>
                                 </div>
@@ -3761,7 +3941,7 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xl font-bold text-blue-400">750 pts</p>
-                                            <p class="text-xs text-gray-500">Owned: ${inventory.dice_reroll || 0} · /buy dice_reroll</p>
+                                            <div class="flex items-center justify-between mt-1"><p class="text-xs text-gray-500">Owned: ${inventory.dice_reroll || 0}</p><button onclick="buyShopItem('dice_reroll',750,'consumable')" class="btn-lift px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded-xl text-xs font-bold transition">Buy</button></div>
                                         </div>
                                     </div>
                                 </div>
@@ -3780,12 +3960,12 @@
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xl font-bold text-blue-400">300 pts</p>
-                                            <p class="text-xs text-gray-500">/buy bot_message</p>
+                                            <button onclick="buyShopItem('bot_message',300,'discord_only')" class="btn-lift mt-1 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition">Use in Discord</button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Purchases made via Discord /buy command</p>
+                            <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Purchases update your Discord economy in real time</p>
                         </div>
                     `);
             }).catch(err => {
@@ -3949,39 +4129,31 @@
         }
 
         function toggleQuickActions() {
-            const menu = document.getElementById('quick-actions-menu');
-            const btn = document.getElementById('quick-actions-btn');
-            if (menu.classList.contains('hidden')) {
+            const menu    = document.getElementById('quick-actions-menu');
+            const chevron = document.getElementById('qa-chevron');
+            const btn     = document.getElementById('quick-actions-btn');
+            const open    = menu.classList.contains('hidden');
+            if (open) {
                 menu.classList.remove('hidden');
-                btn.style.transform = 'rotate(180deg)';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                if (btn) btn.style.boxShadow = '0 8px 48px rgba(37,99,235,0.7), 0 0 0 2px rgba(99,102,241,0.5)';
             } else {
                 menu.classList.add('hidden');
-                btn.style.transform = 'rotate(0deg)';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+                if (btn) btn.style.boxShadow = '0 8px 32px rgba(37,99,235,0.45), 0 0 0 1px rgba(255,255,255,0.08)';
             }
         }
 
-        /**
-         * Helper to run a quick action cleanly. Closes the floating menu and resets
-         * the toggle button, then invokes the provided function asynchronously.
-         * This avoids leaving the menu open and improves user experience.
-         * @param {Function} action Function to invoke after the menu closes
-         */
         function runQuickAction(action) {
             try {
-                const menu = document.getElementById('quick-actions-menu');
-                const btn = document.getElementById('quick-actions-btn');
-                if (menu && !menu.classList.contains('hidden')) {
-                    menu.classList.add('hidden');
-                }
-                if (btn) {
-                    btn.style.transform = 'rotate(0deg)';
-                }
-                if (typeof action === 'function') {
-                    setTimeout(action, 0);
-                }
-            } catch (err) {
-                console.error('runQuickAction error:', err);
-            }
+                const menu    = document.getElementById('quick-actions-menu');
+                const chevron = document.getElementById('qa-chevron');
+                const btn     = document.getElementById('quick-actions-btn');
+                if (menu) menu.classList.add('hidden');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+                if (btn) btn.style.boxShadow = '0 8px 32px rgba(37,99,235,0.45), 0 0 0 1px rgba(255,255,255,0.08)';
+                if (typeof action === 'function') setTimeout(action, 0);
+            } catch (err) { console.error('runQuickAction error:', err); }
         }
 
         async function openPlayerCard(uid) {
@@ -3989,67 +4161,89 @@
             const modal = openModalWithLoading('Player Profile', 'Loading profile...');
             if (!modal) return;
             try {
-                const snap = await db.ref(`users/${uid}`).once('value');
+                const [snap, postsSnap] = await Promise.all([
+                    db.ref(`users/${uid}`).once('value').catch(() => ({ val: () => null })),
+                    db.ref(`users/${uid}/posts`).once('value').catch(() => ({ val: () => null }))
+                ]);
                 const u = snap.val();
                 if (!u) { modal.update('<div class="text-center py-10 text-gray-500">Player not found.</div>'); return; }
 
                 // Friend status
                 const isSelf = currentUser && currentUser.uid === uid;
                 const isFriend = currentUser && friendsList.some(f => f.uid === uid);
-                let friendBtn = '';
+                let friendBtns = '';
                 if (currentUser && !isSelf) {
-                    friendBtn = isFriend
-                        ? `<button onclick="removeFriend('${uid}');closeModal()" class="btn-press flex-1 px-4 py-3 glass text-red-400 font-bold rounded-2xl hover:bg-red-500/10 transition text-sm"><i class="fa-solid fa-user-minus mr-2"></i>Remove Friend</button>`
-                        : `<button onclick="addFriend('${uid}');closeModal()" class="btn-press flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition text-sm"><i class="fa-solid fa-user-plus mr-2"></i>Add Friend</button>`;
+                    friendBtns = isFriend
+                        ? `<button onclick="removeFriend('${uid}');closeModal()" class="btn-press flex-1 py-2.5 glass text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-sm"><i class="fa-solid fa-user-minus mr-2"></i>Remove Friend</button>`
+                        : `<button onclick="addFriend('${uid}')" class="btn-press btn-lift flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl transition text-sm"><i class="fa-solid fa-user-plus mr-2"></i>Add Friend</button>`;
                 }
+
+                // Clips
+                const postsObj = postsSnap ? postsSnap.val() : null;
+                const userPosts = postsObj ? Object.entries(postsObj).map(([pid, p]) => ({ id: pid, ...p })).filter(p => p.ytId || p.videoId || p.mediaUrl) : [];
+                const clipsHtml = userPosts.length > 0
+                    ? `<div class="grid grid-cols-2 gap-2">${userPosts.slice(0, 6).map(p => {
+                        const thumb = p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : (p.mediaUrl || null);
+                        return `<div class="rounded-2xl overflow-hidden cursor-pointer hover:opacity-80 transition aspect-video bg-black/30 relative"
+                                     onclick="openClipDetail('${uid}','${p.id}')">
+                            ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-film text-2xl text-white/20"></i></div>'}
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/0 transition">
+                                <i class="fa-solid fa-circle-play text-3xl text-white/70 drop-shadow"></i>
+                            </div>
+                        </div>`;
+                    }).join('')}</div>`
+                    : `<p class="text-xs text-gray-500 text-center py-6">No clips yet.</p>`;
 
                 // Badges
                 let badgesHtml = '';
                 if (u.badges) {
                     const badgeList = Array.isArray(u.badges) ? u.badges : Object.values(u.badges);
-                    if (badgeList.length) {
-                        badgesHtml = `<div class="flex flex-wrap gap-2 justify-center mt-2">
-                            ${badgeList.slice(0, 8).map(b => `<span class="text-xs bg-white/5 px-3 py-1 rounded-full">${b.icon || '🏅'} ${b.name || b}</span>`).join('')}
-                        </div>`;
-                    }
+                    if (badgeList.length) badgesHtml = `<div class="flex flex-wrap gap-1.5 justify-center">${badgeList.slice(0,6).map(b=>`<span class="text-xs bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">${b.icon||'🏅'} ${b.name||b}</span>`).join('')}</div>`;
                 }
 
                 const content = `
-                    <div class="space-y-5">
-                        <div class="flex flex-col items-center gap-4 text-center">
-                            <div class="relative">
-                                <img src="${u.profilePicture || u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-28 h-28 rounded-full border-4 border-white/10 shadow-2xl object-cover">
-                                ${isFriend ? '<div class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-xs" title="Friend"><i class="fa-solid fa-user-check"></i></div>' : ''}
+                    <div class="space-y-4">
+                        <!-- Header -->
+                        <div class="flex items-center gap-4">
+                            <div class="relative flex-shrink-0">
+                                <img src="${u.profilePicture||u.avatar||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-20 h-20 rounded-3xl border-2 border-white/10 shadow-xl object-cover">
+                                ${isFriend ? '<div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-[10px]" title="Friend"><i class="fa-solid fa-check"></i></div>' : ''}
                             </div>
-                            <div>
-                                <h2 class="text-3xl font-black" style="color:${u.nameColor||'#fff'}">${u.displayName || 'Member'}</h2>
-                                <p class="text-blue-400 font-bold tracking-widest uppercase text-xs mt-1">${u.rank || 'Player'}</p>
-                                ${isFriend ? '<span class="text-xs text-green-400 font-bold"><i class="fa-solid fa-heart mr-1"></i>Friend</span>' : ''}
-                            </div>
-                            ${badgesHtml}
-                        </div>
-
-                        <div class="grid grid-cols-3 gap-3">
-                            <div class="glass p-4 rounded-2xl text-center">
-                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Points</p>
-                                <p class="text-xl font-black text-blue-400">${(u.totalPoints||0).toLocaleString()}</p>
-                            </div>
-                            <div class="glass p-4 rounded-2xl text-center">
-                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Clan</p>
-                                <p class="text-xl font-black text-teal-400 truncate">${u.clanName || '—'}</p>
-                            </div>
-                            <div class="glass p-4 rounded-2xl text-center">
-                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">BD Score</p>
-                                <p class="text-xl font-black text-red-400">${(u.bdHighscore||0).toLocaleString()}</p>
+                            <div class="flex-1 min-w-0">
+                                <h2 class="text-2xl font-black truncate" style="color:${u.nameColor||'#e2e8f0'}">${(u.displayName||'Member').replace(/</g,'&lt;')}</h2>
+                                <p class="text-blue-400 font-bold text-xs uppercase tracking-widest mt-0.5">${u.rank||'Player'}</p>
+                                ${isFriend ? '<span class="text-xs text-green-400 font-semibold"><i class="fa-solid fa-heart mr-1"></i>Friend</span>' : ''}
+                                ${badgesHtml}
                             </div>
                         </div>
 
-                        <div class="glass p-4 rounded-2xl">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">About</p>
-                            <p class="text-gray-300 text-sm italic">"${(u.bio || 'Silence is this player\'s best friend.').replace(/"/g, '&quot;')}"</p>
+                        <!-- Stats -->
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="glass p-3 rounded-2xl text-center">
+                                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Points</p>
+                                <p class="text-lg font-black text-blue-400">${(u.totalPoints||0).toLocaleString()}</p>
+                            </div>
+                            <div class="glass p-3 rounded-2xl text-center">
+                                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Clan</p>
+                                <p class="text-sm font-black text-teal-400 truncate">${u.clanName||'—'}</p>
+                            </div>
+                            <div class="glass p-3 rounded-2xl text-center">
+                                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">BD Score</p>
+                                <p class="text-lg font-black text-red-400">${(u.bdHighscore||0).toLocaleString()}</p>
+                            </div>
                         </div>
 
-                        ${friendBtn ? `<div class="flex gap-3">${friendBtn}</div>` : ''}
+                        <!-- Bio -->
+                        ${u.bio ? `<div class="glass p-3 rounded-2xl"><p class="text-gray-300 text-sm italic">"${u.bio.replace(/"/g,'&quot;').replace(/</g,'&lt;')}"</p></div>` : ''}
+
+                        <!-- Clips -->
+                        <div>
+                            <p class="text-[10px] text-gray-500 font-black uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-clapperboard text-blue-400"></i>Clips (${userPosts.length})</p>
+                            ${clipsHtml}
+                        </div>
+
+                        <!-- Actions -->
+                        ${(currentUser && !isSelf) ? `<div class="flex gap-2 pt-1">${friendBtns}<button onclick="switchTab('clips');closeModal()" class="btn-lift flex-1 py-2.5 glass font-bold rounded-xl hover:bg-white/10 transition text-sm text-gray-300"><i class="fa-solid fa-clapperboard mr-2"></i>All Clips</button></div>` : ''}
                     </div>
                 `;
                 modal.update(content);
@@ -4076,7 +4270,7 @@
                         </div>
                     `);
                 }
-                db.ref(`userEconomy/${discordId}/badges`).once('value').then(snap => {
+                db.ref(`userEconomy/${discordId}/badges`).once('value').catch(() => ({ val: () => ({}) })).then(snap => {
                     const badges = snap.val() || {};
                     const badgeList = Object.entries(badges).map(([id, timestamp]) => ({ id, timestamp }));
                     const badgeDefs = {
@@ -4117,6 +4311,8 @@
                         </div>
                     `);
                 });
+            }).catch(() => {
+                openModal('Achievements', '<div class="text-center py-10 text-gray-500">Could not load achievements. Try again later.</div>');
             });
         }
 
@@ -4143,17 +4339,25 @@
         }
 
         function loadProfileLite() {
-            if (!currentUser) return;
             const container = document.getElementById('profile-lite-content');
+            if (!currentUser) {
+                container.innerHTML = `<div class="col-span-2 text-center py-12">
+                    <i class="fa-solid fa-circle-user text-6xl text-gray-700 mb-4 block"></i>
+                    <p class="text-gray-400 font-bold mb-2">Sign in to view your profile</p>
+                    <p class="text-gray-600 text-sm mb-6">Your KC stats, economy data, and badges will appear here.</p>
+                    <button onclick="openAuthModal()" class="btn-lift px-8 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">Sign In</button>
+                </div>`;
+                return;
+            }
             container.innerHTML = `<div class="col-span-2 animate-pulse bg-white/5 h-24 rounded-3xl"></div>`;
 
             Promise.all([
-                db.ref(`users/${currentUser.uid}`).once('value'),
+                db.ref(`users/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 getDiscordIdFromKcUid(currentUser.uid)
             ]).then(([userSnap, discordId]) => {
                 const u = userSnap.val() || {};
                 const economyPromise = discordId
-                    ? db.ref(`userEconomy/${discordId}`).once('value').then(snap => snap.val() || {})
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(snap => snap.val() || {}).catch(() => ({}))
                     : Promise.resolve({});
 
                 economyPromise.then(economy => {
@@ -4237,7 +4441,11 @@
                             </div>
                         ` : ''}
                     `;
+                }).catch(() => {
+                    container.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-500">Could not load profile data.</div>`;
                 });
+            }).catch(() => {
+                container.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-500">Could not load profile data.</div>`;
             });
         }
 
@@ -4416,12 +4624,12 @@
             const modal = openModalWithLoading('Your Analytics', 'Crunching your stats...');
             if (!modal) return;
             Promise.all([
-                db.ref(`users/${currentUser.uid}`).once('value'),
+                db.ref(`users/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 getDiscordIdFromKcUid(currentUser.uid)
             ]).then(([userSnap, discordId]) => {
                 const u = userSnap.val() || {};
                 const economyPromise = discordId
-                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {})
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {}).catch(() => ({}))
                     : Promise.resolve({});
                 economyPromise.then(economy => {
                     const netWorth = economy.points || 0;
@@ -4494,7 +4702,11 @@
                             </div>
                         </div>
                     `);
+                }).catch(err => {
+                    modal.update('<div class="text-center py-10 text-red-400">Failed to load analytics. Close and try again.</div>');
                 });
+            }).catch(err => {
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load analytics. Close and try again.</div>');
             });
         }
 
@@ -4828,29 +5040,28 @@
         function openGlobalSearch() {
             openModal('Search KC NOW', `
                 <div class="space-y-4">
-                    <div class="flex gap-2">
-                        <input type="text" id="global-search-input" placeholder="Search players, clans, clips..."
-                               class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none focus:border-blue-500"
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
+                        <input type="text" id="global-search-input" placeholder="Search players, clans, clips…"
+                               class="w-full pl-12 pr-4 py-3.5 rounded-2xl font-medium text-sm focus:outline-none"
+                               style="background:rgba(255,255,255,0.07);border:1.5px solid rgba(255,255,255,0.1);color:#e2e8f0"
+                               oninput="if(this.value.length>=2)performGlobalSearch()"
                                onkeypress="if(event.key==='Enter')performGlobalSearch()">
-                        <button onclick="performGlobalSearch()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">
-                            <i class="fa-solid fa-search"></i>
-                        </button>
                     </div>
-                    <div class="flex gap-2 overflow-x-auto no-scrollbar">
+                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                         <button onclick="setSearchCategory('all')" id="search-cat-all" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap bg-blue-600 text-white text-sm">All</button>
-                        <button onclick="setSearchCategory('players')" id="search-cat-players" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm">Players</button>
-                        <button onclick="setSearchCategory('clans')" id="search-cat-clans" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm">Clans</button>
-                        <button onclick="setSearchCategory('clips')" id="search-cat-clips" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm">Clips</button>
+                        <button onclick="setSearchCategory('players')" id="search-cat-players" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm"><i class="fa-solid fa-user mr-1.5"></i>Players</button>
+                        <button onclick="setSearchCategory('clans')" id="search-cat-clans" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm"><i class="fa-solid fa-shield-halved mr-1.5"></i>Clans</button>
+                        <button onclick="setSearchCategory('clips')" id="search-cat-clips" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400 text-sm"><i class="fa-solid fa-clapperboard mr-1.5"></i>Clips</button>
                     </div>
-                    <div id="search-results-container" class="min-h-[200px]">
-                        <div class="text-center py-16 text-gray-500 text-sm">
-                            <i class="fa-solid fa-search text-4xl mb-4 block opacity-20"></i>
-                            Enter a search query above
+                    <div id="search-results-container" class="min-h-[240px] max-h-[420px] overflow-y-auto pr-1">
+                        <div class="text-center py-16 text-gray-600">
+                            <i class="fa-solid fa-magnifying-glass text-5xl mb-4 block opacity-20"></i>
+                            <p class="text-sm">Start typing to search KC NOW</p>
                         </div>
                     </div>
                 </div>
             `);
-            // Reset category highlight
             searchCategory = 'all';
         }
 
@@ -4909,33 +5120,73 @@
                 }
                 let html = '';
                 if (results.players.length > 0) {
-                    html += `<div class="mb-5"><p class="text-xs text-gray-500 font-black uppercase mb-3">Players (${results.players.length})</p><div class="space-y-2">
-                        ${results.players.slice(0, 5).map(p => `
-                            <div class="glass p-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 cursor-pointer transition" onclick="window.openKcProfile('${p.uid}')">
-                                <img src="${p.avatar || 'https://via.placeholder.com/40'}" class="w-9 h-9 rounded-full object-cover">
-                                <div class="flex-1"><p class="font-bold text-sm">${p.displayName}</p><p class="text-xs text-gray-400">Overall: ${p.overall || 0}</p></div>
+                    html += `<div class="mb-6">
+                        <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-user text-blue-400"></i>Players <span class="text-gray-600">(${results.players.length})</span></p>
+                        <div class="space-y-2">
+                        ${results.players.slice(0, 6).map(p => `
+                            <div class="flex items-center gap-3 p-3 rounded-2xl transition cursor-pointer group"
+                                 style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)"
+                                 onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'"
+                                 onclick="window.openKcProfile('${p.uid}')">
+                                <div class="relative flex-shrink-0">
+                                    <img src="${p.avatar||p.profilePicture||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-11 h-11 rounded-full object-cover border-2 border-white/10">
+                                    ${p.isOnline ? '<div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-[#10131a]"></div>' : ''}
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-sm truncate" style="color:${p.nameColor||'#e2e8f0'}">${(p.displayName||'').replace(/</g,'&lt;')}</p>
+                                    <p class="text-[11px] text-gray-500 truncate">${p.rank||'Player'}${p.clanName ? ` · ${p.clanName}` : ''}</p>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition"></i>
                             </div>`).join('')}
-                    </div></div>`;
+                        </div>${results.players.length > 6 ? `<p class="text-xs text-gray-600 text-center mt-2">+${results.players.length-6} more players</p>` : ''}
+                    </div>`;
                 }
                 if (results.clans.length > 0) {
-                    html += `<div class="mb-5"><p class="text-xs text-gray-500 font-black uppercase mb-3">Clans (${results.clans.length})</p><div class="space-y-2">
-                        ${results.clans.slice(0, 5).map(c => `
-                            <div class="glass p-3 rounded-2xl flex items-center gap-3 hover:bg-white/10 cursor-pointer transition" onclick="openClanDetails('${c.id}')">
-                                <div class="w-9 h-9 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-400 font-black flex-shrink-0">${c.name.charAt(0)}</div>
-                                <div class="flex-1"><p class="font-bold text-sm">${c.name}</p><p class="text-xs text-gray-400">${Object.keys(c.members || {}).length} members</p></div>
-                            </div>`).join('')}
-                    </div></div>`;
+                    html += `<div class="mb-6">
+                        <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-teal-400"></i>Clans <span class="text-gray-600">(${results.clans.length})</span></p>
+                        <div class="space-y-2">
+                        ${results.clans.slice(0, 5).map((c, idx) => {
+                            const grad = CLAN_GRAD[idx % CLAN_GRAD.length];
+                            const hasIcon = c.icon && !c.icon.includes('1.png');
+                            const avatarEl = hasIcon ? `<img src="${c.icon}" class="w-11 h-11 rounded-xl object-cover border border-white/10" onerror="this.outerHTML='<div class=\\'w-11 h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center text-white font-black text-lg\\'>${(c.name||'?')[0]}</div>'">`
+                                : `<div class="w-11 h-11 rounded-xl bg-gradient-to-br ${grad} flex items-center justify-center text-white font-black text-lg flex-shrink-0">${(c.name||'?')[0].toUpperCase()}</div>`;
+                            return `
+                            <div class="flex items-center gap-3 p-3 rounded-2xl transition cursor-pointer group"
+                                 style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)"
+                                 onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'"
+                                 onclick="openClanModalHub('${c.id}')">
+                                ${avatarEl}
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-sm truncate">${(c.name||'').replace(/</g,'&lt;')}${c.letterTag ? ` <span class="text-gray-500 text-xs font-normal">[${c.letterTag}]</span>` : ''}</p>
+                                    <p class="text-[11px] text-gray-500">${Object.keys(c.members||{}).length} members · ${c.isOpen ? '<span class="text-green-400">Open</span>' : '<span class="text-yellow-400">Invite Only</span>'}</p>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-gray-600 text-xs group-hover:text-gray-400 transition"></i>
+                            </div>`;
+                        }).join('')}
+                        </div>
+                    </div>`;
                 }
                 if (results.clips.length > 0) {
-                    html += `<div class="mb-5"><p class="text-xs text-gray-500 font-black uppercase mb-3">Clips (${results.clips.length})</p><div class="space-y-2">
+                    html += `<div class="mb-6">
+                        <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-clapperboard text-purple-400"></i>Clips <span class="text-gray-600">(${results.clips.length})</span></p>
+                        <div class="space-y-2">
                         ${results.clips.slice(0, 5).map(c => `
-                            <div class="glass p-3 rounded-2xl hover:bg-white/10 transition cursor-pointer" onclick="window.openKcProfile('${c.createdBy || ''}')">
-                                <p class="font-bold text-sm">${c.caption || 'Untitled'}</p>
-                                <p class="text-xs text-gray-400">by ${c.userName || 'Unknown'}</p>
+                            <div class="flex items-center gap-3 p-3 rounded-2xl transition cursor-pointer"
+                                 style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07)"
+                                 onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'"
+                                 onclick="switchTab('clips');closeModal()">
+                                <div class="w-11 h-11 rounded-xl bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                                    <i class="fa-solid fa-play text-purple-400 text-sm"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-bold text-sm truncate">${(c.caption||'Untitled').replace(/</g,'&lt;')}</p>
+                                    <p class="text-[11px] text-gray-500">by ${(c.userName||'Unknown').replace(/</g,'&lt;')}</p>
+                                </div>
                             </div>`).join('')}
-                    </div></div>`;
+                        </div>
+                    </div>`;
                 }
-                if (!html) html = '<div class="text-center py-16 text-gray-500 text-sm">No results found</div>';
+                if (!html) html = `<div class="text-center py-16 text-gray-600"><i class="fa-solid fa-circle-xmark text-4xl mb-4 block opacity-30"></i><p class="text-sm">No results for "<strong class="text-gray-400">${query.replace(/</g,'&lt;')}</strong>"</p></div>`;
                 container.innerHTML = html;
             } catch(e) {
                 container.innerHTML = '<div class="text-center py-10 text-gray-400"><i class="fa-solid fa-wifi-slash text-3xl mb-3 block text-gray-600"></i>Couldn\'t reach KC servers.<br><span class="text-sm">Check your connection and try again.</span></div>';
