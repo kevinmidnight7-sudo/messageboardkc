@@ -627,6 +627,7 @@
         let backgroundAnimationId = null;
         let mouseParallax = { x: 0, y: 0, tx: 0, ty: 0 };
         let bgAutoDrift = { x: 0, y: 0, time: 0 };
+        let bgShapesCanvas = null, bgShapesCtx = null, bgShapes = [];
         let currentUserData = null;
 
         // --- Firebase Config (KC Killers Company) ---
@@ -674,13 +675,24 @@
         // --- HELPER FUNCTIONS ---
         async function getDiscordIdFromKcUid(kcUid) {
             if (discordIdCache.has(kcUid)) return discordIdCache.get(kcUid);
-            const linksSnapshot = await db.ref('discordLinks').once('value');
-            const links = linksSnapshot.val() || {};
-            for (const [discordId, data] of Object.entries(links)) {
-                if (data.uid === kcUid) {
-                    discordIdCache.set(kcUid, discordId);
-                    return discordId;
+            try {
+                // Fast path: Discord ID stored directly on the user profile
+                const directSnap = await db.ref(`users/${kcUid}/discordId`).once('value');
+                if (directSnap.val()) {
+                    discordIdCache.set(kcUid, directSnap.val());
+                    return directSnap.val();
                 }
+                // Fallback: scan discordLinks mapping (may be permission-denied on some deployments)
+                const linksSnapshot = await db.ref('discordLinks').once('value');
+                const links = linksSnapshot.val() || {};
+                for (const [discordId, data] of Object.entries(links)) {
+                    if (data && data.uid === kcUid) {
+                        discordIdCache.set(kcUid, discordId);
+                        return discordId;
+                    }
+                }
+            } catch (e) {
+                console.warn('[getDiscordIdFromKcUid] lookup failed:', e.code || e.message);
             }
             discordIdCache.set(kcUid, null);
             return null;
@@ -1631,6 +1643,112 @@
             });
         }
 
+        // ── Geometric Shape Palette ──
+        const BG_SHAPE_PALETTES = {
+            default:   ['rgba(59,130,246,',  'rgba(45,212,191,', 'rgba(99,102,241,',  'rgba(168,85,247,'],
+            aurora:    ['rgba(34,211,238,',  'rgba(59,130,246,', 'rgba(45,212,191,',  'rgba(99,102,241,'],
+            sunrise:   ['rgba(252,165,165,', 'rgba(253,186,116,','rgba(253,224,71,',  'rgba(249,168,212,'],
+            deepsea:   ['rgba(52,211,153,',  'rgba(147,51,234,', 'rgba(20,184,166,',  'rgba(99,102,241,'],
+            void:      ['rgba(99,102,241,',  'rgba(168,85,247,', 'rgba(139,92,246,',  'rgba(59,130,246,'],
+            prism:     ['rgba(236,72,153,',  'rgba(59,130,246,', 'rgba(16,185,129,',  'rgba(245,158,11,'],
+            starlight: ['rgba(99,102,241,',  'rgba(45,212,191,', 'rgba(168,85,247,',  'rgba(59,130,246,']
+        };
+
+        function _initBgShapes(preset) {
+            bgShapes = [];
+            const palette = BG_SHAPE_PALETTES[preset] || BG_SHAPE_PALETTES.default;
+            const w = window.innerWidth, h = window.innerHeight;
+            const count = Math.max(14, Math.min(26, Math.floor(w * h / 38000)));
+            const types = ['triangle','hexagon','circle','rect','diamond'];
+            for (let i = 0; i < count; i++) {
+                const z = Math.pow(Math.random(), 0.7); // bias toward mid-depth
+                bgShapes.push({
+                    x: Math.random() * w, y: Math.random() * h, z,
+                    vx: (Math.random() - 0.5) * 0.18,
+                    vy: (Math.random() - 0.5) * 0.12,
+                    rot: Math.random() * Math.PI * 2,
+                    rotSpeed: (Math.random() - 0.5) * 0.004,
+                    size: 18 + z * 70 + Math.random() * 35,
+                    type: types[Math.floor(Math.random() * types.length)],
+                    colorBase: palette[Math.floor(Math.random() * palette.length)],
+                    opacity: 0.04 + z * 0.09,
+                    pFactor: 0.3 + z * 0.7
+                });
+            }
+        }
+
+        function _drawBgShape(ctx, s) {
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            ctx.rotate(s.rot);
+            ctx.fillStyle   = s.colorBase + s.opacity + ')';
+            ctx.strokeStyle = s.colorBase + Math.min(s.opacity * 3, 0.35) + ')';
+            ctx.lineWidth   = 0.8 + s.z * 1.2;
+            const r = s.size;
+            ctx.beginPath();
+            switch (s.type) {
+                case 'triangle':
+                    ctx.moveTo(0, -r);
+                    ctx.lineTo(r * 0.866, r * 0.5);
+                    ctx.lineTo(-r * 0.866, r * 0.5);
+                    break;
+                case 'hexagon':
+                    for (let i = 0; i < 6; i++) {
+                        const a = (i * Math.PI) / 3 - Math.PI / 6;
+                        i === 0 ? ctx.moveTo(r*Math.cos(a), r*Math.sin(a))
+                                : ctx.lineTo(r*Math.cos(a), r*Math.sin(a));
+                    }
+                    break;
+                case 'circle':
+                    ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+                    break;
+                case 'rect': {
+                    const hw = r * 0.85, hh = r * 0.5, rad = r * 0.22;
+                    ctx.moveTo(-hw + rad, -hh);
+                    ctx.arcTo(hw, -hh, hw, hh, rad);
+                    ctx.arcTo(hw, hh, -hw, hh, rad);
+                    ctx.arcTo(-hw, hh, -hw, -hh, rad);
+                    ctx.arcTo(-hw, -hh, hw, -hh, rad);
+                    break;
+                }
+                case 'diamond':
+                    ctx.moveTo(0, -r); ctx.lineTo(r*0.58, 0);
+                    ctx.lineTo(0, r);  ctx.lineTo(-r*0.58, 0);
+                    break;
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function _tickBgShapes(ts) {
+            if (!bgShapesCtx || !bgShapesCanvas) return;
+            const ctx = bgShapesCtx;
+            const w = bgShapesCanvas.width, h = bgShapesCanvas.height;
+            ctx.clearRect(0, 0, w, h);
+            const reduce = backgroundPrefs.reducedMotion;
+            const pmx = reduce ? 0 : mouseParallax.x;
+            const pmy = reduce ? 0 : mouseParallax.y;
+            const dx  = reduce ? 0 : bgAutoDrift.x * 28;
+            const dy  = reduce ? 0 : bgAutoDrift.y * 18;
+            const margin = 120;
+            for (const s of bgShapes) {
+                if (!reduce) {
+                    s.x += s.vx; s.y += s.vy; s.rot += s.rotSpeed;
+                    if (s.x < -margin) s.x = w + margin;
+                    else if (s.x > w + margin) s.x = -margin;
+                    if (s.y < -margin) s.y = h + margin;
+                    else if (s.y > h + margin) s.y = -margin;
+                }
+                const ox = s.x, oy = s.y;
+                s.x += pmx * -55 * s.pFactor + dx * s.pFactor;
+                s.y += pmy * -40 * s.pFactor + dy * s.pFactor;
+                _drawBgShape(ctx, s);
+                s.x = ox; s.y = oy;
+            }
+        }
+
         function initDynamicBackground() {
             const container = document.getElementById('bg-canvas');
             if (!container) return;
@@ -1646,7 +1764,19 @@
             `;
             backgroundScene = document.getElementById('bg-3d-root');
             applyBackgroundPreset(backgroundPrefs.preset);
-            // Only attach pointer-based parallax when reduced motion is off and the screen is wide
+
+            // Add floating-shapes canvas on top of gradient layers
+            bgShapesCanvas = document.createElement('canvas');
+            bgShapesCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;';
+            bgShapesCanvas.width  = Math.ceil(window.innerWidth  * (window.devicePixelRatio || 1));
+            bgShapesCanvas.height = Math.ceil(window.innerHeight * (window.devicePixelRatio || 1));
+            bgShapesCanvas.style.width  = window.innerWidth  + 'px';
+            bgShapesCanvas.style.height = window.innerHeight + 'px';
+            bgShapesCtx = bgShapesCanvas.getContext('2d');
+            bgShapesCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+            container.appendChild(bgShapesCanvas);
+            _initBgShapes(backgroundPrefs.preset);
+
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches || backgroundPrefs.reducedMotion;
             if (!reduceMotion && window.innerWidth > 640) {
                 attachBackgroundMotion();
@@ -1657,6 +1787,7 @@
         function destroyDynamicBackground() {
             if (backgroundAnimationId) cancelAnimationFrame(backgroundAnimationId);
             backgroundAnimationId = null;
+            bgShapesCanvas = null; bgShapesCtx = null; bgShapes = [];
             const container = document.getElementById('bg-canvas');
             if (container) container.innerHTML = '';
         }
@@ -1667,10 +1798,24 @@
             saveBackgroundPrefs();
             if (!backgroundScene) return;
             backgroundScene.className = `kc-bg-scene ${preset}`;
+            _initBgShapes(preset); // re-seed shapes with new colour palette
         }
 
         function attachBackgroundMotion() {
             window.addEventListener('mousemove', handleBackgroundPointerMove, { passive: true });
+            window.addEventListener('resize', _onBgCanvasResize, { passive: true });
+        }
+
+        function _onBgCanvasResize() {
+            if (!bgShapesCanvas) return;
+            const dpr = window.devicePixelRatio || 1;
+            bgShapesCanvas.width  = Math.ceil(window.innerWidth  * dpr);
+            bgShapesCanvas.height = Math.ceil(window.innerHeight * dpr);
+            bgShapesCanvas.style.width  = window.innerWidth  + 'px';
+            bgShapesCanvas.style.height = window.innerHeight + 'px';
+            bgShapesCtx = bgShapesCanvas.getContext('2d');
+            bgShapesCtx.scale(dpr, dpr);
+            _initBgShapes(backgroundPrefs.preset);
         }
 
         function handleBackgroundPointerMove(e) {
@@ -1705,6 +1850,8 @@
                         glowLayer.style.opacity = pulse.toFixed(3);
                     }
                 }
+                // Draw floating geometric shapes on canvas layer
+                _tickBgShapes(ts);
                 backgroundAnimationId = requestAnimationFrame(tick);
             }
             backgroundAnimationId = requestAnimationFrame(tick);
@@ -1946,13 +2093,25 @@
                 `);
             } catch (err) {
                 console.error('[Slither] Failed to load servers:', err);
+                // permission_denied means the bot hasn't written data yet — show Discord fallback
                 modal.update(`
-                    <div class="text-center py-16">
-                        <i class="fa-solid fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-                        <p class="text-xl font-bold text-red-400 mb-2">Failed to Load</p>
-                        <p class="text-gray-400 text-sm mb-6">${err.message || 'Network error'}</p>
-                        <button onclick="openSlitherServers()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">
-                            <i class="fa-solid fa-rotate-right mr-2"></i> Try Again
+                    <div class="space-y-6">
+                        <div class="text-center py-4">
+                            <div class="text-6xl mb-3">🐍</div>
+                            <p class="text-xl font-bold mb-2">Server Data Unavailable</p>
+                            <p class="text-gray-400 text-sm max-w-sm mx-auto">Live server listings are managed by the KC Discord bot. Use the command below in the KC Discord server.</p>
+                        </div>
+                        <div class="glass rounded-2xl p-4 flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-indigo-500/20 flex items-center justify-center text-indigo-400 text-2xl flex-shrink-0">
+                                <i class="fa-brands fa-discord"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm mb-1">Discord Slash Command</p>
+                                <code class="text-green-400 text-sm font-mono bg-black/30 px-3 py-1.5 rounded-xl select-all">/slitherservers</code>
+                            </div>
+                        </div>
+                        <button onclick="openSlitherServers()" class="btn-press w-full px-6 py-3 bg-white/5 hover:bg-white/10 rounded-2xl font-bold transition text-sm">
+                            <i class="fa-solid fa-rotate-right mr-2"></i> Check Again
                         </button>
                     </div>
                 `);
@@ -2141,29 +2300,48 @@
             container.className = 'col-span-full';
             container.innerHTML = `<div class="flex justify-center py-20"><div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>`;
             try {
-                const usersSnap = await db.ref('users').once('value');
+                const now = Date.now();
                 clipsUserProfiles = {};
                 clipsAllPosts = [];
+
+                // Primary: scan users/{uid}/posts (same schema as socialfeed.html)
+                const usersSnap = await db.ref('users').once('value');
                 usersSnap.forEach(userSnap => {
                     const u = userSnap.val() || {};
                     clipsUserProfiles[userSnap.key] = u;
                     const posts = u.posts;
                     if (posts) {
                         Object.entries(posts).forEach(([postId, p]) => {
-                            // Match socialfeed.html: exclude drafts and unpublished scheduled posts
-                            const now = Date.now();
                             if (p && !p.draft && (!p.publishAt || p.publishAt <= now)) {
                                 clipsAllPosts.push({ ...p, postId, createdBy: userSnap.key });
                             }
                         });
                     }
                 });
+
+                // Secondary: also scan social_posts (flat collection, some bots write here)
+                try {
+                    const spSnap = await db.ref('social_posts').limitToLast(100).once('value');
+                    const existing = new Set(clipsAllPosts.map(p => p.postId));
+                    spSnap.forEach(child => {
+                        const p = child.val();
+                        if (p && !p.draft && (!p.publishAt || p.publishAt <= now) && !existing.has(child.key)) {
+                            // Resolve author profile if available
+                            const authorUid = p.uid || p.createdBy || p.authorId;
+                            if (authorUid && !clipsUserProfiles[authorUid]) {
+                                clipsUserProfiles[authorUid] = { displayName: p.displayName || p.author || 'Member', avatar: p.avatar };
+                            }
+                            clipsAllPosts.push({ ...p, postId: child.key, createdBy: authorUid || 'unknown' });
+                        }
+                    });
+                } catch(_) { /* social_posts may be permission-denied — ok */ }
+
                 clipsAllPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 clipsLoaded = true;
                 renderClipsContent();
             } catch(err) {
                 console.error('[Clips] load failed:', err);
-                container.innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Failed to load clips. <button onclick="initClipsView()" class="underline ml-1">Retry</button></div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-20 text-gray-400"><i class="fa-solid fa-film text-5xl mb-4 block opacity-30"></i>No clips yet. <button onclick="clipsLoaded=false;initClipsView()" class="text-blue-400 underline ml-1">Retry</button></div>`;
             }
         }
 
@@ -2181,12 +2359,13 @@
                 if (btn) btn.className = `btn-press px-4 py-2 rounded-xl text-sm font-bold transition ${t === clipsCurrentTab ? 'bg-blue-600 text-white' : 'glass hover:bg-white/10'}`;
             });
             let posts = clipsAllPosts;
-            // socialfeed.html uses p.type === 'youtube'/'tiktok' as the canonical filter
-            if (clipsCurrentTab === 'youtube') posts = clipsAllPosts.filter(p => p.type === 'youtube');
-            if (clipsCurrentTab === 'tiktok') posts = clipsAllPosts.filter(p => p.type === 'tiktok');
+            // For specific tabs filter by type; for 'all' show everything with any media
+            if (clipsCurrentTab === 'youtube') posts = clipsAllPosts.filter(p => p.type === 'youtube' || p.ytId);
+            if (clipsCurrentTab === 'tiktok') posts = clipsAllPosts.filter(p => p.type === 'tiktok' || p.videoId);
             if (posts.length === 0) {
                 container.className = 'col-span-full';
-                container.innerHTML = '<div class="text-center py-20 text-gray-500">No clips yet in this category.</div>';
+                const tabLabel = clipsCurrentTab === 'all' ? '' : clipsCurrentTab === 'youtube' ? ' YouTube' : ' TikTok';
+                container.innerHTML = `<div class="text-center py-20 text-gray-500"><i class="fa-solid fa-clapperboard text-4xl block mb-3 opacity-30"></i>No${tabLabel} clips posted yet.</div>`;
                 return;
             }
             container.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6';
@@ -2461,10 +2640,15 @@
                         return entries.sort((a, b) => b.score - a.score).slice(0, 10);
                     }).catch(() => []),
                     db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
-                    getDiscordIdFromKcUid(currentUser.uid).then(did => {
+                    (async () => {
+                        // Check users/{uid}/bdUsername first (hub-linked), then bot path
+                        const direct = await db.ref(`users/${currentUser.uid}/bdUsername`).once('value').catch(() => null);
+                        if (direct && direct.val()) return direct.val();
+                        const did = await getDiscordIdFromKcUid(currentUser.uid);
                         if (!did) return null;
-                        return db.ref(`config/playerLinks/${did}/bdName`).once('value').then(s => s.val());
-                    }).catch(() => null)
+                        const botSnap = await db.ref(`config/playerLinks/${did}/bdName`).once('value').catch(() => null);
+                        return botSnap ? botSnap.val() : null;
+                    })().catch(() => null)
                 ]);
 
                 const isOnline = status.online === true;
@@ -2494,7 +2678,10 @@
                         ${userBdName ? `
                         <!-- User stats -->
                         <div class="glass p-5 rounded-3xl">
-                            <p class="text-xs text-gray-400 uppercase font-bold mb-3">Your Battledome Stats</p>
+                            <div class="flex items-center justify-between mb-3">
+                                <p class="text-xs text-gray-400 uppercase font-bold">Your Battledome Stats</p>
+                                <button onclick="promptBdLink()" class="text-xs text-blue-400 hover:underline">Change</button>
+                            </div>
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <p class="text-sm text-gray-400">BD Username</p>
@@ -2507,9 +2694,13 @@
                             </div>
                         </div>
                         ` : `
-                        <div class="glass p-4 rounded-2xl border border-yellow-500/20">
-                            <p class="font-bold text-yellow-300 text-sm mb-1">Link Your Battledome Account</p>
-                            <p class="text-xs text-gray-400">Use <code class="bg-white/5 px-1.5 py-0.5 rounded">/linktokc bd</code> in Discord to track your BD stats here.</p>
+                        <div class="glass p-5 rounded-3xl border border-yellow-500/20 space-y-3">
+                            <p class="font-bold text-yellow-300 text-sm">Link Your Battledome Account</p>
+                            <p class="text-xs text-gray-400">Enter your Battledome username to track your stats here, or use <code class="bg-white/5 px-1.5 py-0.5 rounded">/linktokc bd</code> in Discord.</p>
+                            <div class="flex gap-2">
+                                <input id="bd-username-input" type="text" placeholder="Your BD username..." class="flex-1 px-4 py-2 glass rounded-xl text-sm focus:outline-none focus:border-blue-500">
+                                <button onclick="saveBdUsernameFromHub()" class="btn-press px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm transition">Link</button>
+                            </div>
                         </div>
                         `}
 
@@ -2547,6 +2738,46 @@
         }
 
         function openBattledome() { renderBattledome(); }
+
+        async function saveBdUsernameFromHub() {
+            const input = document.getElementById('bd-username-input');
+            const name = input ? input.value.trim() : '';
+            if (!name) { showToast('Enter a BD username first.', 'error'); return; }
+            if (!currentUser) return openAuthModal();
+            const discordId = await getDiscordIdFromKcUid(currentUser.uid);
+            if (!discordId) {
+                showToast('Link your Discord account first.', 'error');
+                return;
+            }
+            try {
+                // Write to both paths the bot uses
+                await Promise.all([
+                    db.ref(`config/playerLinks/${discordId}/bdName`).set(name),
+                    db.ref(`users/${currentUser.uid}/bdUsername`).set(name)
+                ]);
+                showToast(`BD account linked: ${name}`, 'success');
+                renderBattledome(); // Refresh
+            } catch (e) {
+                console.error('[saveBdUsernameFromHub]', e);
+                showToast('Failed to save. Check permissions.', 'error');
+            }
+        }
+
+        async function promptBdLink() {
+            const newName = prompt('Enter your new Battledome username:');
+            if (!newName || !newName.trim()) return;
+            if (!currentUser) return openAuthModal();
+            const discordId = await getDiscordIdFromKcUid(currentUser.uid);
+            if (!discordId) { showToast('Discord not linked.', 'error'); return; }
+            try {
+                await Promise.all([
+                    db.ref(`config/playerLinks/${discordId}/bdName`).set(newName.trim()),
+                    db.ref(`users/${currentUser.uid}/bdUsername`).set(newName.trim())
+                ]);
+                showToast(`Updated: ${newName.trim()}`, 'success');
+                renderBattledome();
+            } catch (e) { showToast('Failed to update.', 'error'); }
+        }
 
         function openGamesHub() {
             if (!currentUser) return openAuthModal();
@@ -3194,30 +3425,131 @@
             window.location.href = `https://kcevents.uk/#loginpage?uid=${currentUser.uid}`;
         }
 
-        function claimDaily() {
+        async function claimDaily() {
             if (!currentUser) return openAuthModal();
-            openModal('Daily Login', `
-                <div class="text-center space-y-6">
-                    <i class="fa-solid fa-gift text-6xl text-blue-400"></i>
-                    <p class="text-gray-400">Daily rewards are claimed through the Discord bot.</p>
-                    <p class="text-sm text-gray-500">Use the <code class="bg-white/5 px-2 py-1 rounded">/daily</code> command in Discord to claim your reward!</p>
-                    <div class="glass p-4 rounded-2xl">
-                        <p class="text-xs text-gray-500 mb-2">Your Current Streak</p>
-                        <p id="daily-streak-display" class="text-3xl font-bold text-orange-400">Loading...</p>
+            const modal = openModalWithLoading('Daily Login', 'Checking your streak...');
+            if (!modal) return;
+
+            const discordId = await getDiscordIdFromKcUid(currentUser.uid);
+            if (!discordId) {
+                modal.update(`
+                    <div class="text-center space-y-6 py-4">
+                        <i class="fa-brands fa-discord text-6xl text-indigo-400"></i>
+                        <p class="font-bold text-lg">Discord Not Linked</p>
+                        <p class="text-sm text-gray-400">Your KC account needs to be linked to Discord before you can claim daily rewards. Use <code class="bg-white/5 px-2 py-1 rounded">/linktokc</code> in the KC Discord server.</p>
                     </div>
-                </div>
-            `);
-            getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
-                const el = document.getElementById('daily-streak-display');
-                if (!el) return;
-                if (discordId) {
-                    db.ref(`userEconomy/${discordId}/streaks/login/current`).once('value').then(snap => {
-                        el.textContent = `${snap.val() || 0} days 🔥`;
-                    });
-                } else {
-                    el.textContent = 'Link Discord to track';
+                `);
+                return;
+            }
+
+            try {
+                const econSnap = await db.ref(`userEconomy/${discordId}`).once('value');
+                const eco = econSnap.val() || {};
+                const streak = eco.streaks?.login || {};
+                const lastClaim = streak.lastClaim || 0;
+                const currentStreak = streak.current || 0;
+                const points = eco.points || 0;
+                const now = Date.now();
+                const msIn24h = 86400000;
+                const msIn48h = 172800000;
+                const timeSinceClaim = now - lastClaim;
+                const alreadyClaimed = timeSinceClaim < msIn24h;
+                const msUntilNext = msIn24h - timeSinceClaim;
+
+                if (alreadyClaimed) {
+                    const h = Math.floor(msUntilNext / 3600000);
+                    const m = Math.floor((msUntilNext % 3600000) / 60000);
+                    modal.update(`
+                        <div class="space-y-5">
+                            <div class="text-center space-y-3">
+                                <div class="text-6xl">✅</div>
+                                <p class="text-xl font-bold">Already Claimed Today</p>
+                                <p class="text-gray-400 text-sm">Next reward available in <span class="text-blue-400 font-bold">${h}h ${m}m</span></p>
+                            </div>
+                            <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Current Streak</p>
+                                    <p class="text-3xl font-black text-orange-400">${currentStreak} 🔥</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">KC Points</p>
+                                    <p class="text-3xl font-black text-blue-400">${points.toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                    return;
                 }
-            });
+
+                // Calculate new streak: if last claim was within 48h, extend streak; otherwise reset to 1
+                const newStreak = (lastClaim > 0 && timeSinceClaim < msIn48h) ? currentStreak + 1 : 1;
+                // Reward: 100 base + 10 per streak day, capped at 500
+                const reward = Math.min(100 + (newStreak - 1) * 10, 500);
+
+                modal.update(`
+                    <div class="space-y-5">
+                        <div class="text-center space-y-3">
+                            <div class="text-6xl animate-bounce">🎁</div>
+                            <p class="text-xl font-bold">Claim Your Daily Reward</p>
+                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak bonus</p>
+                        </div>
+                        <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase font-bold mb-1">New Streak</p>
+                                <p class="text-3xl font-black text-orange-400">${newStreak} 🔥</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-500 uppercase font-bold mb-1">Reward</p>
+                                <p class="text-3xl font-black text-yellow-400">+${reward} 💰</p>
+                            </div>
+                        </div>
+                        <button id="daily-claim-btn" onclick="executeDailyClaim('${discordId}',${newStreak},${reward},${points})" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 font-black text-lg rounded-2xl transition">
+                            Claim Reward
+                        </button>
+                    </div>
+                `);
+            } catch (e) {
+                console.error('[claimDaily]', e);
+                modal.update(`<div class="text-center py-10 text-red-400">Failed to load reward data. Try again.</div>`);
+            }
+        }
+
+        async function executeDailyClaim(discordId, newStreak, reward, oldPoints) {
+            const btn = document.getElementById('daily-claim-btn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Claiming...'; }
+            try {
+                const now = Date.now();
+                await Promise.all([
+                    db.ref(`userEconomy/${discordId}/points`).set(oldPoints + reward),
+                    db.ref(`userEconomy/${discordId}/streaks/login/current`).set(newStreak),
+                    db.ref(`userEconomy/${discordId}/streaks/login/lastClaim`).set(now)
+                ]);
+                // Update modal to success state
+                const modal = document.getElementById('global-modal');
+                if (modal) {
+                    document.getElementById('modal-body').innerHTML = `
+                        <div class="text-center space-y-5 py-4">
+                            <div class="text-7xl">🎉</div>
+                            <p class="text-2xl font-black text-green-400">Reward Claimed!</p>
+                            <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Streak</p>
+                                    <p class="text-3xl font-black text-orange-400">${newStreak} 🔥</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500 uppercase font-bold mb-1">Points</p>
+                                    <p class="text-3xl font-black text-blue-400">${(oldPoints + reward).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-500">Come back tomorrow to keep your streak!</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('[executeDailyClaim]', e);
+                if (btn) { btn.disabled = false; btn.textContent = 'Claim Reward'; }
+                showToast('Claim failed. Try again.', 'error');
+            }
         }
 
         function toggleQuickActions() {
@@ -3256,44 +3588,84 @@
             }
         }
 
-        function openPlayerCard(uid) {
-            // Legacy: keep as is for clan view players or other use
-            db.ref(`users/${uid}`).once('value').then(snap => {
-                const u = snap.val(); if(!u) return;
+        async function openPlayerCard(uid) {
+            if (!uid) return;
+            const modal = openModalWithLoading('Player Profile', 'Loading profile...');
+            if (!modal) return;
+            try {
+                const snap = await db.ref(`users/${uid}`).once('value');
+                const u = snap.val();
+                if (!u) { modal.update('<div class="text-center py-10 text-gray-500">Player not found.</div>'); return; }
+
+                // Friend status
+                const isSelf = currentUser && currentUser.uid === uid;
+                const isFriend = currentUser && friendsList.some(f => f.uid === uid);
+                let friendBtn = '';
+                if (currentUser && !isSelf) {
+                    friendBtn = isFriend
+                        ? `<button onclick="removeFriend('${uid}');closeModal()" class="btn-press flex-1 px-4 py-3 glass text-red-400 font-bold rounded-2xl hover:bg-red-500/10 transition text-sm"><i class="fa-solid fa-user-minus mr-2"></i>Remove Friend</button>`
+                        : `<button onclick="addFriend('${uid}');closeModal()" class="btn-press flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition text-sm"><i class="fa-solid fa-user-plus mr-2"></i>Add Friend</button>`;
+                }
+
+                // Badges
+                let badgesHtml = '';
+                if (u.badges) {
+                    const badgeList = Array.isArray(u.badges) ? u.badges : Object.values(u.badges);
+                    if (badgeList.length) {
+                        badgesHtml = `<div class="flex flex-wrap gap-2 justify-center mt-2">
+                            ${badgeList.slice(0, 8).map(b => `<span class="text-xs bg-white/5 px-3 py-1 rounded-full">${b.icon || '🏅'} ${b.name || b}</span>`).join('')}
+                        </div>`;
+                    }
+                }
+
                 const content = `
-                    <div class="flex flex-col items-center gap-6 text-center">
-                        <img src="${u.profilePicture || 'https://kcevents.uk/default-avatar.png'}" class="w-32 h-32 rounded-full border-8 border-white/5 shadow-2xl">
-                        <div>
-                            <h2 class="text-4xl font-bold mb-1" style="color:${u.nameColor||'#fff'}">${u.displayName || 'Member'}</h2>
-                            <p class="text-blue-400 font-black tracking-widest uppercase text-xs">${u.rank || 'Player'}</p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 w-full">
-                            <div class="glass p-6 rounded-3xl">
-                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">XP Points</p>
-                                <p class="text-2xl font-black">${u.totalPoints || 0}</p>
+                    <div class="space-y-5">
+                        <div class="flex flex-col items-center gap-4 text-center">
+                            <div class="relative">
+                                <img src="${u.profilePicture || u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-28 h-28 rounded-full border-4 border-white/10 shadow-2xl object-cover">
+                                ${isFriend ? '<div class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-xs" title="Friend"><i class="fa-solid fa-user-check"></i></div>' : ''}
                             </div>
-                            <div class="glass p-6 rounded-3xl">
+                            <div>
+                                <h2 class="text-3xl font-black" style="color:${u.nameColor||'#fff'}">${u.displayName || 'Member'}</h2>
+                                <p class="text-blue-400 font-bold tracking-widest uppercase text-xs mt-1">${u.rank || 'Player'}</p>
+                                ${isFriend ? '<span class="text-xs text-green-400 font-bold"><i class="fa-solid fa-heart mr-1"></i>Friend</span>' : ''}
+                            </div>
+                            ${badgesHtml}
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="glass p-4 rounded-2xl text-center">
+                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Points</p>
+                                <p class="text-xl font-black text-blue-400">${(u.totalPoints||0).toLocaleString()}</p>
+                            </div>
+                            <div class="glass p-4 rounded-2xl text-center">
                                 <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Clan</p>
-                                <p class="text-2xl font-black text-teal-400">${u.clanName || 'None'}</p>
+                                <p class="text-xl font-black text-teal-400 truncate">${u.clanName || '—'}</p>
+                            </div>
+                            <div class="glass p-4 rounded-2xl text-center">
+                                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">BD Score</p>
+                                <p class="text-xl font-black text-red-400">${(u.bdHighscore||0).toLocaleString()}</p>
                             </div>
                         </div>
-                        <div class="w-full glass p-6 rounded-3xl text-left">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-3">Biography</p>
-                            <p class="text-gray-300 text-sm italic">"${u.bio || 'Silence is this player\'s best friend.'}"</p>
+
+                        <div class="glass p-4 rounded-2xl">
+                            <p class="text-[10px] text-gray-500 font-bold uppercase mb-2">About</p>
+                            <p class="text-gray-300 text-sm italic">"${(u.bio || 'Silence is this player\'s best friend.').replace(/"/g, '&quot;')}"</p>
                         </div>
+
+                        ${friendBtn ? `<div class="flex gap-3">${friendBtn}</div>` : ''}
                     </div>
                 `;
-                openModal(`Player Dossier`, content);
-            });
+                modal.update(content);
+            } catch (e) {
+                console.error('[openPlayerCard]', e);
+                modal.update('<div class="text-center py-10 text-red-400">Failed to load profile.</div>');
+            }
         }
 
         window.openKcProfile = function(uid) {
             if (!uid) return;
-            if (typeof openProfilePopup === 'function') {
-                openProfilePopup(uid, firebase.database());
-            } else {
-                openPlayerCard(uid);
-            }
+            openPlayerCard(uid);
         };
 
         function openAchievements() {
