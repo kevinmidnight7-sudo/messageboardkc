@@ -2586,23 +2586,34 @@
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
             }).catch(() => {});
 
-            db.ref('users').orderByChild('totalPoints').limitToLast(5).once('value').then(snap => {
+            db.ref('userEconomy').orderByChild('points').limitToLast(5).once('value').then(async snap => {
                 const players = [];
                 snap.forEach(child => {
-                    const d = child.val();
-                    players.unshift({ name: d.displayName || 'Unknown', points: d.totalPoints || 0, uid: child.key });
+                    players.unshift({ discordId: child.key, points: child.val()?.points || 0 });
+                });
+                // Map Discord IDs to KC display names via config/playerLinks + allUsersData cache
+                let playerLinks = {};
+                try {
+                    const plSnap = await db.ref('config/playerLinks').once('value');
+                    playerLinks = plSnap.val() || {};
+                } catch(e) {}
+                const enriched = players.map(p => {
+                    const kcUid = playerLinks[p.discordId]?.kcUid || null;
+                    const kcUser = kcUid && allUsersData.find(u => u.uid === kcUid);
+                    const name = (kcUser && kcUser.displayName) || `User#${p.discordId.slice(-4)}`;
+                    return { name, points: p.points, uid: kcUid };
                 });
                 const el = document.getElementById('top-economy');
-                if (el) el.innerHTML = players.map((p, i) => `
+                if (el) el.innerHTML = enriched.length > 0 ? enriched.map((p, i) => `
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-2">
-                            <span class="text-xs">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                            <span class="text-sm font-bold cursor-pointer hover:underline" onclick="window.openKcProfile('${p.uid}')">${p.name}</span>
+                            <span class="text-xs">${['🥇','🥈','🥉'][i] || `#${i+1}`}</span>
+                            <span class="text-sm font-bold ${p.uid ? 'cursor-pointer hover:underline' : ''}" ${p.uid ? `onclick="window.openKcProfile('${p.uid}')"` : ''}>${p.name}</span>
                         </div>
                         <span class="text-xs text-blue-400">${p.points.toLocaleString()}</span>
                     </div>
-                `).join('') || '<p class="text-xs text-gray-500 text-center">No data yet</p>';
-            });
+                `).join('') : '<p class="text-xs text-gray-500 text-center">No data yet</p>';
+            }).catch(() => {});
         }
 
         // --- MODAL & MISC ---
@@ -2887,7 +2898,7 @@
                             gameStats: eco.gameStats || {},
                             specialGameUnlocked: eco.specialGameUnlocked === true
                         };
-                    })
+                    }).catch(() => ({ points: 0, gameStats: {}, specialGameUnlocked: false }))
                     : Promise.resolve({ points: 0, gameStats: {}, specialGameUnlocked: false });
                 dataPromise.then(data => {
                     const gs = data.gameStats;
@@ -3494,17 +3505,14 @@
             if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const economyPromise = discordId
-                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {})
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {}).catch(() => ({}))
                     : Promise.resolve({});
-                return Promise.all([
-                    economyPromise,
-                    db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value'),
-                    db.ref(`users/${currentUser.uid}/customBadge`).once('value')
-                ]);
-            }).then(([economy, unlockSnap, customBadgeSnap]) => {
+                const badgePromise = db.ref(`users/${currentUser.uid}/customBadge`).once('value').catch(() => ({ exists: () => false }));
+                return Promise.all([economyPromise, badgePromise]);
+            }).then(([economy, customBadgeSnap]) => {
                     const points = economy.points || 0;
                     const inventory = economy.inventory || {};
-                    const hasCustomization = unlockSnap.val() === true;
+                    const hasCustomization = economy.profileCustomizationUnlocked === true;
                     const hasCustomBadge = customBadgeSnap.exists();
                     const betLimitIncreased = economy.betLimitIncreased === true;
                     const specialGameUnlocked = economy.specialGameUnlocked === true;
