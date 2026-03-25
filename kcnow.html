@@ -612,6 +612,33 @@
         var allUsersData = [], allClansData = {}, allPostsData = [], feedItems = [];
         const discordIdCache = new Map();
 
+        // ── Session-level Firebase read caches ──────────────────────────────────
+        // Each of these fires at most ONCE per page load, no matter how many parts
+        // of the UI call them. This prevents the same large collection being
+        // downloaded 5+ times and driving up Realtime Database costs.
+        let _usersSnapPromise  = null; // Promise<DataSnapshot>  for db.ref('users')
+        let _badgesSnapPromise = null; // Promise<DataSnapshot>  for db.ref('badges')
+
+        function _getUsersOnce() {
+            if (!_usersSnapPromise)
+                _usersSnapPromise = db.ref('users').once('value');
+            return _usersSnapPromise;
+        }
+        function _getBadgesOnce() {
+            if (!_badgesSnapPromise)
+                _badgesSnapPromise = db.ref('badges').once('value')
+                    .catch(() => ({ val: () => ({}) }));
+            return _badgesSnapPromise;
+        }
+        // Call when the user signs out so next sign-in gets fresh data
+        function _clearDataCaches() {
+            _usersSnapPromise  = null;
+            _badgesSnapPromise = null;
+            allUsersData = []; allClansData = {}; allPostsData = [];
+            clipsLoaded = false;
+            discordIdCache.clear();
+        }
+
         // Phase 5 state variables
         let currentTheme = localStorage.getItem('kc-theme') || 'dark';
         let notificationPrefs = JSON.parse(localStorage.getItem('kc-notifications') || '{"achievements":true,"points":true,"clans":true,"clips":true,"users":true,"streaks":true}');
@@ -775,7 +802,7 @@
                         <button onclick="claimDaily()" class="glass px-5 py-2 rounded-2xl font-bold text-blue-400 hover:bg-blue-500/20 transition text-sm">
                             <i class="fa-solid fa-gift mr-2"></i> Claim Daily
                         </button>
-                        <button onclick="auth.signOut()" class="px-5 py-2 border border-red-500/20 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-xs">SIGN OUT</button>
+                        <button onclick="auth.signOut().then(_clearDataCaches)" class="px-5 py-2 border border-red-500/20 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-xs">SIGN OUT</button>
                     </div>
                 `;
 
@@ -1018,27 +1045,25 @@
          */
         async function ensureSearchDataLoaded() {
             try {
-                // Load users
+                if (typeof db === 'undefined' || !db || typeof db.ref !== 'function') return;
+                // Load users — uses the session singleton so all callers share one download
                 if (!allUsersData.length) {
-                    if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
-                        const usersSnap = await db.ref('users').once('value');
-                        allUsersData = [];
-                        usersSnap.forEach(child => {
-                            allUsersData.push({ uid: child.key, ...child.val() });
-                        });
-                    }
+                    const usersSnap = await _getUsersOnce();
+                    allUsersData = [];
+                    usersSnap.forEach(child => {
+                        allUsersData.push({ uid: child.key, ...child.val() });
+                    });
                 }
-                // Load clans
+                // Load clans (only if not already populated by loadAllClans)
                 if (!Object.keys(allClansData || {}).length) {
-                    if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
-                        const clansSnap = await db.ref('clans').once('value');
-                        allClansData = clansSnap.val() || {};
-                    }
+                    const clansSnap = await db.ref('clans').once('value');
+                    allClansData = clansSnap.val() || {};
                 }
-                // Load posts/clips
-                if (!allPostsData.length) {
-                    if (typeof db !== 'undefined' && db && typeof db.ref === 'function') {
-                        const postsSnap = await db.ref('social_posts').limitToLast(100).once('value');
+                // Load posts/clips — limited to 100, only attempted once
+                if (!allPostsData.length && !_postsLoadAttempted) {
+                    _postsLoadAttempted = true;
+                    const postsSnap = await db.ref('social_posts').limitToLast(100).once('value').catch(() => null);
+                    if (postsSnap) {
                         allPostsData = [];
                         postsSnap.forEach(child => {
                             allPostsData.push({ id: child.key, ...child.val() });
@@ -1046,10 +1071,10 @@
                     }
                 }
             } catch (err) {
-                // In offline/demo mode these requests may fail; ignore the error silently.
                 console.warn('ensureSearchDataLoaded error:', err);
             }
         }
+        let _postsLoadAttempted = false;
 
         function filterFeed(f) {
             // Toggle only the category filter chips
@@ -2233,8 +2258,13 @@
         }
 
         // --- SUB-MODULE: CLANS (Lite but Functional) ---
-        function loadAllClans() {
+        function loadAllClans(forceRefresh) {
             const container = document.getElementById('clans-lite-content');
+            // If we already have clan data and aren't forced to refresh, just re-render
+            if (!forceRefresh && Object.keys(allClansData).length) {
+                renderClansLite();
+                return;
+            }
             container.innerHTML = `<div class="p-10 text-center animate-pulse opacity-40">Polling Clan database...</div>`;
             db.ref('clans').once('value').then(snap => {
                 allClansData = snap.val() || {};
@@ -2273,7 +2303,7 @@
             const c = allClansData[id];
             if(!c) return showToast('Clan data not loaded yet. Please wait.', 'error');
             if(c.isOpen) {
-                db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => loadAllClans());
+                db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => loadAllClans(true));
             } else {
                 db.ref(`clans/${id}/requests/${currentUser.uid}`).set(true).then(() => showToast('Join request sent!', 'success'));
             }
@@ -2281,7 +2311,7 @@
 
         window.leaveClan = (id) => {
             if(!currentUser) return;
-            db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => loadAllClans());
+            db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => loadAllClans(true));
         };
 
         // --- SUB-MODULE: CLIPS (legacy stub) ---
@@ -2304,16 +2334,17 @@
                 clipsUserProfiles = {};
                 clipsAllPosts = [];
 
-                // Primary: scan users/{uid}/posts (same schema as socialfeed.html)
-                const usersSnap = await db.ref('users').once('value');
-                usersSnap.forEach(userSnap => {
-                    const u = userSnap.val() || {};
-                    clipsUserProfiles[userSnap.key] = u;
+                // Primary: use session-cached users data (shared with search/stats/leaderboard)
+                // _getUsersOnce() fires at most once per page load regardless of how many
+                // parts of the UI call it.
+                await ensureSearchDataLoaded();
+                allUsersData.forEach(u => {
+                    clipsUserProfiles[u.uid] = u;
                     const posts = u.posts;
                     if (posts) {
                         Object.entries(posts).forEach(([postId, p]) => {
                             if (p && !p.draft && (!p.publishAt || p.publishAt <= now)) {
-                                clipsAllPosts.push({ ...p, postId, createdBy: userSnap.key });
+                                clipsAllPosts.push({ ...p, postId, createdBy: u.uid });
                             }
                         });
                     }
@@ -2455,17 +2486,14 @@
                 </div>
             `;
 
-            Promise.all([
-                db.ref('users').once('value'),
-                db.ref('clans').once('value')
-            ]).then(([usersSnap, clansSnap]) => {
-                // Count posts across all users (posts live at users/{uid}/posts, not social_posts)
+            // Reuse already-cached data — no extra Firebase download needed
+            ensureSearchDataLoaded().then(() => {
                 let postCount = 0;
-                usersSnap.forEach(u => { const p = u.child('posts').val(); if (p) postCount += Object.keys(p).length; });
+                allUsersData.forEach(u => { if (u.posts) postCount += Object.keys(u.posts).length; });
                 const el = document.getElementById('server-stats');
                 if (el) el.innerHTML = `
-                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${usersSnap.numChildren()}</span></div>
-                    <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${clansSnap.numChildren()}</span></div>
+                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${allUsersData.length}</span></div>
+                    <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${Object.keys(allClansData).length}</span></div>
                     <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${postCount}</span></div>
                 `;
             }).catch(() => {});
@@ -2569,10 +2597,11 @@
             const modal = openModalWithLoading('🏅 Leaderboard', 'Loading rankings...');
             if (!modal) return;
             try {
-                // Read users + badges separately (like leaderboard.html) — scores live in badges, not users
+                // Use session singletons — these are already in memory if anything else
+                // triggered a users/badges download this session
                 const [usersSnap, badgesSnap] = await Promise.all([
-                    db.ref('users').once('value'),
-                    db.ref('badges').once('value').catch(() => ({ val: () => ({}) }))
+                    _getUsersOnce(),
+                    _getBadgesOnce()
                 ]);
                 const usersData = usersSnap.val() || {};
                 const badgesData = badgesSnap.val ? badgesSnap.val() : (badgesSnap || {});
@@ -4207,14 +4236,10 @@
             if (!query) return;
             const resultsPanel = document.getElementById('friend-search-results');
             if (resultsPanel) { resultsPanel.classList.remove('hidden'); resultsPanel.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Searching...</p>'; }
-            db.ref('users').once('value').then(snap => {
-                const results = [];
-                snap.forEach(child => {
-                    const user = child.val();
-                    if (user.displayName && user.displayName.toLowerCase().includes(query)) {
-                        results.push({ uid: child.key, ...user });
-                    }
-                });
+            ensureSearchDataLoaded().then(() => {
+                const results = allUsersData.filter(u =>
+                    u.displayName && u.displayName.toLowerCase().includes(query)
+                );
                 if (!resultsPanel) return;
                 resultsPanel.classList.remove('hidden');
                 resultsPanel.innerHTML = results.length > 0 ? `
@@ -4350,33 +4375,41 @@
             container.innerHTML = '<div class="text-center py-10"><div class="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p class="mt-4 text-gray-400 text-sm">Searching...</p></div>';
             const results = { players: [], clans: [], clips: [] };
             try {
+                // Use session cache — no extra Firebase round-trip
+                await ensureSearchDataLoaded();
                 if (searchCategory === 'all' || searchCategory === 'players') {
-                    const usersSnap = await db.ref('users').once('value');
-                    usersSnap.forEach(child => {
-                        const user = child.val();
+                    allUsersData.forEach(user => {
                         if (user.displayName && user.displayName.toLowerCase().includes(query)) {
-                            results.players.push({ uid: child.key, ...user });
+                            results.players.push(user);
                         }
                     });
                 }
                 if (searchCategory === 'all' || searchCategory === 'clans') {
-                    const clansSnap = await db.ref('clans').once('value');
-                    clansSnap.forEach(child => {
-                        const clan = child.val();
+                    Object.entries(allClansData).forEach(([id, clan]) => {
                         if (clan.name && clan.name.toLowerCase().includes(query)) {
-                            results.clans.push({ id: child.key, ...clan });
+                            results.clans.push({ id, ...clan });
                         }
                     });
                 }
                 if (searchCategory === 'all' || searchCategory === 'clips') {
-                    const clipsSnap = await db.ref('social_posts').once('value');
-                    clipsSnap.forEach(child => {
-                        const clip = child.val();
+                    // Use cached allPostsData (populated by ensureSearchDataLoaded above)
+                    allPostsData.forEach(clip => {
                         if ((clip.caption && clip.caption.toLowerCase().includes(query)) ||
                             (clip.userName && clip.userName.toLowerCase().includes(query))) {
-                            results.clips.push({ id: child.key, ...clip });
+                            results.clips.push(clip);
                         }
                     });
+                    // Also search posts embedded in allUsersData (primary clips store)
+                    if (!results.clips.length) {
+                        allUsersData.forEach(u => {
+                            if (u.posts) Object.entries(u.posts).forEach(([pid, p]) => {
+                                if (p && ((p.caption && p.caption.toLowerCase().includes(query)) ||
+                                    (u.displayName && u.displayName.toLowerCase().includes(query)))) {
+                                    results.clips.push({ id: pid, ...p, createdBy: u.uid });
+                                }
+                            });
+                        });
+                    }
                 }
                 let html = '';
                 if (results.players.length > 0) {
