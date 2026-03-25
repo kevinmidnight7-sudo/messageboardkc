@@ -2882,16 +2882,33 @@
                 const dataPromise = discordId
                     ? db.ref(`userEconomy/${discordId}`).once('value').then(s => {
                         const eco = s.val() || {};
-                        return { points: eco.points || 0, gameStats: eco.gameStats || {} };
+                        return {
+                            points: eco.points || 0,
+                            gameStats: eco.gameStats || {},
+                            specialGameUnlocked: eco.specialGameUnlocked === true
+                        };
                     })
-                    : Promise.resolve({ points: 0, gameStats: {} });
+                    : Promise.resolve({ points: 0, gameStats: {}, specialGameUnlocked: false });
                 dataPromise.then(data => {
-                    // Align game stats with bot-side schema. Phase 6 uses gamesPlayed and totalSpins instead of plays.
-                    const bjWins = data.gameStats?.blackjack?.wins || 0;
-                    const bjGames = data.gameStats?.blackjack?.gamesPlayed || 0;
-                    const slotsWins = data.gameStats?.slots?.wins || 0;
-                    const slotsSpins = data.gameStats?.slots?.totalSpins || 0;
-                    const triviaCorrect = data.gameStats?.trivia?.correct || 0;
+                    const gs = data.gameStats;
+                    const bjWins      = gs?.blackjack?.wins || 0;
+                    const bjGames     = gs?.blackjack?.gamesPlayed || 0;
+                    const slotsWins   = gs?.slots?.wins || 0;
+                    const slotsSpins  = gs?.slots?.totalSpins || 0;
+                    const cfWins      = gs?.coinflip?.wins || 0;
+                    const cfFlips     = gs?.coinflip?.flips || 0;
+                    const triviaOk    = gs?.trivia?.correct || 0;
+                    const triviaTotal = gs?.trivia?.totalQuestions || 0;
+                    const hlBest      = gs?.higherlow?.bestStreak || 0;
+                    const hlGames     = gs?.higherlow?.games || 0;
+                    const msWins      = gs?.minesweeper?.wins || 0;
+                    const hgWins      = gs?.hangman?.wins || 0;
+                    const hgGames     = gs?.hangman?.gamesPlayed || 0;
+                    const rpsWins     = gs?.rps?.wins || 0;
+                    const rpsGames    = gs?.rps?.gamesPlayed || 0;
+                    const areaWins    = gs?.area?.wins || 0;
+                    const c4Wins      = gs?.connectfour?.wins || 0;
+                    const stockTrades = gs?.stocks?.trades || 0;
                     modal.update(`
                         <div class="space-y-5">
                             <div class="text-center glass p-4 rounded-2xl">
@@ -2902,33 +2919,89 @@
                                 <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openBlackjackGame,200)">
                                     <div class="text-4xl mb-2">🃏</div>
                                     <p class="font-bold">Blackjack</p>
-                                    <!-- Phase 6: Use 'games' instead of 'plays' to reflect gamesPlayed metric -->
                                     <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjGames} games</p>
+                                    <p class="text-xs text-gray-500">Bet 50–2,000 pts</p>
                                     <div class="mt-3 py-2 bg-blue-600/30 rounded-xl text-xs font-bold text-blue-300">▶ Play Now</div>
                                 </div>
                                 <div class="glass p-5 rounded-3xl text-center glow-on-hover cursor-pointer transition" onclick="closeModal();setTimeout(openSlotsGame,200)">
                                     <div class="text-4xl mb-2">🎰</div>
                                     <p class="font-bold">Slots</p>
                                     <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsSpins} spins</p>
+                                    <p class="text-xs text-gray-500">Bet 50–1,000 pts</p>
                                     <div class="mt-3 py-2 bg-yellow-600/30 rounded-xl text-xs font-bold text-yellow-300">▶ Play Now</div>
                                 </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Dice Duel','/roll','Roll against friends and climb the daily leaderboard.')">
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Coinflip','/coinflip','Bet 50–5,000 pts on heads or tails. Win double your bet!')">
+                                    <div class="text-4xl mb-2">🪙</div>
+                                    <p class="font-bold">Coinflip</p>
+                                    <p class="text-xs text-gray-400 mt-1">${cfWins}W / ${cfFlips} flips</p>
+                                    <p class="text-xs text-gray-500">Bet 50–5,000 pts</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Dice Duel','/roll','Roll against friends and climb the daily leaderboard. One roll per day!')">
                                     <div class="text-4xl mb-2">🎲</div>
                                     <p class="font-bold">Dice Duel</p>
                                     <p class="text-xs text-gray-400 mt-1">Daily competition</p>
                                     <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
                                 </div>
-                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Trivia','/trivia','Test your knowledge and earn points for correct answers.')">
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Trivia','/trivia','Test your knowledge. Easy: 100 pts · Medium: 200 pts · Hard: 500 pts')">
                                     <div class="text-4xl mb-2">🧠</div>
                                     <p class="font-bold">Trivia</p>
-                                    <p class="text-xs text-gray-400 mt-1">Correct: ${triviaCorrect}</p>
+                                    <p class="text-xs text-gray-400 mt-1">${triviaOk} / ${triviaTotal} correct</p>
                                     <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
                                 </div>
-                            </div>
-                            <!-- Phase 6: Honest partial release card for Discord-only games -->
-                            <div class="glass p-4 rounded-2xl border border-yellow-500/20">
-                                <p class="font-bold text-yellow-300">More games live in Discord</p>
-                                <p class="text-xs text-gray-400 mt-1">Blackjack and Slots are playable in KC NOW. Other games still use Discord commands for now.</p>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Higher / Lower','/highlow','Guess if the next number is higher or lower. Streak multiplies your reward!')">
+                                    <div class="text-4xl mb-2">📈</div>
+                                    <p class="font-bold">Higher / Lower</p>
+                                    <p class="text-xs text-gray-400 mt-1">Best streak: ${hlBest}</p>
+                                    <p class="text-xs text-gray-500">${hlGames} games</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Minesweeper','/minesweeper','Sweep without hitting a mine! Easy: 200 pts · Medium: 500 pts · Hard: 1,000 pts')">
+                                    <div class="text-4xl mb-2">💣</div>
+                                    <p class="font-bold">Minesweeper</p>
+                                    <p class="text-xs text-gray-400 mt-1">${msWins} wins</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Hangman','/hangman','Guess the word before running out of tries. Win 150 pts per correct game!')">
+                                    <div class="text-4xl mb-2">🪢</div>
+                                    <p class="font-bold">Hangman</p>
+                                    <p class="text-xs text-gray-400 mt-1">${hgWins}W / ${hgGames} games</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Rock Paper Scissors','/rps','Challenge someone to RPS. Bet 50–1,000 pts per match!')">
+                                    <div class="text-4xl mb-2">✊</div>
+                                    <p class="font-bold">Rock Paper Scissors</p>
+                                    <p class="text-xs text-gray-400 mt-1">${rpsWins}W / ${rpsGames} games</p>
+                                    <p class="text-xs text-gray-500">Bet 50–1,000 pts</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Color Conquest','/area','Claim territory on a grid. Win 500 pts for dominating!')">
+                                    <div class="text-4xl mb-2">🗺️</div>
+                                    <p class="font-bold">Color Conquest</p>
+                                    <p class="text-xs text-gray-400 mt-1">${areaWins} wins</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Connect Four','/connectfour','Drop pieces to connect 4 in a row. Win 300 pts!')">
+                                    <div class="text-4xl mb-2">🔴</div>
+                                    <p class="font-bold">Connect Four</p>
+                                    <p class="text-xs text-gray-400 mt-1">${c4Wins} wins</p>
+                                    <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord Only</div>
+                                </div>
+                                ${data.specialGameUnlocked ? `
+                                    <div class="glass p-5 rounded-3xl text-center cursor-pointer hover:bg-white/10 transition" onclick="showDiscordGameCommand('Stock Market','/stocks','Invest in volatile stocks. Buy low, sell high, and grow your portfolio!')">
+                                        <div class="text-4xl mb-2">📊</div>
+                                        <p class="font-bold">Stock Market</p>
+                                        <p class="text-xs text-gray-400 mt-1">${stockTrades} trades</p>
+                                        <div class="mt-3 py-2 bg-green-600/30 rounded-xl text-xs font-bold text-green-300">Discord Only</div>
+                                    </div>
+                                ` : `
+                                    <div class="glass p-5 rounded-3xl text-center opacity-50">
+                                        <div class="text-4xl mb-2">📊</div>
+                                        <p class="font-bold">Stock Market</p>
+                                        <p class="text-xs text-gray-400 mt-1">Locked</p>
+                                        <div class="mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-500">🔒 /buy special_game</div>
+                                    </div>
+                                `}
                             </div>
                             <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
@@ -2942,6 +3015,7 @@
                 modal.update('<div class="text-center py-10 text-red-400">Failed to load game stats. Close and try again.</div>');
             });
         }
+
 
         function showGameInfo(game) {
             const info = {
@@ -3432,13 +3506,36 @@
                     const inventory = economy.inventory || {};
                     const hasCustomization = unlockSnap.val() === true;
                     const hasCustomBadge = customBadgeSnap.exists();
+                    const betLimitIncreased = economy.betLimitIncreased === true;
+                    const specialGameUnlocked = economy.specialGameUnlocked === true;
+                    const boostItems = [
+                        { key: 'points_boost_2h',  label: '2h',  price: '4,000' },
+                        { key: 'points_boost_4h',  label: '4h',  price: '8,000' },
+                        { key: 'points_boost_12h', label: '12h', price: '25,000' },
+                        { key: 'points_boost_24h', label: '24h', price: '50,000' }
+                    ];
+                    const boostHtml = boostItems.map(b => `
+                        <div class="glass p-3 rounded-xl border border-white/10">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-bold text-sm">2× Points Boost (${b.label})</p>
+                                    <p class="text-xs text-gray-400">Double all earnings for ${b.label}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold text-blue-400">${b.price} pts</p>
+                                    <p class="text-xs text-gray-500">Owned: ${inventory[b.key] || 0} · /buy points_boost_${b.label}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
                     modal.update(`
                         <div class="space-y-6">
                             <div class="text-center glass p-4 rounded-2xl">
                                 <p class="text-gray-400 text-sm">Your Balance</p>
                                 <p class="text-3xl font-bold text-blue-400">${points.toLocaleString()} pts</p>
+                                <p class="text-xs text-gray-500 mt-1">Use /buy in Discord to purchase items</p>
                             </div>
-                            <div class="space-y-4">
+                            <div class="space-y-3">
                                 <h3 class="text-lg font-bold">🎨 Customization</h3>
                                 ${hasCustomization ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
@@ -3446,67 +3543,147 @@
                                         <p class="text-xs text-gray-400">Unlocked! Use Discord /customize command</p>
                                     </div>
                                 ` : `
-                                    <div class="glass p-4 rounded-2xl border-2 border-blue-500/30">
+                                    <div class="glass p-4 rounded-2xl border border-blue-500/20">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <p class="font-bold">Profile Customization</p>
-                                                <p class="text-xs text-gray-400">Unlock colors, gradients & banners</p>
+                                                <p class="text-xs text-gray-400">Unlock colors, gradients &amp; banners</p>
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-xl font-bold text-blue-400">15,000 pts</p>
-                                                <p class="text-xs text-gray-500">Use /buy in Discord</p>
+                                                <p class="text-xl font-bold text-blue-400">40,000 pts</p>
+                                                <p class="text-xs text-gray-500">/buy profile_customization</p>
                                             </div>
                                         </div>
                                     </div>
                                 `}
                                 ${hasCustomBadge ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Custom Badge Created</p>
-                                        <p class="text-xs text-gray-400">Edit for 1,000 pts with /buy edit_custom_badge</p>
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-bold text-green-400">✅ Custom Badge</p>
+                                                <p class="text-xs text-gray-400">Already created</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-sm font-bold text-blue-400">Edit: 1,000 pts</p>
+                                                <p class="text-xs text-gray-500">/buy edit_custom_badge</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 ` : `
-                                    <div class="glass p-4 rounded-2xl">
+                                    <div class="glass p-4 rounded-2xl border border-white/10">
                                         <div class="flex items-center justify-between">
                                             <div>
                                                 <p class="font-bold">Custom Badge</p>
                                                 <p class="text-xs text-gray-400">Create your own badge</p>
                                             </div>
                                             <div class="text-right">
-                                                <p class="text-xl font-bold text-blue-400">10,000 pts</p>
-                                                <p class="text-xs text-gray-500">Use /buy in Discord</p>
+                                                <p class="text-xl font-bold text-blue-400">20,000 pts</p>
+                                                <p class="text-xs text-gray-500">/buy custom_badge</p>
                                             </div>
                                         </div>
                                     </div>
                                 `}
                             </div>
-                            <div class="space-y-4">
+                            <div class="space-y-3">
+                                <h3 class="text-lg font-bold">🔓 Unlocks</h3>
+                                ${betLimitIncreased ? `
+                                    <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
+                                        <p class="font-bold text-green-400">✅ Increased Bet Limit</p>
+                                        <p class="text-xs text-gray-400">Max bet raised to 10,000 pts</p>
+                                    </div>
+                                ` : `
+                                    <div class="glass p-4 rounded-2xl border border-white/10">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-bold">Increased Bet Limit</p>
+                                                <p class="text-xs text-gray-400">Raise max bet 2,000 → 10,000 pts</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xl font-bold text-blue-400">30,000 pts</p>
+                                                <p class="text-xs text-gray-500">/buy increase_bet_limit</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `}
+                                ${specialGameUnlocked ? `
+                                    <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
+                                        <p class="font-bold text-green-400">✅ Stock Market</p>
+                                        <p class="text-xs text-gray-400">Special game unlocked — use /stocks in Discord</p>
+                                    </div>
+                                ` : `
+                                    <div class="glass p-4 rounded-2xl border border-white/10">
+                                        <div class="flex items-center justify-between">
+                                            <div>
+                                                <p class="font-bold">Stock Market</p>
+                                                <p class="text-xs text-gray-400">Unlock the special trading game</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="text-xl font-bold text-blue-400">100,000 pts</p>
+                                                <p class="text-xs text-gray-500">/buy special_game</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                            <div class="space-y-3">
                                 <h3 class="text-lg font-bold">🎮 Gameplay Items</h3>
-                                <div class="glass p-4 rounded-2xl">
+                                <div class="glass p-4 rounded-2xl border border-white/10">
                                     <div class="flex items-center justify-between">
                                         <div>
                                             <p class="font-bold">Streak Protection</p>
-                                            <p class="text-xs text-gray-400">Auto-saves your streak if missed</p>
+                                            <p class="text-xs text-gray-400">Auto-saves your daily streak if missed</p>
                                         </div>
                                         <div class="text-right">
                                             <p class="text-xl font-bold text-blue-400">1,000 pts</p>
-                                            <p class="text-xs text-gray-500">Owned: ${inventory.streak_protection || 0}</p>
+                                            <p class="text-xs text-gray-500">Owned: ${inventory.streak_protection || 0} · /buy streak_protection</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="glass p-4 rounded-2xl">
+                                <div class="glass p-4 rounded-2xl border border-white/10">
                                     <div class="flex items-center justify-between">
                                         <div>
-                                            <p class="font-bold">2x Points Boost (24h)</p>
-                                            <p class="text-xs text-gray-400">Double all earnings for one day</p>
+                                            <p class="font-bold">Extra Slot Spin</p>
+                                            <p class="text-xs text-gray-400">One free spin on Slots</p>
                                         </div>
                                         <div class="text-right">
-                                            <p class="text-xl font-bold text-blue-400">2,000 pts</p>
-                                            <p class="text-xs text-gray-500">Owned: ${inventory.points_boost || 0}</p>
+                                            <p class="text-xl font-bold text-blue-400">500 pts</p>
+                                            <p class="text-xs text-gray-500">Owned: ${inventory.extra_slot || 0} · /buy extra_slot</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="glass p-4 rounded-2xl border border-white/10">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-bold">Dice Reroll</p>
+                                            <p class="text-xs text-gray-400">Reroll once in Dice Duel</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-xl font-bold text-blue-400">750 pts</p>
+                                            <p class="text-xs text-gray-500">Owned: ${inventory.dice_reroll || 0} · /buy dice_reroll</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <p class="text-sm font-semibold text-gray-300">⚡ Points Boost</p>
+                                    ${boostHtml}
+                                </div>
+                            </div>
+                            <div class="space-y-3">
+                                <h3 class="text-lg font-bold">💬 Other</h3>
+                                <div class="glass p-4 rounded-2xl border border-white/10">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-bold">Bot Message</p>
+                                            <p class="text-xs text-gray-400">Send a message via the bot</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-xl font-bold text-blue-400">300 pts</p>
+                                            <p class="text-xs text-gray-500">/buy bot_message</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Use Discord bot commands (/buy, /shop) to purchase items</p>
+                            <p class="text-center text-xs text-gray-500 italic border-t border-white/10 pt-4">Purchases made via Discord /buy command</p>
                         </div>
                     `);
             }).catch(err => {
