@@ -1473,146 +1473,6 @@
             showToast('Filters cleared', 'info', 2000);
         }
 
-        // === Global Search (Phase 5) ===
-        function openGlobalSearch() {
-            openModal('Search KC NOW', `
-                <div class="space-y-6">
-                    <div class="flex gap-2">
-                        <input type="text" id="global-search-input" placeholder="Search players, clans, clips..." 
-                               class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none focus:border-blue-500"
-                               onkeypress="if(event.key==='Enter')performGlobalSearch()">
-                        <button onclick="performGlobalSearch()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl">
-                            <i class="fa-solid fa-search"></i>
-                        </button>
-                    </div>
-                    <div class="flex gap-2 overflow-x-auto">
-                        <button onclick="setSearchCategory('all')" id="search-cat-all" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap bg-blue-600 text-white">
-                            All
-                        </button>
-                        <button onclick="setSearchCategory('players')" id="search-cat-players" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400">
-                            Players
-                        </button>
-                        <button onclick="setSearchCategory('clans')" id="search-cat-clans" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400">
-                            Clans
-                        </button>
-                        <button onclick="setSearchCategory('clips')" id="search-cat-clips" class="px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400">
-                            Clips
-                        </button>
-                    </div>
-                    <div id="search-results-container" class="min-h-[300px]">
-                        <div class="text-center py-20 text-gray-500 text-sm">
-                            <i class="fa-solid fa-search text-4xl mb-4 block opacity-20"></i>
-                            Enter a search query above
-                        </div>
-                    </div>
-                </div>
-            `);
-        }
-
-        function setSearchCategory(cat) {
-            searchCategory = cat;
-            document.querySelectorAll('[id^="search-cat-"]').forEach(btn => {
-                btn.className = 'px-4 py-2 rounded-xl font-bold whitespace-nowrap glass text-gray-400';
-            });
-            const activeBtn = document.getElementById(`search-cat-${cat}`);
-            if (activeBtn) activeBtn.className = 'px-4 py-2 rounded-xl font-bold whitespace-nowrap bg-blue-600 text-white';
-        }
-
-        async function performGlobalSearch() {
-            const input = document.getElementById('global-search-input');
-            const query = input ? input.value.toLowerCase() : '';
-            if (!query) return;
-            const container = document.getElementById('search-results-container');
-            container.innerHTML = '<div class="text-center py-10"><div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p class="mt-4 text-gray-400">Searching...</p></div>';
-            // Ensure local caches are populated before searching. This function will attempt to load
-            // data from Firebase on first run; if offline it will gracefully continue with empty arrays.
-            await ensureSearchDataLoaded();
-            const results = { players: [], clans: [], clips: [] };
-            // Perform local search across cached datasets. This avoids repeated remote requests and
-            // gracefully handles offline usage. When datasets are empty the results remain empty.
-            const lowerQuery = query;
-            // Search players
-            if (searchCategory === 'all' || searchCategory === 'players') {
-                results.players = allUsersData.filter(u => {
-                    return u.displayName && u.displayName.toLowerCase().includes(lowerQuery);
-                });
-            }
-            // Search clans
-            if (searchCategory === 'all' || searchCategory === 'clans') {
-                results.clans = Object.entries(allClansData).filter(([, clan]) => {
-                    return clan.name && clan.name.toLowerCase().includes(lowerQuery);
-                }).map(([id, clan]) => ({ id, ...clan }));
-            }
-            // Search clips
-            if (searchCategory === 'all' || searchCategory === 'clips') {
-                results.clips = allPostsData.filter(c => {
-                    return (c.caption && c.caption.toLowerCase().includes(lowerQuery)) ||
-                           (c.userName && c.userName.toLowerCase().includes(lowerQuery));
-                });
-            }
-            let html = '';
-            // Players section
-            if (results.players.length > 0) {
-                html += `
-                    <div class="mb-6">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Players (${results.players.length})</p>
-                        <div class="space-y-2">
-                            ${results.players.slice(0, 5).map(p => `
-                                <div class="glass p-4 rounded-2xl flex items-center gap-3 hover:bg-white/10 cursor-pointer" onclick="window.openKcProfile('${p.uid}')">
-                                    <img src="${p.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full">
-                                    <div class="flex-1">
-                                        <p class="font-bold">${p.displayName}</p>
-                                        <p class="text-xs text-gray-400">Overall: ${p.overall || 0}</p>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            // Clans section
-            if (results.clans.length > 0) {
-                html += `
-                    <div class="mb-6">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Clans (${results.clans.length})</p>
-                        <div class="space-y-2">
-                            ${results.clans.slice(0, 5).map(c => `
-                                <div class="glass p-4 rounded-2xl flex items-center gap-3 hover:bg-white/10 cursor-pointer" onclick="openClanDetails('${c.id}')">
-                                    <div class="w-10 h-10 rounded-xl bg-teal-500/20 flex items-center justify-center text-teal-400 font-black">
-                                        ${c.name.charAt(0)}
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="font-bold">${c.name}</p>
-                                        <p class="text-xs text-gray-400">${Object.keys(c.members || {}).length} members</p>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            // Clips section
-            if (results.clips.length > 0) {
-                html += `
-                    <div class="mb-6">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Clips (${results.clips.length})</p>
-                        <div class="space-y-2">
-                            ${results.clips.slice(0, 5).map(c => `
-                                <div class="glass p-4 rounded-2xl hover:bg-white/10">
-                                    <p class="font-bold text-sm">${c.caption || 'Untitled'}</p>
-                                    <p class="text-xs text-gray-400">by ${c.userName}</p>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            if (!html) {
-                html = '<div class="text-center py-20 text-gray-500">No results found</div>';
-            }
-            container.innerHTML = html;
-        }
-
         // === Theme System (Phase 5) ===
         function initTheme() {
             if (currentTheme === 'light') {
@@ -1889,6 +1749,8 @@
         function userHasDiamondCustomization() {
             if (!currentUserData) return false;
             return !!(
+                currentUserData?.codesUnlocked?.diamond ||       // primary — set by login.html when code redeemed
+                currentUserData?.profileCustomizationUnlocked || // also granted with diamond code
                 currentUserData?.subscription?.diamond ||
                 currentUserData?.membership?.diamond ||
                 currentUserData?.badges?.diamond ||
@@ -2884,7 +2746,7 @@
             const membersHtml = memberUids.length > 0
                 ? memberUids.slice(0,12).map(uid => {
                     const u = allUsersData.find(x => x.uid === uid) || {};
-                    return `<div class="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/10 transition cursor-pointer" onclick="openPlayerCard('${uid}')">
+                    return `<div class="flex items-center gap-3 p-3 rounded-2xl glass hover:bg-white/10 transition cursor-pointer" onclick="window.openKcProfile('${uid}')">
                         <img src="${u.profilePicture||u.avatar||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-9 h-9 rounded-full object-cover border border-white/10">
                         <div><p class="text-sm font-bold">${(u.displayName||'Member').replace(/</g,'&lt;')}</p><p class="text-[10px] text-gray-500">${u.rank||'Player'}</p></div>
                     </div>`;
@@ -4146,7 +4008,7 @@
             }
         }
 
-                function openEconomyShop() {
+        function openEconomyShop() {
             if (!currentUser) return openAuthModal();
             const modal = openModalWithLoading('🛒 Economy Shop', 'Loading your balance...');
             if (!modal) return;
@@ -4529,107 +4391,44 @@
             } catch (err) { console.error('runQuickAction error:', err); }
         }
 
-        async function openPlayerCard(uid) {
-            if (!uid) return;
-            const modal = openModalWithLoading('Player Profile', 'Loading profile...');
-            if (!modal) return;
-            try {
-                const [snap, postsSnap] = await Promise.all([
-                    db.ref(`users/${uid}`).once('value').catch(() => ({ val: () => null })),
-                    db.ref(`users/${uid}/posts`).once('value').catch(() => ({ val: () => null }))
-                ]);
-                const u = snap.val();
-                if (!u) { modal.update('<div class="text-center py-10 text-gray-500">Player not found.</div>'); return; }
-
-                // Friend status
-                const isSelf = currentUser && currentUser.uid === uid;
-                const isFriend = currentUser && friendsList.some(f => f.uid === uid);
-                let friendBtns = '';
-                if (currentUser && !isSelf) {
-                    friendBtns = isFriend
-                        ? `<button onclick="removeFriend('${uid}');closeModal()" class="btn-press flex-1 py-2.5 glass text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-sm"><i class="fa-solid fa-user-minus mr-2"></i>Remove Friend</button>`
-                        : `<button onclick="addFriend('${uid}')" class="btn-press btn-lift flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl transition text-sm"><i class="fa-solid fa-user-plus mr-2"></i>Add Friend</button>`;
-                }
-
-                // Clips
-                const postsObj = postsSnap ? postsSnap.val() : null;
-                const userPosts = postsObj ? Object.entries(postsObj).map(([pid, p]) => ({ id: pid, ...p })).filter(p => p.ytId || p.videoId || p.mediaUrl) : [];
-                const clipsHtml = userPosts.length > 0
-                    ? `<div class="grid grid-cols-2 gap-2">${userPosts.slice(0, 6).map(p => {
-                        const thumb = p.ytId ? `https://i.ytimg.com/vi/${p.ytId}/mqdefault.jpg` : (p.mediaUrl || null);
-                        return `<div class="rounded-2xl overflow-hidden cursor-pointer hover:opacity-80 transition aspect-video bg-black/30 relative"
-                                     onclick="openClipDetail('${uid}','${p.id}')">
-                            ${thumb ? `<img src="${thumb}" class="w-full h-full object-cover">` : '<div class="w-full h-full flex items-center justify-center"><i class="fa-solid fa-film text-2xl text-white/20"></i></div>'}
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/20 hover:bg-black/0 transition">
-                                <i class="fa-solid fa-circle-play text-3xl text-white/70 drop-shadow"></i>
-                            </div>
-                        </div>`;
-                    }).join('')}</div>`
-                    : `<p class="text-xs text-gray-500 text-center py-6">No clips yet.</p>`;
-
-                // Badges
-                let badgesHtml = '';
-                if (u.badges) {
-                    const badgeList = Array.isArray(u.badges) ? u.badges : Object.values(u.badges);
-                    if (badgeList.length) badgesHtml = `<div class="flex flex-wrap gap-1.5 justify-center">${badgeList.slice(0,6).map(b=>`<span class="text-xs bg-white/5 border border-white/10 px-2 py-0.5 rounded-full">${b.icon||'🏅'} ${b.name||b}</span>`).join('')}</div>`;
-                }
-
-                const content = `
-                    <div class="space-y-4">
-                        <!-- Header -->
-                        <div class="flex items-center gap-4">
-                            <div class="relative flex-shrink-0">
-                                <img src="${u.profilePicture||u.avatar||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-20 h-20 rounded-3xl border-2 border-white/10 shadow-xl object-cover">
-                                ${isFriend ? '<div class="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-[10px]" title="Friend"><i class="fa-solid fa-check"></i></div>' : ''}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <h2 class="text-2xl font-black truncate" style="color:${u.nameColor||'#e2e8f0'}">${(u.displayName||'Member').replace(/</g,'&lt;')}</h2>
-                                <p class="text-blue-400 font-bold text-xs uppercase tracking-widest mt-0.5">${u.rank||'Player'}</p>
-                                ${isFriend ? '<span class="text-xs text-green-400 font-semibold"><i class="fa-solid fa-heart mr-1"></i>Friend</span>' : ''}
-                                ${badgesHtml}
-                            </div>
-                        </div>
-
-                        <!-- Stats -->
-                        <div class="grid grid-cols-3 gap-2">
-                            <div class="glass p-3 rounded-2xl text-center">
-                                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Points</p>
-                                <p class="text-lg font-black text-blue-400">${(u.totalPoints||0).toLocaleString()}</p>
-                            </div>
-                            <div class="glass p-3 rounded-2xl text-center">
-                                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">Clan</p>
-                                <p class="text-sm font-black text-teal-400 truncate">${u.clanName||'—'}</p>
-                            </div>
-                            <div class="glass p-3 rounded-2xl text-center">
-                                <p class="text-[9px] text-gray-500 font-bold uppercase mb-1">BD Score</p>
-                                <p class="text-lg font-black text-red-400">${(u.bdHighscore||0).toLocaleString()}</p>
-                            </div>
-                        </div>
-
-                        <!-- Bio -->
-                        ${u.bio ? `<div class="glass p-3 rounded-2xl"><p class="text-gray-300 text-sm italic">"${u.bio.replace(/"/g,'&quot;').replace(/</g,'&lt;')}"</p></div>` : ''}
-
-                        <!-- Clips -->
-                        <div>
-                            <p class="text-[10px] text-gray-500 font-black uppercase mb-2 flex items-center gap-2"><i class="fa-solid fa-clapperboard text-blue-400"></i>Clips (${userPosts.length})</p>
-                            ${clipsHtml}
-                        </div>
-
-                        <!-- Actions -->
-                        ${(currentUser && !isSelf) ? `<div class="flex gap-2 pt-1">${friendBtns}<button onclick="switchTab('clips');closeModal()" class="btn-lift flex-1 py-2.5 glass font-bold rounded-xl hover:bg-white/10 transition text-sm text-gray-300"><i class="fa-solid fa-clapperboard mr-2"></i>All Clips</button></div>` : ''}
-                    </div>
-                `;
-                modal.update(content);
-            } catch (e) {
-                console.error('[openPlayerCard]', e);
-                modal.update('<div class="text-center py-10 text-red-400">Failed to load profile.</div>');
-            }
-        }
-
-        window.openKcProfile = function(uid) {
-            if (!uid) return;
-            openPlayerCard(uid);
-        };
+        // ── Profile popup: use profile-popup.js card (the real KC profile card)
+        // Wrap it to inject a friends button after the popup renders.
+        (function () {
+            const _orig = window.openKcProfile;
+            if (!_orig) return;
+            window.openKcProfile = async function (uid) {
+                if (!uid) return;
+                await _orig(uid);
+                // Inject friends button if viewer is logged in and not viewing own profile
+                if (!currentUser || currentUser.uid === uid) return;
+                const popupBody = document.getElementById('kcPopupBody');
+                if (!popupBody) return;
+                document.getElementById('kcFriendSection')?.remove();
+                const isFriend = friendsList.some(f => f.uid === uid);
+                const sec = document.createElement('div');
+                sec.id = 'kcFriendSection';
+                sec.style.cssText = 'padding:10px 16px 4px;';
+                const btn = document.createElement('button');
+                btn.style.cssText = [
+                    'width:100%;padding:11px 16px;border-radius:14px;',
+                    'font-family:Poppins,sans-serif;font-size:0.82rem;font-weight:700;',
+                    'border:none;cursor:pointer;transition:opacity .2s;',
+                    isFriend
+                        ? 'background:#fee2e2;color:#b91c1c;'
+                        : 'background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;'
+                ].join('');
+                btn.innerHTML = isFriend ? '💔 Remove Friend' : '🤝 Add Friend';
+                btn.onmouseenter = () => { btn.style.opacity = '0.85'; };
+                btn.onmouseleave = () => { btn.style.opacity = '1'; };
+                btn.onclick = () => {
+                    if (isFriend) removeFriend(uid); else addFriend(uid);
+                    // Refresh button state after a tick
+                    setTimeout(() => window.openKcProfile(uid), 600);
+                };
+                sec.appendChild(btn);
+                popupBody.appendChild(sec);
+            };
+        })();
 
         function openAchievements() {
             if (!currentUser) return openAuthModal();
