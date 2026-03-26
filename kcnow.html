@@ -15,6 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     <script src="profile-popup.js"></script>
 
     <style>
@@ -860,7 +861,7 @@
 
     <script>
         // --- DATA & STATE ---
-        var currentUser = null, activeTab = 'home', auth, db, storage;
+        var currentUser = null, activeTab = 'home', auth, db, storage, fsdb;
         var allUsersData = [], allClansData = {}, allPostsData = [], feedItems = [];
         const discordIdCache = new Map();
 
@@ -922,11 +923,12 @@
 
         // Initialize Firebase only once
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        auth = firebase.auth(); db = firebase.database(); storage = firebase.storage();
+        auth = firebase.auth(); db = firebase.database(); storage = firebase.storage(); fsdb = firebase.firestore();
 
         // --- AUTH SYNC ---
         auth.onAuthStateChanged(async (user) => {
             currentUser = user;
+            discordIdCache.clear(); // clear on auth change so Firestore re-read fires
             if (user) {
                 try { await user.reload(); } catch (e) {}
                 db.ref(`users/${user.uid}`).on('value', snap => {
@@ -955,7 +957,7 @@
         async function getDiscordIdFromKcUid(kcUid) {
             if (discordIdCache.has(kcUid)) return discordIdCache.get(kcUid);
 
-            // Helper: cache result and optionally persist to users/{uid}/discordId for future fast lookups
+            // Helper: cache result and optionally persist to RTDB for future fast lookups
             const _found = (discordId, persist) => {
                 discordIdCache.set(kcUid, discordId);
                 if (persist && discordId) {
@@ -964,7 +966,18 @@
                 return discordId;
             };
 
-            // 1. Fast path: Discord ID stored directly on the user profile
+            // 0. Primary: Firestore users/{uid}.discordId — written by OAuth auth bridge
+            try {
+                const fsSnap = await fsdb.collection('users').doc(kcUid).get();
+                if (fsSnap.exists) {
+                    const discordId = fsSnap.data().discordId;
+                    if (discordId) return _found(discordId, true); // cache to RTDB for speed
+                }
+            } catch(e) {
+                console.warn('[getDiscordIdFromKcUid] Firestore read failed:', e.code || e.message);
+            }
+
+            // 1. RTDB fast path: Discord ID persisted from a previous lookup
             try {
                 const directSnap = await db.ref(`users/${kcUid}/discordId`).once('value');
                 if (directSnap.val()) return _found(directSnap.val(), false);
@@ -976,20 +989,20 @@
                 const pl = plSnap.val() || {};
                 for (const [discordId, data] of Object.entries(pl)) {
                     if (data && data.kcUid === kcUid) {
-                        return _found(discordId, true); // persist so future calls skip this scan
+                        return _found(discordId, true);
                     }
                 }
             } catch(e) {
                 console.warn('[getDiscordIdFromKcUid] config/playerLinks scan failed:', e.code || e.message);
             }
 
-            // 3. Fallback: scan discordLinks (may be permission-denied)
+            // 3. Fallback: scan discordLinks — bot writes here during /link OAuth
             try {
                 const linksSnapshot = await db.ref('discordLinks').once('value');
                 const links = linksSnapshot.val() || {};
                 for (const [discordId, data] of Object.entries(links)) {
                     if (data && data.uid === kcUid) {
-                        return _found(discordId, true); // persist so future calls skip scan
+                        return _found(discordId, true);
                     }
                 }
             } catch(e) {
@@ -2411,23 +2424,46 @@
             if (profileContainer) profileContainer.innerHTML = html;
         }
 
-        function openDiscordLinkHelp() {
-            openModal('Discord Linking', `
+        // Auth bridge base URL — update if deployment URL changes
+        const DISCORD_AUTH_BRIDGE_URL = 'https://kc-events-auth-bridge.onrender.com';
+
+        async function openDiscordLinkHelp() {
+            if (!currentUser) return openAuthModal();
+            openModal('Link Discord', `
                 <div class="space-y-5">
-                    <div class="glass p-4 rounded-2xl">
-                        <p class="font-bold">Why link Discord?</p>
-                        <p class="text-sm text-gray-400 mt-2">Linking your Discord unlocks economy sync, Battledome rankings, Slither server tracking and other bot-powered features. Without linking, KC NOW can only show a subset of your data.</p>
+                    <div class="text-center space-y-3 pb-2">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-500/15 flex items-center justify-center text-indigo-400 text-4xl mx-auto">
+                            <i class="fa-brands fa-discord"></i>
+                        </div>
+                        <p class="font-bold text-lg">Connect Your Discord</p>
+                        <p class="text-sm text-gray-400">Linking unlocks economy sync, Battledome rankings, daily rewards and more.</p>
                     </div>
-                    <div class="glass p-4 rounded-2xl">
-                        <p class="font-bold">How to link</p>
-                        <p class="text-sm text-gray-400 mt-2">Open the KC Discord and run the <code class="bg-white/5 px-2 py-1 rounded text-xs">/link</code> command. Follow the instructions to pair your Discord account with your KC NOW profile.</p>
-                    </div>
-                    <div class="glass p-4 rounded-2xl">
-                        <p class="font-bold">What gets synced?</p>
-                        <p class="text-sm text-gray-400 mt-2">After linking, your points, game stats, Battledome performance, Slither server presence and other bot-driven data will automatically appear here.</p>
-                    </div>
+                    <button id="discord-oauth-btn" onclick="startDiscordOAuth()" class="btn-press w-full py-4 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-bold text-white flex items-center justify-center gap-3 transition">
+                        <i class="fa-brands fa-discord text-xl"></i> Link with Discord
+                    </button>
+                    <p class="text-xs text-gray-500 text-center">You'll be redirected to Discord to authorise — no password needed.</p>
                 </div>
             `);
+        }
+
+        async function startDiscordOAuth() {
+            if (!currentUser) return openAuthModal();
+            const btn = document.getElementById('discord-oauth-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Redirecting…'; }
+            try {
+                // Create a linkState document in Firestore — the bridge validates this
+                const state = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+                await fsdb.collection('linkStates').doc(state).set({
+                    uid: currentUser.uid,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    used: false
+                });
+                window.location.href = `${DISCORD_AUTH_BRIDGE_URL}/oauth/discord/start?state=${state}`;
+            } catch(e) {
+                console.error('[startDiscordOAuth]', e);
+                showToast('Failed to start Discord link: ' + (e.message || 'Unknown error'), 'error');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-brands fa-discord text-xl"></i> Link with Discord'; }
+            }
         }
 
         // === Slither Server Browser ===
@@ -4217,30 +4253,6 @@
             window.location.href = `https://kcevents.uk/#loginpage?uid=${currentUser.uid}`;
         }
 
-        async function saveDiscordIdManually() {
-            const input = document.getElementById('manual-discord-id-input');
-            const rawId = input ? input.value.trim() : '';
-            if (!rawId || !/^\d{15,20}$/.test(rawId)) {
-                showToast('Enter a valid Discord User ID (15-20 digits)', 'error');
-                return;
-            }
-            if (!currentUser) return openAuthModal();
-            try {
-                // Verify this Discord ID has economy data before trusting it
-                const check = await db.ref(`userEconomy/${rawId}`).once('value').catch(() => null);
-                if (!check || !check.exists()) {
-                    showToast('No economy data found for that ID. Make sure you ran /linktokc in Discord first.', 'error');
-                    return;
-                }
-                await db.ref(`users/${currentUser.uid}/discordId`).set(rawId);
-                discordIdCache.set(currentUser.uid, rawId);
-                showToast('Discord ID linked! Opening daily...', 'success');
-                setTimeout(() => claimDaily(), 500);
-            } catch(e) {
-                showToast('Failed to save Discord ID: ' + (e.message || 'Unknown error'), 'error');
-            }
-        }
-
         async function claimDaily() {
             if (!currentUser) return openAuthModal();
             const modal = openModalWithLoading('Daily Login', 'Checking your streak...');
@@ -4252,12 +4264,8 @@
                     <div class="text-center space-y-6 py-4">
                         <i class="fa-brands fa-discord text-6xl text-indigo-400"></i>
                         <p class="font-bold text-lg">Discord Not Linked</p>
-                        <p class="text-sm text-gray-400">Use <code class="bg-white/5 px-2 py-1 rounded">/linktokc</code> in the KC Discord server, or enter your Discord user ID below to link manually.</p>
-                        <div class="flex gap-2 max-w-xs mx-auto">
-                            <input id="manual-discord-id-input" type="text" placeholder="Discord User ID (e.g. 123456789012345678)" class="flex-1 px-4 py-2 glass rounded-xl text-sm focus:outline-none focus:border-blue-500 text-center">
-                            <button onclick="saveDiscordIdManually()" class="btn-press px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm transition">Link</button>
-                        </div>
-                        <p class="text-xs text-gray-500">Find your Discord ID: Enable Developer Mode in Discord settings → right-click your name → Copy User ID</p>
+                        <p class="text-sm text-gray-400">Link your Discord account to claim daily rewards and sync your economy stats.</p>
+                        <button onclick="closeModal();openDiscordLinkHelp();" class="btn-press px-6 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-bold transition">Link Discord</button>
                     </div>
                 `);
                 return;
