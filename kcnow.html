@@ -2997,12 +2997,12 @@
                 `;
             }).catch(() => {});
 
-            // Fetch bdTop/global without orderByChild (no index required) — sort client-side
-            db.ref('bdTop/global').limitToLast(5).once('value').then(snap => {
+            // Fetch config/bdTopScores/global (bot saves persistent scores here) — sort client-side
+            db.ref('config/bdTopScores/global').once('value').then(snap => {
                 const bdPlayers = [];
                 snap.forEach(child => {
                     const val = child.val();
-                    bdPlayers.push({ name: child.key, score: (typeof val === 'object' ? val.score : val) || 0 });
+                    bdPlayers.push({ name: (val && val.name) || child.key, score: (val && val.score) || 0 });
                 });
                 bdPlayers.sort((a, b) => b.score - a.score);
                 const el = document.getElementById('bd-leaderboard');
@@ -3170,19 +3170,22 @@
                 // Fetch each path independently — one failure won't break the whole modal
                 const [status, topEntries, userBdScore, userBdName] = await Promise.all([
                     db.ref('battledome/status').once('value').then(s => s.val() || {}).catch(() => ({})),
-                    db.ref('bdTop/global').once('value').then(snap => {
+                    db.ref('config/bdTopScores/global').once('value').then(snap => {
                         const entries = [];
                         snap.forEach(child => {
                             const val = child.val();
-                            entries.push({ key: child.key, name: child.key, score: (typeof val === 'object' ? val.score : val) || 0 });
+                            entries.push({ key: child.key, name: (val && val.name) || child.key, score: (val && val.score) || 0 });
                         });
                         return entries.sort((a, b) => b.score - a.score).slice(0, 10);
                     }).catch(() => []),
                     db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
                     (async () => {
                         // Check users/{uid}/bdUsername first (hub-linked), then bot path
+                        // Reject URL-like values (e.g. "discord.gg/slitherkc" stored incorrectly)
                         const direct = await db.ref(`users/${currentUser.uid}/bdUsername`).once('value').catch(() => null);
-                        if (direct && direct.val()) return direct.val();
+                        const directVal = direct && direct.val();
+                        const isValidBdName = directVal && !/[./]/.test(directVal) && !directVal.startsWith('http');
+                        if (isValidBdName) return directVal;
                         const did = await getDiscordIdFromKcUid(currentUser.uid);
                         if (!did) return null;
                         const botSnap = await db.ref(`config/playerLinks/${did}/bdName`).once('value').catch(() => null);
@@ -4214,6 +4217,30 @@
             window.location.href = `https://kcevents.uk/#loginpage?uid=${currentUser.uid}`;
         }
 
+        async function saveDiscordIdManually() {
+            const input = document.getElementById('manual-discord-id-input');
+            const rawId = input ? input.value.trim() : '';
+            if (!rawId || !/^\d{15,20}$/.test(rawId)) {
+                showToast('Enter a valid Discord User ID (15-20 digits)', 'error');
+                return;
+            }
+            if (!currentUser) return openAuthModal();
+            try {
+                // Verify this Discord ID has economy data before trusting it
+                const check = await db.ref(`userEconomy/${rawId}`).once('value').catch(() => null);
+                if (!check || !check.exists()) {
+                    showToast('No economy data found for that ID. Make sure you ran /linktokc in Discord first.', 'error');
+                    return;
+                }
+                await db.ref(`users/${currentUser.uid}/discordId`).set(rawId);
+                discordIdCache.set(currentUser.uid, rawId);
+                showToast('Discord ID linked! Opening daily...', 'success');
+                setTimeout(() => claimDaily(), 500);
+            } catch(e) {
+                showToast('Failed to save Discord ID: ' + (e.message || 'Unknown error'), 'error');
+            }
+        }
+
         async function claimDaily() {
             if (!currentUser) return openAuthModal();
             const modal = openModalWithLoading('Daily Login', 'Checking your streak...');
@@ -4225,7 +4252,12 @@
                     <div class="text-center space-y-6 py-4">
                         <i class="fa-brands fa-discord text-6xl text-indigo-400"></i>
                         <p class="font-bold text-lg">Discord Not Linked</p>
-                        <p class="text-sm text-gray-400">Your KC account needs to be linked to Discord before you can claim daily rewards. Use <code class="bg-white/5 px-2 py-1 rounded">/linktokc</code> in the KC Discord server.</p>
+                        <p class="text-sm text-gray-400">Use <code class="bg-white/5 px-2 py-1 rounded">/linktokc</code> in the KC Discord server, or enter your Discord user ID below to link manually.</p>
+                        <div class="flex gap-2 max-w-xs mx-auto">
+                            <input id="manual-discord-id-input" type="text" placeholder="Discord User ID (e.g. 123456789012345678)" class="flex-1 px-4 py-2 glass rounded-xl text-sm focus:outline-none focus:border-blue-500 text-center">
+                            <button onclick="saveDiscordIdManually()" class="btn-press px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-sm transition">Link</button>
+                        </div>
+                        <p class="text-xs text-gray-500">Find your Discord ID: Enable Developer Mode in Discord settings → right-click your name → Copy User ID</p>
                     </div>
                 `);
                 return;

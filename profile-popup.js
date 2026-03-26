@@ -574,7 +574,7 @@
         about.textContent = '';
         badgesEl.textContent = 'Loading…';
         streakSec.style.display = 'none';
-        postsCol.style.display = 'none';
+        postsCol.style.display = '';
         postsCol.innerHTML = '';
         card.classList.remove('kc-two-col');
         document.getElementById('kcClipsSection')?.remove();
