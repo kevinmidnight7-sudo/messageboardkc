@@ -320,6 +320,174 @@
                         radial-gradient(circle at 70% 40%, rgba(147,51,234,0.20), transparent 30%),
                         radial-gradient(circle at 50% 75%, rgba(13,148,136,0.18), transparent 36%);
         }
+
+        /* ── Snake Pit ── */
+        .kc-bg-scene.snake .kc-bg-far {
+            background: radial-gradient(circle at 20% 70%, rgba(34,197,94,0.22), transparent 45%),
+                        radial-gradient(circle at 80% 20%, rgba(22,163,74,0.16), transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(5,46,22,0.95), rgba(2,4,12,1) 70%);
+        }
+        .kc-bg-scene.snake .kc-bg-mid {
+            background: radial-gradient(circle at 35% 45%, rgba(74,222,128,0.14), transparent 30%),
+                        radial-gradient(circle at 72% 68%, rgba(21,128,61,0.10), transparent 28%),
+                        radial-gradient(circle at 15% 25%, rgba(5,150,105,0.08), transparent 34%);
+        }
+        .kc-bg-scene.snake .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 60%, rgba(74,222,128,0.10), transparent 55%);
+        }
+
+        /* ── Blood Moon ── */
+        .kc-bg-scene.bloodmoon .kc-bg-far {
+            background: radial-gradient(circle at 50% 20%, rgba(239,68,68,0.25), transparent 40%),
+                        radial-gradient(circle at 80% 80%, rgba(185,28,28,0.18), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(30,8,8,0.95), rgba(10,2,2,1) 70%);
+        }
+        .kc-bg-scene.bloodmoon .kc-bg-mid {
+            background: radial-gradient(circle at 30% 50%, rgba(220,38,38,0.16), transparent 32%),
+                        radial-gradient(circle at 70% 35%, rgba(239,68,68,0.12), transparent 30%);
+        }
+        .kc-bg-scene.bloodmoon .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 15%, rgba(239,68,68,0.18), transparent 50%);
+        }
+
+        /* ── Cyber Grid ── */
+        .kc-bg-scene.cyber .kc-bg-far {
+            background: radial-gradient(circle at 25% 75%, rgba(6,182,212,0.20), transparent 40%),
+                        radial-gradient(circle at 75% 25%, rgba(139,92,246,0.18), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(8,6,22,0.96), rgba(2,4,18,1) 70%);
+        }
+        .kc-bg-scene.cyber .kc-bg-mid {
+            background: radial-gradient(circle at 20% 40%, rgba(14,165,233,0.16), transparent 30%),
+                        radial-gradient(circle at 80% 60%, rgba(168,85,247,0.14), transparent 28%),
+                        radial-gradient(circle at 50% 80%, rgba(6,182,212,0.09), transparent 32%);
+        }
+        .kc-bg-scene.cyber .kc-bg-glow {
+            background: radial-gradient(ellipse at 30% 50%, rgba(6,182,212,0.12), transparent 45%),
+                        radial-gradient(ellipse at 70% 50%, rgba(139,92,246,0.10), transparent 45%);
+        }
+
+        /* ── Golden Vault (Diamond Exclusive) ── */
+        .kc-bg-scene.golden .kc-bg-far {
+            background: radial-gradient(circle at 30% 40%, rgba(251,191,36,0.18), transparent 40%),
+                        radial-gradient(circle at 70% 65%, rgba(245,158,11,0.14), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(20,14,4,0.97), rgba(8,5,0,1) 70%);
+        }
+        .kc-bg-scene.golden .kc-bg-mid {
+            background: radial-gradient(circle at 25% 55%, rgba(251,191,36,0.16), transparent 32%),
+                        radial-gradient(circle at 75% 40%, rgba(217,119,6,0.14), transparent 30%),
+                        radial-gradient(circle at 50% 80%, rgba(251,211,84,0.08), transparent 38%);
+        }
+        .kc-bg-scene.golden .kc-bg-near {
+            background: linear-gradient(120deg, transparent 20%, rgba(251,191,36,0.04) 50%, transparent 80%);
+            animation: goldVeinShimmer 8s ease-in-out infinite alternate;
+        }
+        .kc-bg-scene.golden .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 40%, rgba(251,191,36,0.15), rgba(245,158,11,0.08) 40%, transparent 70%);
+            animation: goldPulse 4s ease-in-out infinite alternate;
+        }
+        @keyframes goldVeinShimmer {
+            0%   { background-position: -100% 0; opacity: 0.6; }
+            50%  { opacity: 1; }
+            100% { background-position: 200% 0; opacity: 0.7; }
+        }
+        @keyframes goldPulse {
+            0%   { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0.85; transform: scale(1.08); }
+        }
+
+        /* ── Sakura Storm ── */
+        .kc-bg-scene.sakura .kc-bg-far {
+            background: radial-gradient(circle at 30% 30%, rgba(244,114,182,0.20), transparent 40%),
+                        radial-gradient(circle at 70% 70%, rgba(251,207,232,0.14), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(22,10,20,0.94), rgba(12,4,14,1) 70%);
+        }
+        .kc-bg-scene.sakura .kc-bg-mid {
+            background: radial-gradient(circle at 25% 60%, rgba(236,72,153,0.16), transparent 32%),
+                        radial-gradient(circle at 70% 35%, rgba(244,114,182,0.14), transparent 30%),
+                        radial-gradient(circle at 50% 80%, rgba(251,113,133,0.10), transparent 36%);
+        }
+        .kc-bg-scene.sakura .kc-bg-glow {
+            background: radial-gradient(ellipse at 40% 30%, rgba(244,114,182,0.15), transparent 50%);
+        }
+
+        /* ── Lava Flow ── */
+        .kc-bg-scene.lava .kc-bg-far {
+            background: radial-gradient(circle at 20% 80%, rgba(249,115,22,0.28), transparent 42%),
+                        radial-gradient(circle at 75% 30%, rgba(239,68,68,0.20), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(24,8,2,0.96), rgba(10,3,0,1) 70%);
+        }
+        .kc-bg-scene.lava .kc-bg-mid {
+            background: radial-gradient(circle at 35% 60%, rgba(251,146,60,0.18), transparent 30%),
+                        radial-gradient(circle at 65% 40%, rgba(234,88,12,0.16), transparent 28%);
+        }
+        .kc-bg-scene.lava .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 80%, rgba(249,115,22,0.20), transparent 50%);
+            animation: lavaGlow 3s ease-in-out infinite alternate;
+        }
+        @keyframes lavaGlow {
+            0%   { opacity: 0.5; }
+            100% { opacity: 0.9; }
+        }
+
+        /* ── Arctic Freeze ── */
+        .kc-bg-scene.arctic .kc-bg-far {
+            background: radial-gradient(circle at 25% 35%, rgba(186,230,253,0.22), transparent 40%),
+                        radial-gradient(circle at 70% 65%, rgba(147,197,253,0.16), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(8,14,28,0.95), rgba(2,8,22,1) 70%);
+        }
+        .kc-bg-scene.arctic .kc-bg-mid {
+            background: radial-gradient(circle at 30% 55%, rgba(224,242,254,0.16), transparent 32%),
+                        radial-gradient(circle at 72% 38%, rgba(56,189,248,0.14), transparent 30%),
+                        radial-gradient(circle at 50% 75%, rgba(186,230,253,0.10), transparent 36%);
+        }
+        .kc-bg-scene.arctic .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 20%, rgba(224,242,254,0.18), transparent 50%);
+        }
+
+        /* ── Royal Amethyst ── */
+        .kc-bg-scene.amethyst .kc-bg-far {
+            background: radial-gradient(circle at 25% 40%, rgba(167,139,250,0.24), transparent 40%),
+                        radial-gradient(circle at 75% 65%, rgba(124,58,237,0.18), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(16,8,30,0.96), rgba(6,2,18,1) 70%);
+        }
+        .kc-bg-scene.amethyst .kc-bg-mid {
+            background: radial-gradient(circle at 35% 50%, rgba(196,181,253,0.18), transparent 32%),
+                        radial-gradient(circle at 68% 35%, rgba(139,92,246,0.16), transparent 30%),
+                        radial-gradient(circle at 20% 70%, rgba(167,139,250,0.12), transparent 36%);
+        }
+        .kc-bg-scene.amethyst .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.14), transparent 55%);
+        }
+
+        /* ── Matrix Code ── */
+        .kc-bg-scene.matrix .kc-bg-far {
+            background: radial-gradient(circle at 20% 50%, rgba(34,197,94,0.18), transparent 40%),
+                        radial-gradient(circle at 80% 40%, rgba(16,185,129,0.12), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(2,10,4,0.97), rgba(0,4,2,1) 70%);
+        }
+        .kc-bg-scene.matrix .kc-bg-mid {
+            background: radial-gradient(circle at 40% 60%, rgba(74,222,128,0.14), transparent 28%),
+                        radial-gradient(circle at 65% 35%, rgba(34,197,94,0.10), transparent 26%);
+        }
+        .kc-bg-scene.matrix .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 40%, rgba(74,222,128,0.10), transparent 50%);
+        }
+
+        /* ── Cosmic Horror ── */
+        .kc-bg-scene.cosmos .kc-bg-far {
+            background: radial-gradient(circle at 30% 60%, rgba(88,28,135,0.26), transparent 42%),
+                        radial-gradient(circle at 72% 30%, rgba(6,78,59,0.18), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(8,4,20,0.97), rgba(2,0,8,1) 70%);
+        }
+        .kc-bg-scene.cosmos .kc-bg-mid {
+            background: radial-gradient(circle at 25% 45%, rgba(126,34,206,0.18), transparent 30%),
+                        radial-gradient(circle at 70% 60%, rgba(6,95,70,0.16), transparent 28%),
+                        radial-gradient(circle at 50% 80%, rgba(91,33,182,0.12), transparent 34%);
+        }
+        .kc-bg-scene.cosmos .kc-bg-glow {
+            background: radial-gradient(ellipse at 40% 60%, rgba(126,34,206,0.12), transparent 50%),
+                        radial-gradient(ellipse at 65% 30%, rgba(6,78,59,0.10), transparent 45%);
+        }
         /* ===== GLOBAL BUTTON HOVER LIFT ===== */
         .btn-lift {
             transition: transform 0.15s cubic-bezier(0.23,1,0.32,1), box-shadow 0.15s ease;
@@ -1754,7 +1922,6 @@
                 tier: 'diamond',
                 description: 'Spacey particle ambience with soft bloom',
             },
-            // Added new base-tier background presets for Phase 5 enhancements
             sunrise: {
                 name: 'Sunrise Cascade',
                 tier: 'base',
@@ -1764,26 +1931,95 @@
                 name: 'Deep Sea Current',
                 tier: 'base',
                 description: 'Dark cyan and purple swirls with gentle motion',
-            }
+            },
+            snake: {
+                name: 'Snake Pit',
+                tier: 'base',
+                icon: '🐍',
+                description: '3D sinusoidal snakes slithering through the void',
+            },
+            bloodmoon: {
+                name: 'Blood Moon',
+                tier: 'base',
+                icon: '🌑',
+                description: 'Crimson eclipse ambience — dark and dramatic',
+            },
+            cyber: {
+                name: 'Cyber Grid',
+                tier: 'base',
+                icon: '⚡',
+                description: 'Neon-washed cyberpunk atmosphere in cyan and purple',
+            },
+            golden: {
+                name: 'Golden Vault',
+                tier: 'diamond',
+                icon: '👑',
+                description: 'Exclusive gilded splendour with shimmering gold veins',
+            },
+            sakura: {
+                name: 'Sakura Storm',
+                tier: 'diamond',
+                icon: '🌸',
+                description: 'Soft pink petal cascade drifting through dusk',
+            },
+            lava: {
+                name: 'Lava Flow',
+                tier: 'diamond',
+                icon: '🌋',
+                description: 'Molten magma surging beneath the surface',
+            },
+            arctic: {
+                name: 'Arctic Freeze',
+                tier: 'diamond',
+                icon: '❄️',
+                description: 'Crisp ice and glacial depths — clean and cold',
+            },
+            amethyst: {
+                name: 'Royal Amethyst',
+                tier: 'diamond',
+                icon: '💜',
+                description: 'Deep jewel-toned royalty in violet and indigo',
+            },
+            matrix: {
+                name: 'Matrix Code',
+                tier: 'diamond',
+                icon: '💻',
+                description: 'Digital code pours endlessly through the screen',
+            },
+            cosmos: {
+                name: 'Cosmic Horror',
+                tier: 'diamond',
+                icon: '🌌',
+                description: 'Eldritch void between galaxies — purple and deep green',
+            },
         };
 
         function getAvailableBackgroundPresets() {
-            const hasDiamond = userHasDiamondCustomization();
-            return Object.entries(BACKGROUND_PRESETS).filter(([key, preset]) => {
-                return preset.tier === 'base' || hasDiamond;
-            });
+            // Return all presets — the UI marks diamond-locked ones visually
+            return Object.entries(BACKGROUND_PRESETS);
         }
 
         // ── Geometric Shape Palette ──
         // Per-preset shape type distributions — gives each theme its own visual language
         const BG_SHAPE_TYPES = {
             default:   ['triangle','hexagon','circle','rect','diamond'],
-            aurora:    ['hexagon','circle','hexagon','circle','diamond','circle'],    // soft rounded aurora feel
-            sunrise:   ['circle','diamond','circle','rect','circle','diamond'],       // soft blobs + gems
-            deepsea:   ['circle','circle','hexagon','circle','ring','circle'],        // mostly circles/blobs
-            void:      ['triangle','diamond','triangle','hexagon','triangle','rect'], // sharp angular
-            prism:     ['triangle','diamond','triangle','diamond','triangle','hexagon'], // aggressive sharp prism
-            starlight: ['star','hexagon','star','circle','diamond','star','hexagon']  // stars + hexagons
+            aurora:    ['hexagon','circle','hexagon','circle','diamond','circle'],
+            sunrise:   ['circle','diamond','circle','rect','circle','diamond'],
+            deepsea:   ['circle','circle','hexagon','circle','ring','circle'],
+            void:      ['triangle','diamond','triangle','hexagon','triangle','rect'],
+            prism:     ['triangle','diamond','triangle','diamond','triangle','hexagon'],
+            starlight: ['star','hexagon','star','circle','diamond','star','hexagon'],
+            // New themes
+            snake:     ['snake','snake','snake','snake','snake','snake'],  // all snakes
+            bloodmoon: ['circle','ring','circle','triangle','circle','ring'],
+            cyber:     ['rect','triangle','rect','diamond','hexagon','rect'],
+            golden:    ['star','diamond','star','diamond','star','hexagon','star'],
+            sakura:    ['circle','diamond','circle','circle','diamond','circle'],
+            lava:      ['circle','ring','circle','triangle','ring','circle'],
+            arctic:    ['hexagon','diamond','hexagon','star','hexagon','ring'],
+            amethyst:  ['diamond','hexagon','star','diamond','hexagon','diamond'],
+            matrix:    ['rect','rect','rect','triangle','rect','rect'],
+            cosmos:    ['hexagon','star','ring','triangle','hexagon','star'],
         };
 
         const BG_SHAPE_PALETTES = {
@@ -1793,29 +2029,56 @@
             deepsea:   ['rgba(6,182,212,',   'rgba(52,211,153,', 'rgba(5,150,105,',   'rgba(99,102,241,',  'rgba(14,116,144,'],
             void:      ['rgba(124,58,237,',  'rgba(139,92,246,', 'rgba(167,139,250,', 'rgba(76,29,149,',   'rgba(192,132,252,'],
             prism:     ['rgba(236,72,153,',  'rgba(245,158,11,', 'rgba(16,185,129,',  'rgba(239,68,68,',   'rgba(59,130,246,'],
-            starlight: ['rgba(165,180,252,', 'rgba(196,181,253,','rgba(147,197,253,', 'rgba(167,243,208,', 'rgba(253,230,138,']
+            starlight: ['rgba(165,180,252,', 'rgba(196,181,253,','rgba(147,197,253,', 'rgba(167,243,208,', 'rgba(253,230,138,'],
+            // New themes
+            snake:     ['rgba(74,222,128,',  'rgba(34,197,94,',  'rgba(21,128,61,',   'rgba(5,150,105,',   'rgba(163,230,53,'],
+            bloodmoon: ['rgba(239,68,68,',   'rgba(220,38,38,',  'rgba(185,28,28,',   'rgba(248,113,113,', 'rgba(254,202,202,'],
+            cyber:     ['rgba(6,182,212,',   'rgba(139,92,246,', 'rgba(14,165,233,',  'rgba(168,85,247,',  'rgba(34,211,238,'],
+            golden:    ['rgba(251,191,36,',  'rgba(245,158,11,', 'rgba(217,119,6,',   'rgba(253,230,138,', 'rgba(251,211,84,'],
+            sakura:    ['rgba(244,114,182,', 'rgba(236,72,153,', 'rgba(251,207,232,', 'rgba(249,168,212,', 'rgba(253,164,175,'],
+            lava:      ['rgba(249,115,22,',  'rgba(234,88,12,',  'rgba(239,68,68,',   'rgba(251,146,60,',  'rgba(253,186,116,'],
+            arctic:    ['rgba(186,230,253,', 'rgba(147,197,253,','rgba(56,189,248,',  'rgba(224,242,254,', 'rgba(204,251,241,'],
+            amethyst:  ['rgba(167,139,250,', 'rgba(196,181,253,','rgba(124,58,237,',  'rgba(139,92,246,',  'rgba(216,180,254,'],
+            matrix:    ['rgba(34,197,94,',   'rgba(74,222,128,', 'rgba(16,185,129,',  'rgba(52,211,153,',  'rgba(163,230,53,'],
+            cosmos:    ['rgba(126,34,206,',  'rgba(88,28,135,',  'rgba(6,78,59,',     'rgba(167,139,250,', 'rgba(6,95,70,'],
         };
 
         function _initBgShapes(preset) {
             bgShapes = [];
             const palette = BG_SHAPE_PALETTES[preset] || BG_SHAPE_PALETTES.default;
             const shapeTypes = BG_SHAPE_TYPES[preset] || BG_SHAPE_TYPES.default;
-            // Use extended canvas size (120% of viewport) so shapes fill the larger area
             const w = window.innerWidth * 1.2, h = window.innerHeight * 1.2;
-            const count = Math.max(18, Math.min(34, Math.floor(w * h / 38000)));
-            const types = shapeTypes;
+            const isSnake = preset === 'snake';
+            // More snakes to fill the screen with life
+            const count = isSnake
+                ? Math.max(22, Math.min(42, Math.floor(w * h / 28000)))
+                : Math.max(18, Math.min(34, Math.floor(w * h / 38000)));
             for (let i = 0; i < count; i++) {
-                const z = Math.pow(Math.random(), 0.7); // bias toward mid-depth
+                const z = Math.pow(Math.random(), 0.7);
+                let vx, vy, rot, rotSpeed, size, opacity;
+                if (isSnake) {
+                    // Snakes travel in the direction they face — fast and purposeful
+                    rot = Math.random() * Math.PI * 2;
+                    const speed = 0.25 + Math.random() * 0.35 + z * 0.2;
+                    vx = Math.cos(rot) * speed;
+                    vy = Math.sin(rot) * speed;
+                    rotSpeed = (Math.random() - 0.5) * 0.003; // gentle curve over time
+                    size = 30 + z * 55 + Math.random() * 25;  // snakes are sizeable
+                    opacity = 0.06 + z * 0.14;
+                } else {
+                    rot = Math.random() * Math.PI * 2;
+                    vx = (Math.random() - 0.5) * 0.18;
+                    vy = (Math.random() - 0.5) * 0.12;
+                    rotSpeed = (Math.random() - 0.5) * 0.004;
+                    size = 18 + z * 70 + Math.random() * 35;
+                    opacity = 0.04 + z * 0.09;
+                }
                 bgShapes.push({
                     x: Math.random() * w, y: Math.random() * h, z,
-                    vx: (Math.random() - 0.5) * 0.18,
-                    vy: (Math.random() - 0.5) * 0.12,
-                    rot: Math.random() * Math.PI * 2,
-                    rotSpeed: (Math.random() - 0.5) * 0.004,
-                    size: 18 + z * 70 + Math.random() * 35,
-                    type: types[Math.floor(Math.random() * types.length)],
+                    vx, vy, rot, rotSpeed, size,
+                    type: shapeTypes[Math.floor(Math.random() * shapeTypes.length)],
                     colorBase: palette[Math.floor(Math.random() * palette.length)],
-                    opacity: 0.04 + z * 0.09,
+                    opacity,
                     pFactor: 0.3 + z * 0.7
                 });
             }
@@ -1870,7 +2133,6 @@
                     break;
                 }
                 case 'ring': {
-                    // draw as filled arc stroke (donut) — use two arcs approach
                     ctx.restore();
                     ctx.save();
                     ctx.translate(s.x, s.y);
@@ -1881,7 +2143,87 @@
                     ctx.arc(0, 0, r * 0.72, 0, Math.PI * 2);
                     ctx.stroke();
                     ctx.restore();
-                    return; // skip close/fill/stroke below
+                    return;
+                }
+                case 'snake': {
+                    // Sinusoidal 3D snake — body undulates as it moves across the canvas
+                    ctx.restore();
+                    ctx.save();
+                    ctx.translate(s.x, s.y);
+                    ctx.rotate(s.rot);
+
+                    const segments = 16;
+                    const totalLen = r * 5.5;
+                    const amp = r * 0.58 + s.z * r * 0.22;
+                    // Phase derived from position — shifts naturally as the snake moves
+                    const phase = (s.x * 0.030 + s.y * 0.022) % (Math.PI * 2);
+                    const freq = (Math.PI * 2.4) / segments;
+                    const bodyW = r * 0.30 * (0.55 + s.z * 0.75);
+
+                    // Build body point array
+                    const pts = [];
+                    for (let i = 0; i <= segments; i++) {
+                        const t = i / segments;
+                        pts.push({
+                            x: -totalLen * 0.5 + t * totalLen,
+                            y: Math.sin(phase + i * freq) * amp * (0.55 + 0.45 * t)
+                        });
+                    }
+
+                    // Draw smooth body via quadratic bezier
+                    ctx.beginPath();
+                    ctx.moveTo(pts[0].x, pts[0].y);
+                    for (let i = 1; i < pts.length - 1; i++) {
+                        const mx = (pts[i].x + pts[i + 1].x) * 0.5;
+                        const my = (pts[i].y + pts[i + 1].y) * 0.5;
+                        ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+                    }
+                    ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+
+                    // Gradient: bright head → faded tail
+                    const grd = ctx.createLinearGradient(pts[0].x, 0, pts[pts.length - 1].x, 0);
+                    grd.addColorStop(0,   s.colorBase + (s.opacity * 0.25) + ')');
+                    grd.addColorStop(0.5, s.colorBase + (s.opacity * 1.8)  + ')');
+                    grd.addColorStop(1,   s.colorBase + Math.min(s.opacity * 3.5, 0.55) + ')');
+                    ctx.strokeStyle = grd;
+                    ctx.lineWidth = bodyW;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.stroke();
+
+                    // Head — ellipse aligned with final body direction
+                    const head = pts[pts.length - 1];
+                    const neck = pts[pts.length - 2];
+                    const hAngle = Math.atan2(head.y - neck.y, head.x - neck.x);
+                    ctx.save();
+                    ctx.translate(head.x, head.y);
+                    ctx.rotate(hAngle);
+                    ctx.beginPath();
+                    ctx.ellipse(r * 0.18, 0, r * 0.30, r * 0.21, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = s.colorBase + Math.min(s.opacity * 4.5, 0.60) + ')';
+                    ctx.fill();
+
+                    // Eyes (two small dots)
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+                    ctx.beginPath();
+                    ctx.arc(r * 0.28, -r * 0.09, r * 0.055, 0, Math.PI * 2);
+                    ctx.arc(r * 0.28,  r * 0.09, r * 0.055, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Forked tongue
+                    ctx.strokeStyle = s.colorBase + Math.min(s.opacity * 5.5, 0.70) + ')';
+                    ctx.lineWidth = bodyW * 0.18;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(r * 0.44, 0);
+                    ctx.lineTo(r * 0.66, -r * 0.13);
+                    ctx.moveTo(r * 0.44, 0);
+                    ctx.lineTo(r * 0.66,  r * 0.13);
+                    ctx.stroke();
+                    ctx.restore();
+
+                    ctx.restore();
+                    return;
                 }
             }
             ctx.closePath();
@@ -2033,36 +2375,54 @@
 
         function openBackgroundSettings() {
             const hasDiamond = userHasDiamondCustomization();
-            const presets = getAvailableBackgroundPresets();
-            openModal('Background Settings', `
-                <div class="space-y-6">
-                    <p class="text-center text-gray-400">Choose how KC NOW feels behind the interface</p>
-                    ${!hasDiamond ? `
-                        <div class="glass p-4 rounded-2xl border border-blue-500/20">
-                            <p class="font-bold text-sm text-blue-300">Default 3D background is enabled</p>
-                            <p class="text-xs text-gray-400 mt-1">Diamond users can unlock extra animated presets and switch between themes.</p>
-                        </div>
-                    ` : ''}
-                    <div class="grid grid-cols-1 gap-3">
-                        ${presets.map(([key, preset]) => `
-                            <button onclick="setBackgroundPreset('${key}')" class="w-full glass p-4 rounded-2xl text-left hover:bg-white/10 transition ${backgroundPrefs.preset === key ? 'border-2 border-blue-500' : ''}">
-                                <div class="flex items-center justify-between gap-4">
-                                    <div>
-                                        <p class="font-bold">${preset.name}</p>
-                                        <p class="text-xs text-gray-400 mt-1">${preset.description}</p>
-                                    </div>
-                                    ${backgroundPrefs.preset === key ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
+            const allPresets = getAvailableBackgroundPresets();
+            const basePresets     = allPresets.filter(([,p]) => p.tier === 'base');
+            const diamondPresets  = allPresets.filter(([,p]) => p.tier === 'diamond');
+
+            function presetCard(key, preset) {
+                const active  = backgroundPrefs.preset === key;
+                const locked  = preset.tier === 'diamond' && !hasDiamond;
+                const border  = active ? 'border-2 border-blue-500' : locked ? 'border border-yellow-500/30' : 'border border-white/5';
+                const icon    = preset.icon || (preset.tier === 'diamond' ? '💎' : '🎨');
+                return `
+                    <button onclick="setBackgroundPreset('${key}')"
+                        class="w-full glass p-4 rounded-2xl text-left transition group ${border} ${locked ? 'opacity-70 hover:opacity-90' : 'hover:bg-white/10'}">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl flex-shrink-0">${icon}</span>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold text-sm">${preset.name}</p>
+                                    ${locked ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">💎 DIAMOND</span>' : ''}
+                                    ${active ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-blue-600 text-white">ACTIVE</span>' : ''}
                                 </div>
-                            </button>
-                        `).join('')}
-                    </div>
-                    <!-- Phase 6: Reduced Motion toggle for performance-sensitive users -->
-                    <div class="glass p-4 rounded-2xl flex items-center justify-between gap-4 border border-blue-500/20">
-                        <div>
-                            <p class="font-bold">Reduced Motion</p>
-                            <p class="text-xs text-gray-400 mt-1">Disable heavy 3D parallax for better performance.</p>
+                                <p class="text-xs text-gray-500 mt-0.5 truncate">${preset.description}</p>
+                            </div>
+                            ${active ? '<i class="fa-solid fa-check text-blue-400 flex-shrink-0"></i>' : locked ? '<i class="fa-solid fa-lock text-yellow-500/60 flex-shrink-0 text-xs"></i>' : ''}
                         </div>
-                        <button onclick="toggleReducedMotion()" class="px-4 py-2 rounded-xl ${backgroundPrefs.reducedMotion ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-300'} font-bold text-xs">
+                    </button>`;
+            }
+
+            openModal('Background Themes', `
+                <div class="space-y-5">
+                    <div>
+                        <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-unlock text-gray-400"></i>Free Themes</p>
+                        <div class="grid grid-cols-1 gap-2">
+                            ${basePresets.map(([k,p]) => presetCard(k, p)).join('')}
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-gem text-yellow-400"></i>Diamond Exclusive</p>
+                        ${!hasDiamond ? `<div class="glass p-3 rounded-2xl border border-yellow-500/20 mb-3"><p class="text-xs text-yellow-400/80 font-semibold"><i class="fa-solid fa-crown mr-1.5"></i>Diamond members unlock all exclusive themes and live previews.</p></div>` : ''}
+                        <div class="grid grid-cols-1 gap-2">
+                            ${diamondPresets.map(([k,p]) => presetCard(k, p)).join('')}
+                        </div>
+                    </div>
+                    <div class="glass p-4 rounded-2xl flex items-center justify-between gap-4 border border-white/5">
+                        <div>
+                            <p class="font-bold text-sm">Reduced Motion</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Lighter on battery and GPU — disables parallax.</p>
+                        </div>
+                        <button onclick="toggleReducedMotion()" class="px-4 py-2 rounded-xl ${backgroundPrefs.reducedMotion ? 'bg-blue-600 text-white' : 'bg-white/5 text-gray-400'} font-bold text-xs transition">
                             ${backgroundPrefs.reducedMotion ? 'On' : 'Off'}
                         </button>
                     </div>
@@ -2074,12 +2434,25 @@
             const preset = BACKGROUND_PRESETS[presetKey];
             if (!preset) return;
             if (preset.tier === 'diamond' && !userHasDiamondCustomization()) {
-                showToast('Diamond customization required for this background', 'error');
+                openModal('💎 Diamond Exclusive', `
+                    <div class="text-center space-y-5 py-4">
+                        <div class="text-6xl">${preset.icon || '💎'}</div>
+                        <div>
+                            <p class="text-xl font-black">${preset.name}</p>
+                            <p class="text-gray-400 text-sm mt-2">${preset.description}</p>
+                        </div>
+                        <div class="glass p-5 rounded-3xl border border-yellow-500/25">
+                            <p class="text-yellow-400 font-bold text-sm mb-2"><i class="fa-solid fa-crown mr-2"></i>Diamond Member Exclusive</p>
+                            <p class="text-xs text-gray-400">This theme is reserved for Diamond members. Upgrade your membership to unlock all exclusive backgrounds, animations, and customisation options.</p>
+                        </div>
+                        <button onclick="closeModal()" class="btn-lift w-full py-3 bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-400 font-bold rounded-2xl border border-yellow-500/30 transition">Got it</button>
+                    </div>
+                `);
                 return;
             }
             applyBackgroundPreset(presetKey);
             openBackgroundSettings();
-            showToast('Background updated', 'success');
+            showToast(`Theme: ${preset.name}`, 'success');
         }
 
         /**
