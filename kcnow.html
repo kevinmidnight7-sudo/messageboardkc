@@ -29,10 +29,10 @@
             --bg-secondary: #1e293b;
             --accent-blue: #3b82f6;
             --brand-gradient: linear-gradient(135deg, #3b82f6 0%, #2dd4bf 100%);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --bg-primary: #080c14;
-            --bg-secondary: #1e293b;
+            /* Theme-driven accent (overridden by applyBackgroundPreset) */
+            --theme-accent: #3b82f6;
+            --theme-accent-rgb: 59,130,246;
+            --theme-glow: #2dd4bf;
         }
 
         /* ===== Phase 5: Light Theme (overrides applied when .light-theme is on <html>) ===== */
@@ -209,9 +209,9 @@
 
         /* ===== Phase 6: Comprehensive Light Theme Overrides ===== */
         .light-theme .glass {
-            background: var(--glass-bg);
-            border-color: var(--glass-border);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            background: linear-gradient(180deg, rgba(var(--theme-accent-rgb), 0.04) 0%, var(--glass-bg) 40%);
+            border-color: rgba(var(--theme-accent-rgb), 0.12);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.08);
         }
         .light-theme body { color: var(--text-primary); }
         .light-theme .text-white { color: #0f172a !important; }
@@ -572,31 +572,40 @@
         }
 
         /* ═══════════════════════════════════════
-           SHINY UI POLISH
+           SHINY UI POLISH + THEME TINTING
         ═══════════════════════════════════════ */
 
-        /* Brighter glass border + inner light-catch highlight */
+        /* Brighter glass border + inner light-catch + theme tint */
         :root { --glass-border: rgba(255,255,255,0.16); }
         .glass {
+            background: linear-gradient(
+                180deg,
+                rgba(var(--theme-accent-rgb), 0.04) 0%,
+                var(--glass-bg) 40%
+            );
             box-shadow:
                 0 8px 32px 0 rgba(0,0,0,0.45),
-                inset 0 1px 0 rgba(255,255,255,0.13),
-                inset 0 0 0 1px rgba(255,255,255,0.03);
+                inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.15),
+                inset 0 0 0 1px rgba(var(--theme-accent-rgb), 0.04);
         }
 
-        /* Stronger hover — lifted glow rim */
+        /* Stronger hover — theme-coloured glow rim */
         .glass-hover:hover {
-            background: rgba(255,255,255,0.10);
-            border-color: rgba(255,255,255,0.26);
+            background: linear-gradient(
+                180deg,
+                rgba(var(--theme-accent-rgb), 0.10) 0%,
+                rgba(255,255,255,0.08) 50%
+            );
+            border-color: rgba(var(--theme-accent-rgb), 0.30);
             transform: translateY(-4px);
             box-shadow:
                 0 20px 56px rgba(0,0,0,0.55),
-                inset 0 1px 0 rgba(255,255,255,0.22),
-                0 0 0 1px rgba(59,130,246,0.18),
-                0 0 48px rgba(59,130,246,0.08);
+                inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.25),
+                0 0 0 1px rgba(var(--theme-accent-rgb), 0.20),
+                0 0 48px rgba(var(--theme-accent-rgb), 0.10);
         }
 
-        /* Sheen sweep on hub buttons (needs overflow-hidden on element) */
+        /* Sheen sweep on hub buttons */
         .hub-btn {
             position: relative;
             overflow: hidden;
@@ -608,7 +617,7 @@
             background: linear-gradient(
                 108deg,
                 transparent 30%,
-                rgba(255,255,255,0.07) 50%,
+                rgba(var(--theme-accent-rgb), 0.10) 50%,
                 transparent 70%
             );
             transform: translateX(-120%) skewX(-12deg);
@@ -628,49 +637,77 @@
             transition: filter 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
         }
 
-        /* Welcome card — prismatic edge glow */
+        /* Welcome card — theme edge glow */
         #welcome-card {
-            border-color: rgba(255,255,255,0.16);
+            border-color: rgba(var(--theme-accent-rgb), 0.20);
             box-shadow:
                 0 8px 32px rgba(0,0,0,0.45),
-                inset 0 1px 0 rgba(255,255,255,0.18),
-                0 0 80px rgba(59,130,246,0.10),
-                0 0 160px rgba(45,212,191,0.05);
+                inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.20),
+                0 0 80px rgba(var(--theme-accent-rgb), 0.12),
+                0 0 160px rgba(var(--theme-accent-rgb), 0.05);
         }
 
-        /* Avatar glow ring — rotating conic gradient */
+        /* Avatar glow ring — theme-coloured rotating conic gradient */
         #welcome-card .absolute.-inset-1 {
-            background: conic-gradient(from 0deg, #3b82f6, #2dd4bf, #818cf8, #f472b6, #3b82f6) !important;
+            background: conic-gradient(from 0deg, var(--theme-accent), var(--theme-glow), var(--theme-accent), var(--theme-glow), var(--theme-accent)) !important;
             animation: avatarRingRotate 5s linear infinite;
             opacity: 0.6 !important;
         }
         #welcome-card .absolute.-inset-1:hover { opacity: 0.9 !important; }
         @keyframes avatarRingRotate { to { transform: rotate(360deg); } }
 
-        /* Tab active indicator — neon glow */
+        /* Tab active indicator — theme neon glow */
         .tab-btn.active::after {
+            background: var(--theme-accent);
             box-shadow:
-                0 0 12px var(--accent-blue),
-                0 0 28px rgba(59,130,246,0.5),
-                0 0 56px rgba(59,130,246,0.2);
+                0 0 12px var(--theme-accent),
+                0 0 28px rgba(var(--theme-accent-rgb), 0.5),
+                0 0 56px rgba(var(--theme-accent-rgb), 0.2);
             width: 36px;
         }
 
-        /* Bottom nav — glassy sheen border */
+        /* Bottom nav — theme sheen */
         .bottom-banner {
             box-shadow:
-                0 0 0 1px rgba(255,255,255,0.12),
-                inset 0 1px 0 rgba(255,255,255,0.12),
-                0 -8px 40px rgba(59,130,246,0.12),
+                0 0 0 1px rgba(var(--theme-accent-rgb), 0.14),
+                inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.14),
+                0 -8px 40px rgba(var(--theme-accent-rgb), 0.12),
                 0 8px 40px rgba(0,0,0,0.5);
         }
 
-        /* More vivid background orbs */
-        .animated-gradient {
-            background:
-                radial-gradient(circle at 20% 30%, rgba(59,130,246,0.20) 0%, transparent 42%),
-                radial-gradient(circle at 80% 70%, rgba(45,212,191,0.14) 0%, transparent 40%),
-                radial-gradient(circle at 60% 10%, rgba(139,92,246,0.10) 0%, transparent 35%);
+        /* KC NOW pill — theme tint */
+        #quick-actions-btn {
+            background: linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-glow) 100%) !important;
+            box-shadow: 0 8px 32px rgba(var(--theme-accent-rgb), 0.45), 0 0 0 1px rgba(255,255,255,0.08) !important;
+        }
+
+        /* Quick-access tiles — theme hover tint */
+        .qa-tile:hover { background: rgba(var(--theme-accent-rgb), 0.15) !important; }
+
+        /* ── Profile Customisation User Extras ──
+           When a user has profileCustomisation unlocked and their nameColor is set,
+           --user-accent / --user-accent-rgb are set from JS. These give diamond users
+           a personalised accent on top of the theme. */
+        .user-customized .glass {
+            box-shadow:
+                0 8px 32px 0 rgba(0,0,0,0.45),
+                inset 0 1px 0 rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.18),
+                inset 0 0 0 1px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.06);
+        }
+        .user-customized .tab-btn.active::after {
+            background: var(--user-accent, var(--theme-accent));
+            box-shadow:
+                0 0 12px var(--user-accent, var(--theme-accent)),
+                0 0 28px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.5),
+                0 0 56px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.2);
+        }
+        .user-customized #welcome-card {
+            border-color: rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.25);
+            box-shadow:
+                0 8px 32px rgba(0,0,0,0.45),
+                inset 0 1px 0 rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.22),
+                0 0 80px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.14),
+                0 0 160px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.06);
         }
 
         /* Subtle film grain for depth */
@@ -1163,8 +1200,9 @@
 
             if (user) {
                 const avatarUrl = data.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                const nameColor = (data.profileCustomizationUnlocked && data.profileCustomization && data.profileCustomization.nameColor) ? data.profileCustomization.nameColor : '#ffffff';
-                const customGradient = (data.profileCustomizationUnlocked && data.profileCustomization && data.profileCustomization.gradient) ? data.profileCustomization.gradient : null;
+                const hasCustom = !!(data.profileCustomizationUnlocked && data.profileCustomization);
+                const nameColor = (hasCustom && data.profileCustomization.nameColor) ? data.profileCustomization.nameColor : '#ffffff';
+                const customGradient = (hasCustom && data.profileCustomization.gradient) ? data.profileCustomization.gradient : null;
                 const isVerified = !!user.emailVerified;
                 const isStaff = !!data.isStaff;
 
@@ -1172,6 +1210,23 @@
                 nameEl.style.color = nameColor;
                 avatarEl.src = avatarUrl;
                 ind.classList.remove('hidden');
+
+                // Apply personalised accent colours for diamond/custom users
+                if (hasCustom && data.profileCustomization.nameColor) {
+                    document.documentElement.classList.add('user-customized');
+                    const nc = data.profileCustomization.nameColor;
+                    document.documentElement.style.setProperty('--user-accent', nc);
+                    // Convert hex to RGB for rgba() usage
+                    const hex = nc.replace('#', '');
+                    const r = parseInt(hex.substring(0, 2), 16) || 0;
+                    const g = parseInt(hex.substring(2, 4), 16) || 0;
+                    const b = parseInt(hex.substring(4, 6), 16) || 0;
+                    document.documentElement.style.setProperty('--user-accent-rgb', `${r},${g},${b}`);
+                } else {
+                    document.documentElement.classList.remove('user-customized');
+                    document.documentElement.style.removeProperty('--user-accent');
+                    document.documentElement.style.removeProperty('--user-accent-rgb');
+                }
 
                 if (customGradient) {
                     welcomeCard.style.background = customGradient;
@@ -1891,96 +1946,113 @@
                 name: 'KC Nebula',
                 tier: 'base',
                 description: 'Soft abstract 3D blur with slow parallax',
+                theme: { accent: '#3b82f6', rgb: '59,130,246', glow: '#2dd4bf' },
             },
             aurora: {
                 name: 'Aurora Drift',
                 tier: 'diamond',
                 description: 'Teal and blue flowing layered light fields',
+                theme: { accent: '#2dd4bf', rgb: '45,212,191', glow: '#38bdf8' },
             },
             void: {
                 name: 'Void Bloom',
                 tier: 'diamond',
                 description: 'Dark glassy depth with subtle glowing forms',
+                theme: { accent: '#6366f1', rgb: '99,102,241', glow: '#818cf8' },
             },
             prism: {
                 name: 'Prism Orbit',
                 tier: 'diamond',
                 description: 'Floating color shards and depth blur',
+                theme: { accent: '#a855f7', rgb: '168,85,247', glow: '#f472b6' },
             },
             starlight: {
                 name: 'Starlight Pulse',
                 tier: 'diamond',
                 description: 'Spacey particle ambience with soft bloom',
+                theme: { accent: '#818cf8', rgb: '129,140,248', glow: '#c4b5fd' },
             },
             sunrise: {
                 name: 'Sunrise Cascade',
                 tier: 'base',
                 description: 'Warm pastel sunrise gradients with soft parallax',
+                theme: { accent: '#f59e0b', rgb: '245,158,11', glow: '#f97316' },
             },
             deepsea: {
                 name: 'Deep Sea Current',
                 tier: 'base',
                 description: 'Dark cyan and purple swirls with gentle motion',
+                theme: { accent: '#06b6d4', rgb: '6,182,212', glow: '#8b5cf6' },
             },
             snake: {
                 name: 'Snake Pit',
                 tier: 'base',
                 icon: '🐍',
                 description: '3D sinusoidal snakes slithering through the void',
+                theme: { accent: '#22c55e', rgb: '34,197,94', glow: '#84cc16' },
             },
             bloodmoon: {
                 name: 'Blood Moon',
                 tier: 'base',
                 icon: '🌑',
                 description: 'Crimson eclipse ambience — dark and dramatic',
+                theme: { accent: '#ef4444', rgb: '239,68,68', glow: '#dc2626' },
             },
             cyber: {
                 name: 'Cyber Grid',
                 tier: 'base',
                 icon: '⚡',
                 description: 'Neon-washed cyberpunk atmosphere in cyan and purple',
+                theme: { accent: '#22d3ee', rgb: '34,211,238', glow: '#a855f7' },
             },
             golden: {
                 name: 'Golden Vault',
                 tier: 'diamond',
                 icon: '👑',
                 description: 'Exclusive gilded splendour with shimmering gold veins',
+                theme: { accent: '#fbbf24', rgb: '251,191,36', glow: '#f59e0b' },
             },
             sakura: {
                 name: 'Sakura Storm',
                 tier: 'diamond',
                 icon: '🌸',
                 description: 'Soft pink petal cascade drifting through dusk',
+                theme: { accent: '#f472b6', rgb: '244,114,182', glow: '#fb7185' },
             },
             lava: {
                 name: 'Lava Flow',
                 tier: 'diamond',
                 icon: '🌋',
                 description: 'Molten magma surging beneath the surface',
+                theme: { accent: '#f97316', rgb: '249,115,22', glow: '#ef4444' },
             },
             arctic: {
                 name: 'Arctic Freeze',
                 tier: 'diamond',
                 icon: '❄️',
                 description: 'Crisp ice and glacial depths — clean and cold',
+                theme: { accent: '#7dd3fc', rgb: '125,211,252', glow: '#bae6fd' },
             },
             amethyst: {
                 name: 'Royal Amethyst',
                 tier: 'diamond',
                 icon: '💜',
                 description: 'Deep jewel-toned royalty in violet and indigo',
+                theme: { accent: '#a78bfa', rgb: '167,139,250', glow: '#8b5cf6' },
             },
             matrix: {
                 name: 'Matrix Code',
                 tier: 'diamond',
                 icon: '💻',
                 description: 'Digital code pours endlessly through the screen',
+                theme: { accent: '#22c55e', rgb: '34,197,94', glow: '#4ade80' },
             },
             cosmos: {
                 name: 'Cosmic Horror',
                 tier: 'diamond',
                 icon: '🌌',
                 description: 'Eldritch void between galaxies — purple and deep green',
+                theme: { accent: '#8b5cf6', rgb: '139,92,246', glow: '#10b981' },
             },
         };
 
@@ -2301,6 +2373,15 @@
             const preset = BACKGROUND_PRESETS[presetKey] ? presetKey : 'default';
             backgroundPrefs.preset = preset;
             saveBackgroundPrefs();
+            // Apply theme accent colours as CSS custom properties
+            const t = BACKGROUND_PRESETS[preset].theme;
+            if (t) {
+                const root = document.documentElement;
+                root.style.setProperty('--theme-accent', t.accent);
+                root.style.setProperty('--theme-accent-rgb', t.rgb);
+                root.style.setProperty('--theme-glow', t.glow);
+                root.style.setProperty('--accent-blue', t.accent); // overrides the base variable
+            }
             if (!backgroundScene) return;
             backgroundScene.className = `kc-bg-scene ${preset}`;
             _initBgShapes(preset); // re-seed shapes with new colour palette
@@ -2392,7 +2473,7 @@
                     </button>`;
             }
 
-            openModal('Background Themes', `
+            openModal('Themes', `
                 <div class="space-y-5">
                     <div>
                         <p class="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-3 flex items-center gap-2"><i class="fa-solid fa-unlock text-gray-400"></i>Free Themes</p>
