@@ -570,6 +570,121 @@
             border: 1px solid rgba(99,102,241,0.35);
             box-shadow: 0 0 30px rgba(99,102,241,0.12), inset 0 0 20px rgba(255,255,255,0.03);
         }
+
+        /* ═══════════════════════════════════════
+           SHINY UI POLISH
+        ═══════════════════════════════════════ */
+
+        /* Brighter glass border + inner light-catch highlight */
+        :root { --glass-border: rgba(255,255,255,0.16); }
+        .glass {
+            box-shadow:
+                0 8px 32px 0 rgba(0,0,0,0.45),
+                inset 0 1px 0 rgba(255,255,255,0.13),
+                inset 0 0 0 1px rgba(255,255,255,0.03);
+        }
+
+        /* Stronger hover — lifted glow rim */
+        .glass-hover:hover {
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.26);
+            transform: translateY(-4px);
+            box-shadow:
+                0 20px 56px rgba(0,0,0,0.55),
+                inset 0 1px 0 rgba(255,255,255,0.22),
+                0 0 0 1px rgba(59,130,246,0.18),
+                0 0 48px rgba(59,130,246,0.08);
+        }
+
+        /* Sheen sweep on hub buttons (needs overflow-hidden on element) */
+        .hub-btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .hub-btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                108deg,
+                transparent 30%,
+                rgba(255,255,255,0.07) 50%,
+                transparent 70%
+            );
+            transform: translateX(-120%) skewX(-12deg);
+            pointer-events: none;
+        }
+        .hub-btn:hover::after {
+            transform: translateX(200%) skewX(-12deg);
+            transition: transform 0.65s ease;
+        }
+
+        /* Hub icon containers: brighter on hover */
+        .hub-btn:hover .hub-icon {
+            filter: brightness(1.5) saturate(1.4);
+            box-shadow: 0 0 24px currentColor;
+        }
+        .hub-icon {
+            transition: filter 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+        }
+
+        /* Welcome card — prismatic edge glow */
+        #welcome-card {
+            border-color: rgba(255,255,255,0.16);
+            box-shadow:
+                0 8px 32px rgba(0,0,0,0.45),
+                inset 0 1px 0 rgba(255,255,255,0.18),
+                0 0 80px rgba(59,130,246,0.10),
+                0 0 160px rgba(45,212,191,0.05);
+        }
+
+        /* Avatar glow ring — rotating conic gradient */
+        #welcome-card .absolute.-inset-1 {
+            background: conic-gradient(from 0deg, #3b82f6, #2dd4bf, #818cf8, #f472b6, #3b82f6) !important;
+            animation: avatarRingRotate 5s linear infinite;
+            opacity: 0.6 !important;
+        }
+        #welcome-card .absolute.-inset-1:hover { opacity: 0.9 !important; }
+        @keyframes avatarRingRotate { to { transform: rotate(360deg); } }
+
+        /* Tab active indicator — neon glow */
+        .tab-btn.active::after {
+            box-shadow:
+                0 0 12px var(--accent-blue),
+                0 0 28px rgba(59,130,246,0.5),
+                0 0 56px rgba(59,130,246,0.2);
+            width: 36px;
+        }
+
+        /* Bottom nav — glassy sheen border */
+        .bottom-banner {
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.12),
+                0 -8px 40px rgba(59,130,246,0.12),
+                0 8px 40px rgba(0,0,0,0.5);
+        }
+
+        /* More vivid background orbs */
+        .animated-gradient {
+            background:
+                radial-gradient(circle at 20% 30%, rgba(59,130,246,0.20) 0%, transparent 42%),
+                radial-gradient(circle at 80% 70%, rgba(45,212,191,0.14) 0%, transparent 40%),
+                radial-gradient(circle at 60% 10%, rgba(139,92,246,0.10) 0%, transparent 35%);
+        }
+
+        /* Subtle film grain for depth */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+            background-size: 300px 300px;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: overlay;
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body class="p-6 md:p-10">
@@ -621,47 +736,47 @@
                 <!-- Hub Buttons -->
                 <div class="grid grid-cols-3 gap-6">
                     <!-- Row 1 -->
-                    <button onclick="renderLeaderboard()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-500 text-3xl group-hover:scale-110 transition">
+                    <button onclick="renderLeaderboard()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="hub-icon w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-trophy"></i>
                         </div>
                         <span class="font-bold tracking-wide">Leaderboard</span>
                     </button>
 
-                    <button onclick="renderBattledome()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-red-500/10 flex items-center justify-center text-red-500 text-3xl group-hover:scale-110 transition">
+                    <button onclick="renderBattledome()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="hub-icon w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-sword"></i>
                         </div>
                         <span class="font-bold tracking-wide">Battledome</span>
-                        <div class="text-[10px] bg-blue-500/20 text-blue-400 px-3 py-0.5 rounded-full font-black uppercase">Live</div>
+                        <div class="text-[10px] bg-blue-500/25 text-blue-300 px-3 py-0.5 rounded-full font-black uppercase">Live</div>
                     </button>
 
-                    <button onclick="openSlitherServers()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center text-green-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openSlitherServers()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="hub-icon w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center text-green-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-worm"></i>
                         </div>
                         <span class="font-bold tracking-wide">Slither.io</span>
-                        <div class="text-[10px] bg-green-500/20 text-green-400 px-3 py-0.5 rounded-full font-black uppercase">Servers</div>
+                        <div class="text-[10px] bg-green-500/25 text-green-300 px-3 py-0.5 rounded-full font-black uppercase">Servers</div>
                     </button>
 
                     <!-- Row 2 -->
-                    <button onclick="openGamesHub()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openGamesHub()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="hub-icon w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-dice"></i>
                         </div>
                         <span class="font-bold tracking-wide">Games</span>
-                        <div class="text-[10px] bg-purple-500/20 text-purple-400 px-3 py-0.5 rounded-full font-black uppercase">Casino</div>
+                        <div class="text-[10px] bg-purple-500/25 text-purple-300 px-3 py-0.5 rounded-full font-black uppercase">Casino</div>
                     </button>
 
-                    <button onclick="openEconomyShop()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-blue-500/10 flex items-center justify-center text-blue-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openEconomyShop()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="hub-icon w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-store"></i>
                         </div>
                         <span class="font-bold tracking-wide">Shop</span>
                     </button>
 
-                    <button onclick="openAchievements()" class="glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="w-16 h-16 rounded-2xl bg-yellow-500/10 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openAchievements()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
+                        <div class="hub-icon w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-medal"></i>
                         </div>
                         <span class="font-bold tracking-wide">Achievements</span>
