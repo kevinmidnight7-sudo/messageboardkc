@@ -74,6 +74,10 @@
             height: 100vh;
             transition: background 0.3s ease, color 0.3s ease;
         }
+        /* Browsers reset font-family on form elements — force Poppins everywhere */
+        button, input, select, textarea, label {
+            font-family: 'Poppins', sans-serif;
+        }
 
         /* --- Background FX --- */
         #bg-canvas {
@@ -1013,19 +1017,110 @@
                 </div>
             </div>
 
-            <!-- PROFILE VIEW -->
-            <div id="view-profile" class="view-transition hidden space-y-8">
-                <div class="glass p-10 rounded-[40px]">
-                    <h2 class="text-3xl font-bold mb-8">Account Summary</h2>
-                    <div id="profile-lite-content" class="grid grid-cols-2 gap-10"></div>
-                    <!-- Discord link status banner in profile -->
-                    <div id="discord-link-status-profile" class="mt-8 space-y-4"></div>
-                    <div class="mt-12 flex justify-center">
-                        <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="btn-lift px-10 py-4 glass glass-hover border-blue-500/30 text-blue-400 font-bold rounded-2xl flex items-center gap-2 justify-center" title="Opens kcevents.uk in a new tab">
-                            Full Profile Options <i class="fa-solid fa-arrow-up-right-from-square text-xs ml-1 opacity-60"></i>
-                        </a>
+            <!-- PROFILE TAB -->
+            <div id="view-profile" class="view-transition hidden flex flex-col gap-4">
+
+                <!-- ── Profile Hero Card ── -->
+                <div id="pf-hero-card" class="glass rounded-[32px] overflow-hidden border-white/5 relative">
+
+                    <!-- Banner (height animates in when set) -->
+                    <div id="pf-banner" style="height:0;overflow:hidden;transition:height 0.4s ease;position:relative;background-size:cover;background-position:center;flex-shrink:0;">
+                        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0) 30%,rgba(8,12,20,0.8) 100%);pointer-events:none;"></div>
+                    </div>
+
+                    <div class="p-6 relative z-10" id="pf-identity-block" style="margin-top:-48px;">
+
+                        <!-- Avatar row + action buttons -->
+                        <div class="flex items-end justify-between mb-4">
+                            <div id="pf-avatar-wrap" class="relative flex-shrink-0">
+                                <div class="absolute -inset-1.5 rounded-full blur-md opacity-40" id="pf-avatar-glow" style="background:var(--theme-accent,#3b82f6);"></div>
+                                <img id="pf-avatar" src="https://via.placeholder.com/100"
+                                     class="relative w-24 h-24 rounded-full border-4 object-cover" style="border-color:var(--bg-primary,#080c14);" alt="Avatar">
+                                <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-4" style="border-color:var(--bg-primary,#080c14);"></div>
+                            </div>
+
+                            <!-- Icon action buttons (like login.html) -->
+                            <div class="flex gap-2 pb-1.5">
+                                <button onclick="previewCustomization()" title="Customise Profile"
+                                    class="glass glass-hover flex items-center justify-center text-blue-400 hover:text-blue-300 transition"
+                                    style="width:44px;height:44px;border-radius:14px;">
+                                    <i class="fa-solid fa-palette"></i>
+                                </button>
+                                <button onclick="openBackgroundSettings()" title="Background Theme"
+                                    class="glass glass-hover flex items-center justify-center text-cyan-400 hover:text-cyan-300 transition"
+                                    style="width:44px;height:44px;border-radius:14px;">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                </button>
+                                <button onclick="openAnalytics()" title="My Stats"
+                                    class="glass glass-hover flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition"
+                                    style="width:44px;height:44px;border-radius:14px;">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </button>
+                                <button onclick="window.openKcProfile && window.openKcProfile(currentUser?.uid)" title="Full Profile"
+                                    class="glass glass-hover flex items-center justify-center text-purple-400 hover:text-purple-300 transition"
+                                    style="width:44px;height:44px;border-radius:14px;">
+                                    <i class="fa-solid fa-id-card"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Name + status badges -->
+                        <div class="mb-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 id="pf-name" class="text-2xl font-black tracking-tight text-white leading-tight">Loading...</h2>
+                                <div id="pf-status-badges" class="flex items-center gap-1.5 flex-wrap"></div>
+                            </div>
+                            <p id="pf-about" class="text-sm text-gray-400 italic mt-1.5 hidden"></p>
+                        </div>
+
+                        <!-- KC Score pills (overall / offence / defence) -->
+                        <div id="pf-kc-scores" class="flex gap-2 flex-wrap mt-3"></div>
+
+                        <!-- Custom badge (shown if user has one) -->
+                        <div id="pf-custom-badge" class="hidden mt-3"></div>
+
+                        <!-- Official KC Badges visual row -->
+                        <div id="pf-kc-badges" class="flex gap-3 flex-wrap mt-3"></div>
                     </div>
                 </div>
+
+                <!-- ── Stats Grid ── -->
+                <div class="grid grid-cols-2 gap-4">
+
+                    <!-- Economy card -->
+                    <div class="glass rounded-[24px] p-5 border-white/5 flex flex-col">
+                        <p class="text-[10px] uppercase tracking-widest font-bold mb-3" style="color:#475569;">Economy</p>
+                        <p id="pf-points" class="text-3xl font-black leading-none" style="color:var(--theme-accent,#3b82f6);">–</p>
+                        <p class="text-xs font-semibold mt-0.5" style="color:#475569;">pts earned</p>
+                        <div class="grid grid-cols-2 gap-2 mt-4">
+                            <div class="glass rounded-xl p-3 text-center">
+                                <p class="text-[10px] uppercase font-bold mb-0.5" style="color:#475569;">Rank</p>
+                                <p id="pf-rank" class="text-lg font-black text-white">#–</p>
+                            </div>
+                            <div class="glass rounded-xl p-3 text-center">
+                                <p class="text-[10px] uppercase font-bold mb-0.5" style="color:#475569;">Streak</p>
+                                <p id="pf-streak" class="text-lg font-black text-orange-400">–</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Battledome card -->
+                    <div class="glass rounded-[24px] p-5 border-white/5 flex flex-col">
+                        <p class="text-[10px] uppercase tracking-widest font-bold mb-3" style="color:#475569;">Battledome</p>
+                        <p id="pf-bd-score" class="text-3xl font-black leading-none text-red-400">–</p>
+                        <p class="text-xs font-semibold mt-0.5" style="color:#475569;">high score</p>
+                        <div class="mt-auto pt-4">
+                            <button onclick="renderBattledome()"
+                                class="w-full glass glass-hover rounded-xl py-2.5 text-xs font-bold text-red-400 transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-sword text-[10px]"></i> View Leaderboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discord status (dynamic) -->
+                <div id="discord-link-status-profile"></div>
+
             </div>
 
             <!-- CLANS VIEW (Rich Visual Hub) -->
@@ -3991,7 +4086,7 @@
                                 const isMe = currentUser && u.uid === currentUser.uid;
                                 const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
                                 return `
-                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="openKcProfile('${u.uid}')">
+                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="window.openKcProfile && window.openKcProfile('${u.uid}')">
                                         <span class="w-8 text-center font-black">${medal}</span>
                                         <img src="${u.photoURL}" class="w-8 h-8 rounded-full object-cover">
                                         <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName}${isMe?' (you)':''}</span>
@@ -4803,7 +4898,7 @@
                             <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Members (${memberUids.length})</h3>
                             <div class="space-y-2">
                                 ${profiles.map((m,i)=>`
-                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up" style="animation-delay:${i*40}ms" onclick="openKcProfile('${m.uid}')">
+                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up" style="animation-delay:${i*40}ms" onclick="window.openKcProfile && window.openKcProfile('${m.uid}')">
                                         <img src="${m.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
                                         <span class="flex-1 font-bold">${m.displayName||'Unknown'}</span>
                                         ${m.uid===clan.leaderId?'<span class="text-xs text-yellow-400 font-bold"><i class="fa-solid fa-crown mr-1"></i>Leader</span>':''}
@@ -5365,113 +5460,158 @@
         }
 
         function loadProfileLite() {
-            const container = document.getElementById('profile-lite-content');
+            // Helpers to safely set element content
+            const $  = id => document.getElementById(id);
+            const setText = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+
             if (!currentUser) {
-                container.innerHTML = `<div class="col-span-2 text-center py-12">
-                    <i class="fa-solid fa-circle-user text-6xl text-gray-700 mb-4 block"></i>
-                    <p class="text-gray-400 font-bold mb-2">Sign in to view your profile</p>
-                    <p class="text-gray-600 text-sm mb-6">Your KC stats, economy data, and badges will appear here.</p>
-                    <button onclick="openAuthModal()" class="btn-lift px-8 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">Sign In</button>
-                </div>`;
+                setText('pf-name', 'Sign in to view your profile');
+                const pfHero = $('pf-hero-card');
+                if (pfHero) {
+                    pfHero.style.minHeight = '180px';
+                    pfHero.style.display = 'flex';
+                    pfHero.style.alignItems = 'center';
+                    pfHero.style.justifyContent = 'center';
+                    const idBlock = $('pf-identity-block');
+                    if (idBlock) idBlock.style.marginTop = '0';
+                }
                 return;
             }
-            container.innerHTML = `<div class="col-span-2 animate-pulse bg-white/5 h-24 rounded-3xl"></div>`;
+
+            // Show skeleton while loading
+            const idBlock = $('pf-identity-block');
+            if (idBlock) idBlock.style.opacity = '0.4';
 
             Promise.all([
                 db.ref(`users/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 getDiscordIdFromKcUid(currentUser.uid)
             ]).then(([userSnap, discordId]) => {
                 const u = userSnap.val() || {};
-                const economyPromise = discordId
-                    ? db.ref(`userEconomy/${discordId}`).once('value').then(snap => snap.val() || {}).catch(() => ({}))
+                if (idBlock) idBlock.style.opacity = '1';
+
+                // ── Avatar ──────────────────────────────────────────
+                const avatarEl = $('pf-avatar');
+                if (avatarEl) avatarEl.src = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+
+                // ── Banner ──────────────────────────────────────────
+                const bannerEl = $('pf-banner');
+                if (bannerEl && u.profileCustomization?.banner) {
+                    bannerEl.style.backgroundImage = `url('${u.profileCustomization.banner}')`;
+                    bannerEl.style.height = '160px';
+                    if (idBlock) idBlock.style.marginTop = '-48px';
+                } else {
+                    if (idBlock) idBlock.style.marginTop = '0';
+                    if (idBlock) idBlock.style.paddingTop = '1.5rem';
+                }
+
+                // ── Avatar glow matches name color ──────────────────
+                const glowEl = $('pf-avatar-glow');
+                if (glowEl && u.profileCustomization?.nameColor) {
+                    glowEl.style.background = u.profileCustomization.nameColor;
+                }
+
+                // ── Name ────────────────────────────────────────────
+                const nameEl = $('pf-name');
+                if (nameEl) {
+                    nameEl.textContent = u.displayName || 'KC Member';
+                    nameEl.style.color  = u.profileCustomization?.nameColor || '';
+                }
+
+                // ── About text ──────────────────────────────────────
+                const aboutEl = $('pf-about');
+                if (aboutEl && u.about) {
+                    aboutEl.textContent = `"${u.about}"`;
+                    aboutEl.classList.remove('hidden');
+                }
+
+                // ── Status badges (Verified / Staff) ────────────────
+                const statusEl = $('pf-status-badges');
+                if (statusEl) {
+                    const badgePill = (icon, label, fgColor, bgColor, borderColor) =>
+                        `<span style="display:inline-flex;align-items:center;gap:4px;background:${bgColor};color:${fgColor};padding:2px 9px;border-radius:99px;font-size:0.68rem;font-weight:800;letter-spacing:0.06em;border:1px solid ${borderColor};">
+                            <i class="fa-solid ${icon}" style="font-size:0.6rem;"></i>${label}
+                        </span>`;
+                    let html = '';
+                    if (currentUser.emailVerified) html += badgePill('fa-circle-check','Verified','#60a5fa','rgba(59,130,246,0.15)','rgba(59,130,246,0.28)');
+                    if (u.isStaff)                 html += badgePill('fa-shield-halved','Staff',   '#f87171','rgba(239,68,68,0.15)', 'rgba(239,68,68,0.28)');
+                    statusEl.innerHTML = html;
+                }
+
+                // ── KC Score pills (Overall / Offence / Defence) ─────
+                const kcScoresEl = $('pf-kc-scores');
+                if (kcScoresEl) {
+                    const scores = [
+                        { label:'Overall', val: u.overall||0, icon:'fa-trophy',        fg:'#fbbf24', bg:'rgba(251,191,36,0.12)', br:'rgba(251,191,36,0.28)' },
+                        { label:'Offence', val: u.offence||0, icon:'fa-sword',          fg:'#f87171', bg:'rgba(239,68,68,0.12)',  br:'rgba(239,68,68,0.28)'  },
+                        { label:'Defence', val: u.defence||0, icon:'fa-shield-halved',  fg:'#34d399', bg:'rgba(52,211,153,0.12)', br:'rgba(52,211,153,0.28)' },
+                    ];
+                    kcScoresEl.innerHTML = scores.map(s =>
+                        `<div style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:14px;background:${s.bg};border:1px solid ${s.br};">
+                            <i class="fa-solid ${s.icon}" style="font-size:0.65rem;color:${s.fg};"></i>
+                            <span style="font-size:0.7rem;font-weight:700;color:${s.fg};">${s.label}</span>
+                            <span style="font-size:1.1rem;font-weight:900;color:#fff;line-height:1;">${s.val}</span>
+                        </div>`
+                    ).join('');
+                }
+
+                // ── Custom badge ─────────────────────────────────────
+                const custBadgeEl = $('pf-custom-badge');
+                if (custBadgeEl && u.customBadge) {
+                    custBadgeEl.classList.remove('hidden');
+                    custBadgeEl.innerHTML =
+                        `<div class="glass rounded-2xl p-4 flex items-center gap-3" style="border:1px solid rgba(255,255,255,0.06);">
+                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '⭐'}</span>
+                            <div>
+                                <p class="font-black text-sm">${u.customBadge.name || 'Custom Badge'}</p>
+                                ${u.customBadge.description ? `<p class="text-xs text-gray-400 mt-0.5">${u.customBadge.description}</p>` : ''}
+                            </div>
+                        </div>`;
+                }
+
+                // ── Official KC badge visuals ────────────────────────
+                // Only rendered if user has any score > 0
+                const badgesEl = $('pf-kc-badges');
+                if (badgesEl) {
+                    const defs = [
+                        { key:'overall', label:'Overall',  grad:'linear-gradient(135deg,#e1ab33,#ffe184)', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png' },
+                        { key:'offence', label:'Offence',  grad:'linear-gradient(135deg,#fa5252,#fbba34)', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png'     },
+                        { key:'defence', label:'Defence',  grad:'linear-gradient(135deg,#3b82f6,#60a5fa)', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png'    },
+                    ];
+                    const anyScore = defs.some(d => (u[d.key] || 0) > 0);
+                    if (anyScore) {
+                        badgesEl.innerHTML = defs.map(d => {
+                            const score = u[d.key] || 0;
+                            const locked = score === 0;
+                            return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:${locked?'0.35':'1'};transition:transform 0.2s;" onmouseover="if(!${locked})this.style.transform='translateY(-3px)scale(1.04)'" onmouseout="this.style.transform='none'">
+                                <div style="width:52px;height:52px;border-radius:16px;background:${d.grad};display:flex;align-items:center;justify-content:center;box-shadow:${locked?'none':'0 4px 16px rgba(0,0,0,0.4)'};">
+                                    <img src="${d.icon}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">
+                                </div>
+                                <span style="font-size:0.6rem;font-weight:800;letter-spacing:0.06em;color:#94a3b8;text-transform:uppercase;">${d.label}</span>
+                                <span style="font-size:0.8rem;font-weight:900;color:#fff;">${locked?'🔒':'×'+score}</span>
+                            </div>`;
+                        }).join('');
+                    }
+                }
+
+                // ── Battledome score ─────────────────────────────────
+                setText('pf-bd-score', (u.bdHighscore || 0).toLocaleString());
+
+                // ── Economy (requires Discord ID) ────────────────────
+                const econPromise = discordId
+                    ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {}).catch(() => ({}))
                     : Promise.resolve({});
-
-                economyPromise.then(economy => {
+                econPromise.then(economy => {
+                    const pts    = economy.points || 0;
+                    const rank   = economy.rank   || 'N/A';
                     const streak = economy.streaks?.login?.current || 0;
-                    const points = economy.points || 0;
-                    const rank = economy.rank || 'N/A';
-                    const badges = Object.keys(economy.badges || {}).length;
-
-                    container.innerHTML = `
-                        <div class="glass p-6 rounded-3xl flex items-center gap-4 col-span-2">
-                            <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-20 h-20 rounded-full border-2 border-white/10">
-                            <div class="flex-1">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-1">Authenticated As</p>
-                                <p class="text-2xl font-bold cursor-pointer hover:underline" style="color:${u.profileCustomization?.nameColor || '#fff'}" onclick="window.openKcProfile && window.openKcProfile('${currentUser.uid}')">${u.displayName || 'Explorer'}</p>
-                                ${u.about ? `<p class="text-sm text-gray-400 italic mt-1">"${u.about}"</p>` : ''}
-                            </div>
-                        </div>
-                        <div class="glass p-6 rounded-3xl">
-                            <p class="text-xs text-gray-500 font-black uppercase mb-3">KC Badges</p>
-                            <div class="space-y-2">
-                                <div class="flex justify-between"><span class="text-sm text-gray-400">Overall</span><span class="font-bold text-blue-400">${u.overall || 0}</span></div>
-                                <div class="flex justify-between"><span class="text-sm text-gray-400">Offence</span><span class="font-bold text-red-400">${u.offence || 0}</span></div>
-                                <div class="flex justify-between"><span class="text-sm text-gray-400">Defence</span><span class="font-bold text-green-400">${u.defence || 0}</span></div>
-                            </div>
-                        </div>
-                        ${discordId ? `
-                            <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-3">Discord Stats</p>
-                                <div class="space-y-2">
-                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Points</span><span class="font-bold text-blue-400">${points.toLocaleString()}</span></div>
-                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Rank</span><span class="font-bold">#${rank}</span></div>
-                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Streak</span><span class="font-bold text-orange-400">${streak} 🔥</span></div>
-                                    <div class="flex justify-between"><span class="text-sm text-gray-400">Badges</span><span class="font-bold text-purple-400">${badges}</span></div>
-                                </div>
-                            </div>
-                        ` : `
-                            <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-3">Discord Stats</p>
-                                <p class="text-sm text-gray-400 italic">Link Discord in bot to see economy stats</p>
-                            </div>
-                        `}
-                        <div class="glass p-6 rounded-3xl">
-                            <p class="text-xs text-gray-500 font-black uppercase mb-3">Battledome</p>
-                            <div class="space-y-2">
-                                <div class="flex justify-between"><span class="text-sm text-gray-400">Highscore</span><span class="font-bold text-red-400">${(u.bdHighscore || 0).toLocaleString()}</span></div>
-                            </div>
-                        </div>
-                        ${u.customBadge ? `
-                            <div class="glass p-6 rounded-3xl col-span-2">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-3">Custom Badge</p>
-                                <div class="flex items-center gap-3">
-                                    <span class="text-4xl">${u.customBadge.emoji}</span>
-                                    <div>
-                                        <p class="font-bold">${u.customBadge.name}</p>
-                                        <p class="text-sm text-gray-400">${u.customBadge.description}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                        ${(u.profileCustomization || u.profileCustomizationUnlocked) ? `
-                            <div class="glass p-6 rounded-3xl col-span-2">
-                                <div class="flex items-center justify-between mb-3">
-                                    <p class="text-xs text-gray-500 font-black uppercase">Customization Preview</p>
-                                    <button onclick="previewCustomization()" class="text-xs text-blue-400 font-bold hover:underline">
-                                        Preview <i class="fa-solid fa-eye ml-1"></i>
-                                    </button>
-                                </div>
-                                <div class="flex gap-4">
-                                    <div class="flex-1 glass p-4 rounded-2xl">
-                                        <p class="text-xs text-gray-400 mb-2">Name Color</p>
-                                        <div class="flex items-center gap-2">
-                                            <div class="w-8 h-8 rounded-lg border border-white/10" style="background:${u.profileCustomization?.nameColor || '#1992d4'}"></div>
-                                            <span class="text-xs font-mono">${u.profileCustomization?.nameColor || '#1992d4'}</span>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1 glass p-4 rounded-2xl">
-                                        <p class="text-xs text-gray-400 mb-2">Gradient</p>
-                                        <div class="h-8 rounded-lg border border-white/10" style="background:${u.profileCustomization?.gradient || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        ` : ''}
-                    `;
-                }).catch(() => {
-                    container.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-500">Could not load profile data.</div>`;
+                    setText('pf-points', pts.toLocaleString());
+                    setText('pf-rank',   '#' + rank);
+                    setText('pf-streak', streak > 0 ? streak + ' 🔥' : '–');
                 });
+
             }).catch(() => {
-                container.innerHTML = `<div class="col-span-2 text-center py-10 text-gray-500">Could not load profile data.</div>`;
+                if (idBlock) idBlock.style.opacity = '1';
+                setText('pf-name', 'Could not load profile');
             });
         }
 
