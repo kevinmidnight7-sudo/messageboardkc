@@ -918,21 +918,32 @@
                         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.55) 100%);"></div>
                     </div>
                     <!-- Content row -->
-                    <div class="p-6 flex items-center justify-between">
-                        <div class="flex items-center gap-5 z-10">
-                            <div class="relative group">
+                    <div class="p-6 flex items-center justify-between gap-4">
+
+                        <!-- LEFT: Identity -->
+                        <div class="flex items-center gap-5 z-10 min-w-0 flex-1">
+                            <div class="relative group flex-shrink-0">
                                 <div class="absolute -inset-1 bg-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition"></div>
                                 <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-20 h-20 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
                                 <div id="online-indicator" class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
                             </div>
-                            <div>
+                            <div class="min-w-0">
                                 <p id="greeting-text" class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-0.5">Checking Status...</p>
-                                <h1 id="user-display-name" class="text-3xl font-bold text-white tracking-tight leading-tight">Welcome, Guest</h1>
-                                <div id="user-badges" class="flex gap-2 mt-2"></div>
+                                <!-- Name + badges on same line -->
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h1 id="user-display-name" class="text-3xl font-bold text-white tracking-tight leading-tight">Welcome, Guest</h1>
+                                    <div id="user-badges" class="flex items-center gap-1.5"></div>
+                                </div>
+                                <!-- Stat pills: BD score, streak — populated by JS -->
+                                <div id="wc-stat-pills" class="flex gap-2 mt-2 flex-wrap"></div>
                             </div>
                         </div>
-                        <div id="auth-actions" class="z-10"></div>
-                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px]"></div>
+
+                        <!-- RIGHT: Action panel -->
+                        <div id="auth-actions" class="z-10 flex-shrink-0"></div>
+
+                        <!-- Decorative glow -->
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none"></div>
                     </div>
                 </div>
 
@@ -1572,58 +1583,106 @@
                     }
                 }
 
-                let badges = '';
-                if (isVerified) badges += `<i class="fa-solid fa-circle-check text-blue-400 text-xs" title="Verified"></i>`;
-                if (isStaff) badges += `<i class="fa-solid fa-shield-halved text-red-500 text-xs" title="Staff"></i>`;
-                badgeEl.innerHTML = badges;
+                // Verified + staff badges inline with name
+                let badgesHtml = '';
+                if (isVerified) badgesHtml += `
+                    <span title="Verified" style="display:inline-flex;align-items:center;gap:4px;background:rgba(59,130,246,0.15);color:#60a5fa;padding:2px 8px;border-radius:99px;font-size:0.68rem;font-weight:800;letter-spacing:0.06em;border:1px solid rgba(59,130,246,0.25);">
+                        <i class="fa-solid fa-circle-check" style="font-size:0.6rem;"></i> Verified
+                    </span>`;
+                if (isStaff) badgesHtml += `
+                    <span title="Staff" style="display:inline-flex;align-items:center;gap:4px;background:rgba(239,68,68,0.15);color:#f87171;padding:2px 8px;border-radius:99px;font-size:0.68rem;font-weight:800;letter-spacing:0.06em;border:1px solid rgba(239,68,68,0.25);">
+                        <i class="fa-solid fa-shield-halved" style="font-size:0.6rem;"></i> Staff
+                    </span>`;
+                badgeEl.innerHTML = badgesHtml;
 
-                // Show about text
+                // Clear stat pills — will be repopulated from async fetch
+                const statPillsEl = document.getElementById('wc-stat-pills');
+                if (statPillsEl) statPillsEl.innerHTML = '';
+
+                // Show about text under stat pills
                 const existingAbout = document.getElementById('welcome-about');
                 if (existingAbout) existingAbout.remove();
                 if (data.about) {
                     const aboutDiv = document.createElement('p');
                     aboutDiv.id = 'welcome-about';
-                    aboutDiv.className = 'text-sm text-gray-400 italic mt-2 max-w-md';
+                    aboutDiv.className = 'text-xs text-gray-400 italic mt-1.5 max-w-xs truncate';
                     aboutDiv.textContent = `"${data.about}"`;
-                    nameEl.parentElement.appendChild(aboutDiv);
+                    if (statPillsEl) statPillsEl.parentElement.appendChild(aboutDiv);
                 }
 
-                // Auth actions with daily button and economy stats placeholder
+                // ── Right action panel ────────────────────────────────
                 actions.innerHTML = `
-                    <div class="flex flex-col items-end gap-3">
-                        <div id="welcome-economy-stats"></div>
-                        <button onclick="claimDaily()" class="glass px-5 py-2 rounded-2xl font-bold text-blue-400 hover:bg-blue-500/20 transition text-sm">
-                            <i class="fa-solid fa-gift mr-2"></i> Claim Daily
+                    <div style="display:flex;flex-direction:column;gap:8px;min-width:160px;">
+                        <!-- Economy stats box -->
+                        <div class="glass rounded-2xl border border-white/8" style="padding:12px 16px;text-align:center;">
+                            <p style="font-size:0.6rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#475569;margin-bottom:4px;">Economy</p>
+                            <p id="wc-points" style="font-size:1.6rem;font-weight:900;line-height:1;color:var(--theme-accent,#3b82f6);">–</p>
+                            <p id="wc-rank" style="font-size:0.68rem;color:#64748b;margin-top:4px;font-weight:600;">Rank –</p>
+                        </div>
+                        <!-- Claim Daily — themed gradient button -->
+                        <button onclick="claimDaily()" style="
+                            display:flex;align-items:center;justify-content:center;gap:8px;
+                            padding:10px 16px;border-radius:14px;border:none;cursor:pointer;
+                            background:linear-gradient(135deg,var(--theme-accent,#3b82f6) 0%,var(--theme-glow,#2dd4bf) 100%);
+                            color:white;font-size:0.8rem;font-weight:800;letter-spacing:0.04em;
+                            box-shadow:0 4px 16px rgba(var(--theme-accent-rgb,59,130,246),0.35);
+                            transition:opacity 0.2s,transform 0.15s;font-family:Poppins,sans-serif;"
+                            onmouseover="this.style.opacity='0.88';this.style.transform='scale(1.03)'"
+                            onmouseout="this.style.opacity='1';this.style.transform='scale(1)'">
+                            <i class="fa-solid fa-gift" style="font-size:0.75rem;"></i> Claim Daily
                         </button>
-                        <button onclick="auth.signOut().then(_clearDataCaches)" class="px-5 py-2 border border-red-500/20 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition text-xs">SIGN OUT</button>
+                        <!-- Sign Out — subtle text button -->
+                        <button onclick="auth.signOut().then(_clearDataCaches)" style="
+                            background:none;border:none;cursor:pointer;
+                            font-size:0.68rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+                            color:#475569;padding:4px;text-align:center;font-family:Poppins,sans-serif;
+                            transition:color 0.2s;"
+                            onmouseover="this.style.color='#f87171'"
+                            onmouseout="this.style.color='#475569'">
+                            Sign Out
+                        </button>
                     </div>
                 `;
 
-                // Fetch Discord economy stats
+                // ── Async: economy + BD fetch ─────────────────────────
                 getDiscordIdFromKcUid(user.uid).then(discordId => {
-                    const statsEl = document.getElementById('welcome-economy-stats');
-                    if (!statsEl || !discordId) return;
-                    db.ref(`userEconomy/${discordId}`).once('value').then(snap => {
-                        const economy = snap.val() || {};
-                        const streak = economy.streaks?.login?.current || 0;
-                        const points = economy.points || 0;
-                        const rank = economy.rank || 'N/A';
-                        statsEl.innerHTML = `
-                            <div class="glass px-4 py-2 rounded-2xl inline-block text-right">
-                                <p class="text-xs text-gray-400 uppercase">Economy</p>
-                                <p class="text-lg font-bold text-blue-400">${points.toLocaleString()} pts</p>
-                                <p class="text-xs text-gray-400">Rank #${rank}</p>
-                            </div>
-                            ${streak > 0 ? `<div class="mt-2 glass px-4 py-2 rounded-2xl inline-block">
-                                <p class="text-sm font-bold">🔥 ${streak} day streak</p>
-                            </div>` : ''}
-                        `;
-                    });
-                    // Add BD badge if available
+                    if (discordId) {
+                        db.ref(`userEconomy/${discordId}`).once('value').then(snap => {
+                            const economy = snap.val() || {};
+                            const streak  = economy.streaks?.login?.current || 0;
+                            const points  = economy.points || 0;
+                            const rank    = economy.rank || 'N/A';
+
+                            const ptEl = document.getElementById('wc-points');
+                            const rkEl = document.getElementById('wc-rank');
+                            if (ptEl) ptEl.textContent = points.toLocaleString() + ' pts';
+                            if (rkEl) rkEl.textContent = 'Rank #' + rank;
+
+                            // Streak stat pill
+                            if (streak > 0) {
+                                const pills = document.getElementById('wc-stat-pills');
+                                if (pills && !document.getElementById('wc-streak-pill')) {
+                                    const pill = document.createElement('span');
+                                    pill.id = 'wc-streak-pill';
+                                    pill.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:0.7rem;font-weight:800;color:#fb923c;background:rgba(249,115,22,0.12);border:1px solid rgba(249,115,22,0.22);';
+                                    pill.innerHTML = `<i class="fa-solid fa-fire" style="font-size:0.6rem;"></i>${streak} day streak`;
+                                    pills.appendChild(pill);
+                                }
+                            }
+                        });
+                    }
+                    // BD high score stat pill
                     db.ref(`users/${user.uid}/bdHighscore`).once('value').then(bdSnap => {
                         const bdScore = bdSnap.val() || 0;
                         if (bdScore > 0) {
-                            badgeEl.innerHTML += ` <span class="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full font-bold">BD: ${bdScore.toLocaleString()}</span>`;
+                            const pills = document.getElementById('wc-stat-pills');
+                            if (pills && !document.getElementById('wc-bd-pill')) {
+                                const pill = document.createElement('span');
+                                pill.id = 'wc-bd-pill';
+                                pill.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:0.7rem;font-weight:800;color:#f87171;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.22);';
+                                pill.innerHTML = `<i class="fa-solid fa-sword" style="font-size:0.6rem;"></i>${bdScore.toLocaleString()} BD`;
+                                pills.appendChild(pill);
+                            }
                         }
                     });
                 });
