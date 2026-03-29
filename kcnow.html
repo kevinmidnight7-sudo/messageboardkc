@@ -194,8 +194,8 @@
         #diamond-customization-status:empty { display: none; }
         /* Content viewport fills its full grid cell so no background bleeds below */
         #content-viewport { height: 100%; }
-        /* All tab views get bottom padding so KC NOW pill never overlaps last item */
-        #view-home, #view-clans, #view-players, #view-clips, #view-profile { padding-bottom: 5.5rem; }
+        /* Tab views bottom padding (normal scroll breathing room) */
+        #view-home, #view-clans, #view-players, #view-clips, #view-profile { padding-bottom: 1.5rem; }
         @media (max-width: 1024px) {
             .main-grid { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
             #content-viewport { height: auto; }
@@ -220,6 +220,12 @@
 
         @keyframes pulseSlow { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
         .pulse-slow { animation: pulseSlow 2s ease-in-out infinite; }
+
+        /* KC NOW dropdown entrance */
+        @keyframes qaSlideIn {
+            from { opacity:0; transform: translateY(-8px) scale(0.97); }
+            to   { opacity:1; transform: translateY(0)   scale(1);    }
+        }
 
         @keyframes dealCard {
             from { opacity: 0; transform: translateY(-24px) scale(0.85) rotate(-4deg); }
@@ -701,19 +707,56 @@
                 0 8px 40px rgba(0,0,0,0.5);
         }
 
-        /* KC NOW pill — theme tint */
+        /* KC NOW corner trigger — theme tint */
         #quick-actions-btn {
-            background: linear-gradient(135deg, var(--theme-accent) 0%, var(--theme-glow) 100%) !important;
-            box-shadow: 0 8px 32px rgba(var(--theme-accent-rgb), 0.45), 0 0 0 1px rgba(255,255,255,0.08) !important;
-            transition: box-shadow 0.25s ease, transform 0.15s ease !important;
+            background: rgba(8,12,20,0.85) !important;
+            border: 1px solid rgba(var(--theme-accent-rgb), 0.35) !important;
+            box-shadow: 0 4px 20px rgba(var(--theme-accent-rgb), 0.2), inset 0 1px 0 rgba(255,255,255,0.05) !important;
+            backdrop-filter: blur(16px) !important;
+            transition: box-shadow 0.25s ease, transform 0.15s ease, border-color 0.2s ease !important;
+        }
+        #quick-actions-btn:hover {
+            border-color: rgba(var(--theme-accent-rgb), 0.6) !important;
+            box-shadow: 0 4px 28px rgba(var(--theme-accent-rgb), 0.38), inset 0 1px 0 rgba(255,255,255,0.08) !important;
         }
         #quick-actions-btn.qa-open {
-            box-shadow: 0 8px 48px rgba(var(--theme-accent-rgb), 0.75), 0 0 0 2px rgba(var(--theme-accent-rgb), 0.4) !important;
-            transform: scale(1.04);
+            border-color: rgba(var(--theme-accent-rgb), 0.7) !important;
+            box-shadow: 0 4px 32px rgba(var(--theme-accent-rgb), 0.5), 0 0 0 1px rgba(var(--theme-accent-rgb), 0.2) !important;
+            background: rgba(var(--theme-accent-rgb), 0.1) !important;
         }
-
-        /* Quick-access tiles — theme hover tint */
-        .qa-tile:hover { background: rgba(var(--theme-accent-rgb), 0.15) !important; }
+        /* Dropdown panel border + glow */
+        #quick-actions-menu .qa-panel {
+            border-color: rgba(var(--theme-accent-rgb), 0.28) !important;
+            box-shadow: 0 0 0 1px rgba(var(--theme-accent-rgb), 0.08),
+                        0 24px 64px rgba(0,0,0,0.75),
+                        0 0 48px rgba(var(--theme-accent-rgb), 0.06) !important;
+        }
+        #quick-actions-menu .qa-header-bar {
+            border-bottom-color: rgba(var(--theme-accent-rgb), 0.15) !important;
+        }
+        #quick-actions-menu .qa-accent-dot {
+            background: var(--theme-accent) !important;
+            box-shadow: 0 0 8px var(--theme-accent) !important;
+        }
+        #quick-actions-menu .qa-header-label {
+            color: rgba(var(--theme-accent-rgb), 0.9) !important;
+        }
+        /* Quick-access list items */
+        .qa-tile { background: transparent !important; }
+        .qa-tile:hover { background: rgba(var(--theme-accent-rgb), 0.08) !important; border-color: rgba(var(--theme-accent-rgb), 0.2) !important; }
+        /* Accent left bar on hover */
+        .qa-tile::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 20%; bottom: 20%;
+            width: 2px;
+            border-radius: 2px;
+            background: var(--theme-accent);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .qa-tile:hover::before { opacity: 1; }
+        .qa-tile { position: relative; }
 
         /* ── Profile Customisation User Extras ──
            When a user has profileCustomisation unlocked and their nameColor is set,
@@ -790,10 +833,10 @@
             opacity: 0.5;
         }
 
-        /* --- Bottom nav and KC pill in user accent --- */
+        /* --- KC NOW corner trigger in user accent --- */
         .user-customized #quick-actions-btn {
-            background: linear-gradient(135deg, var(--user-accent), var(--theme-glow)) !important;
-            box-shadow: 0 8px 32px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.5), 0 0 0 1px rgba(255,255,255,0.10) !important;
+            border-color: rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.5) !important;
+            box-shadow: 0 4px 24px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.3) !important;
         }
         .user-customized .bottom-banner {
             box-shadow:
@@ -1233,57 +1276,167 @@
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-24 right-8 z-[200] space-y-3" style="max-width:350px;pointer-events:none;"></div>
 
-    <!-- KC NOW Quick Actions Hub – bottom-center pill -->
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center" id="quick-actions-wrapper">
+    <!-- KC NOW Quick Actions Hub – top-left corner dropdown -->
+    <div class="fixed top-4 left-4 z-50" id="quick-actions-wrapper">
 
-        <!-- Expanded menu: 2-column icon grid, slides up above the button -->
-        <div id="quick-actions-menu" class="hidden mb-3 w-[320px]">
-            <div class="glass rounded-3xl p-4 shadow-2xl border border-white/10" style="background:rgba(15,23,42,0.85);backdrop-filter:blur(24px);">
-                <p class="text-[10px] font-black uppercase text-gray-500 mb-3 text-center tracking-widest">Quick Access</p>
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="runQuickAction(claimDaily)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-blue-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-gift text-xl text-blue-400 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Daily</span>
-                    </button>
-                    <button onclick="runQuickAction(openGamesHub)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-green-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-dice text-xl text-green-400 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Games</span>
-                    </button>
-                    <button onclick="runQuickAction(openEconomyShop)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-purple-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-store text-xl text-purple-400 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Shop</span>
-                    </button>
-                    <button onclick="runQuickAction(openAnalytics)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-yellow-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-chart-line text-xl text-yellow-400 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Stats</span>
-                    </button>
-                    <button onclick="runQuickAction(openFriendsList)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-teal-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-user-group text-xl text-teal-400 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Friends</span>
-                    </button>
-                    <button onclick="runQuickAction(openGlobalSearch)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-blue-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-search text-xl text-blue-300 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Search</span>
-                    </button>
-                    <button onclick="runQuickAction(openBackgroundSettings)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-cyan-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-wand-magic-sparkles text-xl text-cyan-400 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Theme</span>
-                    </button>
-                    <button onclick="runQuickAction(openNotificationSettings)" class="qa-tile flex flex-col items-center gap-1.5 p-3 rounded-2xl glass hover:bg-yellow-500/20 transition group" style="pointer-events:all;">
-                        <i class="fa-solid fa-bell text-xl text-yellow-300 group-hover:scale-110 transition"></i>
-                        <span class="text-[10px] font-bold text-gray-400">Notifs</span>
-                    </button>
-                </div>
+        <!-- Trigger button: compact futuristic corner pill -->
+        <button onclick="toggleQuickActions()" id="quick-actions-btn"
+            class="flex items-center gap-2.5 rounded-xl font-black text-white"
+            style="padding:9px 15px;">
+            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png"
+                 alt="KC" style="width:18px;height:18px;object-fit:contain;filter:drop-shadow(0 0 5px rgba(251,191,36,0.75));flex-shrink:0;">
+            <span style="font-size:0.72rem;letter-spacing:0.14em;">KC NOW</span>
+            <i class="fa-solid fa-chevron-down" id="qa-chevron" style="font-size:0.6rem;opacity:0.55;transition:transform 0.3s;margin-left:1px;"></i>
+        </button>
+
+        <!-- Dropdown panel: vertical list, HUD / futuristic aesthetic -->
+        <div id="quick-actions-menu" class="hidden mt-2 qa-panel" style="
+            min-width:252px;
+            border-radius:16px;
+            overflow:hidden;
+            border:1px solid;
+            background:rgba(6,10,18,0.94);
+            backdrop-filter:blur(28px) saturate(1.4);
+            -webkit-backdrop-filter:blur(28px) saturate(1.4);
+            transform-origin:top left;
+            animation:qaSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        ">
+            <!-- Header -->
+            <div class="qa-header-bar" style="
+                display:flex;align-items:center;gap:8px;
+                padding:10px 14px 9px;
+                border-bottom:1px solid;
+            ">
+                <div class="qa-accent-dot" style="width:7px;height:7px;border-radius:50%;flex-shrink:0;animation:pulse 2s infinite;"></div>
+                <span class="qa-header-label" style="font-size:0.58rem;font-weight:900;letter-spacing:0.22em;text-transform:uppercase;">Quick Access</span>
+                <span style="margin-left:auto;font-size:0.52rem;color:#334155;letter-spacing:0.06em;font-family:monospace;">SYS·2.0</span>
+            </div>
+
+            <!-- List of actions -->
+            <div style="padding:5px;">
+
+                <button onclick="runQuickAction(claimDaily)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-gift" style="color:#60a5fa;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Claim Daily</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Collect your daily reward</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openGamesHub)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-dice" style="color:#4ade80;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Games</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Play &amp; earn points</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openEconomyShop)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-store" style="color:#c084fc;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Shop</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Spend your points</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openAnalytics)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-chart-line" style="color:#facc15;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Stats &amp; Analytics</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">View your performance</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openFriendsList)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-user-group" style="color:#2dd4bf;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Friends</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Your friends list</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openGlobalSearch)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-search" style="color:#93c5fd;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Search</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Find players, clans &amp; posts</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openBackgroundSettings)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color:#67e8f9;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Theme</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Background &amp; appearance</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
+                <button onclick="runQuickAction(openNotificationSettings)" class="qa-tile" style="
+                    width:100%;display:flex;align-items:center;gap:10px;
+                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
+                    transition:all 0.14s;text-align:left;overflow:hidden;
+                ">
+                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="fa-solid fa-bell" style="color:#fbbf24;font-size:0.8rem;"></i>
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Notifications</div>
+                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Alerts &amp; activity</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
+                </button>
+
             </div>
         </div>
-
-        <!-- The KC NOW pill button -->
-        <button onclick="toggleQuickActions()" id="quick-actions-btn"
-            class="flex items-center gap-3 px-8 py-3.5 rounded-full font-black text-sm tracking-wide text-white transition-all duration-300">
-            <i class="fa-solid fa-bolt text-base" id="qa-icon"></i>
-            <span>KC NOW</span>
-            <i class="fa-solid fa-chevron-up text-xs opacity-60" id="qa-chevron" style="transition: transform 0.3s;"></i>
-        </button>
     </div>
 
     <script>
@@ -5319,14 +5472,29 @@
             const open    = menu.classList.contains('hidden');
             if (open) {
                 menu.classList.remove('hidden');
-                if (chevron) chevron.style.transform = 'rotate(180deg)';
+                if (chevron) chevron.style.transform = 'rotate(180deg)'; // points up = open
                 if (btn) btn.classList.add('qa-open');
             } else {
                 menu.classList.add('hidden');
-                if (chevron) chevron.style.transform = 'rotate(0deg)';
+                if (chevron) chevron.style.transform = 'rotate(0deg)'; // points down = closed
                 if (btn) btn.classList.remove('qa-open');
             }
         }
+
+        // Close KC NOW menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('quick-actions-wrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                const menu    = document.getElementById('quick-actions-menu');
+                const chevron = document.getElementById('qa-chevron');
+                const btn     = document.getElementById('quick-actions-btn');
+                if (menu && !menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
+                    if (chevron) chevron.style.transform = 'rotate(0deg)';
+                    if (btn) btn.classList.remove('qa-open');
+                }
+            }
+        });
 
         function runQuickAction(action) {
             try {
