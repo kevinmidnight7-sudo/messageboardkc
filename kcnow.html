@@ -74,6 +74,10 @@
             height: 100vh;
             transition: background 0.3s ease, color 0.3s ease;
         }
+        /* Browsers reset font-family on form elements — force Poppins everywhere */
+        button, input, select, textarea, label {
+            font-family: 'Poppins', sans-serif;
+        }
 
         /* --- Background FX --- */
         #bg-canvas {
@@ -3991,7 +3995,7 @@
                                 const isMe = currentUser && u.uid === currentUser.uid;
                                 const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
                                 return `
-                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="openKcProfile('${u.uid}')">
+                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="window.openKcProfile && window.openKcProfile('${u.uid}')">
                                         <span class="w-8 text-center font-black">${medal}</span>
                                         <img src="${u.photoURL}" class="w-8 h-8 rounded-full object-cover">
                                         <span class="flex-1 font-bold ${isMe?'text-blue-400':''}">${u.displayName}${isMe?' (you)':''}</span>
@@ -4803,7 +4807,7 @@
                             <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Members (${memberUids.length})</h3>
                             <div class="space-y-2">
                                 ${profiles.map((m,i)=>`
-                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up" style="animation-delay:${i*40}ms" onclick="openKcProfile('${m.uid}')">
+                                    <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up" style="animation-delay:${i*40}ms" onclick="window.openKcProfile && window.openKcProfile('${m.uid}')">
                                         <img src="${m.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
                                         <span class="flex-1 font-bold">${m.displayName||'Unknown'}</span>
                                         ${m.uid===clan.leaderId?'<span class="text-xs text-yellow-400 font-bold"><i class="fa-solid fa-crown mr-1"></i>Leader</span>':''}
