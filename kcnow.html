@@ -2132,6 +2132,31 @@
                 });
             });
 
+            // Friend-added events — only fire for additions that happen after the listener attaches,
+            // not the initial population of existing friends.
+            if (currentUser) {
+                let _friendsReady = false;
+                setTimeout(() => { _friendsReady = true; }, 1500);
+                db.ref(`users/${currentUser.uid}/friends`).on('child_added', snap => {
+                    if (!_friendsReady) return;
+                    const friendUid = snap.key;
+                    db.ref(`users/${friendUid}`).once('value').then(uSnap => {
+                        const u = uSnap.val() || {};
+                        addFeedItem({
+                            type: 'users',
+                            title: 'New Friend!',
+                            user: u.displayName || 'Someone',
+                            uid: friendUid,
+                            detail: 'Added you as a friend.',
+                            color: 'text-pink-400',
+                            icon: 'fa-heart',
+                            actionLabel: 'Add back',
+                            actionFn: `addFriend('${friendUid}')`,
+                        });
+                    });
+                });
+            }
+
             db.ref('recentActivity').limitToLast(10).on('child_added', snap => {
                 const activity = snap.val();
                 switch (activity.type) {
@@ -2344,6 +2369,7 @@
                     <div class="pt-4 border-t border-white/5">
                         <p class="text-[11px] text-blue-400 font-bold mb-1">${item.uid ? `<span class="cursor-pointer hover:underline" onclick="event.stopPropagation();window.openKcProfile('${item.uid}')">${item.user}</span>` : item.user}</p>
                         <p class="text-xs text-gray-400 leading-relaxed">${item.detail || ''}</p>
+                        ${item.actionLabel ? `<button onclick="event.stopPropagation();${item.actionFn}" class="mt-2 text-xs px-3 py-1.5 bg-pink-500/15 hover:bg-pink-500/30 text-pink-400 rounded-xl font-semibold transition">${item.actionLabel}</button>` : ''}
                     </div>
                 </div>
             `).join('') || `<div class="p-10 text-center opacity-20 text-xs italic">${feedSearchQuery || feedDateFilter !== 'all' ? 'No matching events...' : 'Awaiting events...'}</div>`;
@@ -4196,13 +4222,23 @@
                             ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
-                    <!-- Top BD Scores — capped at 10 entries server-side -->
+                    <!-- Top BD Scores -->
                     <div class="glass p-4 rounded-3xl">
                         <div class="flex items-center justify-between mb-3">
                             <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest">🏆 Top BD Scores</p>
-                            <button onclick="renderBattledome()" class="text-[10px] text-blue-400 hover:text-blue-300 transition font-semibold">Full leaderboard →</button>
+                            <button onclick="renderBattledome()" class="text-[10px] text-blue-400 hover:text-blue-300 transition font-semibold">Full →</button>
                         </div>
                         <div id="bd-leaderboard" class="space-y-1">
+                            ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
+                        </div>
+                    </div>
+                    <!-- KC Members BD Scores (linked accounts only) -->
+                    <div class="glass p-4 rounded-3xl">
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest">🛡️ KC Top Scorers</p>
+                            <button onclick="renderBattledome().then?.(()=>{}) || renderBattledome(); setTimeout(()=>window._bdGoTab&&window._bdGoTab('kc'),400)" class="text-[10px] text-teal-400 hover:text-teal-300 transition font-semibold">KC only →</button>
+                        </div>
+                        <div id="kc-bd-leaderboard" class="space-y-1">
                             ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
@@ -4243,27 +4279,46 @@
                 }
             }).catch(() => {});
 
-            // Fetch top 10 BD scores — limitToLast(10) caps the download regardless of how large the node grows
-            db.ref('config/bdTopScores/global').limitToLast(10).once('value').then(snap => {
-                const bdPlayers = [];
-                snap.forEach(child => {
-                    const val = child.val();
-                    bdPlayers.push({ name: (val && val.name) || child.key, score: (val && val.score) || 0 });
+            // Load BD scores once — limitToLast(500) caps at a safe ceiling while ensuring
+            // all realistically-active players are included for an accurate top-10 sort.
+            // Both "all players" and "KC-linked only" views are derived from this single read.
+            db.ref('config/bdTopScores/global').limitToLast(500).once('value').then(bdSnap => {
+                const allScores = {};
+                bdSnap.forEach(child => {
+                    const v = child.val() || {};
+                    allScores[child.key.toLowerCase()] = { name: v.name || child.key, score: v.score || 0 };
                 });
-                bdPlayers.sort((a, b) => b.score - a.score);
                 const medals = ['🥇','🥈','🥉'];
-                const el = document.getElementById('bd-leaderboard');
-                if (el) el.innerHTML = bdPlayers.length > 0
-                    ? bdPlayers.map((p, i) => `
-                        <div class="flex justify-between items-center py-0.5">
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500">#${i+1}</span>`}</span>
-                                <span class="text-sm font-semibold truncate max-w-[140px]">${p.name}</span>
-                            </div>
-                            <span class="text-xs font-bold text-red-400">${p.score.toLocaleString()}</span>
+                const rowHtml = (p, i) => `
+                    <div class="flex justify-between items-center py-0.5">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500 text-[10px]">#${i+1}</span>`}</span>
+                            <span class="text-sm font-semibold truncate max-w-[140px]">${p.name}</span>
                         </div>
-                    `).join('')
+                        <span class="text-xs font-bold text-red-400">${p.score.toLocaleString()}</span>
+                    </div>`;
+
+                // Top 10 overall
+                const top10 = Object.values(allScores).sort((a,b) => b.score - a.score).slice(0, 10);
+                const elAll = document.getElementById('bd-leaderboard');
+                if (elAll) elAll.innerHTML = top10.length
+                    ? top10.map(rowHtml).join('')
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
+
+                // KC-linked only — cross-reference with playerLinks
+                db.ref('config/playerLinks').once('value').then(plSnap => {
+                    const pl = plSnap.val() || {};
+                    const kcScores = Object.values(pl)
+                        .filter(v => v.bdName)
+                        .map(v => allScores[v.bdName.toLowerCase()])
+                        .filter(Boolean)
+                        .sort((a,b) => b.score - a.score)
+                        .slice(0, 10);
+                    const elKC = document.getElementById('kc-bd-leaderboard');
+                    if (elKC) elKC.innerHTML = kcScores.length
+                        ? kcScores.map(rowHtml).join('')
+                        : '<p class="text-xs text-gray-500 text-center">No linked KC members yet</p>';
+                }).catch(() => {});
             }).catch(() => {});
 
             db.ref('userEconomy').orderByChild('points').limitToLast(5).once('value').then(async snap => {
@@ -4453,6 +4508,24 @@
             };
         }
 
+        async function _bdFetchKCScores() {
+            const [bdSnap, plSnap] = await Promise.all([
+                db.ref('config/bdTopScores/global').limitToLast(500).once('value'),
+                db.ref('config/playerLinks').once('value'),
+            ]);
+            const allScores = {};
+            bdSnap.forEach(child => {
+                const v = child.val() || {};
+                allScores[child.key.toLowerCase()] = { name: v.name || child.key, score: v.score || 0, seenAt: v.seenAt };
+            });
+            const pl = plSnap.val() || {};
+            const kcEntries = Object.values(pl)
+                .filter(v => v.bdName)
+                .map(v => allScores[v.bdName.toLowerCase()])
+                .filter(Boolean);
+            return kcEntries.sort((a, b) => b.score - a.score).slice(0, 20);
+        }
+
         async function _bdFetchPeriod(period, region) {
             // period: 'alltime' | 'daily' | 'weekly' | 'monthly'
             const path = period === 'alltime'
@@ -4461,7 +4534,7 @@
             // Cap download at server side — never pull thousands of rows for a top-20 display.
             // For all-time we want the 20 highest scores; for period views we fetch 100 recent
             // entries then filter client-side by seenAt (period nodes are smaller by design).
-            const limit = period === 'alltime' ? 20 : 100;
+            const limit = period === 'alltime' ? 500 : 100;
             const snap = await db.ref(path).limitToLast(limit).once('value');
             const cutoffMs = { daily: 86400000, weekly: 604800000, monthly: 2592000000 }[period] || 0;
             const cutoff = cutoffMs ? Date.now() - cutoffMs : 0;
@@ -4590,6 +4663,21 @@
                           </div>`;
                     contentHtml = blocks;
                 }
+            } else if (tab === 'kc') {
+                if (!_bdCtx.kcData) {
+                    contentHtml = `<div class="flex items-center justify-center gap-2 py-6 text-gray-400">
+                        <i class="fa-solid fa-spinner animate-spin"></i><span class="text-sm">Loading KC members…</span>
+                    </div>`;
+                    _bdFetchKCScores().then(data => {
+                        if (_bdCtx) { _bdCtx.kcData = data; _bdRenderContent(); }
+                    }).catch(() => {
+                        if (_bdCtx) { _bdCtx.kcData = []; _bdRenderContent(); }
+                    });
+                } else if (_bdCtx.kcData.length === 0) {
+                    contentHtml = `<p class="text-gray-500 text-sm text-center py-8">No KC members with linked BD accounts yet.</p>`;
+                } else {
+                    contentHtml = `<div class="space-y-1">${_bdCtx.kcData.map((e, i) => _bdEntryRow(e, i, userBdName)).join('')}</div>`;
+                }
             } else {
                 try {
                     const entries = await _bdFetchPeriod(tab, region === 'global' ? 'global' : region);
@@ -4603,7 +4691,7 @@
                 }
             }
 
-            const periodLabel = { live:'Live', alltime:'All-Time', daily:'Daily', weekly:'Weekly', monthly:'Monthly' }[tab];
+            const periodLabel = { live:'Live', alltime:'All-Time', daily:'Daily', weekly:'Weekly', monthly:'Monthly', kc:'KC Only' }[tab];
 
             modal.update(`
                 <div class="space-y-4">
@@ -4644,18 +4732,19 @@
                     <div class="flex gap-1.5 flex-wrap">
                         ${tabBtn('live',    'Live',     'fa-solid fa-circle text-green-400 text-[8px]')}
                         ${tabBtn('alltime', 'All-Time', 'fa-solid fa-trophy')}
+                        ${tabBtn('kc',      'KC Only',  'fa-solid fa-shield-halved text-teal-400')}
                         ${tabBtn('daily',   'Daily',    'fa-solid fa-sun')}
                         ${tabBtn('weekly',  'Weekly',   'fa-solid fa-calendar-week')}
                         ${tabBtn('monthly', 'Monthly',  'fa-solid fa-calendar')}
                     </div>
 
-                    <!-- Region filter (hidden for live—shows both always) -->
-                    <div class="flex gap-1.5 items-center">
+                    <!-- Region filter — hidden on Live (shows both) and KC (no region split) -->
+                    ${tab !== 'kc' ? `<div class="flex gap-1.5 items-center">
                         <span class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mr-1">Region</span>
                         ${regBtn('global','🌍 Global')}
                         ${regBtn('East','🇺🇸 East')}
                         ${regBtn('EU','🇪🇺 EU')}
-                    </div>
+                    </div>` : ''}
 
                     <!-- Leaderboard content -->
                     <div id="bd-lb-content">${contentHtml}</div>
