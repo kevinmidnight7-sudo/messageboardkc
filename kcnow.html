@@ -4395,7 +4395,23 @@
 
         // ── Battledome ────────────────────────────────────────────────────────
         // Live endpoints are plain HTTP — browsers can't fetch them from an HTTPS page.
-        // Set BD_PROXY_URL to your deployed Cloudflare Worker URL (see bd-proxy-worker.js).
+        // Two proxy options (both use the same URL pattern: BD_PROXY_URL + '?region=East'):
+        //
+        //   Option A — Cloudflare Worker (see bd-proxy-worker.js):
+        //     BD_PROXY_URL = 'https://bd-proxy-workerjs.kevinmidnight7.workers.dev'
+        //     NOTE: Cloudflare egress IPs may be blocked by the BD server (403).
+        //
+        //   Option B — Discord bot Express server (recommended, bot VPS IP is not blocked):
+        //     Add to index.js:
+        //       app.get('/bdproxy', async (req, res) => {
+        //         const region = req.query.region;
+        //         if (!BD_SERVERS[region]) return res.status(400).json({ error: 'region must be "East" or "EU"' });
+        //         res.setHeader('Access-Control-Allow-Origin', '*');
+        //         try { res.json(await fetchJson(BD_SERVERS[region].url, 10000)); }
+        //         catch (e) { res.status(503).json({ error: 'Upstream unavailable', message: e.message }); }
+        //       });
+        //     Then set BD_PROXY_URL = 'https://YOUR-BOT.onrender.com/bdproxy'
+        //
         // While unset, the Live tab falls back to showing Firebase-cached status only.
         const BD_PROXY_URL = 'https://bd-proxy-workerjs.kevinmidnight7.workers.dev';
 
