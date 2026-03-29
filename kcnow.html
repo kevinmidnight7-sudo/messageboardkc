@@ -4394,25 +4394,25 @@
         }
 
         // ── Battledome ────────────────────────────────────────────────────────
-        // Live endpoints are HTTP — fetch via CORS proxy from this HTTPS site
-        const BD_PROXY   = 'https://corsproxy.io/?';
-        const BD_ENDPOINTS = {
-            East: 'http://206.221.176.241:444/bdinfo.json',
-            EU:   'http://51.91.19.175:444/bdinfo.json',
-        };
+        // Live endpoints are plain HTTP — browsers can't fetch them from an HTTPS page.
+        // Set BD_PROXY_URL to your deployed Cloudflare Worker URL (see bd-proxy-worker.js).
+        // While unset, the Live tab falls back to showing Firebase-cached status only.
+        const BD_PROXY_URL = 'https://bd-proxy-workerjs.kevinmidnight7.workers.dev';
 
         async function _bdFetchLive() {
-            const _fetch = async (url) => {
+            if (!BD_PROXY_URL) throw new Error('no-proxy');
+            const _fetch = async (region) => {
                 const controller = new AbortController();
                 const tid = setTimeout(() => controller.abort(), 10000);
                 try {
-                    const r = await fetch(BD_PROXY + encodeURIComponent(url), { signal: controller.signal });
+                    const r = await fetch(`${BD_PROXY_URL}?region=${region}`, { signal: controller.signal });
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
                     return await r.json();
                 } finally { clearTimeout(tid); }
             };
             const [east, eu] = await Promise.allSettled([
-                _fetch(BD_ENDPOINTS.East),
-                _fetch(BD_ENDPOINTS.EU),
+                _fetch('East'),
+                _fetch('EU'),
             ]);
             return {
                 East: east.status === 'fulfilled' ? east.value : null,
@@ -4513,7 +4513,20 @@
 
             if (tab === 'live') {
                 const liveData = _bdCtx.liveData;
-                if (!liveData) {
+                if (!BD_PROXY_URL) {
+                    // No proxy configured — explain why and show Firebase status only
+                    contentHtml = `<div class="glass rounded-2xl p-5 border border-yellow-500/20 space-y-3">
+                        <p class="font-bold text-yellow-300 text-sm"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Live data needs a proxy</p>
+                        <p class="text-xs text-gray-400">The battledome servers use plain HTTP. This HTTPS site can't fetch them directly — a server-side proxy is required.</p>
+                        <ol class="text-xs text-gray-400 space-y-1 list-decimal list-inside">
+                            <li>Go to <a href="https://dash.cloudflare.com" target="_blank" class="text-blue-400 underline">dash.cloudflare.com</a> → Workers &amp; Pages → Create</li>
+                            <li>Paste the contents of <code class="bg-white/5 px-1 rounded">bd-proxy-worker.js</code> (in the repo root)</li>
+                            <li>Deploy and copy your worker URL</li>
+                            <li>In <code class="bg-white/5 px-1 rounded">kcnow.html</code> set <code class="bg-white/5 px-1 rounded">BD_PROXY_URL = 'https://…workers.dev'</code></li>
+                        </ol>
+                        <p class="text-[10px] text-gray-600">Historical leaderboards (All-Time / Daily / Weekly / Monthly) work without a proxy — they read from Firebase.</p>
+                    </div>`;
+                } else if (!liveData) {
                     contentHtml = `<div class="flex items-center justify-center gap-2 py-6 text-gray-400">
                         <i class="fa-solid fa-spinner animate-spin"></i><span class="text-sm">Fetching live data…</span>
                     </div>`;
@@ -4603,10 +4616,10 @@
                     <!-- Leaderboard content -->
                     <div id="bd-lb-content">${contentHtml}</div>
 
-                    ${tab === 'live' && _bdCtx.liveData ? `
+                    ${tab === 'live' && BD_PROXY_URL && _bdCtx.liveData ? `
                     <p class="text-[10px] text-gray-700 text-center">
-                        Live data via corsproxy · refreshes on demand
-                        <button onclick="window._bdRefreshLive()" class="ml-2 text-gray-600 hover:text-gray-400 transition underline">Refresh now</button>
+                        Live · via proxy · 15s cache
+                        <button onclick="window._bdRefreshLive()" class="ml-2 text-gray-600 hover:text-gray-400 transition underline">Refresh</button>
                     </p>` : ''}
                 </div>
             `);
