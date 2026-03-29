@@ -4393,120 +4393,262 @@
             openModal("Clan Battles", `<iframe src="clans.html?open=battles" style="width:100%;height:75vh;border:0;border-radius:32px;"></iframe>`);
         }
 
+        // ── Battledome ────────────────────────────────────────────────────────
+        // Live endpoints are HTTP — fetch via CORS proxy from this HTTPS site
+        const BD_PROXY   = 'https://corsproxy.io/?';
+        const BD_ENDPOINTS = {
+            East: 'http://206.221.176.241:444/bdinfo.json',
+            EU:   'http://51.91.19.175:444/bdinfo.json',
+        };
+
+        async function _bdFetchLive() {
+            const _fetch = async (url) => {
+                const controller = new AbortController();
+                const tid = setTimeout(() => controller.abort(), 10000);
+                try {
+                    const r = await fetch(BD_PROXY + encodeURIComponent(url), { signal: controller.signal });
+                    return await r.json();
+                } finally { clearTimeout(tid); }
+            };
+            const [east, eu] = await Promise.allSettled([
+                _fetch(BD_ENDPOINTS.East),
+                _fetch(BD_ENDPOINTS.EU),
+            ]);
+            return {
+                East: east.status === 'fulfilled' ? east.value : null,
+                EU:   eu.status  === 'fulfilled' ? eu.value  : null,
+            };
+        }
+
+        async function _bdFetchPeriod(period, region) {
+            // period: 'alltime' | 'daily' | 'weekly' | 'monthly'
+            const path = period === 'alltime'
+                ? `config/bdTopScores/${region}`
+                : `config/bdPeriodScores/${period}/${region}`;
+            const snap = await db.ref(path).once('value');
+            const cutoffMs = { daily: 86400000, weekly: 604800000, monthly: 2592000000 }[period] || 0;
+            const cutoff = cutoffMs ? Date.now() - cutoffMs : 0;
+            const entries = [];
+            snap.forEach(child => {
+                const v = child.val() || {};
+                if (cutoff && v.seenAt && v.seenAt < cutoff) return;
+                entries.push({ name: v.name || child.key, score: v.score || 0, seenAt: v.seenAt });
+            });
+            return entries.sort((a, b) => b.score - a.score).slice(0, 20);
+        }
+
+        function _bdMedal(i) {
+            return i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉'
+                : `<span class="text-gray-500 text-xs">#${i+1}</span>`;
+        }
+
+        function _bdEntryRow(e, i, userBdName) {
+            const isUser = userBdName && e.name.toLowerCase() === userBdName.toLowerCase();
+            const ts = e.seenAt ? ` · ${_bdRelTime(e.seenAt)}` : '';
+            return `<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition ${i < 3 ? 'bg-yellow-500/5' : ''} ${isUser ? 'ring-1 ring-blue-500/50' : ''}">
+                <span class="w-7 text-center font-black shrink-0">${_bdMedal(i)}</span>
+                <span class="flex-1 font-semibold text-sm truncate ${isUser ? 'text-blue-400' : ''}">${e.name}${isUser ? ' 👤' : ''}</span>
+                ${ts ? `<span class="text-[10px] text-gray-600 shrink-0 hidden sm:block">${ts}</span>` : ''}
+                <span class="font-black text-sm text-red-400 shrink-0">${e.score.toLocaleString()}</span>
+            </div>`;
+        }
+
+        function _bdRelTime(ms) {
+            const d = Date.now() - ms;
+            if (d < 3600000) return `${Math.round(d/60000)}m ago`;
+            if (d < 86400000) return `${Math.round(d/3600000)}h ago`;
+            return `${Math.round(d/86400000)}d ago`;
+        }
+
+        function _bdLiveRegionBlock(data, region, userBdName) {
+            if (!data) return `<div class="glass rounded-2xl p-4 text-center">
+                <p class="text-xs text-red-400 font-bold"><i class="fa-solid fa-wifi-slash mr-1"></i>${region} — unreachable</p>
+                <p class="text-[10px] text-gray-600 mt-1">Live endpoint unavailable</p>
+            </div>`;
+            const players = (data.players || []).sort((a,b) => b.score - a.score).slice(0, 10);
+            return `<div class="glass rounded-2xl overflow-hidden border-white/5">
+                <div class="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-green-400 pulse-slow"></div>
+                        <span class="font-bold text-sm">${data.name || region}</span>
+                    </div>
+                    <div class="flex gap-3 text-[10px] text-gray-400">
+                        <span><i class="fa-solid fa-users mr-1"></i>${data.onlinenow ?? '?'} online</span>
+                        <span><i class="fa-solid fa-swords mr-1"></i>${data.indomenow ?? '?'} in dome</span>
+                    </div>
+                </div>
+                <div class="p-2">
+                    ${players.length ? players.map((p, i) => {
+                        const isUser = userBdName && p.name.toLowerCase() === userBdName.toLowerCase();
+                        return `<div class="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-white/5 transition ${isUser ? 'ring-1 ring-blue-500/40' : ''}">
+                            <span class="w-6 text-center font-black text-xs shrink-0">${_bdMedal(i)}</span>
+                            ${p.indomenow ? '<i class="fa-solid fa-swords text-red-400 text-[9px] shrink-0"></i>' : '<span class="w-3 shrink-0"></span>'}
+                            <span class="flex-1 text-xs font-semibold truncate ${isUser ? 'text-blue-400' : ''}">${p.name}</span>
+                            <span class="text-xs font-black text-red-400 shrink-0">${(p.score||0).toLocaleString()}</span>
+                        </div>`;
+                    }).join('') : '<p class="text-xs text-gray-500 text-center py-4">No players online</p>'}
+                </div>
+            </div>`;
+        }
+
+        // Global context for the open BD modal — allows tab/region buttons to update it
+        let _bdCtx = null;
+
+        async function _bdRenderContent() {
+            if (!_bdCtx) return;
+            const { modal, tab, region, userBdName, userBdScore, status } = _bdCtx;
+            const isOnline = status.online === true;
+
+            const tabBtn = (t, label, icon) =>
+                `<button onclick="window._bdGoTab('${t}')"
+                    class="bd-tab-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${tab === t ? 'bg-white/15 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}">
+                    <i class="${icon}"></i>${label}</button>`;
+
+            const regBtn = (r, label) =>
+                `<button onclick="window._bdGoRegion('${r}')"
+                    class="px-3 py-1 rounded-lg text-xs font-bold transition ${region === r ? 'bg-white/12 text-white' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'}">
+                    ${label}</button>`;
+
+            let contentHtml = '<p class="text-gray-400 text-sm text-center py-6">Loading…</p>';
+
+            if (tab === 'live') {
+                const liveData = _bdCtx.liveData;
+                if (!liveData) {
+                    contentHtml = `<div class="flex items-center justify-center gap-2 py-6 text-gray-400">
+                        <i class="fa-solid fa-spinner animate-spin"></i><span class="text-sm">Fetching live data…</span>
+                    </div>`;
+                    // trigger async fetch
+                    _bdFetchLive().then(data => {
+                        if (_bdCtx) { _bdCtx.liveData = data; _bdRenderContent(); }
+                    }).catch(() => {
+                        if (_bdCtx) { _bdCtx.liveData = { East: null, EU: null }; _bdRenderContent(); }
+                    });
+                } else {
+                    const filterRegion = region === 'global' ? null : region;
+                    const blocks = filterRegion
+                        ? _bdLiveRegionBlock(liveData[filterRegion], filterRegion, userBdName)
+                        : `<div class="grid grid-cols-1 gap-3">
+                            ${_bdLiveRegionBlock(liveData.East, 'East', userBdName)}
+                            ${_bdLiveRegionBlock(liveData.EU, 'EU', userBdName)}
+                          </div>`;
+                    contentHtml = blocks;
+                }
+            } else {
+                try {
+                    const entries = await _bdFetchPeriod(tab, region === 'global' ? 'global' : region);
+                    if (entries.length === 0) {
+                        contentHtml = `<p class="text-gray-500 text-sm text-center py-8">No entries for this period / region yet.</p>`;
+                    } else {
+                        contentHtml = `<div class="space-y-1">${entries.map((e, i) => _bdEntryRow(e, i, userBdName)).join('')}</div>`;
+                    }
+                } catch (e) {
+                    contentHtml = `<p class="text-red-400 text-sm text-center py-6"><i class="fa-solid fa-exclamation-triangle mr-2"></i>Failed to load leaderboard</p>`;
+                }
+            }
+
+            const periodLabel = { live:'Live', alltime:'All-Time', daily:'Daily', weekly:'Weekly', monthly:'Monthly' }[tab];
+
+            modal.update(`
+                <div class="space-y-4">
+                    <!-- Server status strip -->
+                    <div class="flex items-center justify-between glass p-3 rounded-2xl">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-2.5 h-2.5 rounded-full shrink-0 ${isOnline ? 'bg-green-400 pulse-slow' : 'bg-red-500'}"></div>
+                            <span class="text-sm font-bold">${status.serverName || 'Battledome'}</span>
+                            <span class="text-xs text-gray-500">${isOnline ? `${status.playerCount||0} online` : 'offline'}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${isOnline ? `<a href="https://kcevents.uk/#battledome" target="_blank" class="text-xs text-blue-400 hover:underline">Play →</a>` : ''}
+                            <button onclick="window._bdRefresh()" class="text-xs text-gray-500 hover:text-gray-300 transition"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                    </div>
+
+                    ${userBdName ? `
+                    <!-- User stats compact -->
+                    <div class="glass p-4 rounded-2xl flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-lg">⚔️</div>
+                            <div>
+                                <p class="font-bold text-sm text-blue-400">${userBdName}</p>
+                                <p class="text-xs text-gray-500">Personal best: <span class="text-red-400 font-bold">${userBdScore.toLocaleString()}</span></p>
+                            </div>
+                        </div>
+                        <button onclick="promptBdLink()" class="text-xs text-gray-600 hover:text-gray-400 transition">Change</button>
+                    </div>` : `
+                    <div class="glass p-4 rounded-2xl border border-yellow-500/20">
+                        <p class="text-yellow-300 font-bold text-sm mb-2">Link your Battledome account</p>
+                        <div class="flex gap-2">
+                            <input id="bd-username-input" type="text" placeholder="Your BD username…" class="flex-1 px-3 py-2 glass rounded-xl text-sm focus:outline-none">
+                            <button onclick="saveBdUsernameFromHub()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm transition">Link</button>
+                        </div>
+                    </div>`}
+
+                    <!-- Period tabs -->
+                    <div class="flex gap-1.5 flex-wrap">
+                        ${tabBtn('live',    'Live',     'fa-solid fa-circle text-green-400 text-[8px]')}
+                        ${tabBtn('alltime', 'All-Time', 'fa-solid fa-trophy')}
+                        ${tabBtn('daily',   'Daily',    'fa-solid fa-sun')}
+                        ${tabBtn('weekly',  'Weekly',   'fa-solid fa-calendar-week')}
+                        ${tabBtn('monthly', 'Monthly',  'fa-solid fa-calendar')}
+                    </div>
+
+                    <!-- Region filter (hidden for live—shows both always) -->
+                    <div class="flex gap-1.5 items-center">
+                        <span class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mr-1">Region</span>
+                        ${regBtn('global','🌍 Global')}
+                        ${regBtn('East','🇺🇸 East')}
+                        ${regBtn('EU','🇪🇺 EU')}
+                    </div>
+
+                    <!-- Leaderboard content -->
+                    <div id="bd-lb-content">${contentHtml}</div>
+
+                    ${tab === 'live' && _bdCtx.liveData ? `
+                    <p class="text-[10px] text-gray-700 text-center">
+                        Live data via corsproxy · refreshes on demand
+                        <button onclick="window._bdRefreshLive()" class="ml-2 text-gray-600 hover:text-gray-400 transition underline">Refresh now</button>
+                    </p>` : ''}
+                </div>
+            `);
+        }
+
         async function renderBattledome() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('⚔️ Battledome', 'Loading battle arena...');
+            const modal = openModalWithLoading('⚔️ Battledome', 'Loading arena…');
             if (!modal) return;
+
+            // Wire global callbacks before fetching
+            window._bdGoTab = (t) => { if (_bdCtx) { _bdCtx.tab = t; if (t === 'live') _bdCtx.liveData = null; _bdRenderContent(); } };
+            window._bdGoRegion = (r) => { if (_bdCtx) { _bdCtx.region = r; if (_bdCtx.tab === 'live') _bdCtx.liveData = null; _bdRenderContent(); } };
+            window._bdRefresh  = () => renderBattledome();
+            window._bdRefreshLive = () => { if (_bdCtx) { _bdCtx.liveData = null; _bdRenderContent(); } };
+
             try {
-                // Fetch each path independently — one failure won't break the whole modal
-                const [status, topEntries, userBdScore, userBdName] = await Promise.all([
+                const [status, userBdScore, userBdName] = await Promise.all([
                     db.ref('battledome/status').once('value').then(s => s.val() || {}).catch(() => ({})),
-                    db.ref('config/bdTopScores/global').once('value').then(snap => {
-                        const entries = [];
-                        snap.forEach(child => {
-                            const val = child.val();
-                            entries.push({ key: child.key, name: (val && val.name) || child.key, score: (val && val.score) || 0 });
-                        });
-                        return entries.sort((a, b) => b.score - a.score).slice(0, 10);
-                    }).catch(() => []),
                     db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
                     (async () => {
-                        // Check users/{uid}/bdUsername first (hub-linked), then bot path
-                        // Reject URL-like values (e.g. "discord.gg/slitherkc" stored incorrectly)
                         const direct = await db.ref(`users/${currentUser.uid}/bdUsername`).once('value').catch(() => null);
-                        const directVal = direct && direct.val();
-                        const isValidBdName = directVal && !/[./]/.test(directVal) && !directVal.startsWith('http');
-                        if (isValidBdName) return directVal;
+                        const dv = direct && direct.val();
+                        if (dv && !/[./]/.test(dv) && !dv.startsWith('http')) return dv;
                         const did = await getDiscordIdFromKcUid(currentUser.uid);
                         if (!did) return null;
-                        const botSnap = await db.ref(`config/playerLinks/${did}/bdName`).once('value').catch(() => null);
-                        return botSnap ? botSnap.val() : null;
-                    })().catch(() => null)
+                        const bot = await db.ref(`config/playerLinks/${did}/bdName`).once('value').catch(() => null);
+                        return bot ? bot.val() : null;
+                    })().catch(() => null),
                 ]);
 
-                const isOnline = status.online === true;
-                const serverName = status.serverName || status.name || 'Battledome Arena';
-                const playerCount = status.playerCount || status.players || 0;
+                _bdCtx = { modal, tab: 'live', region: 'global', liveData: null, userBdName, userBdScore, status };
+                await _bdRenderContent();
 
-                modal.update(`
-                    <div class="space-y-5">
-                        <!-- Status banner -->
-                        <div class="glass p-5 rounded-3xl ${isOnline ? 'border-2 border-green-500/30' : 'border-2 border-red-500/30'}">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-4 h-4 rounded-full flex-shrink-0 ${isOnline ? 'bg-green-500 pulse-slow' : 'bg-red-500'}"></div>
-                                    <div>
-                                        <p class="font-bold">${serverName}</p>
-                                        <p class="text-xs ${isOnline ? 'text-gray-400' : 'text-red-400'}">
-                                            ${isOnline ? `${playerCount} player${playerCount !== 1 ? 's' : ''} online` : 'Server offline'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <button onclick="renderBattledome()" class="btn-press px-4 py-2 glass rounded-xl hover:bg-white/10 transition text-sm">
-                                    <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
-                                </button>
-                            </div>
-                        </div>
-
-                        ${userBdName ? `
-                        <!-- User stats -->
-                        <div class="glass p-5 rounded-3xl">
-                            <div class="flex items-center justify-between mb-3">
-                                <p class="text-xs text-gray-400 uppercase font-bold">Your Battledome Stats</p>
-                                <button onclick="promptBdLink()" class="text-xs text-blue-400 hover:underline">Change</button>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm text-gray-400">BD Username</p>
-                                    <p class="text-xl font-bold text-blue-400">${userBdName}</p>
-                                </div>
-                                <div>
-                                    <p class="text-sm text-gray-400">Personal Best</p>
-                                    <p class="text-xl font-bold text-red-400">${userBdScore.toLocaleString()}</p>
-                                </div>
-                            </div>
-                        </div>
-                        ` : `
-                        <div class="glass p-5 rounded-3xl border border-yellow-500/20 space-y-3">
-                            <p class="font-bold text-yellow-300 text-sm">Link Your Battledome Account</p>
-                            <p class="text-xs text-gray-400">Enter your Battledome username to track your stats here, or use <code class="bg-white/5 px-1.5 py-0.5 rounded">/linktokc bd</code> in Discord.</p>
-                            <div class="flex gap-2">
-                                <input id="bd-username-input" type="text" placeholder="Your BD username..." class="flex-1 px-4 py-2 glass rounded-xl text-sm focus:outline-none focus:border-blue-500">
-                                <button onclick="saveBdUsernameFromHub()" class="btn-press px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl font-bold text-sm transition">Link</button>
-                            </div>
-                        </div>
-                        `}
-
-                        <!-- Global leaderboard -->
-                        <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <h3 class="font-bold text-sm uppercase tracking-wider">🏆 Global Top 10</h3>
-                                ${isOnline ? `<a href="https://kcevents.uk/#battledome" target="_blank" class="text-xs text-blue-400 hover:underline">Play Now →</a>` : ''}
-                            </div>
-                            <div class="space-y-2">
-                                ${topEntries.length > 0 ? topEntries.map((e, i) => {
-                                    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
-                                    const isUser = userBdName && e.name === userBdName;
-                                    return `<div class="glass p-3 rounded-2xl flex items-center gap-3 fade-in-up ${i<3?'border border-yellow-500/20':''} ${isUser?'border-2 border-blue-500/50':''}" style="animation-delay:${i*40}ms">
-                                        <span class="w-8 text-center font-black text-lg">${medal}</span>
-                                        <span class="flex-1 font-bold ${isUser?'text-blue-400':''}">${e.name}${isUser?' 👤':''}</span>
-                                        <span class="font-bold text-red-400">${e.score.toLocaleString()}</span>
-                                    </div>`;
-                                }).join('') : '<p class="text-gray-400 text-center py-8 text-sm">No scores recorded yet</p>'}
-                            </div>
-                        </div>
-                    </div>
-                `);
-            } catch(err) {
+            } catch (err) {
                 console.error('[BD] renderBattledome error:', err);
-                modal.update(`
-                    <div class="text-center py-16 space-y-4">
-                        <i class="fa-solid fa-exclamation-triangle text-5xl text-red-500"></i>
-                        <p class="text-xl font-bold text-red-400">Failed to Load</p>
-                        <p class="text-sm text-gray-400">${err.message || 'Unknown error'}</p>
-                        <button onclick="renderBattledome()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">Try Again</button>
-                    </div>
-                `);
+                modal.update(`<div class="text-center py-16 space-y-4">
+                    <i class="fa-solid fa-exclamation-triangle text-5xl text-red-500"></i>
+                    <p class="text-xl font-bold text-red-400">Failed to Load</p>
+                    <p class="text-sm text-gray-400">${err.message || 'Unknown error'}</p>
+                    <button onclick="renderBattledome()" class="btn-press px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-2xl font-bold transition">Try Again</button>
+                </div>`);
             }
         }
 
