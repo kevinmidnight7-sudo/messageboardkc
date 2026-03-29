@@ -4188,63 +4188,79 @@
         function loadStatsPanel() {
             const statsPanel = document.getElementById('rightpanel-stats');
             statsPanel.innerHTML = `
-                <div class="space-y-4">
+                <div class="space-y-3">
+                    <!-- Server stats -->
                     <div class="glass p-4 rounded-3xl">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Server Stats</p>
-                        <div id="server-stats" class="space-y-2">
-                            <div class="animate-pulse bg-white/5 h-8 rounded"></div>
+                        <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest mb-3">Server Stats</p>
+                        <div id="server-stats" class="space-y-2.5">
+                            ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
+                    <!-- Top BD Scores — capped at 10 entries server-side -->
                     <div class="glass p-4 rounded-3xl">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">🏆 Top BD Scores</p>
-                        <div id="bd-leaderboard" class="space-y-2">
-                            <div class="animate-pulse bg-white/5 h-8 rounded"></div>
+                        <div class="flex items-center justify-between mb-3">
+                            <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest">🏆 Top BD Scores</p>
+                            <button onclick="renderBattledome()" class="text-[10px] text-blue-400 hover:text-blue-300 transition font-semibold">Full leaderboard →</button>
+                        </div>
+                        <div id="bd-leaderboard" class="space-y-1">
+                            ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
+                    <!-- Top Economy -->
                     <div class="glass p-4 rounded-3xl">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">💰 Top Economy</p>
-                        <div id="top-economy" class="space-y-2">
-                            <div class="animate-pulse bg-white/5 h-8 rounded"></div>
-                        </div>
-                    </div>
-                    <div class="glass p-4 rounded-3xl">
-                        <p class="text-xs text-gray-500 font-black uppercase mb-3">Recent Activity</p>
-                        <div id="recent-activity-stats" class="space-y-2">
-                            <p class="text-xs text-gray-500 italic text-center">Live feed shows recent events</p>
+                        <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest mb-3">💰 Top Economy</p>
+                        <div id="top-economy" class="space-y-1">
+                            ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
                 </div>
             `;
 
-            // Reuse already-cached data — no extra Firebase download needed
-            ensureSearchDataLoaded().then(() => {
-                let postCount = 0;
-                allUsersData.forEach(u => { if (u.posts) postCount += Object.keys(u.posts).length; });
+            // Server stats: try bot-maintained config/serverStats first (tiny read).
+            // If that node doesn't exist yet, fall back to already-cached allUsersData so
+            // we avoid a redundant full-users download on every stats-tab open.
+            db.ref('config/serverStats').once('value').then(snap => {
+                const s = snap.val();
                 const el = document.getElementById('server-stats');
-                if (el) el.innerHTML = `
-                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${allUsersData.length}</span></div>
-                    <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${Object.keys(allClansData).length}</span></div>
-                    <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${postCount}</span></div>
-                `;
+                if (!el) return;
+                if (s && s.memberCount != null) {
+                    el.innerHTML = `
+                        <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${s.memberCount}</span></div>
+                        <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${s.clanCount || 0}</span></div>
+                        <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${s.postCount || 0}</span></div>
+                    `;
+                } else {
+                    // Fallback: use data already loaded into memory (zero extra download if search was used)
+                    ensureSearchDataLoaded().then(() => {
+                        let postCount = 0;
+                        allUsersData.forEach(u => { if (u.posts) postCount += Object.keys(u.posts).length; });
+                        el.innerHTML = `
+                            <div class="flex justify-between"><span class="text-sm text-gray-400">Total Members</span><span class="font-bold text-blue-400">${allUsersData.length}</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-gray-400">Active Clans</span><span class="font-bold text-teal-400">${Object.keys(allClansData).length}</span></div>
+                            <div class="flex justify-between"><span class="text-sm text-gray-400">Total Posts</span><span class="font-bold text-purple-400">${postCount}</span></div>
+                        `;
+                    }).catch(() => {});
+                }
             }).catch(() => {});
 
-            // Fetch config/bdTopScores/global (bot saves persistent scores here) — sort client-side
-            db.ref('config/bdTopScores/global').once('value').then(snap => {
+            // Fetch top 10 BD scores — limitToLast(10) caps the download regardless of how large the node grows
+            db.ref('config/bdTopScores/global').limitToLast(10).once('value').then(snap => {
                 const bdPlayers = [];
                 snap.forEach(child => {
                     const val = child.val();
                     bdPlayers.push({ name: (val && val.name) || child.key, score: (val && val.score) || 0 });
                 });
                 bdPlayers.sort((a, b) => b.score - a.score);
+                const medals = ['🥇','🥈','🥉'];
                 const el = document.getElementById('bd-leaderboard');
                 if (el) el.innerHTML = bdPlayers.length > 0
                     ? bdPlayers.map((p, i) => `
-                        <div class="flex justify-between items-center">
+                        <div class="flex justify-between items-center py-0.5">
                             <div class="flex items-center gap-2">
-                                <span class="text-xs">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
-                                <span class="text-sm font-bold">${p.name}</span>
+                                <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500">#${i+1}</span>`}</span>
+                                <span class="text-sm font-semibold truncate max-w-[140px]">${p.name}</span>
                             </div>
-                            <span class="text-xs text-red-400">${p.score.toLocaleString()}</span>
+                            <span class="text-xs font-bold text-red-400">${p.score.toLocaleString()}</span>
                         </div>
                     `).join('')
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
@@ -4268,13 +4284,14 @@
                     return { name, points: p.points, uid: kcUid };
                 });
                 const el = document.getElementById('top-economy');
+                const medals = ['🥇','🥈','🥉'];
                 if (el) el.innerHTML = enriched.length > 0 ? enriched.map((p, i) => `
-                    <div class="flex justify-between items-center">
+                    <div class="flex justify-between items-center py-0.5">
                         <div class="flex items-center gap-2">
-                            <span class="text-xs">${['🥇','🥈','🥉'][i] || `#${i+1}`}</span>
-                            <span class="text-sm font-bold ${p.uid ? 'cursor-pointer hover:underline' : ''}" ${p.uid ? `onclick="window.openKcProfile('${p.uid}')"` : ''}>${p.name}</span>
+                            <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500">#${i+1}</span>`}</span>
+                            <span class="text-sm font-semibold truncate max-w-[140px] ${p.uid ? 'cursor-pointer hover:text-blue-400 transition' : ''}" ${p.uid ? `onclick="window.openKcProfile('${p.uid}')"` : ''}>${p.name}</span>
                         </div>
-                        <span class="text-xs text-blue-400">${p.points.toLocaleString()}</span>
+                        <span class="text-xs font-bold text-blue-400">${p.points.toLocaleString()}</span>
                     </div>
                 `).join('') : '<p class="text-xs text-gray-500 text-center">No data yet</p>';
             }).catch(() => {});
@@ -4441,7 +4458,11 @@
             const path = period === 'alltime'
                 ? `config/bdTopScores/${region}`
                 : `config/bdPeriodScores/${period}/${region}`;
-            const snap = await db.ref(path).once('value');
+            // Cap download at server side — never pull thousands of rows for a top-20 display.
+            // For all-time we want the 20 highest scores; for period views we fetch 100 recent
+            // entries then filter client-side by seenAt (period nodes are smaller by design).
+            const limit = period === 'alltime' ? 20 : 100;
+            const snap = await db.ref(path).limitToLast(limit).once('value');
             const cutoffMs = { daily: 86400000, weekly: 604800000, monthly: 2592000000 }[period] || 0;
             const cutoff = cutoffMs ? Date.now() - cutoffMs : 0;
             const entries = [];
@@ -4548,7 +4569,14 @@
                     </div>`;
                     // trigger async fetch
                     _bdFetchLive().then(data => {
-                        if (_bdCtx) { _bdCtx.liveData = data; _bdRenderContent(); }
+                        if (_bdCtx) {
+                            _bdCtx.liveData = data;
+                            // If either region responded, BD servers are reachable — override stale Firebase status
+                            if (!_bdCtx.status.online && data && (data.East !== null || data.EU !== null)) {
+                                _bdCtx.status = { ..._bdCtx.status, online: true };
+                            }
+                            _bdRenderContent();
+                        }
                     }).catch(() => {
                         if (_bdCtx) { _bdCtx.liveData = { East: null, EU: null }; _bdRenderContent(); }
                     });
