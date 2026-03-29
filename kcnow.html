@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KC NOW | Lobby</title>
+    <link rel="icon" type="image/png" href="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png">
 
     <!-- Resource hints — establish connections early to cut TTFB on CDN requests -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -855,22 +856,19 @@
         display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
         transition:opacity 0.55s ease,visibility 0.55s ease;
         font-family:Poppins,system-ui,sans-serif;">
-        <!-- Animated background glow -->
-        <div style="position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%);pointer-events:none;animation:loaderPulse 3s ease-in-out infinite;"></div>
-        <!-- Logo row -->
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;position:relative;">
-            <div id="kc-loader-icon" style="
-                width:52px;height:52px;border-radius:16px;
-                background:linear-gradient(135deg,#3b82f6 0%,#2dd4bf 100%);
-                display:flex;align-items:center;justify-content:center;
-                box-shadow:0 0 40px rgba(59,130,246,0.5);
-                animation:loaderBounce 2.4s ease-in-out infinite;">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M13 2L4.5 13H11L10 22L19.5 11H13L13 2Z"/></svg>
-            </div>
-            <div>
-                <div style="font-size:1.75rem;font-weight:900;color:#f8fafc;letter-spacing:-0.04em;line-height:1;">KC NOW</div>
-                <div style="font-size:0.65rem;color:#475569;letter-spacing:0.14em;font-weight:600;text-transform:uppercase;margin-top:2px;">Community Hub</div>
-            </div>
+        <!-- Ambient glow -->
+        <div style="position:absolute;width:500px;height:500px;background:radial-gradient(circle,rgba(59,130,246,0.10) 0%,transparent 70%);pointer-events:none;animation:loaderPulse 3s ease-in-out infinite;"></div>
+        <!-- KC Logo -->
+        <div style="position:relative;margin-bottom:4px;">
+            <img id="kc-loader-icon"
+                 src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png"
+                 alt="KC Logo"
+                 style="width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 0 24px rgba(251,191,36,0.55));animation:loaderBounce 2.4s ease-in-out infinite;">
+        </div>
+        <!-- Wordmark -->
+        <div style="text-align:center;position:relative;">
+            <div style="font-size:1.6rem;font-weight:900;color:#f8fafc;letter-spacing:-0.03em;line-height:1;">KC NOW</div>
+            <div style="font-size:0.62rem;color:#475569;letter-spacing:0.15em;font-weight:600;text-transform:uppercase;margin-top:3px;">Community Hub</div>
         </div>
         <!-- Stage label -->
         <p id="kc-loader-label" style="font-size:0.75rem;color:#64748b;letter-spacing:0.1em;font-weight:600;text-transform:uppercase;min-height:1em;">Initialising...</p>
@@ -892,10 +890,15 @@
 
     <!-- 1. Top Navigation Bar -->
     <header class="flex justify-center mb-10 z-50 relative">
-        <nav class="glass px-10 py-4 rounded-3xl flex items-center gap-10 md:gap-20">
+        <nav class="glass px-6 py-3 rounded-3xl flex items-center gap-6 md:gap-16">
             <button onclick="switchTab('clans')" class="tab-btn" id="tab-clans">Clans</button>
             <button onclick="switchTab('profile')" class="tab-btn" id="tab-profile">Profile</button>
-            <button onclick="switchTab('home')" class="tab-btn active" id="tab-home">Home</button>
+            <!-- KC Logo centrepiece -->
+            <button onclick="switchTab('home')" class="tab-btn active flex flex-col items-center gap-0.5" id="tab-home">
+                <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png"
+                     alt="KC" style="width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(251,191,36,0.6));transition:filter 0.2s;">
+                <span style="font-size:0.6rem;font-weight:800;letter-spacing:0.12em;opacity:0.7;">HOME</span>
+            </button>
             <button onclick="switchTab('players')" class="tab-btn" id="tab-players">Players</button>
             <button onclick="switchTab('clips')" class="tab-btn" id="tab-clips">Clips</button>
         </nav>
@@ -1267,12 +1270,12 @@
                 if (_bar)   _bar.style.width   = _current + '%';
                 if (_pct)   _pct.textContent   = Math.round(_current) + '%';
                 if (_label) _label.textContent = text;
-                // Update icon gradient to match current theme
+                // Update bar gradient to match current theme
                 const accent = getComputedStyle(document.documentElement).getPropertyValue('--theme-accent').trim() || '#3b82f6';
                 const glow   = getComputedStyle(document.documentElement).getPropertyValue('--theme-glow').trim()   || '#2dd4bf';
-                if (_icon) _icon.style.background = `linear-gradient(135deg,${accent} 0%,${glow} 100%)`;
                 if (_bar)  _bar.style.background  = `linear-gradient(90deg,${accent},${glow})`;
-                if (_icon) _icon.style.boxShadow  = `0 0 40px ${accent}80`;
+                // Update logo drop shadow to match theme accent
+                if (_icon) _icon.style.filter = `drop-shadow(0 0 24px ${accent}90)`;
             }
             function _dismiss() {
                 if (_dismissed) return;
