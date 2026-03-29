@@ -521,6 +521,47 @@
             background: radial-gradient(ellipse at 40% 60%, rgba(126,34,206,0.12), transparent 50%),
                         radial-gradient(ellipse at 65% 30%, rgba(6,78,59,0.10), transparent 45%);
         }
+        /* ── void (diamond) ── */
+        .kc-bg-scene.void .kc-bg-far {
+            background: radial-gradient(circle at 30% 40%, rgba(99,102,241,0.18), transparent 45%),
+                        radial-gradient(circle at 70% 65%, rgba(129,140,248,0.10), transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(10,6,30,0.97), rgba(4,4,18,1) 70%);
+        }
+        .kc-bg-scene.void .kc-bg-mid {
+            background: radial-gradient(circle at 25% 55%, rgba(99,102,241,0.14), transparent 32%),
+                        radial-gradient(circle at 75% 30%, rgba(196,181,253,0.08), transparent 28%);
+        }
+        .kc-bg-scene.void .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.10), transparent 55%);
+        }
+        /* ── prism (diamond) ── */
+        .kc-bg-scene.prism .kc-bg-far {
+            background: radial-gradient(circle at 20% 30%, rgba(168,85,247,0.22), transparent 40%),
+                        radial-gradient(circle at 78% 60%, rgba(244,114,182,0.18), transparent 38%),
+                        radial-gradient(circle at 50% 80%, rgba(251,191,36,0.10), transparent 35%),
+                        radial-gradient(circle at 50% 50%, rgba(15,6,28,0.92), rgba(6,4,18,1) 70%);
+        }
+        .kc-bg-scene.prism .kc-bg-mid {
+            background: radial-gradient(circle at 40% 40%, rgba(250,204,21,0.12), transparent 30%),
+                        radial-gradient(circle at 68% 55%, rgba(192,132,252,0.14), transparent 28%);
+        }
+        .kc-bg-scene.prism .kc-bg-glow {
+            background: radial-gradient(ellipse at 45% 55%, rgba(244,114,182,0.12), transparent 50%),
+                        radial-gradient(ellipse at 60% 35%, rgba(168,85,247,0.08), transparent 40%);
+        }
+        /* ── starlight (diamond) ── */
+        .kc-bg-scene.starlight .kc-bg-far {
+            background: radial-gradient(circle at 25% 35%, rgba(129,140,248,0.20), transparent 42%),
+                        radial-gradient(circle at 72% 62%, rgba(196,181,253,0.14), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(10,8,30,0.92), rgba(4,4,22,1) 70%);
+        }
+        .kc-bg-scene.starlight .kc-bg-mid {
+            background: radial-gradient(circle at 35% 50%, rgba(165,180,252,0.14), transparent 30%),
+                        radial-gradient(circle at 68% 40%, rgba(224,231,255,0.07), transparent 26%);
+        }
+        .kc-bg-scene.starlight .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 50%, rgba(129,140,248,0.12), transparent 55%);
+        }
         /* ===== GLOBAL BUTTON HOVER LIFT ===== */
         .btn-lift {
             transition: transform 0.15s cubic-bezier(0.23,1,0.32,1), box-shadow 0.15s ease;
@@ -741,22 +782,25 @@
         #quick-actions-menu .qa-header-label {
             color: rgba(var(--theme-accent-rgb), 0.9) !important;
         }
-        /* Quick-access list items */
-        .qa-tile { background: transparent !important; }
-        .qa-tile:hover { background: rgba(var(--theme-accent-rgb), 0.08) !important; border-color: rgba(var(--theme-accent-rgb), 0.2) !important; }
-        /* Accent left bar on hover */
-        .qa-tile::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 20%; bottom: 20%;
-            width: 2px;
-            border-radius: 2px;
-            background: var(--theme-accent);
-            opacity: 0;
-            transition: opacity 0.15s;
+        /* Quick-access list items — clean KC glass rows */
+        .qa-tile {
+            background: transparent !important;
+            color: #94a3b8;
+            border-radius: 8px !important;
+            transition: background 0.12s, color 0.12s !important;
         }
-        .qa-tile:hover::before { opacity: 1; }
-        .qa-tile { position: relative; }
+        .qa-tile:hover {
+            background: rgba(var(--theme-accent-rgb), 0.09) !important;
+            color: #e2e8f0 !important;
+        }
+        .qa-tile:hover .qa-tile-icon {
+            color: var(--theme-accent) !important;
+        }
+        .qa-tile .qa-tile-icon {
+            color: #64748b;
+            transition: color 0.12s;
+            width: 16px; text-align: center; flex-shrink: 0;
+        }
 
         /* ── Profile Customisation User Extras ──
            When a user has profileCustomisation unlocked and their nameColor is set,
@@ -1289,153 +1333,62 @@
             <i class="fa-solid fa-chevron-down" id="qa-chevron" style="font-size:0.6rem;opacity:0.55;transition:transform 0.3s;margin-left:1px;"></i>
         </button>
 
-        <!-- Dropdown panel: vertical list, HUD / futuristic aesthetic -->
-        <div id="quick-actions-menu" class="hidden mt-2 qa-panel" style="
-            min-width:252px;
+        <!-- Dropdown panel: clean KC glass rows -->
+        <div id="quick-actions-menu" class="hidden mt-2 qa-panel glass" style="
+            min-width:220px;
             border-radius:16px;
             overflow:hidden;
-            border:1px solid;
-            background:rgba(6,10,18,0.94);
-            backdrop-filter:blur(28px) saturate(1.4);
-            -webkit-backdrop-filter:blur(28px) saturate(1.4);
             transform-origin:top left;
             animation:qaSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+            padding:6px;
         ">
-            <!-- Header -->
-            <div class="qa-header-bar" style="
-                display:flex;align-items:center;gap:8px;
-                padding:10px 14px 9px;
-                border-bottom:1px solid;
-            ">
-                <div class="qa-accent-dot" style="width:7px;height:7px;border-radius:50%;flex-shrink:0;animation:pulse 2s infinite;"></div>
-                <span class="qa-header-label" style="font-size:0.58rem;font-weight:900;letter-spacing:0.22em;text-transform:uppercase;">Quick Access</span>
-                <span style="margin-left:auto;font-size:0.52rem;color:#334155;letter-spacing:0.06em;font-family:monospace;">SYS·2.0</span>
+            <!-- Actions group -->
+            <div style="padding:4px 8px 2px;margin-bottom:2px;">
+                <span style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;">Actions</span>
             </div>
 
-            <!-- List of actions -->
-            <div style="padding:5px;">
+            <button onclick="runQuickAction(claimDaily)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-gift qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Claim Daily</span>
+            </button>
+            <button onclick="runQuickAction(openGamesHub)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-dice qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Games</span>
+            </button>
+            <button onclick="runQuickAction(openEconomyShop)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-store qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Shop</span>
+            </button>
+            <button onclick="runQuickAction(openAnalytics)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-chart-line qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Stats</span>
+            </button>
+            <button onclick="runQuickAction(openFriendsList)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-user-group qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Friends</span>
+            </button>
+            <button onclick="runQuickAction(openGlobalSearch)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-magnifying-glass qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Search</span>
+            </button>
 
-                <button onclick="runQuickAction(claimDaily)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-gift" style="color:#60a5fa;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Claim Daily</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Collect your daily reward</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
+            <!-- Divider -->
+            <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 2px;"></div>
 
-                <button onclick="runQuickAction(openGamesHub)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-dice" style="color:#4ade80;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Games</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Play &amp; earn points</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
-                <button onclick="runQuickAction(openEconomyShop)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(168,85,247,0.12);border:1px solid rgba(168,85,247,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-store" style="color:#c084fc;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Shop</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Spend your points</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
-                <button onclick="runQuickAction(openAnalytics)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-chart-line" style="color:#facc15;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Stats &amp; Analytics</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">View your performance</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
-                <button onclick="runQuickAction(openFriendsList)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(20,184,166,0.12);border:1px solid rgba(20,184,166,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-user-group" style="color:#2dd4bf;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Friends</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Your friends list</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
-                <button onclick="runQuickAction(openGlobalSearch)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-search" style="color:#93c5fd;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Search</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Find players, clans &amp; posts</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
-                <button onclick="runQuickAction(openBackgroundSettings)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-wand-magic-sparkles" style="color:#67e8f9;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Theme</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Background &amp; appearance</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
-                <button onclick="runQuickAction(openNotificationSettings)" class="qa-tile" style="
-                    width:100%;display:flex;align-items:center;gap:10px;
-                    padding:9px 10px;border-radius:10px;border:1px solid transparent;
-                    transition:all 0.14s;text-align:left;overflow:hidden;
-                ">
-                    <div style="width:32px;height:32px;border-radius:9px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-bell" style="color:#fbbf24;font-size:0.8rem;"></i>
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:0.78rem;font-weight:700;color:#e2e8f0;line-height:1.2;">Notifications</div>
-                        <div style="font-size:0.62rem;color:#475569;line-height:1.3;">Alerts &amp; activity</div>
-                    </div>
-                    <i class="fa-solid fa-chevron-right" style="color:#1e293b;font-size:0.55rem;flex-shrink:0;"></i>
-                </button>
-
+            <!-- Settings group -->
+            <div style="padding:4px 8px 2px;margin-top:2px;">
+                <span style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;">Settings</span>
             </div>
+
+            <button onclick="runQuickAction(openBackgroundSettings)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-wand-magic-sparkles qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Theme</span>
+            </button>
+            <button onclick="runQuickAction(openNotificationSettings)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
+                <i class="fa-solid fa-bell qa-tile-icon"></i>
+                <span style="font-size:0.82rem;font-weight:600;">Notifications</span>
+            </button>
+
         </div>
     </div>
 
