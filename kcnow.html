@@ -171,8 +171,13 @@
             gap: 24px;
             height: calc(100vh - 240px);
         }
+        /* Content viewport fills its full grid cell so no background bleeds below */
+        #content-viewport { height: 100%; }
+        /* All tab views get bottom padding so KC NOW pill never overlaps last item */
+        #view-home, #view-clans, #view-players, #view-clips, #view-profile { padding-bottom: 7rem; }
         @media (max-width: 1024px) {
             .main-grid { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
+            #content-viewport { height: auto; }
             body { overflow-y: auto; }
         }
         @media (max-width: 768px) {
@@ -841,21 +846,29 @@
             <!-- HOME TAB -->
             <div id="view-home" class="view-transition flex flex-col gap-8">
                 <!-- Welcome Card -->
-                <div id="welcome-card" class="glass p-8 rounded-[40px] flex items-center justify-between border-white/5 relative overflow-hidden">
-                    <div class="flex items-center gap-8 z-10">
-                        <div class="relative group">
-                            <div class="absolute -inset-1 bg-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition"></div>
-                            <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-24 h-24 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
-                            <div id="online-indicator" class="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
-                        </div>
-                        <div>
-                            <p id="greeting-text" class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-1">Checking Status...</p>
-                            <h1 id="user-display-name" class="text-4xl font-bold text-white tracking-tight">Welcome, Guest</h1>
-                            <div id="user-badges" class="flex gap-2 mt-3"></div>
-                        </div>
+                <div id="welcome-card" class="glass rounded-[40px] border-white/5 relative overflow-hidden">
+                    <!-- Banner strip (shown for diamond users with a banner set) -->
+                    <div id="welcome-banner-strip" style="height:0;transition:height 0.4s cubic-bezier(0.4,0,0.2,1);overflow:hidden;position:relative;flex-shrink:0;">
+                        <div id="welcome-banner-img" style="position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.06);"></div>
+                        <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.55) 100%);"></div>
                     </div>
-                    <div id="auth-actions" class="z-10"></div>
-                    <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px]"></div>
+                    <!-- Content row -->
+                    <div class="p-8 flex items-center justify-between">
+                        <div class="flex items-center gap-8 z-10">
+                            <div class="relative group">
+                                <div class="absolute -inset-1 bg-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition"></div>
+                                <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-24 h-24 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
+                                <div id="online-indicator" class="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
+                            </div>
+                            <div>
+                                <p id="greeting-text" class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-1">Checking Status...</p>
+                                <h1 id="user-display-name" class="text-4xl font-bold text-white tracking-tight">Welcome, Guest</h1>
+                                <div id="user-badges" class="flex gap-2 mt-3"></div>
+                            </div>
+                        </div>
+                        <div id="auth-actions" class="z-10"></div>
+                        <div class="absolute -right-20 -top-20 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px]"></div>
+                    </div>
                 </div>
 
                 <!-- Status Banners (Discord link & Diamond background) -->
@@ -1362,6 +1375,7 @@
                 const hasCustom = !!(data.profileCustomizationUnlocked && data.profileCustomization);
                 const nameColor = (hasCustom && data.profileCustomization.nameColor) ? data.profileCustomization.nameColor : '#ffffff';
                 const customGradient = (hasCustom && data.profileCustomization.gradient) ? data.profileCustomization.gradient : null;
+                const customBanner = (hasCustom && data.profileCustomization.banner) ? data.profileCustomization.banner : null;
                 const isVerified = !!user.emailVerified;
                 const isStaff = !!data.isStaff;
 
@@ -1409,6 +1423,19 @@
                 } else {
                     welcomeCard.style.background = '';
                     welcomeCard.classList.add('glass');
+                }
+
+                // Banner strip
+                const bannerStrip = document.getElementById('welcome-banner-strip');
+                const bannerImg   = document.getElementById('welcome-banner-img');
+                if (bannerStrip && bannerImg) {
+                    if (customBanner) {
+                        bannerImg.style.backgroundImage = `url('${customBanner}')`;
+                        bannerStrip.style.height = '120px';
+                    } else {
+                        bannerStrip.style.height = '0';
+                        bannerImg.style.backgroundImage = 'none';
+                    }
                 }
 
                 let badges = '';
