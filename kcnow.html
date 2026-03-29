@@ -156,19 +156,6 @@
             border-radius: 10px;
         }
 
-        .bottom-banner {
-            position: fixed; bottom: 24px; left: 50%;
-            transform: translateX(-50%); padding: 12px 80px;
-            border-radius: 100px; z-index: 50; pointer-events: none;
-        }
-        .banner-sheen::after {
-            content: ''; position: absolute; top: 0; left: -100%;
-            width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            animation: sheen 6s infinite;
-        }
-        @keyframes sheen { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
-
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
@@ -187,7 +174,7 @@
             display: grid;
             grid-template-columns: 1fr 380px;
             gap: 24px;
-            height: calc(100vh - 240px);
+            height: calc(100vh - 160px);
         }
         /* Status banner grid: collapse empty cells so they don't create blank gaps */
         #discord-link-status:empty,
@@ -227,6 +214,89 @@
             to   { opacity:1; transform: translateY(0)   scale(1);    }
         }
 
+        /* ── Right-side proximity link panel ── */
+        #right-panel {
+            position: fixed;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%) translateX(100%);
+            z-index: 60;
+            transition: transform 0.32s cubic-bezier(0.16,1,0.3,1), opacity 0.25s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        #right-panel.rp-visible {
+            transform: translateY(-50%) translateX(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+        #right-panel-inner {
+            border-radius: 16px 0 0 16px;
+            border-right: none !important;
+            padding: 6px;
+        }
+        .rp-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 14px 9px 12px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background 0.12s, color 0.12s;
+        }
+        .rp-link:hover {
+            background: rgba(var(--theme-accent-rgb), 0.12) !important;
+            color: #e2e8f0;
+        }
+        .rp-link:hover .rp-icon { color: var(--theme-accent); }
+        .rp-icon {
+            color: #475569;
+            width: 15px;
+            text-align: center;
+            flex-shrink: 0;
+            font-size: 0.78rem;
+            transition: color 0.12s;
+        }
+        .rp-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+            margin: 4px 4px;
+        }
+        /* Pulse the right edge trigger indicator */
+        #rp-edge-hint {
+            position: fixed;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 60px;
+            border-radius: 3px 0 0 3px;
+            background: linear-gradient(180deg, transparent, var(--theme-accent), transparent);
+            opacity: 0.35;
+            z-index: 59;
+            pointer-events: none;
+            animation: rpHintPulse 3s ease-in-out infinite;
+        }
+        #rp-edge-hint.rp-visible { opacity: 0; }
+        @keyframes rpHintPulse {
+            0%, 100% { opacity: 0.15; }
+            50% { opacity: 0.45; }
+        }
+        /* user-customized: use user accent on rp links */
+        .user-customized .rp-link:hover {
+            background: rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.12) !important;
+        }
+        .user-customized .rp-link:hover .rp-icon {
+            color: var(--user-accent, var(--theme-accent));
+        }
+        .user-customized #rp-edge-hint {
+            background: linear-gradient(180deg, transparent, var(--user-accent, var(--theme-accent)), transparent);
+        }
+
         @keyframes dealCard {
             from { opacity: 0; transform: translateY(-24px) scale(0.85) rotate(-4deg); }
             to   { opacity: 1; transform: translateY(0)    scale(1)    rotate(0deg); }
@@ -252,8 +322,7 @@
         .light-theme .tab-btn.active { color: #0f172a; }
         .light-theme .tab-btn.active::after { background: var(--accent-blue); box-shadow: 0 0 15px var(--accent-blue); }
         .light-theme #welcome-card { background: white !important; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
-        .light-theme .bottom-banner { background: rgba(255,255,255,0.95) !important; border-color: rgba(0,0,0,0.08) !important; box-shadow: 0 -4px 20px rgba(0,0,0,0.06); }
-        .light-theme .bottom-banner .text-white { color: #0f172a !important; }
+
         .light-theme .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
         .light-theme .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
         .light-theme .bg-white\/5 { background: rgba(0,0,0,0.03) !important; }
@@ -271,7 +340,7 @@
             #welcome-card .flex.items-center.gap-8 { flex-direction: column; gap: 1rem; }
             #user-display-name { font-size: 1.75rem !important; }
             #welcome-economy-stats { margin-top: 0.75rem; }
-            .bottom-banner { bottom: 12px; padding: 8px 40px; }
+
             #global-modal .glass.w-full { max-width: 95vw; max-height: 90vh; }
             #toast-container { top: 80px; right: 12px; left: 12px; max-width: none; }
             .fixed.bottom-32.right-8 { bottom: 100px; right: 12px; }
@@ -740,14 +809,6 @@
         }
 
         /* Bottom nav — theme sheen */
-        .bottom-banner {
-            box-shadow:
-                0 0 0 1px rgba(var(--theme-accent-rgb), 0.14),
-                inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.14),
-                0 -8px 40px rgba(var(--theme-accent-rgb), 0.12),
-                0 8px 40px rgba(0,0,0,0.5);
-        }
-
         /* KC NOW corner trigger — theme tint */
         #quick-actions-btn {
             background: rgba(8,12,20,0.85) !important;
@@ -882,13 +943,7 @@
             border-color: rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.5) !important;
             box-shadow: 0 4px 24px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.3) !important;
         }
-        .user-customized .bottom-banner {
-            box-shadow:
-                0 0 0 1px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.18),
-                inset 0 1px 0 rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.16),
-                0 -8px 40px rgba(var(--user-accent-rgb, var(--theme-accent-rgb)), 0.18),
-                0 8px 40px rgba(0,0,0,0.5);
-        }
+
 
         /* --- Hub buttons: accent-coloured top border line --- */
         .user-customized .hub-btn {
@@ -1301,9 +1356,6 @@
         </aside>
     </main>
 
-    <div class="bottom-banner glass banner-sheen border-white/10 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
-        <span class="text-2xl font-black tracking-[0.3em] text-white">KC <span class="text-blue-500">NOW</span></span>
-    </div>
 
     <div id="global-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-6 bg-black/60 backdrop-blur-xl transition-all">
         <div class="glass w-full max-w-2xl max-h-[85vh] rounded-[48px] border-white/10 flex flex-col overflow-hidden shadow-2xl">
@@ -1319,6 +1371,57 @@
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-24 right-8 z-[200] space-y-3" style="max-width:350px;pointer-events:none;"></div>
+
+    <!-- Right-side proximity link panel -->
+    <div id="rp-edge-hint"></div>
+    <div id="right-panel">
+        <div id="right-panel-inner" class="glass">
+
+            <a href="https://kcevents.uk/#voting" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-star rp-icon"></i>
+                <span>Vote</span>
+            </a>
+            <a href="https://kcevents.uk/#socialfeeed" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-clapperboard rp-icon"></i>
+                <span>Clips</span>
+            </a>
+            <a href="https://kcevents.uk/#eventguidesscroll" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-calendar-days rp-icon"></i>
+                <span>Events</span>
+            </a>
+            <a href="https://discord.gg/slitherkc" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-brands fa-discord rp-icon"></i>
+                <span>Discord</span>
+            </a>
+
+            <div class="rp-divider"></div>
+
+            <a href="https://kcevents.uk/#whatskc" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-circle-info rp-icon"></i>
+                <span>About Us</span>
+            </a>
+            <a href="https://kcevents.uk/#faq" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-circle-question rp-icon"></i>
+                <span>FAQ</span>
+            </a>
+
+            <div class="rp-divider"></div>
+
+            <a href="https://kcevents.uk/#chatscroll" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-comments rp-icon"></i>
+                <span>Messages</span>
+            </a>
+            <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-user rp-icon"></i>
+                <span>My Profile</span>
+            </a>
+            <a href="https://kcevents.uk/#clans" target="_blank" rel="noopener" class="rp-link">
+                <i class="fa-solid fa-shield-halved rp-icon"></i>
+                <span>Clans</span>
+            </a>
+
+        </div>
+    </div>
 
     <!-- KC NOW Quick Actions Hub – top-left corner dropdown -->
     <div class="fixed top-4 left-4 z-50" id="quick-actions-wrapper">
@@ -6480,10 +6583,70 @@
             }
         }
 
+        // ── Right-side proximity link panel ──────────────────────────────
+        (function initRightPanel() {
+            const THRESHOLD = 100; // px from right edge to trigger reveal
+            let _visible = false, _hideTimer = null;
+
+            function _show() {
+                clearTimeout(_hideTimer);
+                if (_visible) return;
+                _visible = true;
+                const p  = document.getElementById('right-panel');
+                const h  = document.getElementById('rp-edge-hint');
+                if (p) p.classList.add('rp-visible');
+                if (h) h.classList.add('rp-visible');
+            }
+            function _hide(delay) {
+                clearTimeout(_hideTimer);
+                _hideTimer = setTimeout(() => {
+                    _visible = false;
+                    const p = document.getElementById('right-panel');
+                    const h = document.getElementById('rp-edge-hint');
+                    if (p) p.classList.remove('rp-visible');
+                    if (h) h.classList.remove('rp-visible');
+                }, delay || 400);
+            }
+
+            document.addEventListener('mousemove', (e) => {
+                const nearRight = window.innerWidth - e.clientX < THRESHOLD;
+                const panel = document.getElementById('right-panel');
+                if (nearRight) {
+                    _show();
+                } else if (_visible && panel && !panel.contains(e.target)) {
+                    _hide(500);
+                }
+            });
+
+            // Keep visible while mouse is over the panel
+            document.addEventListener('DOMContentLoaded', () => {
+                const panel = document.getElementById('right-panel');
+                if (!panel) return;
+                panel.addEventListener('mouseenter', _show);
+                panel.addEventListener('mouseleave', () => _hide(300));
+            });
+        })();
+
         window.onload = () => {
             initTheme();
             initDynamicBackground();
             switchTab('home');
+
+            // Wire right panel mouse events (in case DOMContentLoaded already fired)
+            const rp = document.getElementById('right-panel');
+            if (rp) {
+                rp.addEventListener('mouseenter', () => {
+                    clearTimeout(window._rpHideTimer);
+                    rp.classList.add('rp-visible');
+                    document.getElementById('rp-edge-hint')?.classList.add('rp-visible');
+                });
+                rp.addEventListener('mouseleave', () => {
+                    window._rpHideTimer = setTimeout(() => {
+                        rp.classList.remove('rp-visible');
+                        document.getElementById('rp-edge-hint')?.classList.remove('rp-visible');
+                    }, 300);
+                });
+            }
             window.addEventListener('keydown', e => {
                 if (e.key === 'Escape') { closeModal(); return; }
                 if (!document.getElementById('global-modal').classList.contains('hidden')) return;
