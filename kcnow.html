@@ -4,19 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KC NOW | Lobby</title>
-    
-    <!-- Tailwind CSS & Google Fonts -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 
-    <!-- Firebase SDKs (Compat) -->
+    <!-- Resource hints — establish connections early to cut TTFB on CDN requests -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (display=swap so text shows immediately in fallback font) -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome — loaded asynchronously so it never blocks first paint -->
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></noscript>
+
+    <!-- Firebase SDKs (Compat) — must remain synchronous for init order -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-    <script src="profile-popup.js"></script>
+    <!-- Profile popup — deferred so it doesn't block app init -->
+    <script src="profile-popup.js" defer></script>
 
     <style>
         :root {
@@ -171,10 +184,13 @@
             gap: 24px;
             height: calc(100vh - 240px);
         }
+        /* Status banner grid: collapse empty cells so they don't create blank gaps */
+        #discord-link-status:empty,
+        #diamond-customization-status:empty { display: none; }
         /* Content viewport fills its full grid cell so no background bleeds below */
         #content-viewport { height: 100%; }
         /* All tab views get bottom padding so KC NOW pill never overlaps last item */
-        #view-home, #view-clans, #view-players, #view-clips, #view-profile { padding-bottom: 7rem; }
+        #view-home, #view-clans, #view-players, #view-clips, #view-profile { padding-bottom: 5.5rem; }
         @media (max-width: 1024px) {
             .main-grid { grid-template-columns: 1fr; overflow-y: auto; height: auto; }
             #content-viewport { height: auto; }
@@ -829,6 +845,47 @@
 </head>
 <body class="p-6 md:p-10">
 
+    <!-- ═══════════════════════════════════════════════════════════
+         KC NOW — LOADING SCREEN
+         Shown immediately on page open, hidden once everything loads.
+    ═══════════════════════════════════════════════════════════ -->
+    <div id="kc-loader" style="
+        position:fixed;inset:0;z-index:99999;
+        background:var(--bg-primary,#080c14);
+        display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+        transition:opacity 0.55s ease,visibility 0.55s ease;
+        font-family:Poppins,system-ui,sans-serif;">
+        <!-- Animated background glow -->
+        <div style="position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%);pointer-events:none;animation:loaderPulse 3s ease-in-out infinite;"></div>
+        <!-- Logo row -->
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:6px;position:relative;">
+            <div id="kc-loader-icon" style="
+                width:52px;height:52px;border-radius:16px;
+                background:linear-gradient(135deg,#3b82f6 0%,#2dd4bf 100%);
+                display:flex;align-items:center;justify-content:center;
+                box-shadow:0 0 40px rgba(59,130,246,0.5);
+                animation:loaderBounce 2.4s ease-in-out infinite;">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M13 2L4.5 13H11L10 22L19.5 11H13L13 2Z"/></svg>
+            </div>
+            <div>
+                <div style="font-size:1.75rem;font-weight:900;color:#f8fafc;letter-spacing:-0.04em;line-height:1;">KC NOW</div>
+                <div style="font-size:0.65rem;color:#475569;letter-spacing:0.14em;font-weight:600;text-transform:uppercase;margin-top:2px;">Community Hub</div>
+            </div>
+        </div>
+        <!-- Stage label -->
+        <p id="kc-loader-label" style="font-size:0.75rem;color:#64748b;letter-spacing:0.1em;font-weight:600;text-transform:uppercase;min-height:1em;">Initialising...</p>
+        <!-- Progress bar track -->
+        <div style="width:200px;height:3px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden;">
+            <div id="kc-loader-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#3b82f6,#2dd4bf);border-radius:99px;transition:width 0.45s cubic-bezier(0.4,0,0.2,1);"></div>
+        </div>
+        <!-- Percent -->
+        <span id="kc-loader-pct" style="font-size:0.72rem;color:#334155;font-weight:700;">0%</span>
+        <style>
+            @keyframes loaderPulse { 0%,100%{opacity:.4;transform:scale(1)} 50%{opacity:.9;transform:scale(1.15)} }
+            @keyframes loaderBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+        </style>
+    </div>
+
     <div id="bg-canvas"></div>
     <div class="animated-gradient"></div>
     <div class="vignette"></div>
@@ -849,26 +906,26 @@
         <!-- LEFT Area -->
         <section id="content-viewport" class="custom-scroll overflow-y-auto pr-4">
             <!-- HOME TAB -->
-            <div id="view-home" class="view-transition flex flex-col gap-8">
-                <!-- Welcome Card -->
-                <div id="welcome-card" class="glass rounded-[40px] border-white/5 relative overflow-hidden">
+            <div id="view-home" class="view-transition flex flex-col gap-4">
+                <!-- Welcome Card — compact -->
+                <div id="welcome-card" class="glass rounded-[32px] border-white/5 relative overflow-hidden">
                     <!-- Banner strip (shown for diamond users with a banner set) -->
                     <div id="welcome-banner-strip" style="height:0;transition:height 0.4s cubic-bezier(0.4,0,0.2,1);overflow:hidden;position:relative;flex-shrink:0;">
                         <div id="welcome-banner-img" style="position:absolute;inset:0;background-size:cover;background-position:center;transform:scale(1.06);"></div>
                         <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.55) 100%);"></div>
                     </div>
                     <!-- Content row -->
-                    <div class="p-8 flex items-center justify-between">
-                        <div class="flex items-center gap-8 z-10">
+                    <div class="p-6 flex items-center justify-between">
+                        <div class="flex items-center gap-5 z-10">
                             <div class="relative group">
                                 <div class="absolute -inset-1 bg-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition"></div>
-                                <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-24 h-24 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
-                                <div id="online-indicator" class="absolute bottom-1 right-1 w-6 h-6 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
+                                <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-20 h-20 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
+                                <div id="online-indicator" class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
                             </div>
                             <div>
-                                <p id="greeting-text" class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-1">Checking Status...</p>
-                                <h1 id="user-display-name" class="text-4xl font-bold text-white tracking-tight">Welcome, Guest</h1>
-                                <div id="user-badges" class="flex gap-2 mt-3"></div>
+                                <p id="greeting-text" class="text-blue-400 font-bold tracking-widest text-xs uppercase mb-0.5">Checking Status...</p>
+                                <h1 id="user-display-name" class="text-3xl font-bold text-white tracking-tight leading-tight">Welcome, Guest</h1>
+                                <div id="user-badges" class="flex gap-2 mt-2"></div>
                             </div>
                         </div>
                         <div id="auth-actions" class="z-10"></div>
@@ -876,69 +933,68 @@
                     </div>
                 </div>
 
-                <!-- Status Banners (Discord link & Diamond background) -->
-                <!-- These containers will be populated dynamically based on user data -->
-                <div id="discord-link-status" class="mt-6 space-y-4"></div>
-                <div id="diamond-customization-status" class="space-y-4"></div>
+                <!-- Status Banners — side by side on md+ screens, stacked on mobile -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div id="discord-link-status"></div>
+                    <div id="diamond-customization-status"></div>
+                </div>
 
-                <!-- Hub Buttons -->
-                <div class="grid grid-cols-3 gap-6">
-                    <!-- Row 1 -->
-                    <button onclick="renderLeaderboard()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="hub-icon w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 transition">
+                <!-- Hub Buttons — two compact rows of 3 -->
+                <div class="grid grid-cols-3 gap-4">
+                    <button onclick="renderLeaderboard()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
+                        <div class="hub-icon w-13 h-13 w-12 h-12 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-2xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-trophy"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Leaderboard</span>
+                        <span class="font-bold text-sm tracking-wide">Leaderboard</span>
                     </button>
 
-                    <button onclick="renderBattledome()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="hub-icon w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="renderBattledome()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400 text-2xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-sword"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Battledome</span>
+                        <span class="font-bold text-sm tracking-wide">Battledome</span>
                         <div class="text-[10px] bg-blue-500/25 text-blue-300 px-3 py-0.5 rounded-full font-black uppercase">Live</div>
                     </button>
 
-                    <button onclick="openSlitherServers()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="hub-icon w-16 h-16 rounded-2xl bg-green-500/20 flex items-center justify-center text-green-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openSlitherServers()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-green-500/20 flex items-center justify-center text-green-400 text-2xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-worm"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Slither.io</span>
+                        <span class="font-bold text-sm tracking-wide">Slither.io</span>
                         <div class="text-[10px] bg-green-500/25 text-green-300 px-3 py-0.5 rounded-full font-black uppercase">Servers</div>
                     </button>
 
-                    <!-- Row 2 -->
-                    <button onclick="openGamesHub()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="hub-icon w-16 h-16 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openGamesHub()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center text-purple-400 text-2xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-dice"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Games</span>
+                        <span class="font-bold text-sm tracking-wide">Games</span>
                         <div class="text-[10px] bg-purple-500/25 text-purple-300 px-3 py-0.5 rounded-full font-black uppercase">Casino</div>
                     </button>
 
-                    <button onclick="openEconomyShop()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="hub-icon w-16 h-16 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openEconomyShop()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center text-blue-400 text-2xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-store"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Shop</span>
+                        <span class="font-bold text-sm tracking-wide">Shop</span>
                     </button>
 
-                    <button onclick="openAchievements()" class="hub-btn glass glass-hover rounded-[32px] h-48 flex flex-col items-center justify-center gap-4 group transition">
-                        <div class="hub-icon w-16 h-16 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-3xl group-hover:scale-110 transition">
+                    <button onclick="openAchievements()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-yellow-500/20 flex items-center justify-center text-yellow-400 text-2xl group-hover:scale-110 transition">
                             <i class="fa-solid fa-medal"></i>
                         </div>
-                        <span class="font-bold tracking-wide">Achievements</span>
+                        <span class="font-bold text-sm tracking-wide">Achievements</span>
                     </button>
                 </div>
 
-                <!-- Trending Clips Preview -->
-                <div class="glass p-8 rounded-[40px] border-white/5">
-                    <h3 class="text-xl font-bold mb-6 flex items-center gap-3">
+                <!-- Trending Clips Preview — compact -->
+                <div class="glass p-5 rounded-[28px] border-white/5">
+                    <h3 class="text-base font-bold mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-bolt text-blue-400"></i> Hot Community Clips
                     </h3>
-                    <div id="home-clips-preview" class="grid grid-cols-2 gap-6">
-                        <div class="animate-pulse bg-white/5 rounded-3xl h-40"></div>
-                        <div class="animate-pulse bg-white/5 rounded-3xl h-40"></div>
+                    <div id="home-clips-preview" class="grid grid-cols-2 gap-4">
+                        <div class="animate-pulse bg-white/5 rounded-2xl h-32"></div>
+                        <div class="animate-pulse bg-white/5 rounded-2xl h-32"></div>
                     </div>
                 </div>
             </div>
@@ -1183,16 +1239,79 @@
             appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31"
         };
 
+        // ═══════════════════════════════════════
+        // KC NOW Loading Progress System
+        // ═══════════════════════════════════════
+        const KCLoader = (() => {
+            let _bar, _label, _pct, _icon, _el;
+            let _current = 0;
+            let _dismissed = false;
+            // Named stages with weight (summing to ~100) and display label
+            const STAGES = {
+                firebase:  { w: 12, text: 'Connecting...' },
+                auth:      { w: 28, text: 'Checking account...' },
+                userdata:  { w: 18, text: 'Loading profile...' },
+                feed:      { w: 16, text: 'Loading feed...' },
+                clips:     { w: 14, text: 'Fetching clips...' },
+                done:      { w: 12, text: 'Ready!' },
+            };
+            function _apply(pct, text) {
+                if (!_bar) {
+                    _el    = document.getElementById('kc-loader');
+                    _bar   = document.getElementById('kc-loader-bar');
+                    _label = document.getElementById('kc-loader-label');
+                    _pct   = document.getElementById('kc-loader-pct');
+                    _icon  = document.getElementById('kc-loader-icon');
+                }
+                _current = Math.min(pct, 100);
+                if (_bar)   _bar.style.width   = _current + '%';
+                if (_pct)   _pct.textContent   = Math.round(_current) + '%';
+                if (_label) _label.textContent = text;
+                // Update icon gradient to match current theme
+                const accent = getComputedStyle(document.documentElement).getPropertyValue('--theme-accent').trim() || '#3b82f6';
+                const glow   = getComputedStyle(document.documentElement).getPropertyValue('--theme-glow').trim()   || '#2dd4bf';
+                if (_icon) _icon.style.background = `linear-gradient(135deg,${accent} 0%,${glow} 100%)`;
+                if (_bar)  _bar.style.background  = `linear-gradient(90deg,${accent},${glow})`;
+                if (_icon) _icon.style.boxShadow  = `0 0 40px ${accent}80`;
+            }
+            function _dismiss() {
+                if (_dismissed) return;
+                _dismissed = true;
+                _apply(100, 'Ready!');
+                setTimeout(() => {
+                    if (_el) { _el.style.opacity = '0'; _el.style.visibility = 'hidden'; }
+                    setTimeout(() => { if (_el) _el.remove(); }, 650);
+                }, 420);
+            }
+            let _accumulated = 0;
+            return {
+                advance(stage) {
+                    if (_dismissed) return;
+                    const s = STAGES[stage];
+                    if (!s) return;
+                    _accumulated = Math.min(_accumulated + s.w, 100);
+                    _apply(_accumulated, s.text);
+                    if (stage === 'done' || _accumulated >= 100) _dismiss();
+                },
+                // Call when all async work is fully settled
+                complete() { _dismiss(); },
+            };
+        })();
+
         // Initialize Firebase only once
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         auth = firebase.auth(); db = firebase.database(); storage = firebase.storage(); fsdb = firebase.firestore();
+        KCLoader.advance('firebase');
 
         // --- AUTH SYNC ---
+        let _authSettled = false;
         auth.onAuthStateChanged(async (user) => {
             currentUser = user;
             discordIdCache.clear(); // clear on auth change so Firestore re-read fires
+            KCLoader.advance('auth');
             if (user) {
                 try { await user.reload(); } catch (e) {}
+                let _firstUserData = true;
                 db.ref(`users/${user.uid}`).on('value', snap => {
                     const data = snap.val() || {};
                     currentUserData = data;
@@ -1201,18 +1320,26 @@
                     renderDiamondCustomizationStatus();
                     renderDiscordLinkBanner();
                     if (activeTab === 'profile') loadProfileLite();
+                    if (_firstUserData) { _firstUserData = false; KCLoader.advance('userdata'); }
                 });
                 initPersonalActivityListener();
             } else {
                 renderUserHeader({}, null);
+                KCLoader.advance('userdata'); // guest — no data to fetch
             }
-            // Always render diamond and Discord banners so they are visible when signed out. For signed in users
-            // these will be overwritten by the realtime listener above once data is loaded.
-            renderDiamondCustomizationStatus();
-            renderDiscordLinkBanner();
-            initFeedListeners();
-            loadClipsPreview();
-            checkBattledomeStatus();
+            if (!_authSettled) {
+                _authSettled = true;
+                // Always render diamond and Discord banners so they are visible when signed out.
+                renderDiamondCustomizationStatus();
+                renderDiscordLinkBanner();
+                KCLoader.advance('feed');
+                initFeedListeners();
+                loadClipsPreview().finally(() => {
+                    KCLoader.advance('clips');
+                    KCLoader.advance('done');
+                });
+                checkBattledomeStatus();
+            }
         });
 
         // --- HELPER FUNCTIONS ---
@@ -5549,7 +5676,7 @@
 
         function loadClipsPreview() {
             // Posts live at users/{uid}/posts/{postId}, not social_posts
-            db.ref('users').limitToLast(30).once('value').then(snap => {
+            return db.ref('users').limitToLast(30).once('value').then(snap => {
                 const allPosts = [];
                 snap.forEach(userSnap => {
                     const posts = userSnap.child('posts').val();
