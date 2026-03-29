@@ -4397,7 +4397,7 @@
         // Live endpoints are plain HTTP — browsers can't fetch them from an HTTPS page.
         // Set BD_PROXY_URL to your deployed Cloudflare Worker URL (see bd-proxy-worker.js).
         // While unset, the Live tab falls back to showing Firebase-cached status only.
-        const BD_PROXY_URL = ''; // ← paste your worker URL here, e.g. 'https://bd-proxy.you.workers.dev'
+        const BD_PROXY_URL = 'https://bd-proxy-workerjs.kevinmidnight7.workers.dev';
 
         async function _bdFetchLive() {
             if (!BD_PROXY_URL) throw new Error('no-proxy');
