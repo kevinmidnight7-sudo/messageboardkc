@@ -4025,7 +4025,11 @@
                 window.location.href = `${DISCORD_OAUTH_START_URL}?state=${state}`;
             } catch(e) {
                 console.error('[startDiscordOAuth]', e);
-                showToast('Failed to start Discord link: ' + (e.message || 'Unknown error'), 'error');
+                const isPerms = e.code === 'permission-denied' || (e.message || '').includes('permission');
+                const msg = isPerms
+                    ? 'Discord link blocked by server rules. Ask an admin to update Firestore rules for the linkStates collection.'
+                    : 'Failed to start Discord link: ' + (e.message || 'Unknown error');
+                showToast(msg, 'error');
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-brands fa-discord text-xl"></i> Link with Discord'; }
             }
         }
