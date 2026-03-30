@@ -4898,12 +4898,20 @@
                     };
                 });
                 users.sort((a, b) => (b[category] || 0) - (a[category] || 0));
-                const labels = { overall:'Overall', offence:'Offence', defence:'Defence', bdHighscore:'BD Score' };
+                const labels = {
+                    overall:     { label:'Overall Winner', img:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png' },
+                    offence:     { label:'Best Offence',   img:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png' },
+                    defence:     { label:'Best Defence',   img:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png' },
+                    bdHighscore: { label:'BD Score',       img:null },
+                };
                 modal.update(`
                     <div class="space-y-4">
                         <div class="flex gap-2 flex-wrap">
-                            ${Object.entries(labels).map(([k,l]) => `
-                                <button onclick="renderLeaderboard('${k}')" class="btn-press text-xs px-3 py-2 rounded-xl font-bold transition ${k===category?'bg-blue-600':'glass hover:bg-white/10'}">${l}</button>
+                            ${Object.entries(labels).map(([k,{label,img}]) => `
+                                <button onclick="renderLeaderboard('${k}')" class="btn-press text-xs px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5 ${k===category?'bg-blue-600':'glass hover:bg-white/10'}">
+                                    ${img ? `<img src="${img}" style="width:14px;height:14px;object-fit:contain;">` : '⚔️'}
+                                    ${label}
+                                </button>
                             `).join('')}
                         </div>
                         <div class="space-y-2">
@@ -6566,13 +6574,13 @@
                 const kcScoresEl = $('pf-kc-scores');
                 if (kcScoresEl) {
                     const scores = [
-                        { label:'Overall', val: u.overall||0, icon:'fa-trophy',        fg:'#fbbf24', bg:'rgba(251,191,36,0.12)', br:'rgba(251,191,36,0.28)' },
-                        { label:'Offence', val: u.offence||0, icon:'fa-sword',          fg:'#f87171', bg:'rgba(239,68,68,0.12)',  br:'rgba(239,68,68,0.28)'  },
-                        { label:'Defence', val: u.defence||0, icon:'fa-shield-halved',  fg:'#34d399', bg:'rgba(52,211,153,0.12)', br:'rgba(52,211,153,0.28)' },
+                        { label:'Overall Winner', val: u.overall||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', fg:'#fbbf24', bg:'rgba(251,191,36,0.12)', br:'rgba(251,191,36,0.28)' },
+                        { label:'Best Offence',   val: u.offence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      fg:'#f87171', bg:'rgba(239,68,68,0.12)',  br:'rgba(239,68,68,0.28)'  },
+                        { label:'Best Defence',   val: u.defence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     fg:'#34d399', bg:'rgba(52,211,153,0.12)', br:'rgba(52,211,153,0.28)' },
                     ];
                     kcScoresEl.innerHTML = scores.map(s =>
                         `<div style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:14px;background:${s.bg};border:1px solid ${s.br};">
-                            <i class="fa-solid ${s.icon}" style="font-size:0.65rem;color:${s.fg};"></i>
+                            <img src="${s.img}" style="width:14px;height:14px;object-fit:contain;">
                             <span style="font-size:0.7rem;font-weight:700;color:${s.fg};">${s.label}</span>
                             <span style="font-size:1.1rem;font-weight:900;color:#fff;line-height:1;">${s.val}</span>
                         </div>`
