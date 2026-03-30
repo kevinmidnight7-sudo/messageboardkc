@@ -4222,23 +4222,13 @@
                             ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
-                    <!-- Top BD Scores -->
+                    <!-- Top BD Scores — KC members' personal bests from their profiles -->
                     <div class="glass p-4 rounded-3xl">
                         <div class="flex items-center justify-between mb-3">
                             <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest">🏆 Top BD Scores</p>
                             <button onclick="renderBattledome()" class="text-[10px] text-blue-400 hover:text-blue-300 transition font-semibold">Full →</button>
                         </div>
                         <div id="bd-leaderboard" class="space-y-1">
-                            ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
-                        </div>
-                    </div>
-                    <!-- KC Members BD Scores (linked accounts only) -->
-                    <div class="glass p-4 rounded-3xl">
-                        <div class="flex items-center justify-between mb-3">
-                            <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest">🛡️ KC Top Scorers</p>
-                            <button onclick="renderBattledome().then?.(()=>{}) || renderBattledome(); setTimeout(()=>window._bdGoTab&&window._bdGoTab('kc'),400)" class="text-[10px] text-teal-400 hover:text-teal-300 transition font-semibold">KC only →</button>
-                        </div>
-                        <div id="kc-bd-leaderboard" class="space-y-1">
                             ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
                     </div>
@@ -4279,64 +4269,58 @@
                 }
             }).catch(() => {});
 
-            // Load BD scores once — limitToLast(500) caps at a safe ceiling while ensuring
-            // all realistically-active players are included for an accurate top-10 sort.
-            // Both "all players" and "KC-linked only" views are derived from this single read.
-            db.ref('config/bdTopScores/global').limitToLast(500).once('value').then(bdSnap => {
-                const allScores = {};
-                bdSnap.forEach(child => {
-                    const v = child.val() || {};
-                    allScores[child.key.toLowerCase()] = { name: v.name || child.key, score: v.score || 0 };
-                });
+            // BD scores — reuse the users snapshot (same cache renderLeaderboard uses).
+            // bdHighscore is set directly on each KC member's profile, so this shows
+            // the same accurate data as Leaderboard → BD Score, with zero extra reads.
+            _getUsersOnce().then(snap => {
+                const usersData = snap.val() || {};
                 const medals = ['🥇','🥈','🥉'];
                 const rowHtml = (p, i) => `
                     <div class="flex justify-between items-center py-0.5">
                         <div class="flex items-center gap-2">
                             <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500 text-[10px]">#${i+1}</span>`}</span>
-                            <span class="text-sm font-semibold truncate max-w-[140px]">${p.name}</span>
+                            <span class="text-sm font-semibold truncate max-w-[140px] cursor-pointer hover:text-blue-400 transition" onclick="window.openKcProfile('${p.uid}')">${p.name}</span>
                         </div>
                         <span class="text-xs font-bold text-red-400">${p.score.toLocaleString()}</span>
                     </div>`;
-
-                // Top 10 overall
-                const top10 = Object.values(allScores).sort((a,b) => b.score - a.score).slice(0, 10);
-                const elAll = document.getElementById('bd-leaderboard');
-                if (elAll) elAll.innerHTML = top10.length
-                    ? top10.map(rowHtml).join('')
+                const bdPlayers = Object.entries(usersData)
+                    .filter(([, u]) => u.bdHighscore > 0)
+                    .map(([uid, u]) => ({ uid, name: u.displayName || uid, score: u.bdHighscore }))
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 10);
+                const el = document.getElementById('bd-leaderboard');
+                if (el) el.innerHTML = bdPlayers.length
+                    ? bdPlayers.map(rowHtml).join('')
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
-
-                // KC-linked only — cross-reference with playerLinks
-                db.ref('config/playerLinks').once('value').then(plSnap => {
-                    const pl = plSnap.val() || {};
-                    const kcScores = Object.values(pl)
-                        .filter(v => v.bdName)
-                        .map(v => allScores[v.bdName.toLowerCase()])
-                        .filter(Boolean)
-                        .sort((a,b) => b.score - a.score)
-                        .slice(0, 10);
-                    const elKC = document.getElementById('kc-bd-leaderboard');
-                    if (elKC) elKC.innerHTML = kcScores.length
-                        ? kcScores.map(rowHtml).join('')
-                        : '<p class="text-xs text-gray-500 text-center">No linked KC members yet</p>';
-                }).catch(() => {});
             }).catch(() => {});
 
+            // Economy — top 5 by points. Individual user lookups avoid needing the full
+            // allUsersData download (which may not have run if config/serverStats was used).
             db.ref('userEconomy').orderByChild('points').limitToLast(5).once('value').then(async snap => {
                 const players = [];
                 snap.forEach(child => {
                     players.unshift({ discordId: child.key, points: child.val()?.points || 0 });
                 });
-                // Map Discord IDs to KC display names via config/playerLinks + allUsersData cache
                 let playerLinks = {};
                 try {
                     const plSnap = await db.ref('config/playerLinks').once('value');
                     playerLinks = plSnap.val() || {};
                 } catch(e) {}
-                const enriched = players.map(p => {
+                const enriched = await Promise.all(players.map(async p => {
                     const kcUid = playerLinks[p.discordId]?.kcUid || null;
-                    const kcUser = kcUid && allUsersData.find(u => u.uid === kcUid);
-                    const name = (kcUser && kcUser.displayName) || `User#${p.discordId.slice(-4)}`;
-                    return { name, points: p.points, uid: kcUid };
+                    let name = null;
+                    if (kcUid) {
+                        // Try cache first, fall back to single-field read
+                        const cached = allUsersData.find(u => u.uid === kcUid);
+                        if (cached) {
+                            name = cached.displayName;
+                        } else {
+                            const ns = await db.ref(`users/${kcUid}/displayName`).once('value').catch(() => null);
+                            name = ns ? ns.val() : null;
+                        }
+                    }
+                    return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
+                }));
                 });
                 const el = document.getElementById('top-economy');
                 const medals = ['🥇','🥈','🥉'];
@@ -4509,21 +4493,15 @@
         }
 
         async function _bdFetchKCScores() {
-            const [bdSnap, plSnap] = await Promise.all([
-                db.ref('config/bdTopScores/global').limitToLast(500).once('value'),
-                db.ref('config/playerLinks').once('value'),
-            ]);
-            const allScores = {};
-            bdSnap.forEach(child => {
-                const v = child.val() || {};
-                allScores[child.key.toLowerCase()] = { name: v.name || child.key, score: v.score || 0, seenAt: v.seenAt };
-            });
-            const pl = plSnap.val() || {};
-            const kcEntries = Object.values(pl)
-                .filter(v => v.bdName)
-                .map(v => allScores[v.bdName.toLowerCase()])
-                .filter(Boolean);
-            return kcEntries.sort((a, b) => b.score - a.score).slice(0, 20);
+            // KC scores come from users.bdHighscore — the same source as Leaderboard → BD Score.
+            // This is zero-cost when the users snapshot is already in the session cache.
+            const snap = await _getUsersOnce();
+            const usersData = snap.val() || {};
+            return Object.entries(usersData)
+                .filter(([, u]) => u.bdHighscore > 0)
+                .map(([uid, u]) => ({ uid, name: u.bdUsername || u.displayName || uid, score: u.bdHighscore }))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 20);
         }
 
         async function _bdFetchPeriod(period, region) {
@@ -4555,9 +4533,12 @@
         function _bdEntryRow(e, i, userBdName) {
             const isUser = userBdName && e.name.toLowerCase() === userBdName.toLowerCase();
             const ts = e.seenAt ? ` · ${_bdRelTime(e.seenAt)}` : '';
+            const nameEl = e.uid
+                ? `<span class="flex-1 font-semibold text-sm truncate cursor-pointer hover:underline ${isUser ? 'text-blue-400' : ''}" onclick="window.openKcProfile('${e.uid}')">${e.name}${isUser ? ' 👤' : ''}</span>`
+                : `<span class="flex-1 font-semibold text-sm truncate ${isUser ? 'text-blue-400' : ''}">${e.name}${isUser ? ' 👤' : ''}</span>`;
             return `<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition ${i < 3 ? 'bg-yellow-500/5' : ''} ${isUser ? 'ring-1 ring-blue-500/50' : ''}">
                 <span class="w-7 text-center font-black shrink-0">${_bdMedal(i)}</span>
-                <span class="flex-1 font-semibold text-sm truncate ${isUser ? 'text-blue-400' : ''}">${e.name}${isUser ? ' 👤' : ''}</span>
+                ${nameEl}
                 ${ts ? `<span class="text-[10px] text-gray-600 shrink-0 hidden sm:block">${ts}</span>` : ''}
                 <span class="font-black text-sm text-red-400 shrink-0">${e.score.toLocaleString()}</span>
             </div>`;
