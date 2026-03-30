@@ -219,6 +219,12 @@
                 height: auto;
                 max-height: 82vh;
                 width: 100%;
+                /* Opaque sheet — content behind must not show through */
+                background: rgba(10, 18, 38, 0.97) !important;
+                backdrop-filter: blur(16px) !important;
+                -webkit-backdrop-filter: blur(16px) !important;
+                border: none !important;
+                border-top: 1px solid rgba(255,255,255,0.10) !important;
             }
             /* Drag handle shown inside sheet */
             #kc-sidebar.mobile-open::before {
@@ -494,6 +500,12 @@
         }
         /* Profile popup on mobile */
         .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
+        /* Feed sheet on android — fully opaque, no blur */
+        .android-mobile #kc-sidebar.mobile-open > .glass {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(10, 18, 38, 0.99) !important;
+        }
 
         /* ===== Mobile Layout — comprehensive ===== */
         @media (max-width: 768px) {
@@ -540,8 +552,50 @@
             /* Toast  */
             #toast-container { top: 68px; right: 8px; left: 8px; max-width: none !important; }
 
-            /* Quick actions: don't overflow screen */
-            #quick-actions-menu { min-width: 0 !important; width: calc(100vw - 2rem) !important; max-width: 280px !important; }
+            /* KC NOW menu becomes a bottom sheet on mobile */
+            #quick-actions-menu:not(.hidden) {
+                position: fixed !important;
+                inset: auto 0 0 0 !important;
+                width: 100% !important;
+                min-width: 0 !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                border-radius: 24px 24px 0 0 !important;
+                max-height: 80vh;
+                overflow-y: auto;
+                transform-origin: bottom center !important;
+                background: rgba(10, 18, 38, 0.97) !important;
+                backdrop-filter: blur(16px) !important;
+                -webkit-backdrop-filter: blur(16px) !important;
+                border: none !important;
+                border-top: 1px solid rgba(255,255,255,0.10) !important;
+                animation: mobileSheetUp 0.25s cubic-bezier(0.16,1,0.3,1) both !important;
+                z-index: 200 !important;
+            }
+            .android-mobile #quick-actions-menu:not(.hidden) {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background: rgba(10, 18, 38, 0.99) !important;
+            }
+            /* Drag handle on KC NOW sheet */
+            #quick-actions-menu:not(.hidden)::before {
+                content: '';
+                display: block;
+                width: 40px;
+                height: 4px;
+                background: rgba(255,255,255,0.2);
+                border-radius: 99px;
+                margin: 10px auto 4px;
+            }
+            /* Backdrop for KC NOW sheet */
+            #qa-backdrop {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.55);
+                z-index: 199;
+            }
+            #qa-backdrop.open { display: block; }
 
             .fixed.bottom-32.right-8 { display: none; }
             #welcome-economy-stats { margin-top: 0.5rem; }
@@ -1693,6 +1747,9 @@
 
         </div>
     </div>
+
+    <!-- KC NOW mobile backdrop (only shown on mobile when menu is open) -->
+    <div id="qa-backdrop" onclick="toggleQuickActions()"></div>
 
     <!-- KC NOW Quick Actions Hub – top-left corner dropdown -->
     <div class="fixed top-4 left-4 z-50" id="quick-actions-wrapper">
@@ -6165,44 +6222,49 @@
         }
 
         function toggleQuickActions() {
-            const menu    = document.getElementById('quick-actions-menu');
-            const chevron = document.getElementById('qa-chevron');
-            const btn     = document.getElementById('quick-actions-btn');
-            const open    = menu.classList.contains('hidden');
+            const menu     = document.getElementById('quick-actions-menu');
+            const chevron  = document.getElementById('qa-chevron');
+            const btn      = document.getElementById('quick-actions-btn');
+            const backdrop = document.getElementById('qa-backdrop');
+            const open     = menu.classList.contains('hidden');
             if (open) {
                 menu.classList.remove('hidden');
-                if (chevron) chevron.style.transform = 'rotate(180deg)'; // points up = open
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
                 if (btn) btn.classList.add('qa-open');
+                if (backdrop) backdrop.classList.add('open');
             } else {
                 menu.classList.add('hidden');
-                if (chevron) chevron.style.transform = 'rotate(0deg)'; // points down = closed
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
                 if (btn) btn.classList.remove('qa-open');
+                if (backdrop) backdrop.classList.remove('open');
             }
         }
 
-        // Close KC NOW menu when clicking outside
+        function _closeQuickActions() {
+            const menu     = document.getElementById('quick-actions-menu');
+            const chevron  = document.getElementById('qa-chevron');
+            const btn      = document.getElementById('quick-actions-btn');
+            const backdrop = document.getElementById('qa-backdrop');
+            if (menu) menu.classList.add('hidden');
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+            if (btn) btn.classList.remove('qa-open');
+            if (backdrop) backdrop.classList.remove('open');
+        }
+
+        // Close KC NOW menu when clicking outside (desktop)
         document.addEventListener('click', function(e) {
-            const wrapper = document.getElementById('quick-actions-wrapper');
+            const wrapper  = document.getElementById('quick-actions-wrapper');
+            const backdrop = document.getElementById('qa-backdrop');
+            const clickedBackdrop = backdrop && backdrop.contains(e.target);
+            if (clickedBackdrop) return; // handled by backdrop onclick
             if (wrapper && !wrapper.contains(e.target)) {
-                const menu    = document.getElementById('quick-actions-menu');
-                const chevron = document.getElementById('qa-chevron');
-                const btn     = document.getElementById('quick-actions-btn');
-                if (menu && !menu.classList.contains('hidden')) {
-                    menu.classList.add('hidden');
-                    if (chevron) chevron.style.transform = 'rotate(0deg)';
-                    if (btn) btn.classList.remove('qa-open');
-                }
+                _closeQuickActions();
             }
         });
 
         function runQuickAction(action) {
             try {
-                const menu    = document.getElementById('quick-actions-menu');
-                const chevron = document.getElementById('qa-chevron');
-                const btn     = document.getElementById('quick-actions-btn');
-                if (menu) menu.classList.add('hidden');
-                if (chevron) chevron.style.transform = 'rotate(0deg)';
-                if (btn) btn.classList.remove('qa-open');
+                _closeQuickActions();
                 if (typeof action === 'function') setTimeout(action, 0);
             } catch (err) { console.error('runQuickAction error:', err); }
         }

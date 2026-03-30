@@ -350,6 +350,38 @@
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
+
+        /* ── Mobile two-col: posts/friends panel takes over full width ── */
+        .kc-mobile-back {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px 6px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+        @media (max-width: 600px) {
+            .kc-popup-card.kc-two-col {
+                width: 95vw !important;
+                max-width: 95vw !important;
+            }
+            .kc-popup-card.kc-two-col .kc-popup-info-col {
+                display: none !important;
+            }
+            .kc-popup-card.kc-two-col .kc-popup-posts-col {
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 80vh !important;
+                border-left: none !important;
+                overflow-y: auto;
+            }
+            .kc-mobile-back { display: flex !important; }
+        }
     `;
 
     // ── HTML ─────────────────────────────────────────────────────────────────
@@ -428,6 +460,9 @@
         card.classList.add('kc-two-col');
         postsCol.dataset.panel = 'friends';
         postsCol.innerHTML = `
+            <button class="kc-mobile-back" onclick="document.getElementById('kcPopupCard').classList.remove('kc-two-col');document.getElementById('kcPopupPostsCol').dataset.panel=''">
+                ← Back
+            </button>
             <h4 class="kc-section-title" style="padding:1rem 1rem 0.4rem;font-size:0.72rem;letter-spacing:0.05em;color:#6b7280">
                 FRIENDS
             </h4>
@@ -917,6 +952,9 @@
 
                 // Populate the right-side posts column
                 postsCol.innerHTML = `
+                    <button class="kc-mobile-back" onclick="document.getElementById('kcPopupCard').classList.remove('kc-two-col');document.getElementById('kcClipsToggleBtn')?.classList.remove('kc-open')">
+                        ← Back
+                    </button>
                     <h4 class="kc-section-title" style="padding:1rem 1rem 0.5rem">CLIPS</h4>
                     <div id="kcPostsContainer" class="kc-posts-list"></div>
                     <div class="kc-page-btns">
