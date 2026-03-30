@@ -859,8 +859,8 @@
                     break;
             }
 
-            // Apply pagination based on the sort order, but not for the 'skilled' category as it fetches all users
-            if (currentCategory !== 'skilled') {
+            // Apply pagination only for the 'all' category — filtered categories use their own queries
+            if (currentCategory === 'all') {
                 if (currentSort === 'joinDate') {
                     usersQuery = userRef.orderByKey().limitToLast(16);
                     if (lastUserKey) {
@@ -917,9 +917,18 @@
                         user.badges.offence > 0 || user.badges.defence > 0 || user.badges.overall > 0
                     );
                 }
-                
-                // For categories other than skilled, handle pagination logic
-                if (currentCategory !== 'skilled') {
+                if (currentCategory === 'verified') {
+                    filteredAndSortedUsers = filteredAndSortedUsers.filter(user => user.isVerified);
+                }
+                if (currentCategory === 'diamond') {
+                    filteredAndSortedUsers = filteredAndSortedUsers.filter(user => !!user.codesUnlocked.diamond);
+                }
+                if (currentCategory === 'emerald') {
+                    filteredAndSortedUsers = filteredAndSortedUsers.filter(user => !!user.codesUnlocked.emerald);
+                }
+
+                // For the 'all' category, handle pagination logic
+                if (currentCategory === 'all') {
                     // Remove the last item if it's a duplicate from the previous page
                     if (lastUserKey && filteredAndSortedUsers.length > 16) {
                         if (currentSort === 'joinDate' || currentSort === 'streak') {
