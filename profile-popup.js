@@ -715,7 +715,11 @@
                     let rows = '';
                     if (pts > 0) rows += `<div class="kc-stat-row"><span class="kc-stat-icon">💰</span><span class="kc-stat-label">Points</span><span class="kc-stat-value">${pts.toLocaleString()}</span></div>`;
                     if (rank) rows += `<div class="kc-stat-row"><span class="kc-stat-icon">🏅</span><span class="kc-stat-label">Rank</span><span class="kc-stat-value">#${rank}</span></div>`;
-                    if (streak > 0) rows += `<div class="kc-stat-row"><span class="kc-stat-icon">🔥</span><span class="kc-stat-label">Discord Streak</span><span class="kc-stat-value">${streak} days</span></div>`;
+                    if (streak > 0) {
+                        rows += `<div class="kc-stat-row"><span class="kc-stat-icon">🔥</span><span class="kc-stat-label">Discord Streak</span><span class="kc-stat-value">${streak} days</span></div>`;
+                        // Update standalone streak section with accurate economy data
+                        if (streakEl && streakSec) { streakEl.textContent = `🔥 ${streak} Day Streak`; streakSec.style.display = 'block'; }
+                    }
                     if (ach > 0) rows += `<div class="kc-stat-row"><span class="kc-stat-icon">🎖️</span><span class="kc-stat-label">Achievements</span><span class="kc-stat-value">${ach}</span></div>`;
 
                     if (rows) {
@@ -877,23 +881,23 @@
             // ── Friend bar (hidden on own profile) ──
             const currentUid = (window.currentUser || null)?.uid || null;
             if (currentUid && currentUid !== uid) {
-                const [mySnap, theirSnap, allFriendsSnap, myFriendsSnap] = await Promise.all([
+                const [myFriendSnap, theirFriendSnap, allFriendsSnap, myFriendsSnap, incomingReqSnap, outgoingReqSnap] = await Promise.all([
                     database.ref(`users/${currentUid}/friends/${uid}`).once('value'),
                     database.ref(`users/${uid}/friends/${currentUid}`).once('value'),
                     database.ref(`users/${uid}/friends`).once('value'),
                     database.ref(`users/${currentUid}/friends`).once('value'),
+                    database.ref(`users/${currentUid}/friendRequests/${uid}`).once('value'),  // they sent to me
+                    database.ref(`users/${uid}/friendRequests/${currentUid}`).once('value'),  // I sent to them
                 ]);
-                let _iAdded = !!mySnap.val();
-                const theyAdded = !!theirSnap.val();
-                const friendUids = Object.keys(allFriendsSnap.val() || {});
-                const myFriendUids = Object.keys(myFriendsSnap.val() || {});
+                let _isMutual = !!myFriendSnap.val() && !!theirFriendSnap.val();
+                let _hasPendingIncoming = !!incomingReqSnap.val();
+                let _hasPendingOutgoing = !!outgoingReqSnap.val();
 
-                // If I've added them but they haven't added me back yet, still count me in their
-                // displayed total so it doesn't show "0 friends" when we're friends
-                const effectiveFriendUids = [...friendUids];
-                if (_iAdded && !effectiveFriendUids.includes(currentUid)) {
-                    effectiveFriendUids.unshift(currentUid);
-                }
+                // Mutual friend count (both sides confirmed)
+                const theirFriendUids = Object.keys(allFriendsSnap.val() || {});
+                const myFriendUids = Object.keys(myFriendsSnap.val() || {});
+                const mutualCount = theirFriendUids.filter(fuid => myFriendsSnap.val()?.[fuid]).length;
+                const friendCount = theirFriendUids.length;
 
                 const friendBar = document.createElement('div');
                 friendBar.id = 'kcFriendBar';
@@ -902,19 +906,22 @@
                 // Friend count chip
                 const countBtn = document.createElement('button');
                 countBtn.className = 'kc-friend-count-btn';
-                countBtn.textContent = `${effectiveFriendUids.length} friend${effectiveFriendUids.length !== 1 ? 's' : ''}`;
-                countBtn.onclick = () => _toggleFriendsList(effectiveFriendUids, myFriendUids);
+                countBtn.textContent = `${friendCount} friend${friendCount !== 1 ? 's' : ''}`;
+                countBtn.onclick = () => _toggleFriendsList(theirFriendUids, myFriendUids);
                 friendBar.appendChild(countBtn);
 
-                // Add / Friends / Add back button
+                // Add / Friends / Accept / Pending button
                 const actionBtn = document.createElement('button');
                 const refreshBtn = () => {
-                    if (_iAdded) {
+                    if (_isMutual) {
                         actionBtn.className = 'kc-friend-btn friends';
                         actionBtn.textContent = '✓ Friends';
-                    } else if (theyAdded) {
-                        actionBtn.className = 'kc-friend-btn add-back';
-                        actionBtn.textContent = '+ Add back';
+                    } else if (_hasPendingIncoming) {
+                        actionBtn.className = 'kc-friend-btn add';
+                        actionBtn.textContent = '+ Accept Request';
+                    } else if (_hasPendingOutgoing) {
+                        actionBtn.className = 'kc-friend-btn friends';
+                        actionBtn.textContent = '⏳ Request Sent';
                     } else {
                         actionBtn.className = 'kc-friend-btn add';
                         actionBtn.textContent = '+ Add friend';
@@ -922,13 +929,26 @@
                 };
                 refreshBtn();
                 actionBtn.onclick = async () => {
-                    if (_iAdded) {
+                    if (_isMutual) {
                         if (!confirm('Remove this friend?')) return;
-                        await database.ref(`users/${currentUid}/friends/${uid}`).remove().catch(() => {});
-                        _iAdded = false;
-                    } else {
-                        await database.ref(`users/${currentUid}/friends/${uid}`).set(true).catch(() => {});
-                        _iAdded = true;
+                        await Promise.all([
+                            database.ref(`users/${currentUid}/friends/${uid}`).remove(),
+                            database.ref(`users/${uid}/friends/${currentUid}`).remove(),
+                        ]).catch(() => {});
+                        _isMutual = false;
+                    } else if (_hasPendingIncoming) {
+                        // Accept their request
+                        await Promise.all([
+                            database.ref(`users/${currentUid}/friends/${uid}`).set(true),
+                            database.ref(`users/${uid}/friends/${currentUid}`).set(true),
+                            database.ref(`users/${currentUid}/friendRequests/${uid}`).remove(),
+                        ]).catch(() => {});
+                        _hasPendingIncoming = false;
+                        _isMutual = true;
+                    } else if (!_hasPendingOutgoing) {
+                        // Send request
+                        await database.ref(`users/${uid}/friendRequests/${currentUid}`).set({ sentAt: Date.now() }).catch(() => {});
+                        _hasPendingOutgoing = true;
                     }
                     refreshBtn();
                 };

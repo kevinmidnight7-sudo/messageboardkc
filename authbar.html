@@ -201,9 +201,9 @@
                     let badgesHtml = '';
                     if(isVerified) badgesHtml += `<span class="text-xs ml-1" title="Verified">✔️</span>`;
                     if(userData.codesUnlocked?.diamond) badgesHtml += `<span class="text-xs ml-1" title="Diamond User">💎</span>`;
-                    if(userData.badges?.offence > 0) badgesHtml += `<span class="text-xs ml-1" title="Best Offence">🔥</span>`;
-                    if(userData.badges?.defence > 0) badgesHtml += `<span class="text-xs ml-1" title="Best Defence">🛡️</span>`;
-                    if(userData.badges?.overall > 0) badgesHtml += `<span class="text-xs ml-1" title="Overall Winner">🏆</span>`;
+                    if(userData.badges?.offence > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" title="Best Offence" style="width:16px;height:16px;object-fit:contain;display:inline;vertical-align:middle;margin-left:4px;">`;
+                    if(userData.badges?.defence > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" title="Best Defence" style="width:16px;height:16px;object-fit:contain;display:inline;vertical-align:middle;margin-left:4px;">`;
+                    if(userData.badges?.overall > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" title="Overall Winner" style="width:16px;height:16px;object-fit:contain;display:inline;vertical-align:middle;margin-left:4px;">`;
 
                     authBarContainer.innerHTML = `
                         <div class="flex items-center gap-2">

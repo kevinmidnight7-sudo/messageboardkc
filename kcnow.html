@@ -497,6 +497,14 @@
         }
         /* Profile popup on mobile */
         .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
+        /* KC NOW menu: desktop dropdown positioning (detached from wrapper) */
+        #quick-actions-menu:not(.hidden) {
+            position: fixed;
+            top: 58px;
+            left: 1rem;
+            z-index: 200;
+        }
+
         /* Feed sheet and KC NOW sheet — fully opaque, no blur */
         .android-mobile #kc-sidebar.mobile-open > .glass,
         .android-mobile #quick-actions-menu:not(.hidden) {
@@ -517,30 +525,46 @@
             .tab-btn { font-size: 0.65rem; letter-spacing: 1.5px; }
 
             /* Welcome card — stack vertically on mobile */
-            #welcome-card .p-6 { padding: 1rem; }
-            #user-avatar { width: 64px !important; height: 64px !important; }
-            #user-display-name { font-size: 1.4rem !important; }
-            #welcome-card .flex.items-center.justify-between {
+            #welcome-card .p-6 {
+                padding: 1rem;
                 flex-direction: column !important;
                 align-items: stretch !important;
-                gap: 0.75rem;
+                gap: 0.875rem !important;
             }
-            #auth-actions { width: 100% !important; flex-shrink: 0; }
-            #auth-actions > div {
-                min-width: 0 !important;
+            #user-avatar { width: 60px !important; height: 60px !important; }
+            #user-display-name { font-size: 1.25rem !important; }
+            /* Auth actions panel — full width, items in a row */
+            #auth-actions {
                 width: 100% !important;
+                min-width: 0 !important;
+            }
+            #auth-actions > div {
+                display: flex !important;
                 flex-direction: row !important;
                 flex-wrap: wrap !important;
+                align-items: stretch !important;
+                min-width: 0 !important;
+                width: 100% !important;
                 gap: 0.5rem !important;
             }
-            /* Economy card compact row layout */
+            /* Economy card: takes left half */
             #auth-actions .glass.rounded-2xl {
-                flex: 1 1 120px;
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
                 text-align: center !important;
+                padding: 10px 12px !important;
             }
-            /* Action buttons fill remaining space */
-            #auth-actions button {
-                flex: 1 1 120px;
+            /* Claim daily: takes right half */
+            #auth-actions > div > button:first-of-type {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                padding: 10px 8px !important;
+                font-size: 0.75rem !important;
+            }
+            /* Sign out: full width below */
+            #auth-actions > div > button:last-of-type {
+                flex: 0 0 100% !important;
+                padding: 4px !important;
             }
 
             /* Hub grid: 2 columns */
@@ -1780,15 +1804,17 @@
             <i class="fa-solid fa-chevron-down" id="qa-chevron" style="font-size:0.6rem;opacity:0.55;transition:transform 0.3s;margin-left:1px;"></i>
         </button>
 
-        <!-- Dropdown panel: clean KC glass rows -->
-        <div id="quick-actions-menu" class="hidden mt-2 qa-panel glass" style="
-            min-width:220px;
-            border-radius:16px;
-            overflow:hidden;
-            transform-origin:top left;
-            animation:qaSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
-            padding:6px;
-        ">
+    </div>
+
+    <!-- Dropdown panel — lives at body level so position:fixed works on all mobile browsers -->
+    <div id="quick-actions-menu" class="hidden qa-panel glass" style="
+        min-width:220px;
+        border-radius:16px;
+        overflow:hidden;
+        transform-origin:top left;
+        animation:qaSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        padding:6px;
+    ">
             <!-- Actions group -->
             <div style="padding:4px 8px 2px;margin-bottom:2px;">
                 <span style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;">Actions</span>
@@ -1844,7 +1870,6 @@
             </button>
 
         </div>
-    </div>
 
     <script>
         // --- DATA & STATE ---
@@ -1882,6 +1907,7 @@
         // Phase 5 state variables
         let currentTheme = localStorage.getItem('kc-theme') || 'dark';
         let notificationPrefs = JSON.parse(localStorage.getItem('kc-notifications') || '{"achievements":true,"points":true,"clans":true,"clips":true,"users":true,"streaks":true}');
+        let dismissedNotifIds = new Set(JSON.parse(localStorage.getItem('kc-dismissed-notifs') || '[]'));
         let friendsList = [];
         let feedSearchQuery = '';
         let feedDateFilter = 'all'; // all, today, week, month
@@ -2326,6 +2352,20 @@
                             }
                         });
                     }
+                    // Friend count pill
+                    db.ref(`users/${user.uid}/friends`).once('value').then(friendSnap => {
+                        const count = Object.keys(friendSnap.val() || {}).length;
+                        const pills = document.getElementById('wc-stat-pills');
+                        if (pills && !document.getElementById('wc-friends-pill')) {
+                            const pill = document.createElement('span');
+                            pill.id = 'wc-friends-pill';
+                            pill.style.cssText = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:0.7rem;font-weight:800;color:#818cf8;background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.22);cursor:pointer;';
+                            pill.innerHTML = `<i class="fa-solid fa-user-group" style="font-size:0.6rem;"></i>${count} friend${count !== 1 ? 's' : ''}`;
+                            pill.onclick = () => openFriendsList();
+                            pills.appendChild(pill);
+                        }
+                    });
+
                     // BD high score stat pill
                     db.ref(`users/${user.uid}/bdHighscore`).once('value').then(bdSnap => {
                         const bdScore = bdSnap.val() || 0;
@@ -2419,9 +2459,18 @@
                 addFeedItem({ type:'clips', title:'New Clip!', user:p.userName, uid:p.createdBy, detail:p.caption, time:'Just now', color:'text-blue-400', icon:'fa-clapperboard' });
             });
 
-            db.ref('users').limitToLast(3).on('child_added', snap => {
+            // New Player: only show users who joined in the last 14 days
+            let _newPlayerReady = false;
+            setTimeout(() => { _newPlayerReady = true; }, 2000);
+            db.ref('users').limitToLast(5).on('child_added', snap => {
+                if (!_newPlayerReady) return;
                 const u = snap.val();
-                addFeedItem({ type:'users', title:'New Player!', user:u.displayName, uid:snap.key, detail:'Joined the KC community.', time:'New', color:'text-green-400', icon:'fa-user-plus' });
+                if (!u || !u.displayName) return;
+                const joined = u.joined || 0;
+                const ageDays = (Date.now() - joined) / 86400000;
+                // Skip if no join date recorded or joined more than 14 days ago
+                if (joined === 0 || ageDays > 14) return;
+                addFeedItem({ type:'users', title:'New Player!', user:u.displayName, uid:snap.key, detail:'Just joined the KC community!', color:'text-green-400', icon:'fa-user-plus' });
             });
 
             db.ref('clans').off();
@@ -2444,9 +2493,9 @@
                 });
             });
 
-            // Friend-added events — only fire for additions that happen after the listener attaches,
-            // not the initial population of existing friends.
+            // Friend events — skip initial population, only show new events after attach
             if (currentUser) {
+                // Friend accepted: someone is now a mutual friend
                 let _friendsReady = false;
                 setTimeout(() => { _friendsReady = true; }, 1500);
                 db.ref(`users/${currentUser.uid}/friends`).on('child_added', snap => {
@@ -2459,11 +2508,34 @@
                             title: 'New Friend!',
                             user: u.displayName || 'Someone',
                             uid: friendUid,
-                            detail: 'Added you as a friend.',
+                            detail: 'You are now friends.',
                             color: 'text-pink-400',
                             icon: 'fa-heart',
-                            actionLabel: 'Add back',
-                            actionFn: `addFriend('${friendUid}')`,
+                        });
+                    });
+                });
+
+                // Incoming friend requests
+                let _reqReady = false;
+                setTimeout(() => { _reqReady = true; }, 1500);
+                db.ref(`users/${currentUser.uid}/friendRequests`).on('child_added', snap => {
+                    if (!_reqReady) return;
+                    const fromUid = snap.key;
+                    db.ref(`users/${fromUid}`).once('value').then(uSnap => {
+                        const u = uSnap.val() || {};
+                        addFeedItem({
+                            id: `friendreq_${fromUid}`,
+                            type: 'users',
+                            title: 'Friend Request!',
+                            user: u.displayName || 'Someone',
+                            uid: fromUid,
+                            detail: 'Wants to be your friend.',
+                            color: 'text-pink-400',
+                            icon: 'fa-user-plus',
+                            actionLabel: 'Accept',
+                            actionFn: `acceptFriendRequest('${fromUid}')`,
+                            actionLabel2: 'Decline',
+                            actionFn2: `declineFriendRequest('${fromUid}')`,
                         });
                     });
                 });
@@ -2512,10 +2584,34 @@
 
         function addFeedItem(item) {
             if (!item.timestamp) item.timestamp = Date.now();
+            // Stable ID: type + user slug + hour bucket — deduplicates same event within an hour
+            if (!item.id) {
+                const slug = (item.user || '').replace(/\W/g, '').slice(0, 10);
+                const bucket = Math.floor(item.timestamp / 3600000);
+                item.id = `${item.type}_${slug}_${bucket}`;
+            }
+            // Skip if this notification was already dismissed this session or a previous one
+            if (dismissedNotifIds.has(item.id)) return;
+            // Deduplicate in-memory (same id already in feed)
+            if (feedItems.some(f => f.id === item.id)) return;
             feedItems.unshift(item);
-            if (feedItems.length > 20) feedItems.pop();
+            if (feedItems.length > 30) feedItems.pop();
             renderFeed();
             showToast(`${item.title} — ${item.user}`, 'info', 3000);
+        }
+
+        function dismissNotif(id) {
+            dismissedNotifIds.add(id);
+            try { localStorage.setItem('kc-dismissed-notifs', JSON.stringify([...dismissedNotifIds].slice(-200))); } catch(e) {}
+            feedItems = feedItems.filter(i => i.id !== id);
+            renderFeed();
+        }
+
+        function dismissAllNotifs() {
+            feedItems.forEach(i => dismissedNotifIds.add(i.id));
+            try { localStorage.setItem('kc-dismissed-notifs', JSON.stringify([...dismissedNotifIds].slice(-200))); } catch(e) {}
+            feedItems = [];
+            renderFeed();
         }
 
         // --- TOAST NOTIFICATIONS ---
@@ -2652,25 +2748,39 @@
                 data = data.filter(item => now - item.timestamp < 2592000000);
             }
             // Render feed
-            el.innerHTML = data.map(item => `
+            const clearAllBtn = data.length > 0
+                ? `<div class="flex justify-end mb-2"><button onclick="dismissAllNotifs()" class="text-[10px] text-gray-500 hover:text-red-400 transition font-bold uppercase tracking-widest">Clear All ✕</button></div>`
+                : '';
+            const items = data.map(item => `
                 <div class="glass glass-hover p-4 rounded-3xl border-white/5 cursor-pointer overflow-hidden max-h-16 transition-all duration-500" onclick="toggleFeedItem(this)">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center ${item.color}"><i class="fa-solid ${item.icon}"></i></div>
                             <div>
                                 <h4 class="text-xs font-bold text-white">${item.title}</h4>
-                                <p class="text-[9px] text-gray-500 uppercase font-black">${item.timestamp ? timeAgo(item.timestamp) : item.time}</p>
+                                <p class="text-[9px] text-gray-500 uppercase font-black">${item.timestamp ? timeAgo(item.timestamp) : (item.time || '')}</p>
                             </div>
                         </div>
-                        <i class="fa-solid fa-chevron-down text-[10px] text-gray-600"></i>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-chevron-down text-[10px] text-gray-600"></i>
+                            <button onclick="event.stopPropagation();dismissNotif('${item.id}')"
+                                class="w-5 h-5 flex items-center justify-center text-gray-600 hover:text-red-400 transition rounded-full hover:bg-red-400/10"
+                                title="Dismiss">
+                                <i class="fa-solid fa-xmark text-[10px]"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="pt-4 border-t border-white/5">
-                        <p class="text-[11px] text-blue-400 font-bold mb-1">${item.uid ? `<span class="cursor-pointer hover:underline" onclick="event.stopPropagation();window.openKcProfile('${item.uid}')">${item.user}</span>` : item.user}</p>
+                        <p class="text-[11px] text-blue-400 font-bold mb-1">${item.uid ? `<span class="cursor-pointer hover:underline" onclick="event.stopPropagation();window.openKcProfile('${item.uid}')">${item.user}</span>` : (item.user || '')}</p>
                         <p class="text-xs text-gray-400 leading-relaxed">${item.detail || ''}</p>
-                        ${item.actionLabel ? `<button onclick="event.stopPropagation();${item.actionFn}" class="mt-2 text-xs px-3 py-1.5 bg-pink-500/15 hover:bg-pink-500/30 text-pink-400 rounded-xl font-semibold transition">${item.actionLabel}</button>` : ''}
+                        <div class="flex gap-2 flex-wrap mt-2">
+                            ${item.actionLabel ? `<button onclick="event.stopPropagation();${item.actionFn};dismissNotif('${item.id}')" class="text-xs px-3 py-1.5 bg-pink-500/15 hover:bg-pink-500/30 text-pink-400 rounded-xl font-semibold transition">${item.actionLabel}</button>` : ''}
+                            ${item.actionLabel2 ? `<button onclick="event.stopPropagation();${item.actionFn2};dismissNotif('${item.id}')" class="text-xs px-3 py-1.5 bg-gray-500/15 hover:bg-gray-500/30 text-gray-400 rounded-xl font-semibold transition">${item.actionLabel2}</button>` : ''}
+                        </div>
                     </div>
                 </div>
             `).join('') || `<div class="p-10 text-center opacity-20 text-xs italic">${feedSearchQuery || feedDateFilter !== 'all' ? 'No matching events...' : 'Awaiting events...'}</div>`;
+            el.innerHTML = clearAllBtn + items;
         }
 
         function toggleFeedItem(el) {
@@ -6213,6 +6323,8 @@
                     if (cur > 0) updates['inventory/streak_protection'] = cur - 1;
                 }
                 await db.ref(`userEconomy/${discordId}`).update(updates);
+                // Write-back loginStreak to users node so other pages (carousel, profiles) stay in sync
+                if (currentUser) db.ref(`users/${currentUser.uid}/loginStreak`).set(newStreak).catch(() => {});
                 // Update modal to success state
                 const modal = document.getElementById('global-modal');
                 if (modal) {
@@ -6998,13 +7110,19 @@
         function openFriendsList() {
             if (!currentUser) return openAuthModal();
             openModal('Friends', `
-                <div class="space-y-6">
+                <div class="space-y-5">
                     <div class="flex gap-2">
                         <input type="text" id="friend-search" placeholder="Search by username..."
                                class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none focus:border-blue-500">
                         <button onclick="searchFriendUsers()" class="px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">
                             Search
                         </button>
+                    </div>
+                    <div id="pending-requests-panel" class="hidden">
+                        <p class="text-xs text-yellow-400 font-black uppercase mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-user-clock"></i> Pending Requests
+                        </p>
+                        <div id="pending-requests-list" class="space-y-2 max-h-36 overflow-y-auto custom-scroll"></div>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500 font-black uppercase mb-2">Your Friends</p>
@@ -7016,6 +7134,38 @@
                 </div>
             `);
             loadFriends();
+            loadPendingRequests();
+        }
+
+        function loadPendingRequests() {
+            if (!currentUser) return;
+            db.ref(`users/${currentUser.uid}/friendRequests`).once('value').then(snap => {
+                const requests = snap.val() || {};
+                const uids = Object.keys(requests);
+                const panel = document.getElementById('pending-requests-panel');
+                const list = document.getElementById('pending-requests-list');
+                if (!panel || !list) return;
+                if (uids.length === 0) { panel.classList.add('hidden'); return; }
+                panel.classList.remove('hidden');
+                Promise.all(uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))).then(users => {
+                    list.innerHTML = users.map(u => `
+                        <div class="flex items-center gap-3 p-3 glass rounded-2xl">
+                            <img src="${u.avatar || 'https://via.placeholder.com/40'}" class="w-9 h-9 rounded-full object-cover">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-sm truncate">${u.displayName || 'Unknown'}</p>
+                            </div>
+                            <button onclick="acceptFriendRequest('${u.uid}');this.closest('.flex').remove();checkPendingEmpty()" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl text-xs transition">Accept</button>
+                            <button onclick="declineFriendRequest('${u.uid}');this.closest('.flex').remove();checkPendingEmpty()" class="px-3 py-1.5 bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold rounded-xl text-xs transition">Decline</button>
+                        </div>
+                    `).join('');
+                });
+            });
+        }
+
+        function checkPendingEmpty() {
+            const list = document.getElementById('pending-requests-list');
+            const panel = document.getElementById('pending-requests-panel');
+            if (list && panel && !list.querySelector('.flex')) panel.classList.add('hidden');
         }
 
         function searchFriendUsers() {
@@ -7038,7 +7188,7 @@
                                 <p class="font-bold text-sm">${user.displayName}</p>
                             </div>
                             ${currentUser && user.uid !== currentUser.uid ? `
-                                <button onclick="addFriend('${user.uid}')" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl text-xs transition">
+                                <button onclick="sendFriendRequest('${user.uid}');this.textContent='Sent ✓';this.disabled=true" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl text-xs transition">
                                     Add
                                 </button>
                             ` : '<span class="text-xs text-gray-500">You</span>'}
@@ -7048,19 +7198,51 @@
             });
         }
 
-        function addFriend(uid) {
+        function sendFriendRequest(uid) {
             if (!currentUser) return;
             if (uid === currentUser.uid) { showToast("You can't add yourself!", 'error'); return; }
-            db.ref(`users/${currentUser.uid}/friends/${uid}`).set(true).then(() => {
-                showToast('Friend added!', 'success');
-            }).catch(() => showToast('Failed to add friend', 'error'));
+            // Write to their friendRequests — they must accept before becoming friends
+            db.ref(`users/${uid}/friendRequests/${currentUser.uid}`).set({ sentAt: Date.now() }).then(() => {
+                showToast('Friend request sent!', 'success');
+            }).catch(() => showToast('Failed to send request', 'error'));
+        }
+
+        // Keep addFriend as an alias so any existing calls still work
+        function addFriend(uid) { sendFriendRequest(uid); }
+
+        async function acceptFriendRequest(fromUid) {
+            if (!currentUser) return;
+            try {
+                await Promise.all([
+                    db.ref(`users/${currentUser.uid}/friends/${fromUid}`).set(true),
+                    db.ref(`users/${fromUid}/friends/${currentUser.uid}`).set(true),
+                    db.ref(`users/${currentUser.uid}/friendRequests/${fromUid}`).remove(),
+                ]);
+                // Remove from dismissed so the feed item clears properly
+                dismissedNotifIds.add(`friendreq_${fromUid}`);
+                try { localStorage.setItem('kc-dismissed-notifs', JSON.stringify([...dismissedNotifIds].slice(-200))); } catch(e) {}
+                showToast('Friend accepted!', 'success');
+                loadFriends();
+            } catch(e) { showToast('Failed to accept request', 'error'); }
+        }
+
+        async function declineFriendRequest(fromUid) {
+            if (!currentUser) return;
+            try {
+                await db.ref(`users/${currentUser.uid}/friendRequests/${fromUid}`).remove();
+                showToast('Request declined', 'info');
+            } catch(e) { showToast('Failed to decline request', 'error'); }
         }
 
         function removeFriend(uid) {
             if (!currentUser) return;
             if (confirm('Remove this friend?')) {
-                db.ref(`users/${currentUser.uid}/friends/${uid}`).remove().then(() => {
+                Promise.all([
+                    db.ref(`users/${currentUser.uid}/friends/${uid}`).remove(),
+                    db.ref(`users/${uid}/friends/${currentUser.uid}`).remove(),
+                ]).then(() => {
                     showToast('Friend removed', 'info');
+                    loadFriends();
                 }).catch(() => showToast('Failed to remove friend', 'error'));
             }
         }
