@@ -502,6 +502,55 @@
         return null;
     }
 
+    // ── Clan section ─────────────────────────────────────────────────────────
+    async function loadClanSection(uid, userData) {
+        const popupBody = document.getElementById('kcPopupBody');
+        if (!popupBody) return;
+        document.getElementById('kcClanSection')?.remove();
+
+        const clanId = userData.clanId || null;
+        if (!clanId) return;
+
+        const database = getDb();
+        if (!database) return;
+
+        try {
+            const snap = await database.ref(`clans/${clanId}`).once('value');
+            const clan = snap.val();
+            if (!clan || !clan.name) return;
+
+            const memberCount = clan.members ? Object.keys(clan.members).length : 0;
+            const iconHtml = clan.icon
+                ? `<img src="${esc(clan.icon)}" alt="" style="width:28px;height:28px;border-radius:8px;object-fit:cover;flex-shrink:0;" onerror="this.style.display='none'">`
+                : `<span style="font-size:1.25rem;line-height:1;flex-shrink:0;">🛡️</span>`;
+
+            const sec = document.createElement('div');
+            sec.id = 'kcClanSection';
+            sec.className = 'kc-section';
+            sec.style.cursor = 'pointer';
+            sec.title = 'View clan';
+            sec.innerHTML = `
+                <h4 class="kc-section-title">CLAN</h4>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    ${iconHtml}
+                    <div style="min-width:0;">
+                        <div style="font-weight:700;font-size:0.9rem;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(clan.name)}</div>
+                        ${clan.tag ? `<div style="font-size:0.72rem;color:#6b7280;font-weight:600;">${esc(clan.tag)} · ${memberCount} member${memberCount !== 1 ? 's' : ''}</div>` : `<div style="font-size:0.72rem;color:#6b7280;">${memberCount} member${memberCount !== 1 ? 's' : ''}</div>`}
+                    </div>
+                </div>`;
+
+            // Click the section to open the clan on kcnow.html if openClanDetails exists
+            sec.addEventListener('click', () => {
+                if (typeof openClanDetails === 'function') {
+                    document.getElementById('kcProfilePopup').style.display = 'none';
+                    openClanDetails(clanId);
+                }
+            });
+
+            popupBody.appendChild(sec);
+        } catch (e) { /* silent */ }
+    }
+
     // ── Discord helpers ──────────────────────────────────────────────────────
     // Returns { id, username?, globalName?, tag?, ... } or null
     async function getDiscordIdFromKcUid(kcUid) {
@@ -727,6 +776,7 @@
         document.getElementById('kcDiscordSection')?.remove();
         document.getElementById('kcBdSection')?.remove();
         document.getElementById('kcEconSection')?.remove();
+        document.getElementById('kcClanSection')?.remove();
         document.getElementById('kcFriendBar')?.remove();
 
         overlay.style.display = 'flex';
@@ -909,6 +959,9 @@
             });
 
             if (!hasAny) badgesEl.textContent = 'No badges to display.';
+
+            // ── Clan membership ──
+            loadClanSection(uid, u);
 
             // ── Discord bot stats (BD, economy, bot custom badge) ──
             loadDiscordStats(uid, u);
