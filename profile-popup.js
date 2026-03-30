@@ -438,6 +438,25 @@
         if (el) el.style.display = 'none';
     }
 
+    function kcPopupConfirm(message, onYes) {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:1.5rem;';
+        overlay.innerHTML = `
+            <div style="background:#1a2235;border-radius:1rem;padding:1.5rem;max-width:280px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.4);text-align:center;">
+                <p style="color:#e5e7eb;font-size:0.95rem;margin-bottom:1.2rem;">${message}</p>
+                <div style="display:flex;gap:0.75rem;justify-content:center;">
+                    <button id="kcPopupConfirmYes" style="padding:0.5rem 1.5rem;background:#ef4444;color:#fff;border:none;border-radius:0.6rem;font-weight:600;cursor:pointer;font-family:inherit;">Yes</button>
+                    <button id="kcPopupConfirmNo" style="padding:0.5rem 1.5rem;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:0.6rem;font-weight:600;cursor:pointer;font-family:inherit;">Cancel</button>
+                </div>
+            </div>
+        `;
+        const card = document.getElementById('kcPopupCard');
+        card.style.position = 'relative';
+        card.appendChild(overlay);
+        overlay.querySelector('#kcPopupConfirmYes').onclick = () => { overlay.remove(); if (onYes) onYes(); };
+        overlay.querySelector('#kcPopupConfirmNo').onclick = () => overlay.remove();
+    }
+
     function _toggleFriendsList(friendUids, myFriendUids) {
         const postsCol = document.getElementById('kcPopupPostsCol');
         const card     = document.getElementById('kcPopupCard');
@@ -930,12 +949,15 @@
                 refreshBtn();
                 actionBtn.onclick = async () => {
                     if (_isMutual) {
-                        if (!confirm('Remove this friend?')) return;
-                        await Promise.all([
-                            database.ref(`users/${currentUid}/friends/${uid}`).remove(),
-                            database.ref(`users/${uid}/friends/${currentUid}`).remove(),
-                        ]).catch(() => {});
-                        _isMutual = false;
+                        kcPopupConfirm('Remove this friend?', async () => {
+                            await Promise.all([
+                                database.ref(`users/${currentUid}/friends/${uid}`).remove(),
+                                database.ref(`users/${uid}/friends/${currentUid}`).remove(),
+                            ]).catch(() => {});
+                            _isMutual = false;
+                            refreshBtn();
+                        });
+                        return;
                     } else if (_hasPendingIncoming) {
                         // Accept their request
                         await Promise.all([
