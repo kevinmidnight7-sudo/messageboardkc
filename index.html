@@ -1778,6 +1778,7 @@ const hasCustomization =
   sortSelect.onchange = ()=>{ sortMode=sortSelect.value; render(); };
 
   auth.onAuthStateChanged(u => {
+    window.currentUser = u; // expose for profile-popup.js friend bar
     if (u) {
       currentUserUid = u.uid;
       db.ref(`users/${u.uid}`).on('value', snap => {

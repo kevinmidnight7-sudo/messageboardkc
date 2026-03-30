@@ -340,13 +340,6 @@
     </div>
 </div>
 
-<!-- Profile Overlay Modal -->
-<div id="profileOverlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-[60] modal-overlay">
-  <div class="glass-bg max-w-lg w-[94%] mx-auto mt-10 p-6 rounded-2xl modal-content relative">
-    <button onclick="document.getElementById('profileOverlay').classList.add('hidden')" class="absolute top-3 right-3 text-white">✖</button>
-    <div id="profileOverlayBody"></div>
-  </div>
-</div>
 
 <!-- Post Overlay Modal -->
 <div id="postOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden z-[70] modal-overlay flex items-center justify-center p-4">
@@ -2125,6 +2118,7 @@
         auth.onAuthStateChanged(user => {
             detachDataListeners();
             currentUser = user;
+            window.currentUser = user; // expose for profile-popup.js friend bar
             if(user){
                 if (sessionStorage.getItem('kc_isAdminSession') === '1') { isAdminSession = true; db.ref(`sessionAdmins/${user.uid}`).set(true).then(()=>db.ref(`sessionAdmins/${user.uid}`).onDisconnect().remove()); }
                 attachDataListeners();

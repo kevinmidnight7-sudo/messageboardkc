@@ -641,6 +641,7 @@
 
         // --- AUTH & HEADER ---
         auth.onAuthStateChanged(user => {
+            window.currentUser = user; // expose for profile-popup.js friend bar
             currentUserUid = user ? user.uid : null;
             if (user) {
                 db.ref(`users/${user.uid}`).on('value', snap => {
