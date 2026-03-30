@@ -479,7 +479,6 @@
         .android-mobile .glass,
         .android-mobile .glass-hover,
         .android-mobile [style*="backdrop-filter"],
-        .android-mobile #kc-sidebar.mobile-open > .glass,
         .android-mobile #mobile-feed-backdrop {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
@@ -498,11 +497,16 @@
         }
         /* Profile popup on mobile */
         .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
-        /* Feed sheet: ensure no blur leaks through on any mobile device */
+        /* Feed sheet and KC NOW sheet — fully opaque, no blur */
         .android-mobile #kc-sidebar.mobile-open > .glass,
         .android-mobile #quick-actions-menu:not(.hidden) {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
+            background: rgba(10, 18, 38, 0.99) !important;
+            border-top: 1px solid rgba(255,255,255,0.10) !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-bottom: none !important;
         }
 
         /* ===== Mobile Layout — comprehensive ===== */
@@ -512,11 +516,32 @@
             header nav { padding: 0.6rem 1rem; gap: 1.25rem; border-radius: 20px; }
             .tab-btn { font-size: 0.65rem; letter-spacing: 1.5px; }
 
-            /* Welcome card */
+            /* Welcome card — stack vertically on mobile */
             #welcome-card .p-6 { padding: 1rem; }
             #user-avatar { width: 64px !important; height: 64px !important; }
             #user-display-name { font-size: 1.4rem !important; }
-            #welcome-card .flex.items-center.justify-between { flex-wrap: wrap; }
+            #welcome-card .flex.items-center.justify-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 0.75rem;
+            }
+            #auth-actions { width: 100% !important; flex-shrink: 0; }
+            #auth-actions > div {
+                min-width: 0 !important;
+                width: 100% !important;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                gap: 0.5rem !important;
+            }
+            /* Economy card compact row layout */
+            #auth-actions .glass.rounded-2xl {
+                flex: 1 1 120px;
+                text-align: center !important;
+            }
+            /* Action buttons fill remaining space */
+            #auth-actions button {
+                flex: 1 1 120px;
+            }
 
             /* Hub grid: 2 columns */
             #view-home .grid.grid-cols-3 {
