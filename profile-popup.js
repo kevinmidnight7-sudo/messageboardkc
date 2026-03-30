@@ -395,7 +395,7 @@
         if (el) el.style.display = 'none';
     }
 
-    function _toggleFriendsList(friendUids) {
+    function _toggleFriendsList(friendUids, myFriendUids) {
         const postsCol = document.getElementById('kcPopupPostsCol');
         const card     = document.getElementById('kcPopupCard');
         if (!postsCol || !card) return;
@@ -406,35 +406,84 @@
             return;
         }
 
+        const mySet = new Set(myFriendUids || []);
+        const mutualUids = friendUids.filter(u => mySet.has(u));
+        const mutualCount = mutualUids.length;
+
+        const subheading = mutualCount > 0
+            ? `${friendUids.length} friend${friendUids.length !== 1 ? 's' : ''} · <span style="color:#3b82f6">${mutualCount} mutual</span>`
+            : `${friendUids.length} friend${friendUids.length !== 1 ? 's' : ''}`;
+
         card.classList.add('kc-two-col');
         postsCol.dataset.panel = 'friends';
         postsCol.innerHTML = `
-            <h4 class="kc-section-title" style="padding:1rem 1rem 0.75rem;font-size:0.72rem;letter-spacing:0.05em;color:#6b7280">
-                FRIENDS · ${friendUids.length}
+            <h4 class="kc-section-title" style="padding:1rem 1rem 0.4rem;font-size:0.72rem;letter-spacing:0.05em;color:#6b7280">
+                FRIENDS
             </h4>
-            <div id="kcFriendsList" style="padding:0 0.5rem 1rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(90vh - 80px)">
+            <p style="margin:0;padding:0 1rem 0.75rem;font-size:0.78rem;font-weight:600;color:#374151">${subheading}</p>
+            <div id="kcFriendsList" style="padding:0 0.5rem 1rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(90vh - 100px)">
                 <div style="text-align:center;padding:1.5rem;color:#9ca3af;font-size:0.8rem">Loading…</div>
             </div>`;
 
-        const db = getDb();
-        if (!db || !friendUids.length) {
+        const database = getDb();
+        if (!database || !friendUids.length) {
             const el = document.getElementById('kcFriendsList');
             if (el) el.innerHTML = '<p style="text-align:center;color:#9ca3af;font-size:0.85rem;padding:1rem">No friends yet.</p>';
             return;
         }
 
-        const toLoad = friendUids.slice(0, 30);
+        // Sort: mutuals first, then rest — cap at 30 total
+        const sorted = [
+            ...friendUids.filter(u => mySet.has(u)),
+            ...friendUids.filter(u => !mySet.has(u))
+        ];
+        const toLoad = sorted.slice(0, 30);
+
         Promise.all(toLoad.map(fuid =>
-            db.ref(`users/${fuid}`).once('value').then(s => ({ uid: fuid, ...(s.val() || {}) }))
+            database.ref(`users/${fuid}`).once('value').then(s => ({ uid: fuid, isMutual: mySet.has(fuid), ...(s.val() || {}) }))
         )).then(users => {
             const container = document.getElementById('kcFriendsList');
             if (!container) return;
-            container.innerHTML = users.map(u => `
-                <div class="kc-friend-item" onclick="window.openKcProfile('${esc(u.uid)}')">
-                    <img src="${esc(u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png')}" alt="" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
-                    <div class="kc-friend-item-name">${esc(u.displayName || 'Anonymous')}</div>
-                </div>`).join('')
-                + (friendUids.length > 30 ? `<p style="text-align:center;color:#9ca3af;font-size:0.72rem;padding:0.5rem">+${friendUids.length - 30} more</p>` : '');
+
+            // Section header for mutuals if any
+            let html = '';
+            if (mutualCount > 0) {
+                html += `<p style="font-size:0.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;padding:4px 8px 2px">Mutual</p>`;
+                users.filter(u => u.isMutual).forEach(u => {
+                    html += `
+                        <div class="kc-friend-item" onclick="window.openKcProfile('${esc(u.uid)}')">
+                            <img src="${esc(u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png')}" alt="" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                            <div>
+                                <div class="kc-friend-item-name">${esc(u.displayName || 'Anonymous')}</div>
+                                <div style="font-size:0.7rem;color:#3b82f6;font-weight:600">Mutual friend</div>
+                            </div>
+                        </div>`;
+                });
+                const nonMutuals = users.filter(u => !u.isMutual);
+                if (nonMutuals.length > 0) {
+                    html += `<p style="font-size:0.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;padding:8px 8px 2px">Other friends</p>`;
+                    nonMutuals.forEach(u => {
+                        html += `
+                            <div class="kc-friend-item" onclick="window.openKcProfile('${esc(u.uid)}')">
+                                <img src="${esc(u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png')}" alt="" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                                <div class="kc-friend-item-name">${esc(u.displayName || 'Anonymous')}</div>
+                            </div>`;
+                    });
+                }
+            } else {
+                users.forEach(u => {
+                    html += `
+                        <div class="kc-friend-item" onclick="window.openKcProfile('${esc(u.uid)}')">
+                            <img src="${esc(u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png')}" alt="" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                            <div class="kc-friend-item-name">${esc(u.displayName || 'Anonymous')}</div>
+                        </div>`;
+                });
+            }
+
+            if (friendUids.length > 30) {
+                html += `<p style="text-align:center;color:#9ca3af;font-size:0.72rem;padding:0.5rem">+${friendUids.length - 30} more</p>`;
+            }
+            container.innerHTML = html;
         }).catch(() => {});
     }
 
@@ -715,14 +764,23 @@
             // ── Friend bar (hidden on own profile) ──
             const currentUid = (window.currentUser || null)?.uid || null;
             if (currentUid && currentUid !== uid) {
-                const [mySnap, theirSnap, allFriendsSnap] = await Promise.all([
+                const [mySnap, theirSnap, allFriendsSnap, myFriendsSnap] = await Promise.all([
                     database.ref(`users/${currentUid}/friends/${uid}`).once('value'),
                     database.ref(`users/${uid}/friends/${currentUid}`).once('value'),
                     database.ref(`users/${uid}/friends`).once('value'),
+                    database.ref(`users/${currentUid}/friends`).once('value'),
                 ]);
                 let _iAdded = !!mySnap.val();
                 const theyAdded = !!theirSnap.val();
                 const friendUids = Object.keys(allFriendsSnap.val() || {});
+                const myFriendUids = Object.keys(myFriendsSnap.val() || {});
+
+                // If I've added them but they haven't added me back yet, still count me in their
+                // displayed total so it doesn't show "0 friends" when we're friends
+                const effectiveFriendUids = [...friendUids];
+                if (_iAdded && !effectiveFriendUids.includes(currentUid)) {
+                    effectiveFriendUids.unshift(currentUid);
+                }
 
                 const friendBar = document.createElement('div');
                 friendBar.id = 'kcFriendBar';
@@ -731,8 +789,8 @@
                 // Friend count chip
                 const countBtn = document.createElement('button');
                 countBtn.className = 'kc-friend-count-btn';
-                countBtn.textContent = `${friendUids.length} friend${friendUids.length !== 1 ? 's' : ''}`;
-                countBtn.onclick = () => _toggleFriendsList(friendUids);
+                countBtn.textContent = `${effectiveFriendUids.length} friend${effectiveFriendUids.length !== 1 ? 's' : ''}`;
+                countBtn.onclick = () => _toggleFriendsList(effectiveFriendUids, myFriendUids);
                 friendBar.appendChild(countBtn);
 
                 // Add / Friends / Add back button
