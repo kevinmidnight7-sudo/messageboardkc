@@ -4321,7 +4321,6 @@
                     }
                     return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
                 }));
-                });
                 const el = document.getElementById('top-economy');
                 const medals = ['🥇','🥈','🥉'];
                 if (el) el.innerHTML = enriched.length > 0 ? enriched.map((p, i) => `
