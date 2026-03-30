@@ -458,6 +458,30 @@
         #graphics-firstrun .gfx-card.gfx-low  { background: rgba(100,116,139,0.08); border-color: rgba(100,116,139,0.2); }
         #graphics-firstrun .gfx-card.gfx-low:hover  { box-shadow: 0 0 40px rgba(100,116,139,0.15); border-color: rgba(100,116,139,0.45); }
 
+        /* ===== Android: force-remove all backdrop-filter blur =====
+           Android's GPU compositor can't handle backdrop-filter behind animated
+           layers cleanly — text renders blurry regardless of device quality.
+           We replace blur with a solid semi-opaque background as fallback. */
+        .android-mobile .glass,
+        .android-mobile .glass-hover,
+        .android-mobile [style*="backdrop-filter"],
+        .android-mobile #kc-sidebar.mobile-open > .glass,
+        .android-mobile #mobile-feed-backdrop {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(10, 15, 28, 0.88) !important;
+        }
+        /* Keep light-theme readable on Android */
+        .android-mobile.light-theme .glass,
+        .android-mobile.light-theme .glass-hover {
+            background: rgba(241, 245, 249, 0.96) !important;
+        }
+        /* Stop all animated layers that force constant GPU repaint behind glass */
+        .android-mobile .animated-gradient { animation: none !important; transform: none !important; opacity: 0.4; }
+        .android-mobile .kc-bg-layer       { display: none !important; }
+        /* Profile popup blur on Android */
+        .android-mobile #kcProfilePopup    { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
+
         /* ===== Mobile Layout — comprehensive ===== */
         @media (max-width: 768px) {
             body { padding: 0.75rem; }
@@ -1194,11 +1218,16 @@
             opacity: 0.6;
         }
     </style>
-    <!-- Apply graphics mode immediately (before render) to avoid flash of unstyled content -->
+    <!-- Apply graphics mode + Android no-blur fix immediately before render -->
     <script>
         (function(){
             var m = localStorage.getItem('kc_graphics');
             if (m) document.documentElement.classList.add(m === 'low' ? 'graphics-low' : 'graphics-high');
+            // Android devices get backdrop-filter completely removed regardless of quality setting —
+            // Android's compositor struggles with blur behind animated layers, causing blurry text.
+            if (/Android/i.test(navigator.userAgent)) {
+                document.documentElement.classList.add('android-mobile');
+            }
         })();
     </script>
 </head>
