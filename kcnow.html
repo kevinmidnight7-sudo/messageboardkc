@@ -191,6 +191,18 @@
             #right-panel { display: none !important; }
             /* Show the mobile Live feed button */
             #mobile-live-btn { display: flex !important; }
+
+            /* ── Blurriness fix: reduce heavy backdrop-blur on mobile ── */
+            .glass {
+                backdrop-filter: blur(6px) !important;
+                -webkit-backdrop-filter: blur(6px) !important;
+            }
+            /* Stop the animated gradient from drifting (scale+rotate forces continuous
+               GPU repaint behind every blur layer, causing blurry text on Android) */
+            .animated-gradient { animation: none !important; transform: none !important; }
+            /* Disable the 3D parallax background entirely on touch devices */
+            .kc-bg-layer { transform: none !important; filter: none !important; }
+
             /* Sidebar becomes a slide-up bottom sheet when .mobile-open is added by JS */
             #kc-sidebar.mobile-open {
                 display: flex !important;
@@ -2296,16 +2308,16 @@
                 const activity = snap.val();
                 switch (activity.type) {
                     case 'milestone':
-                        addFeedItem({ type:'users', title:`${activity.days} Day Streak!`, user:activity.userName, detail:`Reached ${activity.milestoneName} milestone!`, time:'Just now', color:'text-orange-400', icon:'fa-fire' });
+                        addFeedItem({ type:'users', title:`${activity.days} Day Streak!`, user:activity.userName, uid:activity.uid||null, detail:`Reached ${activity.milestoneName} milestone!`, time:'Just now', color:'text-orange-400', icon:'fa-fire' });
                         break;
                     case 'achievement':
-                        addFeedItem({ type:'users', title:'Achievement Unlocked!', user:activity.userName, detail:`Earned "${activity.badgeName}" badge`, time:'Just now', color:'text-purple-400', icon:'fa-trophy' });
+                        addFeedItem({ type:'users', title:'Achievement Unlocked!', user:activity.userName, uid:activity.uid||null, detail:`Earned "${activity.badgeName}" badge`, time:'Just now', color:'text-purple-400', icon:'fa-trophy' });
                         break;
                     case 'bd_improvement':
-                        addFeedItem({ type:'users', title:'BD Record!', user:activity.bdName, detail:`New highscore: ${(activity.newScore||0).toLocaleString()}`, time:'Just now', color:'text-red-400', icon:'fa-sword' });
+                        addFeedItem({ type:'users', title:'BD Record!', user:activity.bdName||activity.userName, uid:activity.uid||null, detail:`New highscore: ${(activity.newScore||0).toLocaleString()}`, time:'Just now', color:'text-red-400', icon:'fa-sword' });
                         break;
                     case 'shop_purchase':
-                        addFeedItem({ type:'users', title:'Shop Purchase', user:activity.userName, detail:`Bought ${activity.itemName}`, time:'Just now', color:'text-blue-400', icon:'fa-shopping-cart' });
+                        addFeedItem({ type:'users', title:'Shop Purchase', user:activity.userName, uid:activity.uid||null, detail:`Bought ${activity.itemName}`, time:'Just now', color:'text-blue-400', icon:'fa-shopping-cart' });
                         break;
                 }
             });
@@ -6032,44 +6044,8 @@
             } catch (err) { console.error('runQuickAction error:', err); }
         }
 
-        // ── Profile popup: use profile-popup.js card (the real KC profile card)
-        // Wrap it to inject a friends button after the popup renders.
-        (function () {
-            const _orig = window.openKcProfile;
-            if (!_orig) return;
-            window.openKcProfile = async function (uid) {
-                if (!uid) return;
-                await _orig(uid);
-                // Inject friends button if viewer is logged in and not viewing own profile
-                if (!currentUser || currentUser.uid === uid) return;
-                const popupBody = document.getElementById('kcPopupBody');
-                if (!popupBody) return;
-                document.getElementById('kcFriendSection')?.remove();
-                const isFriend = friendsList.some(f => f.uid === uid);
-                const sec = document.createElement('div');
-                sec.id = 'kcFriendSection';
-                sec.style.cssText = 'padding:10px 16px 4px;';
-                const btn = document.createElement('button');
-                btn.style.cssText = [
-                    'width:100%;padding:11px 16px;border-radius:14px;',
-                    'font-family:Poppins,sans-serif;font-size:0.82rem;font-weight:700;',
-                    'border:none;cursor:pointer;transition:opacity .2s;',
-                    isFriend
-                        ? 'background:#fee2e2;color:#b91c1c;'
-                        : 'background:linear-gradient(135deg,#2563eb,#4f46e5);color:#fff;'
-                ].join('');
-                btn.innerHTML = isFriend ? '💔 Remove Friend' : '🤝 Add Friend';
-                btn.onmouseenter = () => { btn.style.opacity = '0.85'; };
-                btn.onmouseleave = () => { btn.style.opacity = '1'; };
-                btn.onclick = () => {
-                    if (isFriend) removeFriend(uid); else addFriend(uid);
-                    // Refresh button state after a tick
-                    setTimeout(() => window.openKcProfile(uid), 600);
-                };
-                sec.appendChild(btn);
-                popupBody.appendChild(sec);
-            };
-        })();
+        // profile-popup.js handles the full KC profile card including friends bar,
+        // friend count, clan section, badges, clips and BD stats universally.
 
         function openAchievements() {
             if (!currentUser) return openAuthModal();
