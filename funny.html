@@ -75,6 +75,14 @@
 </div>
 
 
+<!-- Custom Alert Modal -->
+<div id="f-alert-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] hidden">
+    <div class="bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-sm text-center">
+        <p id="f-alert-message" class="text-gray-100 text-base mb-5"></p>
+        <button id="f-alert-ok" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-8 rounded-lg transition">OK</button>
+    </div>
+</div>
+
 <!-- Profile Customization Modal -->
 <div id="profileCustomizationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg relative">
@@ -124,6 +132,14 @@
     const codeEntryCard = document.getElementById('codeEntryCard');
     const customizationModal = document.getElementById('profileCustomizationModal');
 
+    function fAlert(msg) {
+        const el = document.getElementById('f-alert-modal');
+        document.getElementById('f-alert-message').textContent = msg;
+        el.classList.remove('hidden');
+        document.getElementById('f-alert-ok').onclick = () => el.classList.add('hidden');
+    }
+
+
     // ========== FORM TOGGLING ==========
     toLogin.addEventListener('click', (e) => {
         e.preventDefault();
@@ -151,14 +167,14 @@
                     joined: firebase.database.ServerValue.TIMESTAMP
                 });
             })
-            .then(() => alert('Registration successful! Please log in.'))
-            .catch(err => alert(err.message));
+            .then(() => fAlert('Registration successful! Please log in.'))
+            .catch(err => fAlert(err.message));
     });
 
     document.getElementById('loginBtn').addEventListener('click', () => {
         const email = document.getElementById('loginEmail').value;
         const pass = document.getElementById('loginPass').value;
-        auth.signInWithEmailAndPassword(email, pass).catch(err => alert(err.message));
+        auth.signInWithEmailAndPassword(email, pass).catch(err => fAlert(err.message));
     });
     
     document.getElementById('signOutBtn').addEventListener('click', () => auth.signOut());
@@ -194,18 +210,18 @@
     document.getElementById('unlockBtn').addEventListener('click', () => {
         const codeInput = document.getElementById('unlockCodeInput');
         const user = auth.currentUser;
-        if (!user) return alert('You must be logged in!');
+        if (!user) return fAlert('You must be logged in!');
         
         // Note: The backslash needs to be escaped in a string
         if (codeInput.value.trim() === 'D1//\\0ND-S70N3') {
             db.ref('users/' + user.uid).update({ diamondMember: true })
                 .then(() => {
-                    alert('💎 Diamond features unlocked!');
+                    fAlert('💎 Diamond features unlocked!');
                     codeInput.value = '';
                 })
-                .catch(err => alert('Error: ' + err.message));
+                .catch(err => fAlert('Error: ' + err.message));
         } else {
-            alert('Invalid code.');
+            fAlert('Invalid code.');
         }
     });
 
@@ -270,10 +286,10 @@
         if (Object.keys(updates).length > 0) {
             db.ref('users/' + user.uid).update(updates)
                 .then(() => {
-                    alert('Customization saved!');
+                    fAlert('Customization saved!');
                     customizationModal.classList.add('hidden');
                 })
-                .catch(err => alert('Error: ' + err.message));
+                .catch(err => fAlert('Error: ' + err.message));
         } else {
              customizationModal.classList.add('hidden');
         }

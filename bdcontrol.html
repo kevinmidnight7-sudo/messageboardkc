@@ -817,6 +817,29 @@
     </div>
   </div>
 
+  <!-- Custom Confirm Modal -->
+  <div class="modal" id="bd-confirm-modal">
+    <div class="modal-content" style="max-width:420px;text-align:center;">
+      <p id="bd-confirm-message" style="font-size:1rem;margin-bottom:1.5rem;color:var(--text-primary);"></p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;">
+        <button id="bd-confirm-yes" style="padding:0.5rem 1.5rem;background:#ef4444;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Yes</button>
+        <button id="bd-confirm-cancel" style="padding:0.5rem 1.5rem;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Prompt Modal -->
+  <div class="modal" id="bd-prompt-modal">
+    <div class="modal-content" style="max-width:480px;">
+      <p id="bd-prompt-message" style="font-size:0.95rem;margin-bottom:1rem;color:var(--text-primary);white-space:pre-wrap;"></p>
+      <input id="bd-prompt-input" type="text" style="width:100%;padding:0.6rem 0.8rem;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-size:0.9rem;margin-bottom:1rem;" placeholder="Type here..."/>
+      <div style="display:flex;gap:0.75rem;justify-content:center;">
+        <button id="bd-prompt-ok" style="padding:0.5rem 1.5rem;background:#3b82f6;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">OK</button>
+        <button id="bd-prompt-cancel" style="padding:0.5rem 1.5rem;background:rgba(255,255,255,0.1);color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;font-size:0.9rem;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Edit Score Modal -->
   <div class="modal" id="edit-modal">
     <div class="modal-content">
@@ -1186,22 +1209,21 @@
     };
 
     // Logout handler
-    window.handleLogout = async function() {
-      if (!confirm('Are you sure you want to log out?')) return;
-      
-      try {
-        await signOut(auth);
-        showToast('Logged out successfully', 'success');
-        
-        // Clear data
-        allScoresData = [];
-        allVotesData = [];
-        renderScoresTable();
-        renderVotesTable();
-      } catch (error) {
-        console.error('Logout error:', error);
-        showToast('Error logging out: ' + error.message, 'error');
-      }
+    window.handleLogout = function() {
+      bdConfirm('Are you sure you want to log out?', async () => {
+        try {
+          await signOut(auth);
+          showToast('Logged out successfully', 'success');
+          // Clear data
+          allScoresData = [];
+          allVotesData = [];
+          renderScoresTable();
+          renderVotesTable();
+        } catch (error) {
+          console.error('Logout error:', error);
+          showToast('Error logging out: ' + error.message, 'error');
+        }
+      });
     };
 
     // Expose functions to global scope
@@ -1891,61 +1913,49 @@
       document.getElementById('edit-vote-modal').classList.add('active');
     };
 
-    window.deleteScore = async function(name, region) {
+    window.deleteScore = function(name, region) {
       if (!isAdmin) {
         showToast('You must be logged in as an admin to delete scores', 'error');
         return;
       }
-      
-      if (!confirm(`Delete score for ${name} (${region})? This cannot be undone.`)) return;
-      
-      try {
-        const encodedKey = toRtdbKey(name);
-        
-        // Delete from Firebase using correct path
-        await remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`));
-        
-        // If deleting from a regional score, also check if it should be removed from global
-        if (region !== 'global') {
-          // Check if this was the highest score for this player
-          const scoreInRegion = allScoresData.find(s => s.name === name && s.region === region);
-          const otherScores = allScoresData.filter(s => s.name === name && s.region !== region && s.region !== 'global');
-          
-          // If no other regional scores exist or this was the highest, remove from global
-          if (otherScores.length === 0 || !otherScores.some(s => s.score >= scoreInRegion?.score)) {
-            await remove(ref(database, `config/bdTopScores/global/${encodedKey}`));
+      bdConfirm(`Delete score for ${name} (${region})? This cannot be undone.`, async () => {
+        try {
+          const encodedKey = toRtdbKey(name);
+          await remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`));
+          if (region !== 'global') {
+            const scoreInRegion = allScoresData.find(s => s.name === name && s.region === region);
+            const otherScores = allScoresData.filter(s => s.name === name && s.region !== region && s.region !== 'global');
+            if (otherScores.length === 0 || !otherScores.some(s => s.score >= scoreInRegion?.score)) {
+              await remove(ref(database, `config/bdTopScores/global/${encodedKey}`));
+            }
           }
+          await loadScoreStats();
+          await loadScoresPage();
+          showToast('Score deleted successfully', 'success');
+        } catch (error) {
+          console.error('Delete error:', error);
+          showToast('Error deleting score: ' + error.message, 'error');
         }
-        
-        // Reload the data to reflect changes
-        await loadScoreStats();
-        await loadScoresPage();
-        showToast('Score deleted successfully', 'success');
-      } catch (error) {
-        console.error('Delete error:', error);
-        showToast('Error deleting score: ' + error.message, 'error');
-      }
+      });
     };
 
-    window.deleteVote = async function(uid) {
+    window.deleteVote = function(uid) {
       if (!isAdmin) {
         showToast('You must be logged in as an admin to delete votes', 'error');
         return;
       }
-      
-      if (!confirm(`Delete vote from ${uid}? This cannot be undone.`)) return;
-      
-      try {
-        await remove(ref(database, `votes/${uid}`));
-        allVotesData = allVotesData.filter(v => v.uid !== uid);
-        
-        updateVotesStats();
-        renderVotesTable();
-        showToast('Vote deleted successfully', 'success');
-      } catch (error) {
-        console.error('Delete error:', error);
-        showToast('Error deleting vote: ' + error.message, 'error');
-      }
+      bdConfirm(`Delete vote from ${uid}? This cannot be undone.`, async () => {
+        try {
+          await remove(ref(database, `votes/${uid}`));
+          allVotesData = allVotesData.filter(v => v.uid !== uid);
+          updateVotesStats();
+          renderVotesTable();
+          showToast('Vote deleted successfully', 'success');
+        } catch (error) {
+          console.error('Delete error:', error);
+          showToast('Error deleting vote: ' + error.message, 'error');
+        }
+      });
     };
 
     window.saveEdit = async function(event) {
@@ -2131,33 +2141,32 @@
       }
     };
 
-    window.executeBulkDelete = async function(event) {
+    window.executeBulkDelete = function(event) {
       event.preventDefault();
-      
+
       if (!isAdmin) {
         showToast('You must be logged in as an admin', 'error');
         return;
       }
-      
+
       const threshold = parseInt(document.getElementById('bulk-delete-threshold').value) || 0;
       const includeGlobal = document.getElementById('bulk-delete-global').checked;
       const includeEast = document.getElementById('bulk-delete-east').checked;
       const includeEU = document.getElementById('bulk-delete-eu').checked;
-      
+
       if (!includeGlobal && !includeEast && !includeEU) {
         showToast('Please select at least one region', 'warning');
         return;
       }
-      
+
       const confirmMessage = `⚠️ ARE YOU ABSOLUTELY SURE?\n\nThis will PERMANENTLY DELETE all scores below ${threshold} in the selected regions.\n\nThis action CANNOT be undone!\n\nType "DELETE" to confirm.`;
-      
-      const userConfirm = prompt(confirmMessage);
-      
+
+      bdPrompt(confirmMessage, async (userConfirm) => {
       if (userConfirm !== 'DELETE') {
         showToast('Bulk delete cancelled', 'warning');
         return;
       }
-      
+
       const deleteBtn = document.getElementById('bulk-delete-btn');
       deleteBtn.disabled = true;
       deleteBtn.textContent = '⏳ Deleting...';
@@ -2220,11 +2229,41 @@
         deleteBtn.disabled = false;
         deleteBtn.textContent = '🗑️ Delete Scores';
       }
+      }); // end bdPrompt callback
     };
 
     window.closeModal = function(modalId) {
       document.getElementById(modalId).classList.remove('active');
     };
+
+    function bdConfirm(message, onYes) {
+      const el = document.getElementById('bd-confirm-modal');
+      document.getElementById('bd-confirm-message').textContent = message;
+      el.classList.add('active');
+      document.getElementById('bd-confirm-yes').onclick = () => { el.classList.remove('active'); if (onYes) onYes(); };
+      document.getElementById('bd-confirm-cancel').onclick = () => el.classList.remove('active');
+    }
+
+    function bdPrompt(message, onSubmit) {
+      const el = document.getElementById('bd-prompt-modal');
+      document.getElementById('bd-prompt-message').textContent = message;
+      const inp = document.getElementById('bd-prompt-input');
+      inp.value = '';
+      el.classList.add('active');
+      inp.focus();
+      const handleKey = (e) => { if (e.key === 'Enter') document.getElementById('bd-prompt-ok').click(); };
+      inp.addEventListener('keydown', handleKey);
+      document.getElementById('bd-prompt-ok').onclick = () => {
+        inp.removeEventListener('keydown', handleKey);
+        const val = inp.value;
+        el.classList.remove('active');
+        if (onSubmit) onSubmit(val);
+      };
+      document.getElementById('bd-prompt-cancel').onclick = () => {
+        inp.removeEventListener('keydown', handleKey);
+        el.classList.remove('active');
+      };
+    }
 
     window.showToast = function(message, type = 'success') {
       const existingToast = document.querySelector('.toast');

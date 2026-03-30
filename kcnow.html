@@ -3182,12 +3182,12 @@
 
         function removeFriend(uid) {
             if (!currentUser) return;
-            if (confirm('Remove this friend?')) {
+            kcConfirm('Remove this friend?', () => {
                 db.ref(`users/${currentUser.uid}/friends/${uid}`).remove().then(() => {
                     showToast('Friend removed', 'info');
                     loadFriends();
                 });
-            }
+            });
         }
 
         // === Dynamic 3D Background System (Phase 5) ===
@@ -4837,6 +4837,43 @@
 
         let modalLoading = false;
 
+        // Custom confirm/prompt helpers — replaces native browser dialogs
+        function kcConfirm(message, onYes, onNo) {
+            openModal('Confirm', `
+                <div class="flex flex-col items-center gap-6 py-2">
+                    <p class="text-white/90 text-center text-base">${message}</p>
+                    <div class="flex gap-3">
+                        <button id="kc-confirm-yes" class="px-6 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold transition-all">Yes</button>
+                        <button id="kc-confirm-no" class="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all">Cancel</button>
+                    </div>
+                </div>
+            `);
+            document.getElementById('kc-confirm-yes').onclick = () => { closeModal(); if (onYes) onYes(); };
+            document.getElementById('kc-confirm-no').onclick = () => { closeModal(); if (onNo) onNo(); };
+        }
+
+        function kcPrompt(message, placeholder, onSubmit) {
+            openModal('Input Required', `
+                <div class="flex flex-col gap-4 py-2">
+                    <p class="text-white/90 text-base">${message}</p>
+                    <input id="kc-prompt-input" type="text" placeholder="${placeholder || ''}" class="w-full p-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                    <div class="flex gap-3">
+                        <button id="kc-prompt-submit" class="flex-1 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white font-semibold transition-all">OK</button>
+                        <button id="kc-prompt-cancel" class="flex-1 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold transition-all">Cancel</button>
+                    </div>
+                </div>
+            `);
+            const inp = document.getElementById('kc-prompt-input');
+            inp.focus();
+            inp.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('kc-prompt-submit').click(); });
+            document.getElementById('kc-prompt-submit').onclick = () => {
+                const val = inp.value.trim();
+                closeModal();
+                if (val && onSubmit) onSubmit(val);
+            };
+            document.getElementById('kc-prompt-cancel').onclick = () => closeModal();
+        }
+
         function openModalWithSkeleton(title, rows = 3) {
             openModal(title, `
                 <div class="space-y-4">
@@ -5297,20 +5334,20 @@
             }
         }
 
-        async function promptBdLink() {
-            const newName = prompt('Enter your new Battledome username:');
-            if (!newName || !newName.trim()) return;
+        function promptBdLink() {
             if (!currentUser) return openAuthModal();
-            const discordId = await getDiscordIdFromKcUid(currentUser.uid);
-            if (!discordId) { showToast('Discord not linked.', 'error'); return; }
-            try {
-                await Promise.all([
-                    db.ref(`config/playerLinks/${discordId}/bdName`).set(newName.trim()),
-                    db.ref(`users/${currentUser.uid}/bdUsername`).set(newName.trim())
-                ]);
-                showToast(`Updated: ${newName.trim()}`, 'success');
-                renderBattledome();
-            } catch (e) { showToast('Failed to update.', 'error'); }
+            kcPrompt('Enter your new Battledome username:', 'BD username', async (newName) => {
+                const discordId = await getDiscordIdFromKcUid(currentUser.uid);
+                if (!discordId) { showToast('Discord not linked.', 'error'); return; }
+                try {
+                    await Promise.all([
+                        db.ref(`config/playerLinks/${discordId}/bdName`).set(newName),
+                        db.ref(`users/${currentUser.uid}/bdUsername`).set(newName)
+                    ]);
+                    showToast(`Updated: ${newName}`, 'success');
+                    renderBattledome();
+                } catch (e) { showToast('Failed to update.', 'error'); }
+            });
         }
 
         function openGamesHub() {
@@ -7244,7 +7281,7 @@
 
         function removeFriend(uid) {
             if (!currentUser) return;
-            if (confirm('Remove this friend?')) {
+            kcConfirm('Remove this friend?', () => {
                 Promise.all([
                     db.ref(`users/${currentUser.uid}/friends/${uid}`).remove(),
                     db.ref(`users/${uid}/friends/${currentUser.uid}`).remove(),
@@ -7252,7 +7289,7 @@
                     showToast('Friend removed', 'info');
                     loadFriends();
                 }).catch(() => showToast('Failed to remove friend', 'error'));
-            }
+            });
         }
 
         // ===== PHASE 5D: FEED FILTERS =====
