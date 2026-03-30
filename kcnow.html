@@ -497,6 +497,14 @@
         }
         /* Profile popup on mobile */
         .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
+        /* KC NOW menu: desktop dropdown positioning (detached from wrapper) */
+        #quick-actions-menu:not(.hidden) {
+            position: fixed;
+            top: 58px;
+            left: 1rem;
+            z-index: 200;
+        }
+
         /* Feed sheet and KC NOW sheet — fully opaque, no blur */
         .android-mobile #kc-sidebar.mobile-open > .glass,
         .android-mobile #quick-actions-menu:not(.hidden) {
@@ -517,30 +525,46 @@
             .tab-btn { font-size: 0.65rem; letter-spacing: 1.5px; }
 
             /* Welcome card — stack vertically on mobile */
-            #welcome-card .p-6 { padding: 1rem; }
-            #user-avatar { width: 64px !important; height: 64px !important; }
-            #user-display-name { font-size: 1.4rem !important; }
-            #welcome-card .flex.items-center.justify-between {
+            #welcome-card .p-6 {
+                padding: 1rem;
                 flex-direction: column !important;
                 align-items: stretch !important;
-                gap: 0.75rem;
+                gap: 0.875rem !important;
             }
-            #auth-actions { width: 100% !important; flex-shrink: 0; }
-            #auth-actions > div {
-                min-width: 0 !important;
+            #user-avatar { width: 60px !important; height: 60px !important; }
+            #user-display-name { font-size: 1.25rem !important; }
+            /* Auth actions panel — full width, items in a row */
+            #auth-actions {
                 width: 100% !important;
+                min-width: 0 !important;
+            }
+            #auth-actions > div {
+                display: flex !important;
                 flex-direction: row !important;
                 flex-wrap: wrap !important;
+                align-items: stretch !important;
+                min-width: 0 !important;
+                width: 100% !important;
                 gap: 0.5rem !important;
             }
-            /* Economy card compact row layout */
+            /* Economy card: takes left half */
             #auth-actions .glass.rounded-2xl {
-                flex: 1 1 120px;
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
                 text-align: center !important;
+                padding: 10px 12px !important;
             }
-            /* Action buttons fill remaining space */
-            #auth-actions button {
-                flex: 1 1 120px;
+            /* Claim daily: takes right half */
+            #auth-actions > div > button:first-of-type {
+                flex: 1 1 0 !important;
+                min-width: 0 !important;
+                padding: 10px 8px !important;
+                font-size: 0.75rem !important;
+            }
+            /* Sign out: full width below */
+            #auth-actions > div > button:last-of-type {
+                flex: 0 0 100% !important;
+                padding: 4px !important;
             }
 
             /* Hub grid: 2 columns */
@@ -1780,15 +1804,17 @@
             <i class="fa-solid fa-chevron-down" id="qa-chevron" style="font-size:0.6rem;opacity:0.55;transition:transform 0.3s;margin-left:1px;"></i>
         </button>
 
-        <!-- Dropdown panel: clean KC glass rows -->
-        <div id="quick-actions-menu" class="hidden mt-2 qa-panel glass" style="
-            min-width:220px;
-            border-radius:16px;
-            overflow:hidden;
-            transform-origin:top left;
-            animation:qaSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
-            padding:6px;
-        ">
+    </div>
+
+    <!-- Dropdown panel — lives at body level so position:fixed works on all mobile browsers -->
+    <div id="quick-actions-menu" class="hidden qa-panel glass" style="
+        min-width:220px;
+        border-radius:16px;
+        overflow:hidden;
+        transform-origin:top left;
+        animation:qaSlideIn 0.18s cubic-bezier(0.16,1,0.3,1) both;
+        padding:6px;
+    ">
             <!-- Actions group -->
             <div style="padding:4px 8px 2px;margin-bottom:2px;">
                 <span style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;">Actions</span>
@@ -1844,7 +1870,6 @@
             </button>
 
         </div>
-    </div>
 
     <script>
         // --- DATA & STATE ---
