@@ -459,24 +459,19 @@
         #graphics-firstrun .gfx-card.gfx-low:hover  { box-shadow: 0 0 40px rgba(100,116,139,0.15); border-color: rgba(100,116,139,0.45); }
 
         /* ===== Android/iOS mobile: force-remove all backdrop-filter blur =====
-           Mobile GPU compositors struggle with backdrop-filter behind animated
-           layers — text renders blurry. Strategy:
-           1. Override page background to a rich visible dark-navy (not near-black)
-              so cards have a real base to contrast against.
-           2. Cards use a clearly lighter navy so they visually stand out.
-           3. Boost animated-gradient so the page has colour, not just darkness. */
-        .android-mobile #bg-canvas {
-            background: linear-gradient(160deg, #102040 0%, #0a1830 100%) !important;
-        }
-        .android-mobile .animated-gradient {
-            animation: none !important;
-            transform: none !important;
-            background:
-                radial-gradient(circle at 25% 25%, rgba(59,130,246,0.22) 0%, transparent 45%),
-                radial-gradient(circle at 75% 70%, rgba(45,212,191,0.15) 0%, transparent 45%) !important;
-        }
-        .android-mobile .kc-bg-layer { animation: none !important; transform: none !important; filter: none !important; }
-        /* Cards: clearly lighter than the page bg, with a defined border */
+           The blurriness is caused by backdrop-filter on glass cards repainted
+           continuously while the animated background drifts.
+           Fix: remove backdrop-filter from glass cards only + stop all animations.
+           Leave background colours, kc-bg-layer filter-blur (static = fine),
+           and CSS theme variables untouched so every theme still looks correct. */
+
+        /* Stop continuous-repaint animations — the root cause of blurry text */
+        .android-mobile .animated-gradient { animation: none !important; transform: none !important; }
+        /* Disable parallax motion only; keep filter:blur so theme glows render */
+        .android-mobile .kc-bg-layer { animation: none !important; transform: none !important; }
+
+        /* Remove backdrop-filter from every glass surface; replace with a
+           theme-tinted solid background so cards are still clearly visible */
         .android-mobile .glass,
         .android-mobile .glass-hover,
         .android-mobile [style*="backdrop-filter"],
@@ -484,19 +479,21 @@
         .android-mobile #mobile-feed-backdrop {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background: rgba(255, 255, 255, 0.07) !important;
+            background: linear-gradient(
+                180deg,
+                rgba(var(--theme-accent-rgb, 59,130,246), 0.10) 0%,
+                rgba(10, 18, 32, 0.88) 100%
+            ) !important;
             border: 1px solid rgba(255, 255, 255, 0.14) !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06) !important;
         }
-        /* Keep light-theme readable on mobile */
+        /* Light theme override */
         .android-mobile.light-theme .glass,
         .android-mobile.light-theme .glass-hover {
-            background: rgba(241, 245, 249, 0.96) !important;
+            background: rgba(241, 245, 249, 0.97) !important;
             border: 1px solid rgba(0,0,0,0.08) !important;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.12) !important;
         }
         /* Profile popup on mobile */
-        .android-mobile #kcProfilePopup    { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
+        .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
 
         /* ===== Mobile Layout — comprehensive ===== */
         @media (max-width: 768px) {
