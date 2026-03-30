@@ -422,6 +422,42 @@
         .light-theme #global-modal { background: rgba(0,0,0,0.3); }
         .light-theme .animate-slideInRight { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
 
+        /* ===== Graphics Quality Modes ===== */
+        /* Applied via <html class="graphics-low|graphics-high"> */
+        .graphics-low .glass,
+        .graphics-low .glass-hover {
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
+        .graphics-low .animated-gradient { animation: none !important; transform: none !important; }
+        .graphics-low .kc-bg-layer     { transform: none !important; filter: none !important; }
+        .graphics-low .glass-hover:hover { transform: translateY(-2px) !important; box-shadow: none !important; }
+        .graphics-low .glow-on-hover:hover { box-shadow: none !important; transform: translateY(-2px) !important; }
+        /* First-run graphics picker overlay */
+        #graphics-firstrun {
+            position: fixed; inset: 0; z-index: 99999;
+            background: rgba(8,12,20,0.92);
+            backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem;
+            animation: kcFadeInGraphics 0.5s ease both;
+        }
+        @keyframes kcFadeInGraphics { from { opacity:0 } to { opacity:1 } }
+        #graphics-firstrun .gfx-card {
+            flex: 1; max-width: 260px;
+            border-radius: 28px;
+            padding: 2rem 1.5rem;
+            display: flex; flex-direction: column; align-items: center; gap: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            border: 2px solid transparent;
+        }
+        #graphics-firstrun .gfx-card:hover { transform: translateY(-4px); }
+        #graphics-firstrun .gfx-card.gfx-high { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
+        #graphics-firstrun .gfx-card.gfx-high:hover { box-shadow: 0 0 40px rgba(59,130,246,0.25); border-color: rgba(59,130,246,0.6); }
+        #graphics-firstrun .gfx-card.gfx-low  { background: rgba(100,116,139,0.08); border-color: rgba(100,116,139,0.2); }
+        #graphics-firstrun .gfx-card.gfx-low:hover  { box-shadow: 0 0 40px rgba(100,116,139,0.15); border-color: rgba(100,116,139,0.45); }
+
         /* ===== Mobile Layout — comprehensive ===== */
         @media (max-width: 768px) {
             body { padding: 0.75rem; }
@@ -1158,6 +1194,13 @@
             opacity: 0.6;
         }
     </style>
+    <!-- Apply graphics mode immediately (before render) to avoid flash of unstyled content -->
+    <script>
+        (function(){
+            var m = localStorage.getItem('kc_graphics');
+            if (m) document.documentElement.classList.add(m === 'low' ? 'graphics-low' : 'graphics-high');
+        })();
+    </script>
 </head>
 <body class="p-6 md:p-10">
 
@@ -1676,6 +1719,13 @@
             <button onclick="runQuickAction(openNotificationSettings)" class="qa-tile" style="width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;text-align:left;">
                 <i class="fa-solid fa-bell qa-tile-icon"></i>
                 <span style="font-size:0.82rem;font-weight:600;">Notifications</span>
+            </button>
+            <button onclick="runQuickAction(openGraphicsSettings)" class="qa-tile" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;text-align:left;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <i class="fa-solid fa-display qa-tile-icon"></i>
+                    <span style="font-size:0.82rem;font-weight:600;">Graphics</span>
+                </div>
+                <span id="qa-graphics-indicator" style="font-size:0.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;"></span>
             </button>
 
         </div>
@@ -2663,6 +2713,76 @@
         // === Notification Preferences (Phase 5) ===
         function saveNotificationPrefs() {
             localStorage.setItem('kc-notifications', JSON.stringify(notificationPrefs));
+        }
+
+        // ===== GRAPHICS QUALITY =====
+        function applyGraphicsMode(mode) {
+            document.documentElement.classList.remove('graphics-low', 'graphics-high');
+            document.documentElement.classList.add(mode === 'low' ? 'graphics-low' : 'graphics-high');
+            localStorage.setItem('kc_graphics', mode);
+            const ind = document.getElementById('qa-graphics-indicator');
+            if (ind) ind.textContent = mode === 'low' ? 'Low' : 'High';
+        }
+
+        function openGraphicsSettings() {
+            const current = localStorage.getItem('kc_graphics') || 'high';
+            openModal('Graphics Quality', `
+                <div class="space-y-5">
+                    <p class="text-center text-sm text-gray-400">Choose how KC Now renders visual effects.<br>Low quality is faster and uses less battery.</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="applyGraphicsMode('high');closeModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${current==='high' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}">
+                            <span style="font-size:2rem">✨</span>
+                            <div>
+                                <p class="font-bold text-sm">High Quality</p>
+                                <p class="text-xs text-gray-400 mt-0.5">Full blur, animations &amp; parallax</p>
+                            </div>
+                            ${current==='high' ? '<span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Active</span>' : ''}
+                        </button>
+                        <button onclick="applyGraphicsMode('low');closeModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${current==='low' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}">
+                            <span style="font-size:2rem">⚡</span>
+                            <div>
+                                <p class="font-bold text-sm">Low Quality</p>
+                                <p class="text-xs text-gray-400 mt-0.5">Minimal effects, better performance</p>
+                            </div>
+                            ${current==='low' ? '<span class="text-[10px] font-black text-green-400 uppercase tracking-widest">Active</span>' : ''}
+                        </button>
+                    </div>
+                    <p class="text-center text-[11px] text-gray-600">Recommended on older phones or when battery is low.</p>
+                </div>
+            `);
+        }
+
+        function showGraphicsFirstRun() {
+            if (document.getElementById('graphics-firstrun')) return;
+            const el = document.createElement('div');
+            el.id = 'graphics-firstrun';
+            el.innerHTML = `
+                <div style="max-width:600px;width:100%;display:flex;flex-direction:column;align-items:center;gap:2rem;">
+                    <div style="text-align:center;">
+                        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png"
+                             style="width:48px;height:48px;object-fit:contain;filter:drop-shadow(0 0 12px rgba(251,191,36,0.7));margin-bottom:1rem;">
+                        <h2 style="font-size:1.5rem;font-weight:900;color:#f8fafc;margin:0 0 0.5rem;">Welcome to KC Now</h2>
+                        <p style="font-size:0.9rem;color:#94a3b8;margin:0;">How would you like the experience to look?</p>
+                    </div>
+                    <div style="display:flex;gap:1rem;width:100%;justify-content:center;flex-wrap:wrap;">
+                        <div class="gfx-card gfx-high" onclick="applyGraphicsMode('high');document.getElementById('graphics-firstrun').remove()">
+                            <span style="font-size:3rem;line-height:1;">✨</span>
+                            <p style="font-size:1.1rem;font-weight:900;color:#f8fafc;margin:0;">High Quality</p>
+                            <p style="font-size:0.78rem;color:#94a3b8;text-align:center;margin:0;line-height:1.5;">Full blur effects, smooth<br>animations &amp; parallax background</p>
+                            <span style="font-size:0.68rem;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.1em;">Best visuals</span>
+                        </div>
+                        <div class="gfx-card gfx-low" onclick="applyGraphicsMode('low');document.getElementById('graphics-firstrun').remove()">
+                            <span style="font-size:3rem;line-height:1;">⚡</span>
+                            <p style="font-size:1.1rem;font-weight:900;color:#f8fafc;margin:0;">Low Quality</p>
+                            <p style="font-size:0.78rem;color:#94a3b8;text-align:center;margin:0;line-height:1.5;">Minimal effects for faster<br>load times &amp; better battery</p>
+                            <span style="font-size:0.68rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.1em;">Best performance</span>
+                        </div>
+                    </div>
+                    <p style="font-size:0.72rem;color:#475569;text-align:center;margin:0;">
+                        You can change this anytime under <strong style="color:#94a3b8;">KC Now → Settings → Graphics</strong>
+                    </p>
+                </div>`;
+            document.body.appendChild(el);
         }
 
         function openNotificationSettings() {
@@ -7072,6 +7192,15 @@
                     localStorage.setItem('kcnow_shortcuts_v3', 'true');
                 }, 2000);
             }
+            // First-run graphics picker — shown once, after page is ready
+            if (!localStorage.getItem('kc_graphics')) {
+                setTimeout(showGraphicsFirstRun, 800);
+            }
+            // Sync the indicator in the quick actions menu
+            (function(){
+                var ind = document.getElementById('qa-graphics-indicator');
+                if (ind) ind.textContent = (localStorage.getItem('kc_graphics') || 'high') === 'low' ? 'Low' : 'High';
+            })();
         };
     </script>
 </body>
