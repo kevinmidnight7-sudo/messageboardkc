@@ -165,6 +165,7 @@
 
     // ========== AUTH STATE CHANGE ==========
     auth.onAuthStateChanged(user => {
+        window.currentUser = user; // expose for profile-popup.js friend bar
         if (user) {
             authCard.classList.add('hidden');
             profileUI.classList.remove('hidden');

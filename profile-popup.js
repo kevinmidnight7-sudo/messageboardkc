@@ -339,6 +339,17 @@
         .kc-friend-item:hover { background: rgba(0,0,0,0.07); }
         .kc-friend-item img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
         .kc-friend-item-name { font-weight: 700; font-size: 0.85rem; color: #111827; }
+
+        /* ── Android: remove all blur so text stays crisp ── */
+        .android-mobile #kcProfilePopup {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(0,0,0,0.82) !important;
+        }
+        .android-mobile .kc-popup-card {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
     `;
 
     // ── HTML ─────────────────────────────────────────────────────────────────
