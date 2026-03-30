@@ -1223,9 +1223,9 @@
         (function(){
             var m = localStorage.getItem('kc_graphics');
             if (m) document.documentElement.classList.add(m === 'low' ? 'graphics-low' : 'graphics-high');
-            // Android devices get backdrop-filter completely removed regardless of quality setting —
-            // Android's compositor struggles with blur behind animated layers, causing blurry text.
-            if (/Android/i.test(navigator.userAgent)) {
+            // Mobile devices (Android + iOS) get backdrop-filter completely removed —
+            // animated layers behind glass cause blurry text on mobile GPUs.
+            if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
                 document.documentElement.classList.add('android-mobile');
             }
         })();
@@ -4788,15 +4788,16 @@
         }
 
         async function _bdFetchPeriod(period, region) {
-            // period: 'alltime' | 'daily' | 'weekly' | 'monthly'
             const path = period === 'alltime'
                 ? `config/bdTopScores/${region}`
                 : `config/bdPeriodScores/${period}/${region}`;
-            // Cap download at server side — never pull thousands of rows for a top-20 display.
-            // For all-time we want the 20 highest scores; for period views we fetch 100 recent
-            // entries then filter client-side by seenAt (period nodes are smaller by design).
-            const limit = period === 'alltime' ? 500 : 100;
-            const snap = await db.ref(path).limitToLast(limit).once('value');
+            // ORDER BY score server-side so limitToLast always returns the
+            // highest-scoring entries, not the last-inserted ones by key.
+            // alltime: grab the 20 global best directly.
+            // periods: grab top 500 by score then filter to the current window —
+            //   ensures the real #1 for this week/day/month is never skipped.
+            const limit = period === 'alltime' ? 20 : 500;
+            const snap = await db.ref(path).orderByChild('score').limitToLast(limit).once('value');
             const cutoffMs = { daily: 86400000, weekly: 604800000, monthly: 2592000000 }[period] || 0;
             const cutoff = cutoffMs ? Date.now() - cutoffMs : 0;
             const entries = [];
