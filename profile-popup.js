@@ -285,6 +285,60 @@
         }
         .kc-page-btn:hover:not(:disabled) { background: rgba(0,0,0,0.2); }
         .kc-page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── Friend bar ── */
+        .kc-friend-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 1rem 10px;
+            flex-wrap: wrap;
+        }
+        .kc-friend-count-btn {
+            background: rgba(0,0,0,0.08);
+            border: none;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #374151;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .kc-friend-count-btn:hover { background: rgba(0,0,0,0.15); }
+        .kc-friend-btn {
+            flex: 1;
+            min-width: 100px;
+            border: none;
+            border-radius: 12px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .kc-friend-btn:active { transform: scale(0.97); }
+        .kc-friend-btn.add      { background: #3b82f6; color: #fff; }
+        .kc-friend-btn.add:hover { background: #2563eb; }
+        .kc-friend-btn.add-back { background: #ec4899; color: #fff; }
+        .kc-friend-btn.add-back:hover { background: #db2777; }
+        .kc-friend-btn.friends  { background: rgba(0,0,0,0.1); color: #374151; }
+        .kc-friend-btn.friends:hover { background: #fee2e2; color: #ef4444; }
+        /* Friends list panel */
+        .kc-friend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .kc-friend-item:hover { background: rgba(0,0,0,0.07); }
+        .kc-friend-item img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .kc-friend-item-name { font-weight: 700; font-size: 0.85rem; color: #111827; }
     `;
 
     // ── HTML ─────────────────────────────────────────────────────────────────
@@ -339,6 +393,49 @@
     function closePopup() {
         const el = document.getElementById('kcProfilePopup');
         if (el) el.style.display = 'none';
+    }
+
+    function _toggleFriendsList(friendUids) {
+        const postsCol = document.getElementById('kcPopupPostsCol');
+        const card     = document.getElementById('kcPopupCard');
+        if (!postsCol || !card) return;
+
+        if (card.classList.contains('kc-two-col') && postsCol.dataset.panel === 'friends') {
+            card.classList.remove('kc-two-col');
+            postsCol.dataset.panel = '';
+            return;
+        }
+
+        card.classList.add('kc-two-col');
+        postsCol.dataset.panel = 'friends';
+        postsCol.innerHTML = `
+            <h4 class="kc-section-title" style="padding:1rem 1rem 0.75rem;font-size:0.72rem;letter-spacing:0.05em;color:#6b7280">
+                FRIENDS · ${friendUids.length}
+            </h4>
+            <div id="kcFriendsList" style="padding:0 0.5rem 1rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto;max-height:calc(90vh - 80px)">
+                <div style="text-align:center;padding:1.5rem;color:#9ca3af;font-size:0.8rem">Loading…</div>
+            </div>`;
+
+        const db = getDb();
+        if (!db || !friendUids.length) {
+            const el = document.getElementById('kcFriendsList');
+            if (el) el.innerHTML = '<p style="text-align:center;color:#9ca3af;font-size:0.85rem;padding:1rem">No friends yet.</p>';
+            return;
+        }
+
+        const toLoad = friendUids.slice(0, 30);
+        Promise.all(toLoad.map(fuid =>
+            db.ref(`users/${fuid}`).once('value').then(s => ({ uid: fuid, ...(s.val() || {}) }))
+        )).then(users => {
+            const container = document.getElementById('kcFriendsList');
+            if (!container) return;
+            container.innerHTML = users.map(u => `
+                <div class="kc-friend-item" onclick="window.openKcProfile('${esc(u.uid)}')">
+                    <img src="${esc(u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png')}" alt="" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                    <div class="kc-friend-item-name">${esc(u.displayName || 'Anonymous')}</div>
+                </div>`).join('')
+                + (friendUids.length > 30 ? `<p style="text-align:center;color:#9ca3af;font-size:0.72rem;padding:0.5rem">+${friendUids.length - 30} more</p>` : '');
+        }).catch(() => {});
     }
 
     // ── Utility ──────────────────────────────────────────────────────────────
@@ -581,6 +678,7 @@
         document.getElementById('kcDiscordSection')?.remove();
         document.getElementById('kcBdSection')?.remove();
         document.getElementById('kcEconSection')?.remove();
+        document.getElementById('kcFriendBar')?.remove();
 
         overlay.style.display = 'flex';
 
@@ -612,6 +710,60 @@
             if (streakNum > 0) {
                 streakEl.textContent = `🔥 ${streakNum} Day Streak`;
                 streakSec.style.display = 'block';
+            }
+
+            // ── Friend bar (hidden on own profile) ──
+            const currentUid = (window.currentUser || null)?.uid || null;
+            if (currentUid && currentUid !== uid) {
+                const [mySnap, theirSnap, allFriendsSnap] = await Promise.all([
+                    database.ref(`users/${currentUid}/friends/${uid}`).once('value'),
+                    database.ref(`users/${uid}/friends/${currentUid}`).once('value'),
+                    database.ref(`users/${uid}/friends`).once('value'),
+                ]);
+                let _iAdded = !!mySnap.val();
+                const theyAdded = !!theirSnap.val();
+                const friendUids = Object.keys(allFriendsSnap.val() || {});
+
+                const friendBar = document.createElement('div');
+                friendBar.id = 'kcFriendBar';
+                friendBar.className = 'kc-friend-bar';
+
+                // Friend count chip
+                const countBtn = document.createElement('button');
+                countBtn.className = 'kc-friend-count-btn';
+                countBtn.textContent = `${friendUids.length} friend${friendUids.length !== 1 ? 's' : ''}`;
+                countBtn.onclick = () => _toggleFriendsList(friendUids);
+                friendBar.appendChild(countBtn);
+
+                // Add / Friends / Add back button
+                const actionBtn = document.createElement('button');
+                const refreshBtn = () => {
+                    if (_iAdded) {
+                        actionBtn.className = 'kc-friend-btn friends';
+                        actionBtn.textContent = '✓ Friends';
+                    } else if (theyAdded) {
+                        actionBtn.className = 'kc-friend-btn add-back';
+                        actionBtn.textContent = '+ Add back';
+                    } else {
+                        actionBtn.className = 'kc-friend-btn add';
+                        actionBtn.textContent = '+ Add friend';
+                    }
+                };
+                refreshBtn();
+                actionBtn.onclick = async () => {
+                    if (_iAdded) {
+                        if (!confirm('Remove this friend?')) return;
+                        await database.ref(`users/${currentUid}/friends/${uid}`).remove().catch(() => {});
+                        _iAdded = false;
+                    } else {
+                        await database.ref(`users/${currentUid}/friends/${uid}`).set(true).catch(() => {});
+                        _iAdded = true;
+                    }
+                    refreshBtn();
+                };
+                friendBar.appendChild(actionBtn);
+
+                username.insertAdjacentElement('afterend', friendBar);
             }
 
             // ── Clips toggle button + right-side panel ──
