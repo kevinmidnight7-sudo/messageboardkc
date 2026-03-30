@@ -1173,11 +1173,11 @@
                     </button>
 
                     <button onclick="renderBattledome()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
-                        <div class="hub-icon w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400 text-2xl group-hover:scale-110 transition">
-                            <i class="fa-solid fa-sword"></i>
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition">
+                            ⚔️
                         </div>
                         <span class="font-bold text-sm tracking-wide">Battledome</span>
-                        <div class="text-[10px] bg-blue-500/25 text-blue-300 px-3 py-0.5 rounded-full font-black uppercase">Live</div>
+                        <div id="bd-hub-counts" class="text-[10px] bg-red-500/15 text-red-300 px-3 py-0.5 rounded-full font-black" style="letter-spacing:0.02em">EU: – &nbsp; NA: –</div>
                     </button>
 
                     <button onclick="openSlitherServers()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
@@ -2182,34 +2182,20 @@
          * element regardless of online/offline/unknown states. This ensures the badge
          * accurately reflects the Battledome availability and avoids silently failing.
          */
-        function checkBattledomeStatus() {
-            db.ref('battledome/status').once('value').then(snap => {
-                const status = snap.val() || {};
-                _applyBattledomeStatusBadge(status.online === true ? 'online' : 'offline');
-                console.log('[BD] Status:', status.online ? 'ONLINE' : 'OFFLINE');
-            }).catch(err => {
-                console.error('[BD] Status check failed:', err);
-                _applyBattledomeStatusBadge('unknown');
-            });
-        }
-
-        function _applyBattledomeStatusBadge(state) {
-            // Find the BD button robustly — match any button whose onclick calls renderBattledome
-            const bdButton = document.querySelector('[onclick="renderBattledome()"]');
-            if (!bdButton) return;
-            // Find badge: look for a div child that has rounded-full and font-black (the status pill)
-            const badge = Array.from(bdButton.querySelectorAll('div')).find(el =>
-                el.className.includes('rounded-full') && el.className.includes('font-black')
-            );
+        async function checkBattledomeStatus() {
+            const badge = document.getElementById('bd-hub-counts');
             if (!badge) return;
-            const styles = {
-                online:  { cls: 'bg-green-500/20 text-green-400', text: 'ONLINE' },
-                offline: { cls: 'bg-red-500/20 text-red-400',   text: 'OFFLINE' },
-                unknown: { cls: 'bg-gray-500/20 text-gray-400',  text: 'UNKNOWN' }
-            };
-            const s = styles[state] || styles.unknown;
-            badge.className = `text-[10px] ${s.cls} px-3 py-0.5 rounded-full font-black uppercase`;
-            badge.textContent = s.text;
+            try {
+                const data = await _bdFetchLive();
+                const euCount  = data.EU   ? (data.EU.onlinenow   ?? '?') : '?';
+                const naCount  = data.East ? (data.East.onlinenow ?? '?') : '?';
+                badge.textContent = `EU: ${euCount}  NA: ${naCount}`;
+                badge.className = 'text-[10px] bg-red-500/15 text-red-300 px-3 py-0.5 rounded-full font-black';
+                badge.style.letterSpacing = '0.02em';
+            } catch (err) {
+                badge.textContent = 'EU: –  NA: –';
+                console.warn('[BD] Hub count fetch failed:', err);
+            }
         }
 
         function addFeedItem(item) {
