@@ -675,13 +675,16 @@
 
         /** Keeps the current user's emailVerified mirrored in the DB */
         auth.onAuthStateChanged(async (user) => {
-            if (!user) return;
+            if (!user) { window.currentUser = null; return; }
             try {
                 await user.reload(); // Pull fresh verification from server
                 await db.ref(`users/${user.uid}/emailVerified`).set(!!user.emailVerified);
-                currentUserUid = user.uid; // Also set the current user UID here
+                currentUserUid = user.uid;
+                window.currentUser = user; // expose for profile-popup.js friend bar
             } catch (e) {
                 console.error('Profiles: failed to sync emailVerified for current user', e);
+                currentUserUid = user.uid;
+                window.currentUser = user;
             }
         });
 
