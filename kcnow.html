@@ -220,9 +220,7 @@
                 max-height: 82vh;
                 width: 100%;
                 /* Opaque sheet — content behind must not show through */
-                background: rgba(10, 18, 38, 0.97) !important;
-                backdrop-filter: blur(16px) !important;
-                -webkit-backdrop-filter: blur(16px) !important;
+                background: rgba(10, 18, 38, 0.98) !important;
                 border: none !important;
                 border-top: 1px solid rgba(255,255,255,0.10) !important;
             }
@@ -500,11 +498,11 @@
         }
         /* Profile popup on mobile */
         .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
-        /* Feed sheet on android — fully opaque, no blur */
-        .android-mobile #kc-sidebar.mobile-open > .glass {
+        /* Feed sheet: ensure no blur leaks through on any mobile device */
+        .android-mobile #kc-sidebar.mobile-open > .glass,
+        .android-mobile #quick-actions-menu:not(.hidden) {
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
-            background: rgba(10, 18, 38, 0.99) !important;
         }
 
         /* ===== Mobile Layout — comprehensive ===== */
@@ -564,18 +562,11 @@
                 max-height: 80vh;
                 overflow-y: auto;
                 transform-origin: bottom center !important;
-                background: rgba(10, 18, 38, 0.97) !important;
-                backdrop-filter: blur(16px) !important;
-                -webkit-backdrop-filter: blur(16px) !important;
+                background: rgba(10, 18, 38, 0.98) !important;
                 border: none !important;
                 border-top: 1px solid rgba(255,255,255,0.10) !important;
                 animation: mobileSheetUp 0.25s cubic-bezier(0.16,1,0.3,1) both !important;
                 z-index: 200 !important;
-            }
-            .android-mobile #quick-actions-menu:not(.hidden) {
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-                background: rgba(10, 18, 38, 0.99) !important;
             }
             /* Drag handle on KC NOW sheet */
             #quick-actions-menu:not(.hidden)::before {
@@ -1667,7 +1658,7 @@
     <!-- Mobile: semi-transparent backdrop behind the feed sheet -->
     <div id="mobile-feed-backdrop"
          onclick="closeMobileFeed()"
-         style="display:none;position:fixed;inset:0;z-index:79;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);"></div>
+         style="display:none;position:fixed;inset:0;z-index:79;background:rgba(0,0,0,0.55);"></div>
 
     <!-- Mobile: floating Live button (hidden on desktop, shown via CSS on < 1024px) -->
     <button id="mobile-live-btn"
@@ -4034,7 +4025,11 @@
                 window.location.href = `${DISCORD_OAUTH_START_URL}?state=${state}`;
             } catch(e) {
                 console.error('[startDiscordOAuth]', e);
-                showToast('Failed to start Discord link: ' + (e.message || 'Unknown error'), 'error');
+                const isPerms = e.code === 'permission-denied' || (e.message || '').includes('permission');
+                const msg = isPerms
+                    ? 'Discord link blocked by server rules. Ask an admin to update Firestore rules for the linkStates collection.'
+                    : 'Failed to start Discord link: ' + (e.message || 'Unknown error');
+                showToast(msg, 'error');
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-brands fa-discord text-xl"></i> Link with Discord'; }
             }
         }
