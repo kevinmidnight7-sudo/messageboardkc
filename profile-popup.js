@@ -508,15 +508,32 @@
         if (!popupBody) return;
         document.getElementById('kcClanSection')?.remove();
 
-        const clanId = userData.clanId || null;
-        if (!clanId) return;
-
         const database = getDb();
         if (!database) return;
 
         try {
-            const snap = await database.ref(`clans/${clanId}`).once('value');
-            const clan = snap.val();
+            let clanId = userData.clanId || null;
+            let clan = null;
+
+            if (clanId) {
+                const snap = await database.ref(`clans/${clanId}`).once('value');
+                clan = snap.val();
+                if (!clan || !clan.name) { clanId = null; clan = null; } // stale — fall through
+            }
+
+            // Fallback: scan clans for this member (handles users who joined before clanId was stored)
+            if (!clanId) {
+                const clansSnap = await database.ref('clans').once('value');
+                const all = clansSnap.val() || {};
+                for (const [id, c] of Object.entries(all)) {
+                    if (c.members && c.members[uid]) {
+                        clanId = id;
+                        clan = c;
+                        break;
+                    }
+                }
+            }
+
             if (!clan || !clan.name) return;
 
             const memberCount = clan.members ? Object.keys(clan.members).length : 0;

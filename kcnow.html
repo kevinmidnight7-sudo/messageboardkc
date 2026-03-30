@@ -4170,6 +4170,7 @@
             if(!c) return showToast('Clan not found', 'error');
             if(c.isOpen) {
                 db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => {
+                    db.ref(`users/${currentUser.uid}/clanId`).set(id);
                     showToast(`Joined ${c.name}!`, 'success');
                     loadAllClans(true);
                 }).catch(() => showToast('Join failed — try again', 'error'));
@@ -4182,6 +4183,7 @@
             if(!currentUser) return;
             const c = allClansData[id];
             db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => {
+                db.ref(`users/${currentUser.uid}/clanId`).remove();
                 showToast(`Left ${c ? c.name : 'clan'}`, 'info');
                 loadAllClans(true);
             }).catch(() => showToast('Failed to leave — try again', 'error'));
