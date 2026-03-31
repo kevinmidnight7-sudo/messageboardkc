@@ -95,7 +95,16 @@ app.get('/oauth/discord/callback', async (req, res) => {
 
     const isDiscordIdState = /^\d{17,20}$/.test(String(state).trim());
 
-    // ── Exchange code for access token ────────────────────────────────────────
+    if (isDiscordIdState) {
+        // ── Legacy bot flow ───────────────────────────────────────────────────
+        // state = the Discord user's Discord ID. The bot already knows who is linking.
+        // We don't need to exchange the code or fetch the user — just redirect to
+        // link.html which handles everything for this flow.
+        const target = `https://auth.kcevents.uk/link.html?state=${encodeURIComponent(state)}&ok=1`;
+        return res.redirect(target);
+    }
+
+    // ── Web UI flow only: exchange code + fetch Discord identity ─────────────
     let accessToken;
     try {
         const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
@@ -120,7 +129,6 @@ app.get('/oauth/discord/callback', async (req, res) => {
         return res.status(500).send('Internal error');
     }
 
-    // ── Fetch Discord user identity ───────────────────────────────────────────
     let discordUser;
     try {
         const userRes = await fetch('https://discord.com/api/users/@me', {
@@ -137,14 +145,6 @@ app.get('/oauth/discord/callback', async (req, res) => {
     }
 
     const discordId = discordUser.id;
-
-    if (isDiscordIdState) {
-        // ── Legacy bot flow ───────────────────────────────────────────────────
-        // state = the Discord user's ID (passed by the bot to identify who is linking).
-        // The bot / link.html handles Firebase writes for this flow — we just redirect.
-        const target = `https://auth.kcevents.uk/link.html?state=${encodeURIComponent(state)}&ok=1`;
-        return res.redirect(target);
-    }
 
     // ── Web UI flow (Firestore linkStates) ────────────────────────────────────
     const stateKey = String(state).trim();
