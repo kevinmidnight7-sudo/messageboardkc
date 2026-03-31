@@ -176,7 +176,7 @@ app.get('/oauth/discord/callback', async (req, res) => {
             fsdb.collection('users').doc(kcUid).set({ discordId }, { merge: true }),
             rtdb.ref(`users/${kcUid}/discordId`).set(discordId),
             rtdb.ref(`discordLinks/${discordId}`).set({
-                kcUid,
+                uid: kcUid,
                 linkedAt: admin.database.ServerValue.TIMESTAMP,
             }),
         ]);
