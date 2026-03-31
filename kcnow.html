@@ -4211,7 +4211,9 @@
                 });
                 // Flag so on return we know to re-check Discord link status
                 localStorage.setItem('kc-discord-link-pending', '1');
-                window.location.href = `${DISCORD_OAUTH_START_URL}?state=${state}`;
+                // Use window.top so OAuth works when KC NOW is embedded in an iframe
+                // (Discord refuses to load inside a frame — X-Frame-Options: DENY)
+                window.top.location.href = `${DISCORD_OAUTH_START_URL}?state=${state}`;
             } catch(e) {
                 console.error('[startDiscordOAuth]', e);
                 const isPerms = e.code === 'permission-denied' || (e.message || '').includes('permission');

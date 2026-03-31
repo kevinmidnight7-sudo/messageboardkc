@@ -22,8 +22,12 @@
 const express      = require('express');
 const fetch        = require('node-fetch');
 const admin        = require('firebase-admin');
+const path         = require('path');
 
 const app = express();
+
+// Serve static files (link.html, discord-login-success.html, etc.)
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ── Firebase Admin ────────────────────────────────────────────────────────────
 // FB_SERVICE_ACCOUNT_JSON: the full service account JSON as a string (Render env var)
