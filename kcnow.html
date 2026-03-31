@@ -4110,7 +4110,7 @@
                             <p class="text-xs text-gray-400 mt-1">Ready to sync economy, Battledome, and Slither stats.</p>
                         </div>
                     </div>
-                    <span class="text-[10px] px-3 py-1 rounded-full bg-green-500/15 text-green-300 font-black uppercase">Synced</span>
+                    <button onclick="openRelinkDiscord()" class="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 font-bold text-xs transition" title="Change linked Discord account">Change</button>
                 </div>
             `;
             const htmlNotLinked = `
@@ -4152,6 +4152,49 @@
                     <p class="text-xs text-gray-500 text-center">You'll be redirected to Discord to authorise — no password needed. Come back here once done.</p>
                 </div>
             `);
+        }
+
+        async function openRelinkDiscord() {
+            if (!currentUser) return openAuthModal();
+            openModal('Change Discord Account', `
+                <div class="space-y-5">
+                    <div class="text-center space-y-3 pb-2">
+                        <div class="w-16 h-16 rounded-2xl bg-yellow-500/15 flex items-center justify-center text-yellow-400 text-4xl mx-auto">
+                            <i class="fa-brands fa-discord"></i>
+                        </div>
+                        <p class="font-bold text-lg">Change Linked Account</p>
+                        <p class="text-sm text-gray-400">This will unlink your current Discord account and let you link a different one. Your economy data stays — it just won't sync until you relink.</p>
+                    </div>
+                    <button id="discord-relink-btn" onclick="unlinkAndRelink()" class="btn-press w-full py-4 bg-yellow-600 hover:bg-yellow-500 rounded-2xl font-bold text-white flex items-center justify-center gap-3 transition">
+                        <i class="fa-brands fa-discord text-xl"></i> Link a Different Account
+                    </button>
+                    <button onclick="closeModal()" class="w-full py-3 rounded-2xl bg-white/5 hover:bg-white/10 text-gray-400 font-bold text-sm transition">Cancel</button>
+                </div>
+            `);
+        }
+
+        async function unlinkAndRelink() {
+            if (!currentUser) return;
+            const btn = document.getElementById('discord-relink-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Unlinking…'; }
+            try {
+                // Get the old discordId so we can clean up discordLinks
+                const oldDiscordId = discordIdCache.get(currentUser.uid) || null;
+
+                // Clear discordId from Firestore and RTDB
+                await Promise.all([
+                    fsdb.collection('users').doc(currentUser.uid).update({ discordId: firebase.firestore.FieldValue.delete() }).catch(() => {}),
+                    db.ref(`users/${currentUser.uid}/discordId`).remove().catch(() => {}),
+                    oldDiscordId ? db.ref(`discordLinks/${oldDiscordId}`).remove().catch(() => {}) : Promise.resolve(),
+                ]);
+                discordIdCache.delete(currentUser.uid);
+            } catch(e) {
+                console.error('[unlinkAndRelink] unlink failed:', e);
+                // Continue anyway — OAuth will overwrite the existing link
+            }
+            // Now start fresh OAuth flow
+            closeModal();
+            await startDiscordOAuth();
         }
 
         async function startDiscordOAuth() {
