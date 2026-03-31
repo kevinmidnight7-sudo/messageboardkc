@@ -969,6 +969,59 @@
         /* Quick-action tile pulse on hover */
         .qa-tile:hover { background: rgba(255,255,255,0.08) !important; }
 
+        /* ── Launchpad grid ── */
+        .lp-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        @media (max-width: 480px) {
+            .lp-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        }
+        .lp-tile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 8px 12px;
+            border-radius: 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            transition: background 0.15s, transform 0.15s, border-color 0.15s;
+            text-align: center;
+        }
+        .lp-tile:hover {
+            background: rgba(255,255,255,0.09);
+            border-color: rgba(255,255,255,0.12);
+            transform: translateY(-2px);
+        }
+        .lp-tile:active { transform: scale(0.96); }
+        .lp-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        @media (max-width: 480px) {
+            .lp-icon { width: 42px; height: 42px; border-radius: 12px; }
+            .lp-icon i, .lp-icon img { font-size: 1rem !important; width: 20px !important; height: 20px !important; }
+        }
+        .lp-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+        @keyframes lpFadeIn {
+            from { opacity:0; transform: scale(0.97) translateY(6px); }
+            to   { opacity:1; transform: scale(1)    translateY(0);   }
+        }
+
         /* Glass card interactive states */
         .glass-hover-lift {
             transition: transform 0.18s cubic-bezier(0.23,1,0.32,1), box-shadow 0.18s ease;
@@ -1961,7 +2014,148 @@
                 <span id="qa-graphics-indicator" style="font-size:0.68rem;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;"></span>
             </button>
 
+            <!-- Divider -->
+            <div style="height:1px;background:rgba(255,255,255,0.06);margin:4px 2px;"></div>
+
+            <!-- Expand button -->
+            <button onclick="openLaunchpad()" class="qa-tile" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 10px;background:rgba(99,102,241,0.1);border-radius:10px;margin:2px 0;">
+                <i class="fa-solid fa-table-cells" style="font-size:0.75rem;color:#818cf8;"></i>
+                <span style="font-size:0.82rem;font-weight:700;color:#818cf8;">Expand</span>
+            </button>
+
         </div>
+
+    <!-- ═══ LAUNCHPAD OVERLAY ═══ -->
+    <div id="kc-launchpad" style="
+        display:none;
+        position:fixed;inset:0;
+        background:rgba(4,9,20,0.78);
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        z-index:9000;
+        overflow-y:auto;
+        overscroll-behavior:contain;
+    " onclick="e => { if(e.target===this) closeLaunchpad(); }">
+        <div style="
+            max-width:680px;
+            margin:0 auto;
+            padding:16px 12px 32px;
+            min-height:100%;
+            display:flex;flex-direction:column;
+        ">
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 4px 20px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-table-cells" style="color:white;font-size:0.9rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1rem;font-weight:900;color:white;letter-spacing:-0.01em;">All Features</div>
+                        <div style="font-size:0.62rem;color:#475569;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">KC NOW Launchpad</div>
+                    </div>
+                </div>
+                <button onclick="closeLaunchpad()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:0.95rem;transition:background 0.15s;"
+                    onmouseover="this.style.background='rgba(255,255,255,0.14)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- SECTION: Pages -->
+            <div style="margin-bottom:18px;">
+                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">Pages</div>
+                <div class="lp-grid">
+                    <button class="lp-tile" onclick="lpGo(() => switchTab('home'))">
+                        <div class="lp-icon" style="background:rgba(251,191,36,0.15);"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png" style="width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(251,191,36,0.6));"></div>
+                        <span class="lp-label">Home</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(() => switchTab('profile'))">
+                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-id-card" style="color:#a78bfa;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Profile</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(() => switchTab('clans'))">
+                        <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-shield-halved" style="color:#2dd4bf;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Clans</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(() => switchTab('players'))">
+                        <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-users" style="color:#60a5fa;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Players</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(() => switchTab('clips'))">
+                        <div class="lp-icon" style="background:rgba(236,72,153,0.15);"><i class="fa-solid fa-clapperboard" style="color:#f472b6;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Clips</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION: Actions -->
+            <div style="margin-bottom:18px;">
+                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">Actions</div>
+                <div class="lp-grid">
+                    <button class="lp-tile" onclick="lpGo(claimDaily)">
+                        <div class="lp-icon" style="background:rgba(249,115,22,0.15);"><i class="fa-solid fa-gift" style="color:#fb923c;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Claim Daily</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(renderLeaderboard)">
+                        <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-trophy" style="color:#fbbf24;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Leaderboard</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(renderBattledome)">
+                        <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><i class="fa-solid fa-shield-halved" style="color:#f87171;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Battledome</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openGamesHub)">
+                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-dice" style="color:#a78bfa;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Games</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openEconomyShop)">
+                        <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-store" style="color:#60a5fa;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Shop</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openSlitherServers)">
+                        <div class="lp-icon" style="background:rgba(34,197,94,0.15);"><i class="fa-solid fa-worm" style="color:#4ade80;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Slither.io</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openAchievements)">
+                        <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-medal" style="color:#fcd34d;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Achievements</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openFriendsList)">
+                        <div class="lp-icon" style="background:rgba(99,102,241,0.15);"><i class="fa-solid fa-user-group" style="color:#818cf8;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Friends</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openAnalytics)">
+                        <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-chart-line" style="color:#2dd4bf;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Stats</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openGlobalSearch)">
+                        <div class="lp-icon" style="background:rgba(148,163,184,0.12);"><i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Search</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- SECTION: Settings -->
+            <div>
+                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">Settings</div>
+                <div class="lp-grid">
+                    <button class="lp-tile" onclick="lpGo(openBackgroundSettings)">
+                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#a78bfa;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Theme</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openNotificationSettings)">
+                        <div class="lp-icon" style="background:rgba(251,191,36,0.15);"><i class="fa-solid fa-bell" style="color:#fbbf24;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Notifications</span>
+                    </button>
+                    <button class="lp-tile" onclick="lpGo(openGraphicsSettings)">
+                        <div class="lp-icon" style="background:rgba(100,116,139,0.18);"><i class="fa-solid fa-display" style="color:#94a3b8;font-size:1.15rem;"></i></div>
+                        <span class="lp-label">Graphics</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ═══ END LAUNCHPAD ═══ -->
 
     <script>
         // --- DATA & STATE ---
@@ -6659,6 +6853,36 @@
                 _closeQuickActions();
                 if (typeof action === 'function') setTimeout(action, 0);
             } catch (err) { console.error('runQuickAction error:', err); }
+        }
+
+        function openLaunchpad() {
+            _closeQuickActions();
+            const lp = document.getElementById('kc-launchpad');
+            if (!lp) return;
+            lp.style.display = 'block';
+            lp.scrollTop = 0;
+            // animate in the inner panel
+            const inner = lp.querySelector('[style*="max-width:680px"]');
+            if (inner) { inner.style.animation = 'lpFadeIn 0.22s cubic-bezier(0.16,1,0.3,1) both'; }
+            document.body.style.overflow = 'hidden';
+            // close on backdrop click
+            lp.onclick = function(e) { if (e.target === lp) closeLaunchpad(); };
+            // close on Escape
+            lp._escListener = function(e) { if (e.key === 'Escape') closeLaunchpad(); };
+            document.addEventListener('keydown', lp._escListener);
+        }
+
+        function closeLaunchpad() {
+            const lp = document.getElementById('kc-launchpad');
+            if (!lp) return;
+            lp.style.display = 'none';
+            document.body.style.overflow = '';
+            if (lp._escListener) { document.removeEventListener('keydown', lp._escListener); lp._escListener = null; }
+        }
+
+        function lpGo(action) {
+            closeLaunchpad();
+            if (typeof action === 'function') setTimeout(action, 0);
         }
 
         // profile-popup.js handles the full KC profile card including friends bar,
