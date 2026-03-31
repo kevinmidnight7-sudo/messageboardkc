@@ -1530,7 +1530,7 @@
                             </div>
 
                             <!-- Icon action buttons (like login.html) -->
-                            <div class="flex gap-2 pb-1.5">
+                            <div class="flex gap-2 pb-1.5 flex-wrap">
                                 <button onclick="previewCustomization()" title="Customise Profile"
                                     class="glass glass-hover flex items-center justify-center text-blue-400 hover:text-blue-300 transition"
                                     style="width:44px;height:44px;border-radius:14px;">
@@ -1545,6 +1545,11 @@
                                     class="glass glass-hover flex items-center justify-center text-yellow-400 hover:text-yellow-300 transition"
                                     style="width:44px;height:44px;border-radius:14px;">
                                     <i class="fa-solid fa-chart-line"></i>
+                                </button>
+                                <button onclick="openBadgeManager()" title="Manage Badges"
+                                    class="glass glass-hover flex items-center justify-center text-pink-400 hover:text-pink-300 transition"
+                                    style="width:44px;height:44px;border-radius:14px;">
+                                    <i class="fa-solid fa-medal"></i>
                                 </button>
                                 <button onclick="window.openKcProfile && window.openKcProfile(currentUser?.uid)" title="Full Profile"
                                     class="glass glass-hover flex items-center justify-center text-purple-400 hover:text-purple-300 transition"
@@ -4778,45 +4783,64 @@
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
             }).catch(() => {});
 
-            // Economy — top 5 by points. Individual user lookups avoid needing the full
-            // allUsersData download (which may not have run if config/serverStats was used).
-            db.ref('userEconomy').orderByChild('points').limitToLast(5).once('value').then(async snap => {
-                const players = [];
-                snap.forEach(child => {
-                    players.unshift({ discordId: child.key, points: child.val()?.points || 0 });
-                });
-                let playerLinks = {};
+            // Economy — top 10 by points. Falls back to reading all & sorting if index unavailable.
+            (async () => {
+                const econEl = document.getElementById('top-economy');
                 try {
-                    const plSnap = await db.ref('config/playerLinks').once('value');
-                    playerLinks = plSnap.val() || {};
-                } catch(e) {}
-                const enriched = await Promise.all(players.map(async p => {
-                    const kcUid = playerLinks[p.discordId]?.kcUid || null;
-                    let name = null;
-                    if (kcUid) {
-                        // Try cache first, fall back to single-field read
-                        const cached = allUsersData.find(u => u.uid === kcUid);
-                        if (cached) {
-                            name = cached.displayName;
-                        } else {
-                            const ns = await db.ref(`users/${kcUid}/displayName`).once('value').catch(() => null);
-                            name = ns ? ns.val() : null;
-                        }
+                    // Try ordered query first; Firebase may warn about missing index but still works
+                    let econSnap;
+                    try {
+                        econSnap = await db.ref('userEconomy').orderByChild('points').limitToLast(10).once('value');
+                    } catch(e) {
+                        // Index not set — fall back to full read + client sort
+                        econSnap = await db.ref('userEconomy').once('value');
                     }
-                    return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
-                }));
-                const el = document.getElementById('top-economy');
-                const medals = ['🥇','🥈','🥉'];
-                if (el) el.innerHTML = enriched.length > 0 ? enriched.map((p, i) => `
-                    <div class="flex justify-between items-center py-0.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500">#${i+1}</span>`}</span>
-                            <span class="text-sm font-semibold truncate max-w-[140px] ${p.uid ? 'cursor-pointer hover:text-blue-400 transition' : ''}" ${p.uid ? `onclick="window.openKcProfile('${p.uid}')"` : ''}>${p.name}</span>
+                    const players = [];
+                    econSnap.forEach(child => {
+                        const pts = child.val()?.points;
+                        if (pts > 0) players.push({ discordId: child.key, points: pts });
+                    });
+                    // Sort desc (limitToLast returns ascending)
+                    players.sort((a, b) => b.points - a.points);
+                    const top = players.slice(0, 10);
+                    if (top.length === 0) {
+                        if (econEl) econEl.innerHTML = '<p class="text-xs text-gray-500 text-center">No data yet</p>';
+                        return;
+                    }
+                    let playerLinks = {};
+                    try {
+                        const plSnap = await db.ref('config/playerLinks').once('value');
+                        playerLinks = plSnap.val() || {};
+                    } catch(e) {}
+                    // Build reverse map: kcUid → discordId for faster lookup
+                    const kcUidByDiscord = {};
+                    Object.entries(playerLinks).forEach(([discordId, v]) => {
+                        if (v?.kcUid) kcUidByDiscord[discordId] = v.kcUid;
+                    });
+                    const enriched = await Promise.all(top.map(async p => {
+                        const kcUid = kcUidByDiscord[p.discordId] || null;
+                        let name = null;
+                        if (kcUid) {
+                            const cached = allUsersData.find(u => u.uid === kcUid);
+                            name = cached?.displayName || (await db.ref(`users/${kcUid}/displayName`).once('value').catch(() => null))?.val();
+                        }
+                        return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
+                    }));
+                    const medals = ['🥇','🥈','🥉'];
+                    if (econEl) econEl.innerHTML = enriched.map((p, i) => `
+                        <div class="flex justify-between items-center py-0.5">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500 text-[10px]">#${i+1}</span>`}</span>
+                                <span class="text-sm font-semibold truncate max-w-[140px] ${p.uid ? 'cursor-pointer hover:text-blue-400 transition' : ''}" ${p.uid ? `onclick="window.openKcProfile('${p.uid}')"` : ''}>${p.name}</span>
+                            </div>
+                            <span class="text-xs font-bold text-blue-400">${p.points.toLocaleString()} pts</span>
                         </div>
-                        <span class="text-xs font-bold text-blue-400">${p.points.toLocaleString()}</span>
-                    </div>
-                `).join('') : '<p class="text-xs text-gray-500 text-center">No data yet</p>';
-            }).catch(() => {});
+                    `).join('');
+                } catch(e) {
+                    console.error('[Economy leaderboard]', e);
+                    if (econEl) econEl.innerHTML = '<p class="text-xs text-gray-500 text-center">Failed to load</p>';
+                }
+            })();
         }
 
         // --- MODAL & MISC ---
@@ -6554,9 +6578,11 @@
 
             Promise.all([
                 db.ref(`users/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
+                db.ref(`badges/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 getDiscordIdFromKcUid(currentUser.uid)
-            ]).then(([userSnap, discordId]) => {
+            ]).then(([userSnap, badgesSnap, discordId]) => {
                 const u = userSnap.val() || {};
+                const b = badgesSnap.val() || {};
                 if (idBlock) idBlock.style.opacity = '1';
 
                 // ── Avatar ──────────────────────────────────────────
@@ -6607,19 +6633,19 @@
                     statusEl.innerHTML = html;
                 }
 
-                // ── KC Score pills (Overall / Offence / Defence) ─────
+                // ── KC Score pills (Overall / Offence / Defence) — read from badges/{uid}
                 const kcScoresEl = $('pf-kc-scores');
                 if (kcScoresEl) {
                     const scores = [
-                        { label:'Overall Winner', val: u.overall||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', fg:'#fbbf24', bg:'rgba(251,191,36,0.12)', br:'rgba(251,191,36,0.28)' },
-                        { label:'Best Offence',   val: u.offence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      fg:'#f87171', bg:'rgba(239,68,68,0.12)',  br:'rgba(239,68,68,0.28)'  },
-                        { label:'Best Defence',   val: u.defence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     fg:'#34d399', bg:'rgba(52,211,153,0.12)', br:'rgba(52,211,153,0.28)' },
+                        { label:'Overall Winner', val: b.overall||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', fg:'#fbbf24', bg:'rgba(251,191,36,0.12)', br:'rgba(251,191,36,0.28)' },
+                        { label:'Best Offence',   val: b.offence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      fg:'#f87171', bg:'rgba(239,68,68,0.12)',  br:'rgba(239,68,68,0.28)'  },
+                        { label:'Best Defence',   val: b.defence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     fg:'#34d399', bg:'rgba(52,211,153,0.12)', br:'rgba(52,211,153,0.28)' },
                     ];
-                    kcScoresEl.innerHTML = scores.map(s =>
+                    kcScoresEl.innerHTML = scores.filter(s => s.val > 0).map(s =>
                         `<div style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:14px;background:${s.bg};border:1px solid ${s.br};">
                             <img src="${s.img}" style="width:14px;height:14px;object-fit:contain;">
                             <span style="font-size:0.7rem;font-weight:700;color:${s.fg};">${s.label}</span>
-                            <span style="font-size:1.1rem;font-weight:900;color:#fff;line-height:1;">${s.val}</span>
+                            <span style="font-size:1.1rem;font-weight:900;color:#fff;line-height:1;">×${s.val}</span>
                         </div>`
                     ).join('');
                 }
@@ -6638,8 +6664,7 @@
                         </div>`;
                 }
 
-                // ── Official KC badge visuals ────────────────────────
-                // Only rendered if user has any score > 0
+                // ── Official KC badge visuals — read from badges/{uid}
                 const badgesEl = $('pf-kc-badges');
                 if (badgesEl) {
                     const defs = [
@@ -6647,10 +6672,10 @@
                         { key:'offence', label:'Offence',  grad:'linear-gradient(135deg,#fa5252,#fbba34)', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png'     },
                         { key:'defence', label:'Defence',  grad:'linear-gradient(135deg,#3b82f6,#60a5fa)', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png'    },
                     ];
-                    const anyScore = defs.some(d => (u[d.key] || 0) > 0);
+                    const anyScore = defs.some(d => (b[d.key] || 0) > 0);
                     if (anyScore) {
                         badgesEl.innerHTML = defs.map(d => {
-                            const score = u[d.key] || 0;
+                            const score = b[d.key] || 0;
                             const locked = score === 0;
                             return `<div style="display:flex;flex-direction:column;align-items:center;gap:5px;opacity:${locked?'0.35':'1'};transition:transform 0.2s;" onmouseover="if(!${locked})this.style.transform='translateY(-3px)scale(1.04)'" onmouseout="this.style.transform='none'">
                                 <div style="width:52px;height:52px;border-radius:16px;background:${d.grad};display:flex;align-items:center;justify-content:center;box-shadow:${locked?'none':'0 4px 16px rgba(0,0,0,0.4)'};">
@@ -6672,17 +6697,260 @@
                     : Promise.resolve({});
                 econPromise.then(economy => {
                     const pts    = economy.points || 0;
-                    const rank   = economy.rank   || 'N/A';
                     const streak = economy.streaks?.login?.current || 0;
                     setText('pf-points', pts.toLocaleString());
-                    setText('pf-rank',   '#' + rank);
                     setText('pf-streak', streak > 0 ? streak + ' 🔥' : '–');
+                    // Compute rank: count entries with more points than me
+                    if (pts > 0) {
+                        db.ref('userEconomy').orderByChild('points').startAt(pts + 1).once('value')
+                            .then(snap => setText('pf-rank', '#' + (snap.numChildren() + 1)))
+                            .catch(() => setText('pf-rank', '#?'));
+                    } else {
+                        setText('pf-rank', '–');
+                    }
                 });
 
             }).catch(() => {
                 if (idBlock) idBlock.style.opacity = '1';
                 setText('pf-name', 'Could not load profile');
             });
+        }
+
+        // ===== BADGE MANAGER =====
+        // Badge creator state
+        let _bdgEditingKey = null;
+        let _bdgStep = 1;
+        const _bdgIcons = ['🏆','🔥','💎','⭐','🐍','👑','🎯','🛡️','🚀','⚡','🌟','🦅','🎮','🗡️','🌊','🦁'];
+        const _bdgGradPresets = [
+            ['#ff9a9e','#fad0c4'],['#a1c4fd','#c2e9fb'],['#f6d365','#fda085'],
+            ['#a8edea','#fed6e3'],['#f093fb','#f5576c'],['#6ee7b7','#3b82f6'],
+            ['#ffe066','#e0aaff'],['#fddb92','#d1fdff'],['#a18cd1','#fbc2eb'],
+        ];
+        const _bdgTextCols = ['#ffffff','#facc15','#22d3ee','#4ade80','#f472b6','#a78bfa','#f97316','#0f172a'];
+        let _bdgState = { icon:'🏆', grad1:'#ffe066', grad2:'#e0aaff', textColor:'#ffffff', name:'' };
+        let _bdgMgrCache = null; // { uid, bCounts, customData, maxCustom, allowCreate }
+
+        async function openBadgeManager() {
+            if (!currentUser) return openAuthModal();
+            const M = openModalWithLoading('🏅 My Badges', 'Loading badges...');
+            if (!M) return;
+            const uid = currentUser.uid;
+            try {
+                const [badgesSnap, userSnap] = await Promise.all([
+                    db.ref(`badges/${uid}`).once('value'),
+                    db.ref(`users/${uid}`).once('value'),
+                ]);
+                const bCounts = badgesSnap.val() || {};
+                const u = userSnap.val() || {};
+                const customData = u.customBadges || {};
+                const streak = u.loginStreak || 0;
+                const codes = u.codesUnlocked || {};
+                const bonus = (codes.diamond ? 2 : 0) + (codes.emerald ? 1 : 0);
+                const baseMax = streak >= 100 ? 2 : streak >= 50 ? 1 : 0;
+                const maxCustom = baseMax + bonus;
+                const allowCreate = (streak >= 50) || bonus > 0;
+                const canCreate = allowCreate && Object.keys(customData).length < maxCustom;
+                _bdgMgrCache = { uid, bCounts, customData, maxCustom, allowCreate, canCreate };
+                M.update(_renderBadgeMgr());
+                _bdgInitMgrListeners();
+            } catch(e) {
+                console.error('[BadgeManager]', e);
+                M.update('<p class="text-center text-red-400 py-8">Failed to load badges.</p>');
+            }
+        }
+
+        function _renderBadgeMgr() {
+            const { uid, bCounts, customData, maxCustom, allowCreate, canCreate } = _bdgMgrCache;
+            const isHigh = backgroundPrefs.quality === 'high';
+            const officialSpecs = [
+                { key:'offence', label:'Best Offence',   icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      grad:'linear-gradient(90deg,#fa5252 80%,#fbba34 120%)', glow:'#ff6b6bcc' },
+                { key:'defence', label:'Best Defence',   icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     grad:'linear-gradient(90deg,#3b82f6 80%,#60a5fa 120%)', glow:'rgba(59,130,246,0.9)' },
+                { key:'overall', label:'Overall Winner', icon:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', grad:'linear-gradient(90deg,#e1ab33 70%,#ffe184 120%)', glow:'rgba(234,179,8,0.9)' },
+            ];
+
+            // Official badges section
+            const officialHtml = officialSpecs.map(s => {
+                const cnt = bCounts[s.key] || 0;
+                const locked = cnt === 0;
+                const bg = locked ? 'linear-gradient(90deg,#374151 65%,#4b5563 120%)' : s.grad;
+                return `<div style="flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:16px;background:${bg};opacity:${locked?0.5:1};${isHigh&&!locked?`box-shadow:0 4px 20px ${s.glow}55;`:''}" class="${isHigh&&!locked?'bdg-float':''}">
+                    <img src="${s.icon}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">
+                    <span style="font-size:0.6rem;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,0.85);text-transform:uppercase;text-align:center;line-height:1.2;">${s.label}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:#fff;">${locked?'🔒':`×${cnt}`}</span>
+                </div>`;
+            }).join('');
+
+            // Custom badges section
+            const customKeys = Object.keys(customData);
+            const customHtml = customKeys.map(key => {
+                const badge = customData[key];
+                const bg = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
+                return `<div id="cbdg_${key}" onclick="_bdgEditCustom('${key}')" style="flex:1;min-width:100px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:${bg};cursor:pointer;position:relative;${isHigh?'box-shadow:0 4px 16px rgba(0,0,0,0.4);':''}" class="${isHigh?'bdg-float':''}">
+                    <span style="font-size:2rem;line-height:1;">${badge.icon||'⭐'}</span>
+                    <span style="font-size:0.65rem;font-weight:800;color:${badge.textColor||'#e5e7eb'};text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${badge.name||'Badge'}</span>
+                    <span style="position:absolute;top:5px;right:8px;font-size:0.75rem;opacity:0.7;">✏️</span>
+                    <button onclick="event.stopPropagation();_bdgDeleteCustom('${key}')" style="position:absolute;top:5px;left:8px;font-size:0.65rem;background:rgba(0,0,0,0.35);border:none;color:#fff;border-radius:6px;padding:1px 5px;cursor:pointer;">✕</button>
+                </div>`;
+            }).join('');
+
+            const createBtn = canCreate ? `
+                <button onclick="_bdgStartCreate()" style="flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%);cursor:pointer;border:none;" class="${isHigh?'bdg-float':''}">
+                    <span style="font-size:2rem;">➕</span>
+                    <span style="font-size:0.6rem;font-weight:800;color:#78716c;text-transform:uppercase;">Create Badge</span>
+                </button>` : (!allowCreate ? `<p class="text-xs text-gray-500 text-center mt-2">Reach a 50-day login streak or unlock a code to create custom badges.</p>` : `<p class="text-xs text-gray-500 text-center mt-2">Badge slots full (${customKeys.length}/${maxCustom}).</p>`);
+
+            const pedestalCss = isHigh ? `<style>
+                @keyframes bdg-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-5px) scale(1.03)}}
+                .bdg-float{animation:bdg-float 3.2s ease-in-out infinite;}
+                .bdg-float:nth-child(2){animation-delay:.5s;}
+                .bdg-float:nth-child(3){animation-delay:1s;}
+                .bdg-pedestal{position:relative;padding:20px 16px 32px;border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.02) 100%);border:1px solid rgba(255,255,255,0.08);overflow:hidden;}
+                .bdg-pedestal::after{content:'';position:absolute;bottom:0;left:0;right:0;height:16px;background:linear-gradient(to bottom,rgba(0,0,0,0),rgba(0,0,0,0.4));border-radius:0 0 24px 24px;}
+                .bdg-pedestal::before{content:'';position:absolute;top:0;left:20%;right:20%;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);}
+            </style>` : '';
+
+            return `
+                ${pedestalCss}
+                <div class="space-y-5">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-3">Official KC Badges</p>
+                        <div class="${isHigh?'bdg-pedestal':''} flex gap-3 flex-wrap">${officialHtml}</div>
+                    </div>
+                    <div>
+                        <p class="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-3">Custom Badges${allowCreate?` <span class="text-gray-600 font-normal normal-case">(${Object.keys(customData).length}/${maxCustom} slots used)</span>`:''}
+                        </p>
+                        <div class="${isHigh?'bdg-pedestal':''} flex gap-3 flex-wrap">
+                            ${customHtml}
+                            ${createBtn}
+                        </div>
+                    </div>
+                    <div id="bdg-creator-area" class="hidden"></div>
+                </div>`;
+        }
+
+        function _bdgInitMgrListeners() {
+            // Called after modal content renders — no persistent listeners needed since buttons use onclick
+        }
+
+        function _bdgDeleteCustom(key) {
+            if (!_bdgMgrCache) return;
+            kcConfirm('Delete this badge?', async () => {
+                await db.ref(`users/${_bdgMgrCache.uid}/customBadges/${key}`).remove();
+                showToast('Badge deleted', 'info');
+                delete _bdgMgrCache.customData[key];
+                _bdgMgrCache.canCreate = _bdgMgrCache.allowCreate && Object.keys(_bdgMgrCache.customData).length < _bdgMgrCache.maxCustom;
+                const body = document.getElementById('modal-body');
+                if (body) body.innerHTML = _renderBadgeMgr();
+            });
+        }
+
+        function _bdgStartCreate() {
+            _bdgEditingKey = null;
+            _bdgState = { icon:'🏆', grad1:'#ffe066', grad2:'#e0aaff', textColor:'#ffffff', name:'' };
+            _bdgStep = 1;
+            _bdgOpenCreator();
+        }
+
+        function _bdgEditCustom(key) {
+            if (!_bdgMgrCache) return;
+            const badge = _bdgMgrCache.customData[key];
+            if (!badge) return;
+            _bdgEditingKey = key;
+            _bdgState = { icon: badge.icon||'⭐', grad1: badge.grad1||'#ffe066', grad2: badge.grad2||'#e0aaff', textColor: badge.textColor||'#ffffff', name: badge.name||'' };
+            _bdgStep = 1;
+            _bdgOpenCreator();
+        }
+
+        function _bdgOpenCreator() {
+            const area = document.getElementById('bdg-creator-area');
+            if (!area) return;
+            area.classList.remove('hidden');
+            _bdgRenderCreator(area);
+            area.scrollIntoView({ behavior:'smooth', block:'nearest' });
+        }
+
+        function _bdgRenderCreator(area) {
+            const stepLabels = ['Name','Icon','Style','Confirm'];
+            const progressHtml = stepLabels.map((l,i) => `<div style="flex:1;text-align:center;font-size:0.6rem;font-weight:800;padding:4px 2px;border-radius:6px;${i+1<=_bdgStep?'background:#3b82f6;color:#fff;':'color:#6b7280;'}">${l}</div>`).join('');
+
+            let stepHtml = '';
+            if (_bdgStep === 1) {
+                stepHtml = `<label class="text-xs text-gray-400 mb-1 block">Badge Name</label>
+                    <input id="bdg-name-inp" maxlength="15" placeholder="Enter name..." value="${_bdgState.name}"
+                        oninput="_bdgState.name=this.value;_bdgUpdatePreview()"
+                        class="w-full p-2.5 rounded-xl bg-white/8 border border-white/15 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"/>`;
+            } else if (_bdgStep === 2) {
+                stepHtml = `<label class="text-xs text-gray-400 mb-2 block">Pick an Icon</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;">
+                        ${_bdgIcons.map(ic => `<button onclick="_bdgState.icon='${ic}';document.querySelectorAll('.bdg-ic-btn').forEach(b=>b.style.background='transparent');this.style.background='rgba(59,130,246,0.35)';_bdgUpdatePreview()"
+                            class="bdg-ic-btn" style="font-size:1.6rem;background:${_bdgState.icon===ic?'rgba(59,130,246,0.35)':'transparent'};border:none;border-radius:10px;padding:4px 8px;cursor:pointer;transition:.15s;">${ic}</button>`).join('')}
+                    </div>`;
+            } else if (_bdgStep === 3) {
+                const presets = _bdgGradPresets.map(([c1,c2]) => `<button onclick="_bdgState.grad1='${c1}';_bdgState.grad2='${c2}';document.querySelectorAll('.bdg-gp').forEach(b=>b.style.outline='none');this.style.outline='2px solid #fff';_bdgUpdatePreview()"
+                    class="bdg-gp" style="width:36px;height:36px;border-radius:8px;background:linear-gradient(90deg,${c1} 30%,${c2} 100%);border:none;cursor:pointer;outline:${_bdgState.grad1===c1&&_bdgState.grad2===c2?'2px solid #fff':'none'};"></button>`).join('');
+                const cols = _bdgTextCols.map(c => `<button onclick="_bdgState.textColor='${c}';document.querySelectorAll('.bdg-tc').forEach(b=>b.style.outline='none');this.style.outline='2px solid #60a5fa';_bdgUpdatePreview()"
+                    class="bdg-tc" style="width:28px;height:28px;border-radius:50%;background:${c};border:1px solid rgba(255,255,255,0.2);cursor:pointer;outline:${_bdgState.textColor===c?'2px solid #60a5fa':'none'};"></button>`).join('');
+                stepHtml = `<label class="text-xs text-gray-400 mb-2 block">Gradient</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">${presets}</div>
+                    <label class="text-xs text-gray-400 mb-2 block">Text Colour</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:5px;">${cols}</div>`;
+            } else {
+                stepHtml = `<p class="text-xs text-gray-400 text-center mb-2">Review your badge — click Save to finish.</p>`;
+            }
+
+            area.innerHTML = `
+                <div class="glass rounded-2xl p-4 mt-2">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">${_bdgEditingKey?'Edit Badge':'Create Badge'}</p>
+                    <div id="bdg-live-preview" style="padding:10px 16px;border-radius:14px;background:linear-gradient(90deg,${_bdgState.grad1} 30%,${_bdgState.grad2} 100%);display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+                        <span style="font-size:2rem;">${_bdgState.icon}</span>
+                        <span style="font-weight:700;font-size:1rem;color:${_bdgState.textColor};">${_bdgState.name||'Badge Preview'}</span>
+                    </div>
+                    <div style="display:flex;gap:4px;margin-bottom:14px;">${progressHtml}</div>
+                    <div id="bdg-step-content" class="mb-4">${stepHtml}</div>
+                    <div class="flex gap-2">
+                        ${_bdgStep > 1 ? `<button onclick="_bdgStep--;_bdgRenderCreator(document.getElementById('bdg-creator-area'))" class="flex-1 py-2 rounded-xl glass text-white text-sm font-bold transition hover:bg-white/10">Back</button>` : ''}
+                        ${_bdgStep < 4 ? `<button onclick="_bdgStep++;_bdgRenderCreator(document.getElementById('bdg-creator-area'));if(_bdgStep===1)document.getElementById('bdg-name-inp')?.focus()" class="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold transition">Next</button>` : ''}
+                        ${_bdgStep === 4 ? `<button onclick="_bdgSaveCustomBadge()" class="flex-1 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-bold transition">Save Badge</button>` : ''}
+                        <button onclick="document.getElementById('bdg-creator-area').classList.add('hidden')" class="py-2 px-4 rounded-xl glass text-gray-400 text-sm font-bold transition hover:bg-white/10">Cancel</button>
+                    </div>
+                </div>`;
+        }
+
+        function _bdgUpdatePreview() {
+            const prev = document.getElementById('bdg-live-preview');
+            if (!prev) return;
+            prev.style.background = `linear-gradient(90deg,${_bdgState.grad1} 30%,${_bdgState.grad2} 100%)`;
+            prev.innerHTML = `<span style="font-size:2rem;">${_bdgState.icon}</span><span style="font-weight:700;font-size:1rem;color:${_bdgState.textColor};">${_bdgState.name||'Badge Preview'}</span>`;
+        }
+
+        async function _bdgSaveCustomBadge() {
+            if (!_bdgMgrCache || !currentUser) return;
+            const { name, icon, grad1, grad2, textColor } = _bdgState;
+            if (!name.trim()) { showToast('Enter a badge name', 'error'); return; }
+            if (!icon) { showToast('Pick an icon', 'error'); return; }
+            const badgeData = { name: name.trim(), icon, grad1, grad2, textColor };
+            try {
+                const uid = _bdgMgrCache.uid;
+                if (_bdgEditingKey) {
+                    await db.ref(`users/${uid}/customBadges/${_bdgEditingKey}`).set(badgeData);
+                    _bdgMgrCache.customData[_bdgEditingKey] = badgeData;
+                    showToast('Badge updated!', 'success');
+                } else {
+                    const newRef = db.ref(`users/${uid}/customBadges`).push();
+                    await newRef.set(badgeData);
+                    _bdgMgrCache.customData[newRef.key] = badgeData;
+                    showToast('Badge created!', 'success');
+                }
+                _bdgMgrCache.canCreate = _bdgMgrCache.allowCreate && Object.keys(_bdgMgrCache.customData).length < _bdgMgrCache.maxCustom;
+                _bdgEditingKey = null;
+                const body = document.getElementById('modal-body');
+                if (body) body.innerHTML = _renderBadgeMgr();
+                // Refresh profile kc badges section too
+                loadProfileLite();
+            } catch(e) {
+                console.error('[BadgeSave]', e);
+                showToast('Failed to save badge', 'error');
+            }
         }
 
         // Gradient and banner options matching login.html
