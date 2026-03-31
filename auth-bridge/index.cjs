@@ -1,0 +1,204 @@
+/**
+ * KC Events — Discord OAuth Auth Bridge
+ *
+ * Supports two linking flows:
+ *   A) Legacy bot flow:  state = Discord user ID (17-20 digits)
+ *      /start  → validates state is a Discord ID, redirects to Discord OAuth
+ *      /callback → writes discordLinks/{discordId} = { kcUid, linkedAt }, redirects to link.html
+ *
+ *   B) Web UI flow (kcnow.html):  state = Firestore linkStates document ID (random alphanumeric)
+ *      /start  → validates Firestore linkStates/{state} doc exists, not used, not expired
+ *      /callback → reads linkStates/{state}.uid, writes Firestore users/{uid}.discordId,
+ *                  writes RTDB users/{uid}/discordId, issues custom Firebase token,
+ *                  redirects to PUBLIC_WEB_SUCCESS_URL?customToken=<token>
+ */
+
+'use strict';
+const express      = require('express');
+const fetch        = require('node-fetch');
+const admin        = require('firebase-admin');
+
+const app = express();
+
+// ── Firebase Admin ────────────────────────────────────────────────────────────
+// Uses GOOGLE_APPLICATION_CREDENTIALS env var or serviceAccountKey.json
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        databaseURL: process.env.FIREBASE_DATABASE_URL,
+    });
+}
+const fsdb = admin.firestore();   // Firestore (for linkStates + users)
+const rtdb = admin.database();    // Realtime Database (for users/{uid}/discordId + discordLinks)
+
+// ── Config (from env) ─────────────────────────────────────────────────────────
+const CLIENT_ID          = process.env.DISCORD_CLIENT_ID;
+const CLIENT_SECRET      = process.env.DISCORD_CLIENT_SECRET;
+const REDIRECT_URI       = process.env.DISCORD_REDIRECT_URI;        // e.g. https://auth.kcevents.uk/oauth/discord/callback
+const PUBLIC_WEB_SUCCESS = process.env.PUBLIC_WEB_SUCCESS_URL || 'https://kevinmidnight7-sudo.github.io/messageboardkc/kcnow.html';
+const PORT               = process.env.PORT || 3000;
+
+const LINK_STATE_TTL_MS  = 15 * 60 * 1000; // 15 minutes
+
+// ── CORS headers ──────────────────────────────────────────────────────────────
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+});
+
+// ── /oauth/discord/start ──────────────────────────────────────────────────────
+app.get('/oauth/discord/start', async (req, res) => {
+    const state = String(req.query.state || '').trim();
+    if (!state) return res.status(400).send('Missing state');
+
+    const isDiscordId = /^\d{17,20}$/.test(state);
+
+    if (!isDiscordId) {
+        // Web UI flow — validate Firestore linkStates document
+        try {
+            const doc = await fsdb.collection('linkStates').doc(state).get();
+            if (!doc.exists) return res.status(400).send('Unknown state');
+            const data = doc.data();
+            const createdMs = data.createdAt?.toMillis?.() || (data.createdAt?._seconds * 1000) || 0;
+            if (data.used) return res.status(400).send('State already used');
+            if (Date.now() - createdMs > LINK_STATE_TTL_MS) return res.status(400).send('State expired');
+        } catch (err) {
+            console.error('[start] Firestore error:', err);
+            return res.status(500).send('Internal error');
+        }
+    }
+
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        response_type: 'code',
+        scope: 'identify',
+        state,
+        prompt: 'none',
+    });
+    res.redirect(`https://discord.com/oauth2/authorize?${params}`);
+});
+
+// ── /oauth/discord/callback ───────────────────────────────────────────────────
+app.get('/oauth/discord/callback', async (req, res) => {
+    const { code, state, error } = req.query;
+
+    if (error) return res.status(400).send(`Discord error: ${error}`);
+    if (!code || !state) return res.status(400).send('Missing code or state');
+
+    const isDiscordIdState = /^\d{17,20}$/.test(String(state).trim());
+
+    // ── Exchange code for access token ────────────────────────────────────────
+    let accessToken;
+    try {
+        const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: CLIENT_ID,
+                client_secret: CLIENT_SECRET,
+                grant_type: 'authorization_code',
+                code,
+                redirect_uri: REDIRECT_URI,
+            }).toString(),
+        });
+        const tokenData = await tokenRes.json();
+        if (!tokenData.access_token) {
+            console.error('[callback] Token exchange failed:', tokenData);
+            return res.status(500).send('Token exchange failed');
+        }
+        accessToken = tokenData.access_token;
+    } catch (err) {
+        console.error('[callback] Token exchange error:', err);
+        return res.status(500).send('Internal error');
+    }
+
+    // ── Fetch Discord user identity ───────────────────────────────────────────
+    let discordUser;
+    try {
+        const userRes = await fetch('https://discord.com/api/users/@me', {
+            headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        discordUser = await userRes.json();
+        if (!discordUser.id) {
+            console.error('[callback] Discord user fetch failed:', discordUser);
+            return res.status(500).send('Failed to get Discord identity');
+        }
+    } catch (err) {
+        console.error('[callback] Discord user fetch error:', err);
+        return res.status(500).send('Internal error');
+    }
+
+    const discordId = discordUser.id;
+
+    if (isDiscordIdState) {
+        // ── Legacy bot flow ───────────────────────────────────────────────────
+        // state IS the kcUid (Discord bot supplies the KC Firebase UID as state)
+        const kcUid = String(state).trim();
+        try {
+            await rtdb.ref(`discordLinks/${discordId}`).set({
+                kcUid,
+                linkedAt: admin.database.ServerValue.TIMESTAMP,
+            });
+            // Also mirror to RTDB users node for fast lookup
+            await rtdb.ref(`users/${kcUid}/discordId`).set(discordId);
+        } catch (err) {
+            console.error('[callback] RTDB write error (legacy):', err);
+        }
+        const target = `https://auth.kcevents.uk/link.html?state=${encodeURIComponent(state)}&ok=1`;
+        return res.redirect(target);
+    }
+
+    // ── Web UI flow (Firestore linkStates) ────────────────────────────────────
+    const stateKey = String(state).trim();
+    let kcUid;
+    try {
+        const docRef = fsdb.collection('linkStates').doc(stateKey);
+        const doc = await docRef.get();
+        if (!doc.exists) return res.status(400).send('Unknown state');
+        const data = doc.data();
+        const createdMs = data.createdAt?.toMillis?.() || (data.createdAt?._seconds * 1000) || 0;
+        if (data.used) return res.status(400).send('State already used');
+        if (Date.now() - createdMs > LINK_STATE_TTL_MS) return res.status(400).send('State expired');
+
+        kcUid = data.uid;
+        // Mark state as used
+        await docRef.update({ used: true });
+    } catch (err) {
+        console.error('[callback] Firestore linkStates error:', err);
+        return res.status(500).send('Internal error');
+    }
+
+    // Write Discord ID to Firestore users doc + RTDB users node
+    try {
+        await Promise.all([
+            fsdb.collection('users').doc(kcUid).set({ discordId }, { merge: true }),
+            rtdb.ref(`users/${kcUid}/discordId`).set(discordId),
+            rtdb.ref(`discordLinks/${discordId}`).set({
+                kcUid,
+                linkedAt: admin.database.ServerValue.TIMESTAMP,
+            }),
+        ]);
+    } catch (err) {
+        console.error('[callback] Firebase write error (web UI flow):', err);
+        return res.status(500).send('Failed to save link');
+    }
+
+    // Issue a custom Firebase Auth token so the web client can sign in and confirm
+    let customToken;
+    try {
+        customToken = await admin.auth().createCustomToken(kcUid, { discordId });
+    } catch (err) {
+        console.error('[callback] Custom token error:', err);
+        return res.status(500).send('Failed to issue token');
+    }
+
+    // Redirect to KC NOW with the custom token as a URL parameter
+    const successUrl = `${PUBLIC_WEB_SUCCESS}?customToken=${encodeURIComponent(customToken)}`;
+    return res.redirect(successUrl);
+});
+
+// ── Health check ──────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => res.send('OK'));
+
+app.listen(PORT, () => console.log(`Auth bridge listening on port ${PORT}`));

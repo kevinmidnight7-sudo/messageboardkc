@@ -2337,12 +2337,12 @@
                             const economy = snap.val() || {};
                             const streak  = economy.streaks?.login?.current || 0;
                             const points  = economy.points || 0;
-                            const rank    = economy.rank || 'N/A';
+                            const rank    = economy.rank;
 
                             const ptEl = document.getElementById('wc-points');
                             const rkEl = document.getElementById('wc-rank');
                             if (ptEl) ptEl.textContent = points.toLocaleString() + ' pts';
-                            if (rkEl) rkEl.textContent = 'Rank #' + rank;
+                            if (rkEl) rkEl.textContent = rank != null ? 'Rank #' + rank : 'Rank –';
 
                             // Streak stat pill
                             if (streak > 0) {
@@ -4783,51 +4783,33 @@
                     : '<p class="text-xs text-gray-500 text-center">No BD scores yet</p>';
             }).catch(() => {});
 
-            // Economy — top 10 by points. Falls back to reading all & sorting if index unavailable.
+            // Economy — top 10 by points.
+            // Reads from config/econLeaderboard (bot-maintained cache) or userEconomy collection.
+            // The userEconomy collection requires ".read": "auth != null" in RTDB rules at that node.
             (async () => {
                 const econEl = document.getElementById('top-economy');
-                try {
-                    // Try ordered query first; Firebase may warn about missing index but still works
-                    let econSnap;
-                    try {
-                        econSnap = await db.ref('userEconomy').orderByChild('points').limitToLast(10).once('value');
-                    } catch(e) {
-                        // Index not set — fall back to full read + client sort
-                        econSnap = await db.ref('userEconomy').once('value');
-                    }
-                    const players = [];
-                    econSnap.forEach(child => {
-                        const pts = child.val()?.points;
-                        if (pts > 0) players.push({ discordId: child.key, points: pts });
-                    });
-                    // Sort desc (limitToLast returns ascending)
-                    players.sort((a, b) => b.points - a.points);
-                    const top = players.slice(0, 10);
-                    if (top.length === 0) {
-                        if (econEl) econEl.innerHTML = '<p class="text-xs text-gray-500 text-center">No data yet</p>';
-                        return;
-                    }
+
+                async function buildLeaderboardHtml(players) {
                     let playerLinks = {};
                     try {
                         const plSnap = await db.ref('config/playerLinks').once('value');
                         playerLinks = plSnap.val() || {};
                     } catch(e) {}
-                    // Build reverse map: kcUid → discordId for faster lookup
                     const kcUidByDiscord = {};
                     Object.entries(playerLinks).forEach(([discordId, v]) => {
                         if (v?.kcUid) kcUidByDiscord[discordId] = v.kcUid;
                     });
-                    const enriched = await Promise.all(top.map(async p => {
+                    const enriched = await Promise.all(players.map(async p => {
                         const kcUid = kcUidByDiscord[p.discordId] || null;
-                        let name = null;
-                        if (kcUid) {
+                        let name = p.name || null;
+                        if (!name && kcUid) {
                             const cached = allUsersData.find(u => u.uid === kcUid);
                             name = cached?.displayName || (await db.ref(`users/${kcUid}/displayName`).once('value').catch(() => null))?.val();
                         }
                         return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
                     }));
                     const medals = ['🥇','🥈','🥉'];
-                    if (econEl) econEl.innerHTML = enriched.map((p, i) => `
+                    return enriched.map((p, i) => `
                         <div class="flex justify-between items-center py-0.5">
                             <div class="flex items-center gap-2">
                                 <span class="text-xs w-6 text-center">${medals[i] || `<span class="text-gray-500 text-[10px]">#${i+1}</span>`}</span>
@@ -4836,9 +4818,50 @@
                             <span class="text-xs font-bold text-blue-400">${p.points.toLocaleString()} pts</span>
                         </div>
                     `).join('');
+                }
+
+                try {
+                    // 1. Try bot-cached leaderboard first (bot writes top 10 here on update)
+                    let players = null;
+                    try {
+                        const cacheSnap = await db.ref('config/econLeaderboard').once('value');
+                        const cached = cacheSnap.val();
+                        if (cached && typeof cached === 'object') {
+                            players = Object.values(cached)
+                                .filter(p => p && p.points > 0)
+                                .sort((a, b) => b.points - a.points)
+                                .slice(0, 10);
+                        }
+                    } catch(e) { /* no cache — try direct read */ }
+
+                    if (!players) {
+                        // 2. Try direct userEconomy read (requires .read rule on collection)
+                        let econSnap;
+                        try {
+                            econSnap = await db.ref('userEconomy').orderByChild('points').limitToLast(10).once('value');
+                        } catch(e) {
+                            econSnap = await db.ref('userEconomy').once('value');
+                        }
+                        players = [];
+                        econSnap.forEach(child => {
+                            const pts = child.val()?.points;
+                            if (pts > 0) players.push({ discordId: child.key, points: pts });
+                        });
+                        players.sort((a, b) => b.points - a.points);
+                        players = players.slice(0, 10);
+                    }
+
+                    if (players.length === 0) {
+                        if (econEl) econEl.innerHTML = '<p class="text-xs text-gray-500 text-center">No data yet</p>';
+                        return;
+                    }
+                    if (econEl) econEl.innerHTML = await buildLeaderboardHtml(players);
                 } catch(e) {
                     console.error('[Economy leaderboard]', e);
-                    if (econEl) econEl.innerHTML = '<p class="text-xs text-gray-500 text-center">Failed to load</p>';
+                    const isPerms = e.code === 'PERMISSION_DENIED' || (e.message || '').includes('permission');
+                    if (econEl) econEl.innerHTML = isPerms
+                        ? '<p class="text-xs text-gray-500 text-center">Rankings updating…</p>'
+                        : '<p class="text-xs text-gray-500 text-center">Could not load</p>';
                 }
             })();
         }
@@ -6700,13 +6723,12 @@
                     const streak = economy.streaks?.login?.current || 0;
                     setText('pf-points', pts.toLocaleString());
                     setText('pf-streak', streak > 0 ? streak + ' 🔥' : '–');
-                    // Compute rank: count entries with more points than me
-                    if (pts > 0) {
-                        db.ref('userEconomy').orderByChild('points').startAt(pts + 1).once('value')
-                            .then(snap => setText('pf-rank', '#' + (snap.numChildren() + 1)))
-                            .catch(() => setText('pf-rank', '#?'));
+                    // Rank: use bot-written economy.rank field if present
+                    const rank = economy.rank;
+                    if (rank != null && rank !== '') {
+                        setText('pf-rank', '#' + rank);
                     } else {
-                        setText('pf-rank', '–');
+                        setText('pf-rank', pts > 0 ? '#?' : '–');
                     }
                 });
 
@@ -7771,6 +7793,39 @@
         // (no JS needed — the panel is always rendered and CSS handles expand)
 
         window.onload = () => {
+            // ── Discord OAuth return handler ─────────────────────────────
+            // The auth bridge redirects back with ?customToken=<token> after successful link.
+            // We sign into Firebase with that token to complete the KC ↔ Discord link.
+            (async () => {
+                const params = new URLSearchParams(window.location.search);
+                const customToken = params.get('customToken');
+                if (customToken) {
+                    // Remove the token from the URL immediately (don't expose it in history)
+                    const cleanUrl = window.location.pathname + window.location.hash;
+                    window.history.replaceState({}, '', cleanUrl);
+                    localStorage.removeItem('kc-discord-link-pending');
+                    try {
+                        await auth.signInWithCustomToken(customToken);
+                        showToast('🎉 Discord linked successfully!', 'success', 5000);
+                        // Refresh Discord link status UI after a brief delay
+                        setTimeout(() => {
+                            discordIdCache.clear();
+                            renderDiscordLinkStatus();
+                        }, 1500);
+                    } catch (e) {
+                        console.error('[Discord OAuth return]', e);
+                        showToast('Discord link failed: ' + (e.message || 'Unknown error'), 'error', 7000);
+                    }
+                } else if (localStorage.getItem('kc-discord-link-pending')) {
+                    // Returned from OAuth but no customToken — check if already linked via Firestore
+                    localStorage.removeItem('kc-discord-link-pending');
+                    setTimeout(() => {
+                        discordIdCache.clear();
+                        renderDiscordLinkStatus();
+                    }, 2000);
+                }
+            })();
+
             initTheme();
             initDynamicBackground();
             switchTab('home');
