@@ -1879,17 +1879,56 @@
             <!-- CLANS VIEW (Rich Visual Hub) -->
             <div id="view-clans" class="view-transition hidden space-y-6">
                 <div class="glass p-8 rounded-[40px]">
-                    <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center justify-between mb-5">
                         <div>
-                            <h2 class="text-3xl font-black">Clan Registry</h2>
-                            <p class="text-xs text-gray-500 mt-1">Discover and join KC clans</p>
+                            <h2 class="text-3xl font-black">Clan Hub</h2>
+                            <p class="text-xs text-gray-500 mt-1">Discover, join and battle KC clans</p>
                         </div>
                         <div class="flex items-center gap-3">
-                            <button onclick="loadAllClans(true)" class="btn-lift p-2.5 glass rounded-2xl text-gray-400 hover:text-white transition" title="Refresh"><i class="fa-solid fa-arrows-rotate text-sm"></i></button>
+                            <button id="clans-refresh-btn" onclick="onClansRefresh()" class="btn-lift p-2.5 glass rounded-2xl text-gray-400 hover:text-white transition" title="Refresh"><i class="fa-solid fa-arrows-rotate text-sm"></i></button>
                             <a href="https://kcevents.uk/#clans" target="_blank" class="btn-lift px-5 py-2.5 glass rounded-2xl text-xs font-bold text-teal-400 hover:bg-teal-500/10 transition flex items-center gap-2"><i class="fa-solid fa-up-right-from-square"></i>Full Hub</a>
                         </div>
                     </div>
-                    <div id="clans-lite-content"></div>
+                    <!-- Sub-tabs -->
+                    <div class="flex gap-2 mb-6">
+                        <button id="clans-subtab-clans" onclick="switchClansSubTab('clans')"
+                            class="px-5 py-2 rounded-xl text-sm font-bold transition bg-blue-600 text-white">
+                            <i class="fa-solid fa-users mr-1.5"></i>Clans
+                        </button>
+                        <button id="clans-subtab-battles" onclick="switchClansSubTab('battles')"
+                            class="px-5 py-2 rounded-xl text-sm font-bold transition glass text-gray-400 hover:text-white">
+                            ⚔️ Battles
+                        </button>
+                    </div>
+                    <!-- Clans panel -->
+                    <div id="clans-sub-clans">
+                        <div id="clans-lite-content"></div>
+                    </div>
+                    <!-- Battles panel -->
+                    <div id="clans-sub-battles" class="hidden">
+                        <div class="flex gap-2 mb-5 flex-wrap">
+                            <button id="battles-filter-upcoming" onclick="setKcnowBattlesFilter('upcoming')"
+                                class="px-4 py-1.5 rounded-full text-sm font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 transition">
+                                🔥 Upcoming
+                            </button>
+                            <button id="battles-filter-past" onclick="setKcnowBattlesFilter('past')"
+                                class="px-4 py-1.5 rounded-full text-sm font-bold glass text-gray-400 border border-white/10 transition hover:text-white">
+                                Past
+                            </button>
+                        </div>
+                        <div id="battles-content">
+                            <div class="text-center py-12 opacity-50">
+                                <div class="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+                                <p class="text-sm text-gray-500">Loading battles…</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-white/5 text-center">
+                            <a href="https://kcevents.uk/#clans" target="_blank"
+                                class="text-xs text-teal-400 hover:text-teal-300 transition font-bold">
+                                <i class="fa-solid fa-up-right-from-square mr-1"></i>Open Full Battles Hub to join or schedule battles
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1907,9 +1946,12 @@
                         <h2 class="text-2xl font-bold flex items-center gap-3">
                             <i class="fa-solid fa-clapperboard text-blue-400"></i> Community Clips
                         </h2>
-                        <button onclick="clipsLoaded=false;initClipsView()" class="btn-press text-xs glass px-3 py-2 rounded-xl hover:bg-white/10 transition">
-                            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button onclick="clipsLoaded=false;initClipsView()" class="btn-press text-xs glass px-3 py-2 rounded-xl hover:bg-white/10 transition" title="Refresh">
+                                <i class="fa-solid fa-rotate-right mr-1"></i> Refresh
+                            </button>
+                            <a href="https://kcevents.uk/#socialfeed" target="_blank" class="btn-lift px-4 py-2 glass rounded-xl text-xs font-bold text-teal-400 hover:bg-teal-500/10 transition flex items-center gap-1.5"><i class="fa-solid fa-up-right-from-square"></i>Full Clips</a>
+                        </div>
                     </div>
                     <div class="flex gap-2 mb-6 flex-wrap">
                         <button id="clips-tab-all" onclick="switchClipsTab('all')" class="btn-press px-4 py-2 rounded-xl text-sm font-bold transition bg-blue-600 text-white">All</button>
@@ -4945,14 +4987,171 @@
         let clansSearchFilter = '';
         const CLAN_GRAD = ['from-blue-600 to-indigo-700','from-teal-600 to-cyan-700','from-purple-600 to-pink-700','from-orange-600 to-red-700','from-green-600 to-emerald-700','from-rose-600 to-pink-700'];
 
+        // Battles state
+        let allBattlesData = {};
+        let kcnowBattlesFilter = 'upcoming';
+        let battlesDataLoaded = false;
+        let kcnowActiveClansSubTab = 'clans';
+
+        function switchClansSubTab(tab) {
+            kcnowActiveClansSubTab = tab;
+            const clansPanel = document.getElementById('clans-sub-clans');
+            const battlesPanel = document.getElementById('clans-sub-battles');
+            const tabClans = document.getElementById('clans-subtab-clans');
+            const tabBattles = document.getElementById('clans-subtab-battles');
+            if (tab === 'clans') {
+                clansPanel.classList.remove('hidden');
+                battlesPanel.classList.add('hidden');
+                tabClans.className = 'px-5 py-2 rounded-xl text-sm font-bold transition bg-blue-600 text-white';
+                tabBattles.className = 'px-5 py-2 rounded-xl text-sm font-bold transition glass text-gray-400 hover:text-white';
+            } else {
+                clansPanel.classList.add('hidden');
+                battlesPanel.classList.remove('hidden');
+                tabClans.className = 'px-5 py-2 rounded-xl text-sm font-bold transition glass text-gray-400 hover:text-white';
+                tabBattles.className = 'px-5 py-2 rounded-xl text-sm font-bold transition bg-orange-600 text-white';
+                loadClanBattles(false);
+            }
+        }
+
+        function onClansRefresh() {
+            const btn = document.getElementById('clans-refresh-btn');
+            if (btn) { btn.querySelector('i').classList.add('animate-spin'); setTimeout(() => btn.querySelector('i').classList.remove('animate-spin'), 800); }
+            if (kcnowActiveClansSubTab === 'clans') {
+                loadAllClans(true);
+            } else {
+                loadClanBattles(true);
+            }
+        }
+
+        function setKcnowBattlesFilter(filter) {
+            kcnowBattlesFilter = filter;
+            const btnUp = document.getElementById('battles-filter-upcoming');
+            const btnPast = document.getElementById('battles-filter-past');
+            if (filter === 'upcoming') {
+                btnUp.className = 'px-4 py-1.5 rounded-full text-sm font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 transition';
+                btnPast.className = 'px-4 py-1.5 rounded-full text-sm font-bold glass text-gray-400 border border-white/10 transition hover:text-white';
+            } else {
+                btnPast.className = 'px-4 py-1.5 rounded-full text-sm font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 transition';
+                btnUp.className = 'px-4 py-1.5 rounded-full text-sm font-bold glass text-gray-400 border border-white/10 transition hover:text-white';
+            }
+            renderClanBattles();
+        }
+
+        async function loadClanBattles(forceRefresh) {
+            const container = document.getElementById('battles-content');
+            if (!container) return;
+            if (!forceRefresh && battlesDataLoaded) { renderClanBattles(); return; }
+            container.innerHTML = `<div class="text-center py-12 opacity-50"><div class="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-3"></div><p class="text-sm text-gray-500">Loading battles…</p></div>`;
+            try {
+                const snap = await db.ref('battles').once('value');
+                allBattlesData = snap.val() || {};
+                battlesDataLoaded = true;
+                renderClanBattles();
+            } catch(e) {
+                container.innerHTML = `<p class="text-center py-10 text-red-400 opacity-60">Failed to load battles.</p>`;
+            }
+        }
+
+        function renderClanBattles() {
+            const container = document.getElementById('battles-content');
+            if (!container) return;
+            const now = Date.now();
+            const entries = Object.entries(allBattlesData);
+            let filtered;
+            if (kcnowBattlesFilter === 'upcoming') {
+                filtered = entries.filter(([,b]) => b.status === 'accepted' || (b.status === 'pending' && b.scheduledTime && b.scheduledTime > now));
+                filtered.sort((a,b) => (a[1].scheduledTime||0) - (b[1].scheduledTime||0));
+            } else {
+                filtered = entries.filter(([,b]) => b.status === 'finished');
+                filtered.sort((a,b) => (b[1].scheduledTime||b[1].createdAt||0) - (a[1].scheduledTime||a[1].createdAt||0));
+            }
+            if (!filtered.length) {
+                container.innerHTML = `<div class="text-center py-16 opacity-50"><i class="fa-solid fa-shield-halved text-4xl mb-3 block text-orange-400/40"></i><p class="text-sm text-gray-500">${kcnowBattlesFilter === 'upcoming' ? 'No upcoming battles scheduled.' : 'No past battles recorded.'}</p></div>`;
+                return;
+            }
+            container.innerHTML = `<div class="space-y-3">${filtered.slice(0,20).map(([id,b]) => _buildBattleCard(id, b)).join('')}</div>`;
+        }
+
+        function _buildBattleCard(id, b) {
+            const challId = b.challengerId || '';
+            const targId = b.targetId || '';
+            const challClan = allClansData[challId] || {};
+            const targClan = allClansData[targId] || {};
+            const challName = challClan.name || challId || 'Unknown';
+            const targName = targClan.name || targId || 'Unknown';
+            const isFinished = b.status === 'finished';
+            const challWon = isFinished && b.winnerId === challId;
+            const targWon = isFinished && b.winnerId === targId;
+            const dateStr = b.scheduledTime ? new Date(b.scheduledTime).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+            const timeStr = b.scheduledTime ? new Date(b.scheduledTime).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '';
+
+            const clanAvatar = (clanData, name) => {
+                const hasIcon = clanData.icon && !clanData.icon.includes('1.png');
+                const initial = (name||'?')[0].toUpperCase();
+                return hasIcon
+                    ? `<img src="${clanData.icon}" class="w-12 h-12 rounded-2xl object-cover border border-white/10" onerror="this.style.display='none'">`
+                    : `<div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center text-white font-black text-lg">${initial}</div>`;
+            };
+
+            const winnerBadge = (won) => won
+                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 ml-1">🏆 Winner</span>`
+                : '';
+
+            const serverStr = b.server ? `<span class="text-[10px] text-gray-500"><i class="fa-solid fa-server mr-1"></i>${b.server}</span>` : '';
+            const rulesStr = b.rules ? `<span class="text-[10px] text-gray-500"><i class="fa-solid fa-scroll mr-1"></i>${b.rules}</span>` : '';
+
+            return `
+                <div class="glass rounded-[20px] p-4 border border-white/5 hover:border-white/10 transition">
+                    <div class="flex items-center gap-3">
+                        <div class="flex flex-col items-center gap-1 flex-1 min-w-0">
+                            <div class="flex items-center gap-2 cursor-pointer" onclick="openClanModalHub('${challId}')">
+                                ${clanAvatar(challClan, challName)}
+                            </div>
+                            <p class="text-xs font-bold text-center truncate w-full">${challName.replace(/</g,'&lt;')}${winnerBadge(challWon)}</p>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 shrink-0">
+                            <span class="text-lg font-black ${isFinished ? 'text-gray-400' : 'text-orange-400'}">⚔️</span>
+                            <span class="text-[10px] font-bold ${isFinished ? 'text-gray-500' : 'text-orange-400/80'}">${isFinished ? 'FINISHED' : 'VS'}</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 flex-1 min-w-0">
+                            <div class="flex items-center gap-2 cursor-pointer" onclick="openClanModalHub('${targId}')">
+                                ${clanAvatar(targClan, targName)}
+                            </div>
+                            <p class="text-xs font-bold text-center truncate w-full">${targName.replace(/</g,'&lt;')}${winnerBadge(targWon)}</p>
+                        </div>
+                    </div>
+                    ${(dateStr || serverStr || rulesStr) ? `
+                    <div class="flex items-center gap-3 mt-3 pt-3 border-t border-white/5 flex-wrap">
+                        ${dateStr ? `<span class="text-[10px] text-gray-500"><i class="fa-regular fa-calendar mr-1"></i>${dateStr}${timeStr ? ' · '+timeStr : ''}</span>` : ''}
+                        ${serverStr}${rulesStr}
+                    </div>` : ''}
+                </div>`;
+        }
+
+        function _computeClanPoints(members) {
+            let total = 0;
+            if (!members) return 0;
+            const uids = Object.keys(members);
+            uids.forEach(uid => {
+                const u = allUsersData.find(x => x.uid === uid);
+                if (u && u.stats) {
+                    total += (u.stats.offence||0) + (u.stats.defence||0) + (u.stats.overall||0);
+                }
+            });
+            return total;
+        }
+
         function loadAllClans(forceRefresh) {
             const container = document.getElementById('clans-lite-content');
-            if (!forceRefresh && Object.keys(allClansData).length) {
+            if (!forceRefresh && Object.keys(allClansData).length && allUsersData.length) {
                 renderClansLite();
                 return;
             }
             container.innerHTML = `<div class="p-10 text-center"><div class="inline-flex items-center gap-3 animate-pulse opacity-50"><div class="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin"></div><span class="text-sm">Loading clan registry...</span></div></div>`;
-            db.ref('clans').once('value').then(snap => {
+            Promise.all([
+                db.ref('clans').once('value'),
+                ensureSearchDataLoaded()
+            ]).then(([snap]) => {
                 allClansData = snap.val() || {};
                 renderClansLite();
             }).catch(() => {
@@ -4998,6 +5197,8 @@
                 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-500/15 text-green-400 border border-green-500/20">Open</span>`
                 : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-500/15 text-yellow-400 border border-yellow-500/20">Invite Only</span>`;
             const memberBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/5 text-gray-400 border border-white/10"><i class="fa-solid fa-users mr-1"></i>${memberCount}</span>`;
+            const clanPts = _computeClanPoints(c.members);
+            const pointsBadge = clanPts > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/15 text-indigo-300 border border-indigo-500/20"><i class="fa-solid fa-star mr-1"></i>${clanPts.toLocaleString()} pts</span>` : '';
 
             return `
                 <div class="clan-card-hub group glass rounded-[28px] p-5 flex flex-col gap-3 cursor-pointer transition-all duration-200 hover:-translate-y-1 border border-white/5 hover:border-white/10"
@@ -5010,7 +5211,7 @@
                                 <span class="font-black text-base truncate">${(c.name||'').replace(/</g,'&lt;')}</span>
                                 ${c.letterTag ? `<span class="text-[10px] font-bold text-gray-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/10">[${c.letterTag}]</span>` : ''}
                             </div>
-                            <div class="flex items-center gap-2 mt-1 flex-wrap">${memberBadge}${statusBadge}</div>
+                            <div class="flex items-center gap-2 mt-1 flex-wrap">${memberBadge}${statusBadge}${pointsBadge}</div>
                         </div>
                     </div>
                     <p class="text-xs text-gray-400 leading-relaxed">${(desc||'').replace(/</g,'&lt;')}</p>
