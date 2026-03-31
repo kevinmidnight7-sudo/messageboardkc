@@ -26,11 +26,13 @@ const admin        = require('firebase-admin');
 const app = express();
 
 // ── Firebase Admin ────────────────────────────────────────────────────────────
-// Uses GOOGLE_APPLICATION_CREDENTIALS env var or serviceAccountKey.json
+// FB_SERVICE_ACCOUNT_JSON: the full service account JSON as a string (Render env var)
+// FB_DATABASE_URL: the Realtime Database URL (Render env var)
 if (!admin.apps.length) {
+    const serviceAccount = JSON.parse(process.env.FB_SERVICE_ACCOUNT_JSON);
     admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-        databaseURL: process.env.FIREBASE_DATABASE_URL,
+        credential: admin.credential.cert(serviceAccount),
+        databaseURL: process.env.FB_DATABASE_URL,
     });
 }
 const fsdb = admin.firestore();   // Firestore (for linkStates + users)
