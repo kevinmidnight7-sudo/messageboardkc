@@ -49,23 +49,6 @@
             --theme-glow: #2dd4bf;
         }
 
-        /* ===== Phase 5: Light Theme (overrides applied when .light-theme is on <html>) ===== */
-        .light-theme {
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --glass-border: rgba(0, 0, 0, 0.1);
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --bg-primary: #f1f5f9;
-            --bg-secondary: #e2e8f0;
-            --accent-blue: #2563eb;
-        }
-        .light-theme #bg-canvas { background: radial-gradient(circle at 50% 50%, #e2e8f0 0%, #f1f5f9 100%) !important; }
-        .light-theme .animated-gradient { background: radial-gradient(circle at 20% 30%, rgba(59,130,246,0.08) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(45,212,191,0.05) 0%, transparent 40%) !important; }
-        .light-theme .vignette { background: radial-gradient(circle, transparent 40%, rgba(255,255,255,0.5) 100%) !important; }
-        .light-theme .text-gray-400 { color: var(--text-secondary) !important; }
-        .light-theme .text-gray-500 { color: var(--text-secondary) !important; }
-        .light-theme .text-gray-300 { color: var(--text-primary) !important; }
-
         body {
             font-family: 'Poppins', sans-serif;
             background: var(--bg-primary);
@@ -126,18 +109,6 @@
         /* Text color utility overrides to use theme variables */
         .text-gray-400 { color: var(--text-secondary) !important; }
         .text-gray-500 { color: var(--text-secondary) !important; }
-
-        /* Light theme backgrounds for layered effects */
-        .light-theme #bg-canvas {
-            background: radial-gradient(circle at 50% 50%, var(--bg-secondary) 0%, var(--bg-primary) 100%);
-        }
-        .light-theme .animated-gradient {
-            background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-                        radial-gradient(circle at 80% 70%, rgba(45, 212, 191, 0.05) 0%, transparent 40%);
-        }
-        .light-theme .vignette {
-            background: radial-gradient(circle, transparent 40%, rgba(255,255,255,0.5) 100%);
-        }
 
         .tab-btn {
             position: relative;
@@ -404,27 +375,10 @@
         @keyframes jackpotFlash { 0%,100%{background:rgba(234,179,8,0.0)} 50%{background:rgba(234,179,8,0.25)} }
         .jackpot-flash { animation: jackpotFlash 0.4s ease-in-out 3; }
 
-        /* ===== Phase 6: Comprehensive Light Theme Overrides ===== */
-        .light-theme .glass {
-            background: linear-gradient(180deg, rgba(var(--theme-accent-rgb), 0.04) 0%, var(--glass-bg) 40%);
-            border-color: rgba(var(--theme-accent-rgb), 0.12);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.08);
-        }
-        .light-theme body { color: var(--text-primary); }
-        .light-theme .text-white { color: #0f172a !important; }
-        .light-theme h1, .light-theme h2, .light-theme h3, .light-theme h4 { color: #0f172a; }
-        .light-theme .tab-btn { color: rgba(15, 23, 42, 0.4); }
-        .light-theme .tab-btn.active { color: #0f172a; }
-        .light-theme .tab-btn.active::after { background: var(--accent-blue); box-shadow: 0 0 15px var(--accent-blue); }
-        .light-theme #welcome-card { background: white !important; box-shadow: 0 8px 32px rgba(0,0,0,0.08); }
-
-        .light-theme .border-white\/5 { border-color: rgba(0,0,0,0.05) !important; }
-        .light-theme .border-white\/10 { border-color: rgba(0,0,0,0.10) !important; }
-        .light-theme .bg-white\/5 { background: rgba(0,0,0,0.03) !important; }
-        .light-theme .bg-white\/10 { background: rgba(0,0,0,0.06) !important; }
-        .light-theme .custom-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
-        .light-theme #global-modal { background: rgba(0,0,0,0.3); }
-        .light-theme .animate-slideInRight { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        /* ===== Readable grey overrides for dark glass ===== */
+        .text-gray-600 { color: #94a3b8 !important; }
+        .text-gray-500 { color: #94a3b8 !important; }
+        .text-gray-400 { color: #b8c4d4 !important; }
 
         /* ===== Graphics Quality Modes ===== */
         /* Applied via <html class="graphics-low|graphics-high"> */
@@ -488,12 +442,6 @@
                 rgba(10, 18, 32, 0.88) 100%
             ) !important;
             border: 1px solid rgba(255, 255, 255, 0.14) !important;
-        }
-        /* Light theme override */
-        .android-mobile.light-theme .glass,
-        .android-mobile.light-theme .glass-hover {
-            background: rgba(241, 245, 249, 0.97) !important;
-            border: 1px solid rgba(0,0,0,0.08) !important;
         }
         /* Profile popup on mobile */
         .android-mobile #kcProfilePopup { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background: rgba(0,0,0,0.75) !important; }
@@ -2427,7 +2375,6 @@
         }
 
         // Phase 5 state variables
-        let currentTheme = localStorage.getItem('kc-theme') || 'dark';
         let notificationPrefs = JSON.parse(localStorage.getItem('kc-notifications') || '{"achievements":true,"points":true,"clans":true,"clips":true,"users":true,"streaks":true}');
         let dismissedNotifIds = new Set(JSON.parse(localStorage.getItem('kc-dismissed-notifs') || '[]'));
         let friendsList = [];
@@ -3408,89 +3355,6 @@
             closeModal();
             renderFeed('all');
             showToast('Filters cleared', 'info', 2000);
-        }
-
-        // === Theme System (Phase 5) ===
-        function initTheme() {
-            if (currentTheme === 'light') {
-                document.documentElement.classList.add('light-theme');
-            } else if (currentTheme === 'auto') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (!prefersDark) document.documentElement.classList.add('light-theme');
-            }
-        }
-
-        /**
-         * Toggle between light and dark themes. In Phase 6 we unify theme handling by routing all
-         * changes through setTheme() rather than manually flipping classes. This ensures that
-         * automatic (auto) mode also works correctly and persists the choice reliably.
-         */
-        function toggleTheme() {
-            const next = document.documentElement.classList.contains('light-theme') ? 'dark' : 'light';
-            setTheme(next);
-        }
-
-        function openThemeSettings() {
-            openModal('Theme Settings', `
-                <div class="space-y-6">
-                    <p class="text-center text-gray-400">Customize your KC NOW experience</p>
-                    <div class="space-y-4">
-                        <button onclick="setTheme('dark', true)" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'dark' ? 'border-2 border-blue-500' : ''}">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white">
-                                    <i class="fa-solid fa-moon"></i>
-                                </div>
-                                <div>
-                                    <p class="font-bold">Dark Theme</p>
-                                    <p class="text-xs text-gray-400">Classic KC NOW look</p>
-                                </div>
-                                ${currentTheme === 'dark' ? '<i class="fa-solid fa-check text-blue-400 ml-auto"></i>' : ''}
-                            </div>
-                        </button>
-                        <button onclick="setTheme('light', true)" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'light' ? 'border-2 border-blue-500' : ''}">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-white flex items-center justify-center text-gray-900">
-                                    <i class="fa-solid fa-sun"></i>
-                                </div>
-                                <div>
-                                    <p class="font-bold">Light Theme</p>
-                                    <p class="text-xs text-gray-400">Easy on the eyes</p>
-                                </div>
-                                ${currentTheme === 'light' ? '<i class="fa-solid fa-check text-blue-400 ml-auto"></i>' : ''}
-                            </div>
-                        </button>
-                        <button onclick="setTheme('auto', true)" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'auto' ? 'border-2 border-blue-500' : ''}">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 via-blue-500 to-blue-100 flex items-center justify-center text-white">
-                                    <i class="fa-solid fa-circle-half-stroke"></i>
-                                </div>
-                                <div>
-                                    <p class="font-bold">Auto Theme</p>
-                                    <p class="text-xs text-gray-400">Match system preference</p>
-                                </div>
-                                ${currentTheme === 'auto' ? '<i class="fa-solid fa-check text-blue-400 ml-auto"></i>' : ''}
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            `);
-        }
-
-        function setTheme(theme, showSettings = false) {
-            currentTheme = theme;
-            localStorage.setItem('kc-theme', theme);
-            let effective = theme;
-            if (theme === 'auto') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                effective = prefersDark ? 'dark' : 'light';
-            }
-            if (effective === 'light') {
-                document.documentElement.classList.add('light-theme');
-            } else {
-                document.documentElement.classList.remove('light-theme');
-            }
-            // Only reopen the theme settings modal when explicitly requested (e.g. from the settings UI)
-            if (showSettings) openThemeSettings();
         }
 
         // === Notification Preferences (Phase 5) ===
@@ -8095,85 +7959,6 @@
 
         function kcAlert(msg) { openModal("Notification", `<div class="p-10 text-center font-bold">${msg}</div>`); }
 
-        // ===== PHASE 5A: THEME SYSTEM =====
-        function initTheme() {
-            const stored = localStorage.getItem('kc-theme') || 'dark';
-            currentTheme = stored;
-            applyTheme(stored);
-        }
-
-        function applyTheme(theme) {
-            let effectiveTheme = theme;
-            if (theme === 'auto') {
-                effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            }
-            if (effectiveTheme === 'light') {
-                document.documentElement.classList.add('light-theme');
-            } else {
-                document.documentElement.classList.remove('light-theme');
-            }
-        }
-
-        function toggleTheme() {
-            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem('kc-theme', currentTheme);
-            applyTheme(currentTheme);
-            showToast(`Switched to ${currentTheme} theme`, 'success', 2000);
-        }
-
-        function setTheme(theme) {
-            currentTheme = theme;
-            localStorage.setItem('kc-theme', theme);
-            applyTheme(theme);
-            openThemeSettings();
-        }
-
-        function openThemeSettings() {
-            openModal('Theme Settings', `
-                <div class="space-y-6">
-                    <p class="text-center text-gray-400">Customize your KC NOW experience</p>
-                    <div class="space-y-4">
-                        <button onclick="setTheme('dark')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'dark' ? 'border-2 border-blue-500' : ''}">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center text-white flex-shrink-0">
-                                    <i class="fa-solid fa-moon"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="font-bold">Dark Theme</p>
-                                    <p class="text-xs text-gray-400">Classic KC NOW look</p>
-                                </div>
-                                ${currentTheme === 'dark' ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
-                            </div>
-                        </button>
-                        <button onclick="setTheme('light')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'light' ? 'border-2 border-blue-500' : ''}">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-white flex items-center justify-center text-gray-900 flex-shrink-0">
-                                    <i class="fa-solid fa-sun"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="font-bold">Light Theme</p>
-                                    <p class="text-xs text-gray-400">Easy on the eyes</p>
-                                </div>
-                                ${currentTheme === 'light' ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
-                            </div>
-                        </button>
-                        <button onclick="setTheme('auto')" class="w-full glass p-6 rounded-3xl hover:bg-white/10 transition text-left ${currentTheme === 'auto' ? 'border-2 border-blue-500' : ''}">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-900 via-blue-500 to-blue-100 flex items-center justify-center text-white flex-shrink-0">
-                                    <i class="fa-solid fa-circle-half-stroke"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="font-bold">Auto Theme</p>
-                                    <p class="text-xs text-gray-400">Match system preference</p>
-                                </div>
-                                ${currentTheme === 'auto' ? '<i class="fa-solid fa-check text-blue-400"></i>' : ''}
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            `);
-        }
-
         // ===== PHASE 5B: NOTIFICATION PREFERENCES =====
         function saveNotificationPrefs() {
             localStorage.setItem('kc-notifications', JSON.stringify(notificationPrefs));
@@ -8683,7 +8468,6 @@
                 }
             })();
 
-            initTheme();
             initDynamicBackground();
             switchTab('home');
 
@@ -8716,11 +8500,10 @@
                 else if (e.key === 'j') openBlackjackGame();
                 else if (e.key === 'm') openSlotsGame();
                 else if (e.key === 'f') openFriendsList();
-                else if (e.key === 't') toggleTheme();
             });
             if (!localStorage.getItem('kcnow_shortcuts_v3')) {
                 setTimeout(() => {
-                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • T=Theme • F=Friends', 'info', 9000);
+                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • F=Friends', 'info', 9000);
                     localStorage.setItem('kcnow_shortcuts_v3', 'true');
                 }, 2000);
             }
