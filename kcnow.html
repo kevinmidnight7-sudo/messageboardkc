@@ -969,14 +969,41 @@
         /* Quick-action tile pulse on hover */
         .qa-tile:hover { background: rgba(255,255,255,0.08) !important; }
 
-        /* ── Launchpad grid ── */
+        /* ── Launchpad ── */
         .lp-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 10px;
         }
-        @media (max-width: 480px) {
-            .lp-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .lp-section {
+            margin-bottom: 22px;
+        }
+        .lp-section-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.58rem;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 10px;
+            padding-left: 2px;
+        }
+        /* Settings + KC Events side by side on desktop */
+        .lp-bottom-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 24px;
+            align-items: start;
+        }
+        /* Settings col uses 3 cols within its narrower space */
+        .lp-bottom-col:first-child .lp-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        /* KC Events col uses 5 cols */
+        .lp-bottom-col:last-child .lp-grid {
+            grid-template-columns: repeat(5, 1fr);
         }
         .lp-tile {
             display: flex;
@@ -988,15 +1015,16 @@
             background: rgba(255,255,255,0.04);
             border: 1px solid rgba(255,255,255,0.06);
             cursor: pointer;
-            transition: background 0.15s, transform 0.15s, border-color 0.15s;
+            transition: background 0.15s, transform 0.15s, border-color 0.15s, box-shadow 0.15s;
             text-align: center;
         }
         .lp-tile:hover {
-            background: rgba(255,255,255,0.09);
+            background: rgba(255,255,255,0.08);
             border-color: rgba(255,255,255,0.12);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
-        .lp-tile:active { transform: scale(0.96); }
+        .lp-tile:active { transform: scale(0.95); transition-duration: 0.08s; }
         .lp-icon {
             width: 46px;
             height: 46px;
@@ -1006,20 +1034,32 @@
             justify-content: center;
             flex-shrink: 0;
         }
-        @media (max-width: 480px) {
-            .lp-icon { width: 42px; height: 42px; border-radius: 12px; }
-            .lp-icon i, .lp-icon img { font-size: 1rem !important; width: 20px !important; height: 20px !important; }
-        }
         .lp-label {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            color: #cbd5e1;
+            color: #94a3b8;
             line-height: 1.2;
             word-break: break-word;
         }
+        /* Tablet: 4 cols, collapse bottom row */
+        @media (max-width: 720px) {
+            .lp-grid { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+            .lp-bottom-row { grid-template-columns: 1fr; gap: 0; }
+            .lp-bottom-col:first-child .lp-grid,
+            .lp-bottom-col:last-child .lp-grid { grid-template-columns: repeat(4, 1fr); }
+        }
+        /* Mobile: 3 cols */
+        @media (max-width: 480px) {
+            .lp-grid { grid-template-columns: repeat(3, 1fr); gap: 7px; }
+            .lp-bottom-col:first-child .lp-grid,
+            .lp-bottom-col:last-child .lp-grid { grid-template-columns: repeat(3, 1fr); }
+            .lp-icon { width: 40px; height: 40px; border-radius: 12px; }
+            .lp-icon i { font-size: 1rem !important; }
+            .lp-label { font-size: 0.67rem; }
+        }
         @keyframes lpFadeIn {
-            from { opacity:0; transform: scale(0.97) translateY(6px); }
-            to   { opacity:1; transform: scale(1)    translateY(0);   }
+            from { opacity:0; transform: scale(0.98) translateY(10px); }
+            to   { opacity:1; transform: scale(1)    translateY(0);    }
         }
 
         /* Glass card interactive states */
@@ -2029,174 +2069,207 @@
     <div id="kc-launchpad" style="
         display:none;
         position:fixed;inset:0;
-        background:rgba(4,9,20,0.78);
-        backdrop-filter:blur(12px);
-        -webkit-backdrop-filter:blur(12px);
+        background:rgba(2,6,18,0.82);
+        backdrop-filter:blur(14px);
+        -webkit-backdrop-filter:blur(14px);
         z-index:9000;
         overflow-y:auto;
         overscroll-behavior:contain;
+        padding:24px 16px 40px;
     " onclick="e => { if(e.target===this) closeLaunchpad(); }">
+
+        <!-- Glass card container -->
         <div style="
-            max-width:680px;
+            max-width:min(960px,96vw);
             margin:0 auto;
-            padding:16px 12px 32px;
-            min-height:100%;
-            display:flex;flex-direction:column;
+            background:rgba(10,16,38,0.92);
+            border:1px solid rgba(99,102,241,0.18);
+            border-radius:32px;
+            overflow:hidden;
+            box-shadow:0 0 80px rgba(99,102,241,0.12),0 24px 64px rgba(0,0,0,0.6);
         ">
-            <!-- Header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 4px 20px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;">
-                        <i class="fa-solid fa-table-cells" style="color:white;font-size:0.9rem;"></i>
+            <!-- Header band with gradient accent line -->
+            <div style="
+                padding:20px 24px 18px;
+                border-bottom:1px solid rgba(255,255,255,0.06);
+                background:linear-gradient(90deg,rgba(99,102,241,0.08) 0%,rgba(139,92,246,0.05) 50%,transparent 100%);
+                display:flex;align-items:center;justify-content:space-between;
+                position:relative;
+            ">
+                <!-- Top accent line -->
+                <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.6),rgba(139,92,246,0.4),transparent);"></div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <div style="width:40px;height:40px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(99,102,241,0.4);">
+                        <i class="fa-solid fa-table-cells" style="color:white;font-size:1rem;"></i>
                     </div>
                     <div>
-                        <div style="font-size:1rem;font-weight:900;color:white;letter-spacing:-0.01em;">All Features</div>
-                        <div style="font-size:0.62rem;color:#475569;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">KC NOW Launchpad</div>
+                        <div style="font-size:1.05rem;font-weight:900;color:white;letter-spacing:-0.01em;line-height:1.1;">All Features</div>
+                        <div style="font-size:0.6rem;color:#475569;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;margin-top:1px;">KC NOW Launchpad</div>
                     </div>
                 </div>
-                <button onclick="closeLaunchpad()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:0.95rem;transition:background 0.15s;"
-                    onmouseover="this.style.background='rgba(255,255,255,0.14)'"
-                    onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+                <button onclick="closeLaunchpad()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:0.95rem;transition:all 0.15s;flex-shrink:0;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#f87171';this.style.borderColor='rgba(239,68,68,0.3)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#64748b';this.style.borderColor='rgba(255,255,255,0.08)'">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <!-- SECTION: Pages -->
-            <div style="margin-bottom:18px;">
-                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">Pages</div>
-                <div class="lp-grid">
-                    <button class="lp-tile" onclick="lpGo(() => switchTab('home'))">
-                        <div class="lp-icon" style="background:rgba(251,191,36,0.15);"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png" style="width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(251,191,36,0.6));"></div>
-                        <span class="lp-label">Home</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(() => switchTab('profile'))">
-                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-id-card" style="color:#a78bfa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Profile</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(() => switchTab('clans'))">
-                        <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-shield-halved" style="color:#2dd4bf;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Clans</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(() => switchTab('players'))">
-                        <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-users" style="color:#60a5fa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Players</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(() => switchTab('clips'))">
-                        <div class="lp-icon" style="background:rgba(236,72,153,0.15);"><i class="fa-solid fa-clapperboard" style="color:#f472b6;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Clips</span>
-                    </button>
-                </div>
-            </div>
+            <!-- Sections body -->
+            <div style="padding:24px;">
 
-            <!-- SECTION: Actions -->
-            <div style="margin-bottom:18px;">
-                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">Actions</div>
-                <div class="lp-grid">
-                    <button class="lp-tile" onclick="lpGo(claimDaily)">
-                        <div class="lp-icon" style="background:rgba(249,115,22,0.15);"><i class="fa-solid fa-gift" style="color:#fb923c;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Claim Daily</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(renderLeaderboard)">
-                        <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-trophy" style="color:#fbbf24;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Leaderboard</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(renderBattledome)">
-                        <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><i class="fa-solid fa-shield-halved" style="color:#f87171;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Battledome</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openGamesHub)">
-                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-dice" style="color:#a78bfa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Games</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openEconomyShop)">
-                        <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-store" style="color:#60a5fa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Shop</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openSlitherServers)">
-                        <div class="lp-icon" style="background:rgba(34,197,94,0.15);"><i class="fa-solid fa-worm" style="color:#4ade80;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Slither.io</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openAchievements)">
-                        <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-medal" style="color:#fcd34d;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Achievements</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openFriendsList)">
-                        <div class="lp-icon" style="background:rgba(99,102,241,0.15);"><i class="fa-solid fa-user-group" style="color:#818cf8;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Friends</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openAnalytics)">
-                        <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-chart-line" style="color:#2dd4bf;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Stats</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openGlobalSearch)">
-                        <div class="lp-icon" style="background:rgba(148,163,184,0.12);"><i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Search</span>
-                    </button>
+                <!-- SECTION: Pages -->
+                <div class="lp-section">
+                    <div class="lp-section-label">
+                        <i class="fa-solid fa-compass" style="font-size:0.6rem;opacity:0.7;"></i>
+                        Pages
+                    </div>
+                    <div class="lp-grid">
+                        <button class="lp-tile" onclick="lpGo(() => switchTab('home'))">
+                            <div class="lp-icon" style="background:rgba(251,191,36,0.15);"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png" style="width:22px;height:22px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(251,191,36,0.6));"></div>
+                            <span class="lp-label">Home</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(() => switchTab('profile'))">
+                            <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-id-card" style="color:#a78bfa;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Profile</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(() => switchTab('clans'))">
+                            <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-shield-halved" style="color:#2dd4bf;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Clans</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(() => switchTab('players'))">
+                            <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-users" style="color:#60a5fa;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Players</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(() => switchTab('clips'))">
+                            <div class="lp-icon" style="background:rgba(236,72,153,0.15);"><i class="fa-solid fa-clapperboard" style="color:#f472b6;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Clips</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- SECTION: Settings -->
-            <div style="margin-bottom:18px;">
-                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">Settings</div>
-                <div class="lp-grid">
-                    <button class="lp-tile" onclick="lpGo(openBackgroundSettings)">
-                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#a78bfa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Theme</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openNotificationSettings)">
-                        <div class="lp-icon" style="background:rgba(251,191,36,0.15);"><i class="fa-solid fa-bell" style="color:#fbbf24;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Notifications</span>
-                    </button>
-                    <button class="lp-tile" onclick="lpGo(openGraphicsSettings)">
-                        <div class="lp-icon" style="background:rgba(100,116,139,0.18);"><i class="fa-solid fa-display" style="color:#94a3b8;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Graphics</span>
-                    </button>
+                <!-- SECTION: Actions -->
+                <div class="lp-section">
+                    <div class="lp-section-label">
+                        <i class="fa-solid fa-bolt" style="font-size:0.6rem;opacity:0.7;"></i>
+                        Actions
+                    </div>
+                    <div class="lp-grid">
+                        <button class="lp-tile" onclick="lpGo(claimDaily)">
+                            <div class="lp-icon" style="background:rgba(249,115,22,0.15);"><i class="fa-solid fa-gift" style="color:#fb923c;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Claim Daily</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(renderLeaderboard)">
+                            <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-trophy" style="color:#fbbf24;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Leaderboard</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(renderBattledome)">
+                            <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><i class="fa-solid fa-shield-halved" style="color:#f87171;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Battledome</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openGamesHub)">
+                            <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-dice" style="color:#a78bfa;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Games</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openEconomyShop)">
+                            <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-store" style="color:#60a5fa;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Shop</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openSlitherServers)">
+                            <div class="lp-icon" style="background:rgba(34,197,94,0.15);"><i class="fa-solid fa-worm" style="color:#4ade80;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Slither.io</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openAchievements)">
+                            <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-medal" style="color:#fcd34d;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Achievements</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openFriendsList)">
+                            <div class="lp-icon" style="background:rgba(99,102,241,0.15);"><i class="fa-solid fa-user-group" style="color:#818cf8;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Friends</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openAnalytics)">
+                            <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-chart-line" style="color:#2dd4bf;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Stats</span>
+                        </button>
+                        <button class="lp-tile" onclick="lpGo(openGlobalSearch)">
+                            <div class="lp-icon" style="background:rgba(148,163,184,0.12);"><i class="fa-solid fa-magnifying-glass" style="color:#94a3b8;font-size:1.1rem;"></i></div>
+                            <span class="lp-label">Search</span>
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- SECTION: KC Events -->
-            <div>
-                <div style="font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#334155;padding:0 4px;margin-bottom:10px;">KC Events</div>
-                <div class="lp-grid">
-                    <a href="https://kcevents.uk/#voting" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-star" style="color:#fbbf24;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Vote</span>
-                    </a>
-                    <a href="https://kcevents.uk/#socialfeeed" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(236,72,153,0.15);"><i class="fa-solid fa-clapperboard" style="color:#f472b6;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Clips</span>
-                    </a>
-                    <a href="https://kcevents.uk/#eventguidesscroll" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-calendar-days" style="color:#60a5fa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Events</span>
-                    </a>
-                    <a href="https://discord.gg/slitherkc" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(88,101,242,0.15);"><i class="fa-brands fa-discord" style="color:#818cf8;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Discord</span>
-                    </a>
-                    <a href="https://kcevents.uk/#whatskc" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-circle-info" style="color:#2dd4bf;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">About Us</span>
-                    </a>
-                    <a href="https://kcevents.uk/#faq" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(148,163,184,0.12);"><i class="fa-solid fa-circle-question" style="color:#94a3b8;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">FAQ</span>
-                    </a>
-                    <a href="https://kcevents.uk/#chatscroll" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(34,197,94,0.15);"><i class="fa-solid fa-comments" style="color:#4ade80;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Messages</span>
-                    </a>
-                    <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-user" style="color:#a78bfa;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">My Profile</span>
-                    </a>
-                    <a href="https://kcevents.uk/#clans" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
-                        <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><i class="fa-solid fa-shield-halved" style="color:#f87171;font-size:1.15rem;"></i></div>
-                        <span class="lp-label">Clans</span>
-                    </a>
+                <!-- Bottom row: Settings + KC Events side by side on desktop -->
+                <div class="lp-bottom-row">
+                    <!-- SECTION: Settings -->
+                    <div class="lp-section lp-bottom-col">
+                        <div class="lp-section-label">
+                            <i class="fa-solid fa-sliders" style="font-size:0.6rem;opacity:0.7;"></i>
+                            Settings
+                        </div>
+                        <div class="lp-grid">
+                            <button class="lp-tile" onclick="lpGo(openBackgroundSettings)">
+                                <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-wand-magic-sparkles" style="color:#a78bfa;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Theme</span>
+                            </button>
+                            <button class="lp-tile" onclick="lpGo(openNotificationSettings)">
+                                <div class="lp-icon" style="background:rgba(251,191,36,0.15);"><i class="fa-solid fa-bell" style="color:#fbbf24;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Notifications</span>
+                            </button>
+                            <button class="lp-tile" onclick="lpGo(openGraphicsSettings)">
+                                <div class="lp-icon" style="background:rgba(100,116,139,0.18);"><i class="fa-solid fa-display" style="color:#94a3b8;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Graphics</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SECTION: KC Events -->
+                    <div class="lp-section lp-bottom-col">
+                        <div class="lp-section-label">
+                            <i class="fa-solid fa-globe" style="font-size:0.6rem;opacity:0.7;"></i>
+                            KC Events
+                        </div>
+                        <div class="lp-grid">
+                            <a href="https://kcevents.uk/#voting" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(234,179,8,0.15);"><i class="fa-solid fa-star" style="color:#fbbf24;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Vote</span>
+                            </a>
+                            <a href="https://kcevents.uk/#socialfeeed" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(236,72,153,0.15);"><i class="fa-solid fa-clapperboard" style="color:#f472b6;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Clips</span>
+                            </a>
+                            <a href="https://kcevents.uk/#eventguidesscroll" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(59,130,246,0.15);"><i class="fa-solid fa-calendar-days" style="color:#60a5fa;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Events</span>
+                            </a>
+                            <a href="https://discord.gg/slitherkc" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(88,101,242,0.15);"><i class="fa-brands fa-discord" style="color:#818cf8;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Discord</span>
+                            </a>
+                            <a href="https://kcevents.uk/#whatskc" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(20,184,166,0.15);"><i class="fa-solid fa-circle-info" style="color:#2dd4bf;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">About Us</span>
+                            </a>
+                            <a href="https://kcevents.uk/#faq" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(148,163,184,0.12);"><i class="fa-solid fa-circle-question" style="color:#94a3b8;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">FAQ</span>
+                            </a>
+                            <a href="https://kcevents.uk/#chatscroll" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(34,197,94,0.15);"><i class="fa-solid fa-comments" style="color:#4ade80;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Messages</span>
+                            </a>
+                            <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(139,92,246,0.15);"><i class="fa-solid fa-user" style="color:#a78bfa;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">My Profile</span>
+                            </a>
+                            <a href="https://kcevents.uk/#clans" target="_blank" rel="noopener" class="lp-tile" style="text-decoration:none;">
+                                <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><i class="fa-solid fa-shield-halved" style="color:#f87171;font-size:1.1rem;"></i></div>
+                                <span class="lp-label">Clans</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+            </div><!-- /sections body -->
+        </div><!-- /glass card -->
     </div>
     <!-- ═══ END LAUNCHPAD ═══ -->
 
@@ -6904,9 +6977,9 @@
             if (!lp) return;
             lp.style.display = 'block';
             lp.scrollTop = 0;
-            // animate in the inner panel
-            const inner = lp.querySelector('[style*="max-width:680px"]');
-            if (inner) { inner.style.animation = 'lpFadeIn 0.22s cubic-bezier(0.16,1,0.3,1) both'; }
+            // animate in the glass card
+            const card = lp.querySelector('[style*="max-width:min"]');
+            if (card) { card.style.animation = 'lpFadeIn 0.22s cubic-bezier(0.16,1,0.3,1) both'; }
             document.body.style.overflow = 'hidden';
             // close on backdrop click
             lp.onclick = function(e) { if (e.target === lp) closeLaunchpad(); };
