@@ -1404,6 +1404,93 @@
         <section id="content-viewport" class="custom-scroll overflow-y-auto pr-4">
             <!-- HOME TAB -->
             <div id="view-home" class="view-transition flex flex-col gap-4">
+
+                <!-- ═══ GUEST LANDING — visible only when not signed in ═══ -->
+                <div id="guest-landing" style="display:none;" class="flex flex-col gap-4">
+
+                    <!-- Hero card -->
+                    <div class="glass rounded-[32px] border-white/5 relative overflow-hidden" style="background:linear-gradient(135deg,rgba(15,23,42,0.95) 0%,rgba(30,27,75,0.9) 100%);">
+                        <!-- Background glow blobs -->
+                        <div style="position:absolute;top:-80px;left:-60px;width:420px;height:420px;background:radial-gradient(circle,rgba(59,130,246,0.13) 0%,transparent 65%);pointer-events:none;"></div>
+                        <div style="position:absolute;bottom:-60px;right:-40px;width:340px;height:340px;background:radial-gradient(circle,rgba(139,92,246,0.11) 0%,transparent 65%);pointer-events:none;"></div>
+
+                        <div class="p-8 relative" style="z-index:1;">
+                            <!-- Brand -->
+                            <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1.4rem;">
+                                <div style="width:50px;height:50px;border-radius:16px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(59,130,246,0.45);flex-shrink:0;">
+                                    <i class="fa-solid fa-bolt" style="color:white;font-size:1.3rem;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size:1.5rem;font-weight:900;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.02em;line-height:1.1;">KC NOW</div>
+                                    <div style="font-size:0.63rem;color:#64748b;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">KC Events Community Hub</div>
+                                </div>
+                            </div>
+
+                            <!-- Headline -->
+                            <h2 style="font-size:clamp(1.5rem,5vw,2.4rem);font-weight:900;line-height:1.12;color:white;margin-bottom:0.65rem;letter-spacing:-0.025em;">
+                                Your stats. Your clan.<br>
+                                <span style="background:linear-gradient(90deg,#60a5fa 0%,#a78bfa 55%,#f472b6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">All in one place.</span>
+                            </h2>
+                            <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;max-width:520px;line-height:1.65;">
+                                Track your economy, compete in the Battledome, manage your clan, and stay connected with the KC Events community — all in real time.
+                            </p>
+
+                            <!-- Live member count FOMO pill -->
+                            <div style="display:inline-flex;align-items:center;gap:0.55rem;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.28);border-radius:99px;padding:0.38rem 1.1rem;margin-bottom:1.6rem;">
+                                <span style="width:7px;height:7px;background:#4ade80;border-radius:50%;display:inline-block;box-shadow:0 0 7px #4ade80;animation:pulse 2s infinite;flex-shrink:0;"></span>
+                                <span id="guest-member-text" style="font-size:0.78rem;font-weight:700;color:#4ade80;">Connecting to community…</span>
+                            </div>
+
+                            <!-- CTA buttons -->
+                            <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.75rem;">
+                                <button onclick="window.top.location.href='https://kcevents.uk/#loginpage'"
+                                    style="padding:0.8rem 2.2rem;background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);color:white;font-weight:800;font-size:0.9rem;border-radius:16px;border:none;cursor:pointer;box-shadow:0 4px 22px rgba(59,130,246,0.42);letter-spacing:0.03em;transition:all 0.2s;font-family:Poppins,sans-serif;"
+                                    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(59,130,246,0.58)'"
+                                    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 22px rgba(59,130,246,0.42)'">
+                                    🚀 Join KC NOW
+                                </button>
+                                <button onclick="openAuthModal()"
+                                    style="padding:0.8rem 1.75rem;background:rgba(255,255,255,0.06);color:#cbd5e1;font-weight:700;font-size:0.88rem;border-radius:16px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:background 0.2s;font-family:Poppins,sans-serif;"
+                                    onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                                    onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+                                    Sign In
+                                </button>
+                            </div>
+
+                            <!-- Feature tags -->
+                            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;padding-top:1.25rem;border-top:1px solid rgba(255,255,255,0.07);">
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#fbbf24;"><i class="fa-solid fa-trophy" style="font-size:0.62rem;"></i> Leaderboard</span>
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#f87171;"><i class="fa-solid fa-shield-halved" style="font-size:0.62rem;"></i> Battledome</span>
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#a78bfa;"><i class="fa-solid fa-users" style="font-size:0.62rem;"></i> Clans</span>
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#60a5fa;"><i class="fa-solid fa-coins" style="font-size:0.62rem;"></i> Economy</span>
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#34d399;"><i class="fa-solid fa-video" style="font-size:0.62rem;"></i> Clips</span>
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#fcd34d;"><i class="fa-solid fa-medal" style="font-size:0.62rem;"></i> Achievements</span>
+                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#818cf8;"><i class="fa-brands fa-discord" style="font-size:0.62rem;"></i> Discord Link</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Feature preview row -->
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
+                            <div style="font-size:1.75rem;">🏆</div>
+                            <div style="font-size:0.75rem;font-weight:800;color:#fbbf24;">Leaderboard</div>
+                            <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Compete for<br>the top spot</div>
+                        </div>
+                        <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
+                            <div style="font-size:1.75rem;">💰</div>
+                            <div style="font-size:0.75rem;font-weight:800;color:#60a5fa;">Economy</div>
+                            <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Earn, spend<br>and flex</div>
+                        </div>
+                        <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
+                            <div style="font-size:1.75rem;">⚔️</div>
+                            <div style="font-size:0.75rem;font-weight:800;color:#f87171;">Battledome</div>
+                            <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Climb the<br>arena ranks</div>
+                        </div>
+                    </div>
+                </div>
+                <!-- ═══ END GUEST LANDING ═══ -->
+
                 <!-- Welcome Card — compact -->
                 <div id="welcome-card" class="glass rounded-[32px] border-white/5 relative overflow-hidden">
                     <!-- Banner strip (shown for diamond users with a banner set) -->
@@ -1442,7 +1529,7 @@
                 </div>
 
                 <!-- Status Banners — side by side on md+ screens, stacked on mobile -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="status-banners-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div id="discord-link-status"></div>
                     <div id="diamond-customization-status"></div>
                 </div>
@@ -2207,7 +2294,15 @@
 
             greetingEl.textContent = getGreeting() + ',';
 
+            // Toggle guest landing vs welcome card
+            const guestLanding = document.getElementById('guest-landing');
+            const statusBannersGrid = document.getElementById('status-banners-grid');
+
             if (user) {
+                welcomeCard.style.display = '';
+                if (statusBannersGrid) statusBannersGrid.style.display = '';
+                if (guestLanding) guestLanding.style.display = 'none';
+
                 const avatarUrl = data.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
                 const hasCustom = !!(data.profileCustomizationUnlocked && data.profileCustomization);
                 const nameColor = (hasCustom && data.profileCustomization.nameColor) ? data.profileCustomization.nameColor : '#ffffff';
@@ -2393,16 +2488,34 @@
                     });
                 });
             } else {
-                nameEl.textContent = "Welcome, Guest";
-                nameEl.style.color = "#ffffff";
-                avatarEl.src = "https://via.placeholder.com/100?text=?";
+                // Guest — show hero landing, hide welcome card and status banners
+                welcomeCard.style.display = 'none';
+                if (statusBannersGrid) statusBannersGrid.style.display = 'none';
                 badgeEl.innerHTML = '';
                 ind.classList.add('hidden');
-                welcomeCard.style.background = '';
-                welcomeCard.classList.add('glass');
                 const existingAbout = document.getElementById('welcome-about');
                 if (existingAbout) existingAbout.remove();
-                actions.innerHTML = `<button onclick="openAuthModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-2xl shadow-xl shadow-blue-900/40">SIGN IN</button>`;
+
+                if (guestLanding) {
+                    guestLanding.style.display = 'flex';
+                    // Fetch live member count once per session
+                    if (!guestLanding.dataset.statsLoaded) {
+                        guestLanding.dataset.statsLoaded = '1';
+                        db.ref('config/serverStats').once('value').then(snap => {
+                            const s = snap.val();
+                            const textEl = document.getElementById('guest-member-text');
+                            if (!textEl) return;
+                            if (s && s.memberCount) {
+                                textEl.textContent = s.memberCount.toLocaleString() + ' members already inside';
+                            } else {
+                                textEl.textContent = 'Active community waiting for you';
+                            }
+                        }).catch(() => {
+                            const textEl = document.getElementById('guest-member-text');
+                            if (textEl) textEl.textContent = 'Active community waiting for you';
+                        });
+                    }
+                }
             }
         }
 
