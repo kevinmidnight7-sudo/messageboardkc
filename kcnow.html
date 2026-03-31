@@ -1667,7 +1667,7 @@
                 </div>
 
                 <!-- ── Stats Grid ── -->
-                <div class="grid grid-cols-2 gap-4">
+                <div id="pf-stats-grid" class="grid grid-cols-2 gap-4">
 
                     <!-- Economy card -->
                     <div class="glass rounded-[24px] p-5 border-white/5 flex flex-col">
@@ -2298,10 +2298,13 @@
             const guestLanding = document.getElementById('guest-landing');
             const statusBannersGrid = document.getElementById('status-banners-grid');
 
+            const sidebar = document.getElementById('kc-sidebar');
+
             if (user) {
                 welcomeCard.style.display = '';
                 if (statusBannersGrid) statusBannersGrid.style.display = '';
                 if (guestLanding) guestLanding.style.display = 'none';
+                if (sidebar) sidebar.style.display = '';
 
                 const avatarUrl = data.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
                 const hasCustom = !!(data.profileCustomizationUnlocked && data.profileCustomization);
@@ -2488,9 +2491,10 @@
                     });
                 });
             } else {
-                // Guest — show hero landing, hide welcome card and status banners
+                // Guest — show hero landing, hide welcome card, status banners and sidebar
                 welcomeCard.style.display = 'none';
                 if (statusBannersGrid) statusBannersGrid.style.display = 'none';
+                if (sidebar) sidebar.style.display = 'none';
                 badgeEl.innerHTML = '';
                 ind.classList.add('hidden');
                 const existingAbout = document.getElementById('welcome-about');
@@ -6746,18 +6750,51 @@
             const setText = (id, val) => { const el = $(id); if (el) el.textContent = val; };
 
             if (!currentUser) {
-                setText('pf-name', 'Sign in to view your profile');
+                // Hide stats, discord banner, and identity content
+                const pfStatsGrid = $('pf-stats-grid');
+                if (pfStatsGrid) pfStatsGrid.style.display = 'none';
+                const pfDiscord = $('discord-link-status-profile');
+                if (pfDiscord) pfDiscord.style.display = 'none';
+                const idBlock = $('pf-identity-block');
+                if (idBlock) idBlock.style.display = 'none';
+
+                // Inject guest prompt into hero card (once, reuse if already there)
                 const pfHero = $('pf-hero-card');
-                if (pfHero) {
-                    pfHero.style.minHeight = '180px';
-                    pfHero.style.display = 'flex';
-                    pfHero.style.alignItems = 'center';
-                    pfHero.style.justifyContent = 'center';
-                    const idBlock = $('pf-identity-block');
-                    if (idBlock) idBlock.style.marginTop = '0';
+                if (pfHero && !$('pf-guest-prompt')) {
+                    const prompt = document.createElement('div');
+                    prompt.id = 'pf-guest-prompt';
+                    prompt.style.cssText = 'padding:3rem 2rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1.25rem;';
+                    prompt.innerHTML = `
+                        <div style="width:64px;height:64px;border-radius:20px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(59,130,246,0.35);">
+                            <i class="fa-solid fa-user-lock" style="color:white;font-size:1.5rem;"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size:1.25rem;font-weight:900;color:white;margin-bottom:0.4rem;">Sign in to view your profile</h3>
+                            <p style="font-size:0.85rem;color:#64748b;max-width:320px;line-height:1.5;">Your stats, economy rank, badges and Battledome scores will all appear here once you're signed in.</p>
+                        </div>
+                        <button onclick="window.top.location.href='https://kcevents.uk/#loginpage'"
+                            style="padding:0.75rem 2rem;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;font-weight:800;font-size:0.88rem;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(59,130,246,0.38);font-family:Poppins,sans-serif;transition:all 0.2s;"
+                            onmouseover="this.style.transform='translateY(-1px)'"
+                            onmouseout="this.style.transform=''">
+                            🚀 Join KC NOW
+                        </button>
+                    `;
+                    pfHero.appendChild(prompt);
+                } else if ($('pf-guest-prompt')) {
+                    $('pf-guest-prompt').style.display = 'flex';
                 }
                 return;
             }
+
+            // Logged-in: restore hidden elements and remove guest prompt
+            const pfGuestPrompt = $('pf-guest-prompt');
+            if (pfGuestPrompt) pfGuestPrompt.style.display = 'none';
+            const idBlockRestore = $('pf-identity-block');
+            if (idBlockRestore) idBlockRestore.style.display = '';
+            const pfStatsGrid = $('pf-stats-grid');
+            if (pfStatsGrid) pfStatsGrid.style.display = '';
+            const pfDiscord = $('discord-link-status-profile');
+            if (pfDiscord) pfDiscord.style.display = '';
 
             // Show skeleton while loading
             const idBlock = $('pf-identity-block');
