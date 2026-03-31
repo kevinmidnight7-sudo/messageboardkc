@@ -2,14 +2,19 @@
  * KC Events — Discord OAuth Auth Bridge
  *
  * Supports two linking flows:
+ *
  *   A) Legacy bot flow:  state = Discord user ID (17-20 digits)
- *      /start  → validates state is a Discord ID, redirects to Discord OAuth
- *      /callback → writes discordLinks/{discordId} = { kcUid, linkedAt }, redirects to link.html
+ *      The Discord bot initiates the OAuth flow and passes the user's Discord ID as state.
+ *      /start    → validates state matches /^\d{17,20}$/, redirects to Discord OAuth
+ *      /callback → exchanges code, redirects to link.html?state=<discordId>&ok=1
+ *                  (link.html / the bot handles the actual Firebase writes for this flow)
  *
  *   B) Web UI flow (kcnow.html):  state = Firestore linkStates document ID (random alphanumeric)
- *      /start  → validates Firestore linkStates/{state} doc exists, not used, not expired
- *      /callback → reads linkStates/{state}.uid, writes Firestore users/{uid}.discordId,
- *                  writes RTDB users/{uid}/discordId, issues custom Firebase token,
+ *      kcnow.html creates a linkStates/{state} doc with the user's KC uid, then sends state.
+ *      /start    → validates linkStates/{state} doc exists, not used, not expired
+ *      /callback → reads linkStates/{state}.uid (kcUid), marks doc used,
+ *                  writes Firestore users/{uid}.discordId + RTDB users/{uid}/discordId +
+ *                  RTDB discordLinks/{discordId}, issues custom Firebase Auth token,
  *                  redirects to PUBLIC_WEB_SUCCESS_URL?customToken=<token>
  */
 
@@ -133,18 +138,8 @@ app.get('/oauth/discord/callback', async (req, res) => {
 
     if (isDiscordIdState) {
         // ── Legacy bot flow ───────────────────────────────────────────────────
-        // state IS the kcUid (Discord bot supplies the KC Firebase UID as state)
-        const kcUid = String(state).trim();
-        try {
-            await rtdb.ref(`discordLinks/${discordId}`).set({
-                kcUid,
-                linkedAt: admin.database.ServerValue.TIMESTAMP,
-            });
-            // Also mirror to RTDB users node for fast lookup
-            await rtdb.ref(`users/${kcUid}/discordId`).set(discordId);
-        } catch (err) {
-            console.error('[callback] RTDB write error (legacy):', err);
-        }
+        // state = the Discord user's ID (passed by the bot to identify who is linking).
+        // The bot / link.html handles Firebase writes for this flow — we just redirect.
         const target = `https://auth.kcevents.uk/link.html?state=${encodeURIComponent(state)}&ok=1`;
         return res.redirect(target);
     }

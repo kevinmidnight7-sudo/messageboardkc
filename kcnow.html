@@ -2010,6 +2010,12 @@
             discordIdCache.clear(); // clear on auth change so Firestore re-read fires
             KCLoader.advance('auth');
             if (user) {
+                // ── Discord OAuth return: show success toast once signed in ──────
+                if (sessionStorage.getItem('kc-discord-just-linked')) {
+                    sessionStorage.removeItem('kc-discord-just-linked');
+                    setTimeout(() => showToast('🎉 Discord linked successfully!', 'success', 5000), 800);
+                }
+
                 try { await user.reload(); } catch (e) {}
                 let _firstUserData = true;
                 db.ref(`users/${user.uid}`).on('value', snap => {
@@ -7794,35 +7800,43 @@
 
         window.onload = () => {
             // ── Discord OAuth return handler ─────────────────────────────
-            // The auth bridge redirects back with ?customToken=<token> after successful link.
-            // We sign into Firebase with that token to complete the KC ↔ Discord link.
-            (async () => {
+            // The auth bridge redirects to kcnow.html?customToken=<token> after a successful link.
+            // The discordId is already written to Firebase by the bridge at this point.
+            // Strategy:
+            //   1. Clean the URL immediately (don't leave the token in the address bar / history)
+            //   2. Set a sessionStorage flag so onAuthStateChanged can show the success toast
+            //      once the user is confirmed signed in (avoids timing races)
+            //   3. Only call signInWithCustomToken if Firebase has NOT restored an existing session
+            //      — this handles the rare case where the session expired during the OAuth redirect
+            (() => {
                 const params = new URLSearchParams(window.location.search);
                 const customToken = params.get('customToken');
-                if (customToken) {
-                    // Remove the token from the URL immediately (don't expose it in history)
-                    const cleanUrl = window.location.pathname + window.location.hash;
-                    window.history.replaceState({}, '', cleanUrl);
+                const wasPending  = !!localStorage.getItem('kc-discord-link-pending');
+
+                if (customToken || wasPending) {
+                    // Clean up
+                    if (customToken) window.history.replaceState({}, '', window.location.pathname + window.location.hash);
                     localStorage.removeItem('kc-discord-link-pending');
-                    try {
-                        await auth.signInWithCustomToken(customToken);
-                        showToast('🎉 Discord linked successfully!', 'success', 5000);
-                        // Refresh Discord link status UI after a brief delay
-                        setTimeout(() => {
-                            discordIdCache.clear();
-                            renderDiscordLinkStatus();
-                        }, 1500);
-                    } catch (e) {
-                        console.error('[Discord OAuth return]', e);
-                        showToast('Discord link failed: ' + (e.message || 'Unknown error'), 'error', 7000);
+                    // Flag for onAuthStateChanged to show success toast
+                    sessionStorage.setItem('kc-discord-just-linked', '1');
+
+                    if (customToken) {
+                        // One-shot: if Firebase hasn't restored a session yet, sign in via custom token
+                        const unsub = auth.onAuthStateChanged(user => {
+                            unsub();
+                            if (!user) {
+                                auth.signInWithCustomToken(customToken).catch(e => {
+                                    console.error('[Discord OAuth] signInWithCustomToken failed:', e);
+                                    sessionStorage.removeItem('kc-discord-just-linked');
+                                    showToast('Discord link failed: ' + (e.message || 'Unknown error'), 'error', 7000);
+                                });
+                                // onAuthStateChanged will fire again once sign-in completes,
+                                // the main handler below will catch the flag and show the toast
+                            }
+                            // If user IS already signed in, the main onAuthStateChanged handler
+                            // will fire shortly and pick up the sessionStorage flag
+                        });
                     }
-                } else if (localStorage.getItem('kc-discord-link-pending')) {
-                    // Returned from OAuth but no customToken — check if already linked via Firestore
-                    localStorage.removeItem('kc-discord-link-pending');
-                    setTimeout(() => {
-                        discordIdCache.clear();
-                        renderDiscordLinkStatus();
-                    }, 2000);
                 }
             })();
 
