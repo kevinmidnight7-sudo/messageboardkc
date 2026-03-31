@@ -7854,34 +7854,10 @@
             //   3. Only call signInWithCustomToken if Firebase has NOT restored an existing session
             //      — this handles the rare case where the session expired during the OAuth redirect
             (() => {
-                const params = new URLSearchParams(window.location.search);
-                const customToken = params.get('customToken');
-                const wasPending  = !!localStorage.getItem('kc-discord-link-pending');
-
-                if (customToken || wasPending) {
-                    // Clean up
-                    if (customToken) window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+                if (localStorage.getItem('kc-discord-link-pending')) {
                     localStorage.removeItem('kc-discord-link-pending');
-                    // Flag for onAuthStateChanged to show success toast
+                    // Signal onAuthStateChanged to show success toast once user is confirmed signed in
                     sessionStorage.setItem('kc-discord-just-linked', '1');
-
-                    if (customToken) {
-                        // One-shot: if Firebase hasn't restored a session yet, sign in via custom token
-                        const unsub = auth.onAuthStateChanged(user => {
-                            unsub();
-                            if (!user) {
-                                auth.signInWithCustomToken(customToken).catch(e => {
-                                    console.error('[Discord OAuth] signInWithCustomToken failed:', e);
-                                    sessionStorage.removeItem('kc-discord-just-linked');
-                                    showToast('Discord link failed: ' + (e.message || 'Unknown error'), 'error', 7000);
-                                });
-                                // onAuthStateChanged will fire again once sign-in completes,
-                                // the main handler below will catch the flag and show the toast
-                            }
-                            // If user IS already signed in, the main onAuthStateChanged handler
-                            // will fire shortly and pick up the sessionStorage flag
-                        });
-                    }
                 }
             })();
 

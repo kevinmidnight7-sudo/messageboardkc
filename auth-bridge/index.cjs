@@ -185,18 +185,10 @@ app.get('/oauth/discord/callback', async (req, res) => {
         return res.status(500).send('Failed to save link');
     }
 
-    // Issue a custom Firebase Auth token so the web client can sign in and confirm
-    let customToken;
-    try {
-        customToken = await admin.auth().createCustomToken(kcUid, { discordId });
-    } catch (err) {
-        console.error('[callback] Custom token error:', err);
-        return res.status(500).send('Failed to issue token');
-    }
-
-    // Redirect to KC NOW with the custom token as a URL parameter
-    const successUrl = `${PUBLIC_WEB_SUCCESS}?customToken=${encodeURIComponent(customToken)}`;
-    return res.redirect(successUrl);
+    // Discord ID is now saved — redirect back to KC NOW.
+    // kcnow.html detects the return via the kc-discord-link-pending localStorage flag
+    // and shows the success toast once Firebase auth is confirmed.
+    return res.redirect(PUBLIC_WEB_SUCCESS);
 });
 
 // ── Health check ──────────────────────────────────────────────────────────────
