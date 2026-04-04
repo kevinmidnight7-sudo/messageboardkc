@@ -273,7 +273,8 @@
                         inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.28);
             animation: none; /* stop pulse when expanded — cleaner */
         }
-        /* Matrix scanline sweep */
+        /* === Diamond Tier: ambient overlay animations === */
+        /* Base state: hidden ::after on right-panel-inner */
         #right-panel-inner::after {
             content: '';
             position: absolute;
@@ -284,13 +285,208 @@
             opacity: 0;
             transition: opacity 0.2s;
         }
+        /* Ensure dropdown + launchpad inner card support ::before overlays */
+        .qa-panel { position: relative; }
+        #kc-launchpad > div { position: relative; overflow: hidden; }
+        #kc-launchpad > div::before,
+        .qa-panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 0;
+            transition: opacity 0.4s;
+        }
+
+        /* ── The Matrix: green scanline ── */
         #right-panel.rp-scan #right-panel-inner::after {
             opacity: 1;
             animation: rpScanline var(--rp-scan-speed, 4s) linear infinite;
         }
-        @keyframes rpScanline {
-            0%   { top: -5%; }
-            100% { top: 105%; }
+        @keyframes rpScanline { 0% { top: -5%; } 100% { top: 105%; } }
+        .qa-theme-matrix .qa-panel::before,
+        #kc-launchpad.lp-matrix > div::before {
+            opacity: 1;
+            background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(34,197,94,0.03) 3px, rgba(34,197,94,0.03) 4px);
+            animation: lp-matrix-lines 1s linear infinite;
+        }
+        @keyframes lp-matrix-lines { 0% { background-position: 0 0; } 100% { background-position: 0 8px; } }
+
+        /* ── Northern Lights: aurora sweep across panel ── */
+        #right-panel.rp-aurora #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0 !important; height: 100% !important;
+            width: 50%; left: -55%; right: auto !important;
+            background: linear-gradient(90deg, transparent, rgba(45,212,191,0.10), rgba(56,189,248,0.15), rgba(45,212,191,0.07), transparent) !important;
+            animation: rp-aurora-sweep 5.5s ease-in-out infinite !important;
+        }
+        @keyframes rp-aurora-sweep { 0% { left: -60%; } 100% { left: 155%; } }
+        .qa-theme-aurora .qa-panel::before,
+        #kc-launchpad.lp-aurora > div::before {
+            opacity: 1;
+            background: linear-gradient(135deg, rgba(45,212,191,0.06), rgba(56,189,248,0.08), rgba(45,212,191,0.04));
+            background-size: 200% 200%;
+            animation: lp-aurora-shift 6s ease-in-out infinite alternate;
+        }
+        @keyframes lp-aurora-shift { 0% { background-position: 0% 50%; } 100% { background-position: 100% 50%; } }
+
+        /* ── Event Horizon: pulsing vortex ring from top ── */
+        #right-panel.rp-void #right-panel-inner::after {
+            opacity: 1 !important;
+            top: -25% !important; left: 10% !important; right: 10% !important;
+            height: 55% !important;
+            border-radius: 50% !important;
+            background: radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.12) 0%, rgba(129,140,248,0.06) 50%, transparent 75%) !important;
+            animation: rp-void-pulse 4.5s ease-in-out infinite !important;
+        }
+        @keyframes rp-void-pulse { 0%, 100% { opacity: 0.35; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.25); } }
+        .qa-theme-void .qa-panel::before,
+        #kc-launchpad.lp-void > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.10) 0%, transparent 60%);
+            animation: lp-void-breathe 4s ease-in-out infinite alternate;
+        }
+        @keyframes lp-void-breathe { 0% { opacity: 0.4; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1.05); } }
+
+        /* ── Shattered Glass: rainbow hue cycle ── */
+        #right-panel.rp-prism #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0 !important; height: 100% !important;
+            left: 0 !important; right: 0 !important;
+            background: linear-gradient(120deg, rgba(236,72,153,0.07), rgba(251,191,36,0.07), rgba(34,211,238,0.07), rgba(168,85,247,0.07), rgba(236,72,153,0.07)) !important;
+            background-size: 400% 100% !important;
+            animation: rp-prism-cycle 5s linear infinite !important;
+        }
+        @keyframes rp-prism-cycle { 0% { background-position: 0% 0%; } 100% { background-position: 400% 0%; } }
+        .qa-theme-prism .qa-panel::before,
+        #kc-launchpad.lp-prism > div::before {
+            opacity: 1;
+            background: linear-gradient(120deg, rgba(236,72,153,0.05), rgba(251,191,36,0.05), rgba(34,211,238,0.05), rgba(168,85,247,0.05), rgba(236,72,153,0.05));
+            background-size: 400% 100%;
+            animation: rp-prism-cycle 6s linear infinite;
+        }
+
+        /* ── Deep Space: twinkling nebula pulse ── */
+        #right-panel.rp-starlight #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0 !important; height: 100% !important;
+            left: 0 !important; right: 0 !important;
+            background: radial-gradient(ellipse at 80% 15%, rgba(165,180,252,0.10) 0%, transparent 50%),
+                        radial-gradient(ellipse at 20% 85%, rgba(196,181,253,0.08) 0%, transparent 45%) !important;
+            animation: rp-starlight-pulse 3.5s ease-in-out infinite alternate !important;
+        }
+        @keyframes rp-starlight-pulse { 0% { opacity: 0.35; } 100% { opacity: 1; } }
+        .qa-theme-starlight .qa-panel::before,
+        #kc-launchpad.lp-starlight > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 70% 20%, rgba(165,180,252,0.08) 0%, transparent 55%);
+            animation: rp-starlight-pulse 4s ease-in-out infinite alternate;
+        }
+
+        /* ── Gilded Throne: gold shimmer sweep ── */
+        #right-panel.rp-golden #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0 !important; height: 100% !important;
+            width: 45%; left: -50%; right: auto !important;
+            background: linear-gradient(90deg, transparent, rgba(251,191,36,0.10), rgba(253,224,71,0.16), rgba(251,191,36,0.07), transparent) !important;
+            animation: rp-gold-sweep 4.5s ease-in-out infinite !important;
+        }
+        @keyframes rp-gold-sweep { 0% { left: -55%; } 100% { left: 155%; } }
+        .qa-theme-golden .qa-panel::before,
+        #kc-launchpad.lp-golden > div::before {
+            opacity: 1;
+            background: linear-gradient(135deg, rgba(251,191,36,0.06), rgba(253,224,71,0.04), transparent, rgba(217,119,6,0.03));
+            background-size: 200% 200%;
+            animation: lp-aurora-shift 5s ease-in-out infinite alternate;
+        }
+
+        /* ── Blossom Rain: pink petal line drifting down ── */
+        #right-panel.rp-sakura #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0% !important; left: 0 !important; right: 0 !important;
+            height: 2px !important;
+            background: linear-gradient(90deg, transparent, rgba(244,114,182,0.8), rgba(251,207,232,0.9), rgba(236,72,153,0.6), transparent) !important;
+            animation: rp-sakura-drift 5s ease-in-out infinite !important;
+        }
+        @keyframes rp-sakura-drift { 0% { top: -5%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 0.5; } 100% { top: 105%; opacity: 0; } }
+        .qa-theme-sakura .qa-panel::before,
+        #kc-launchpad.lp-sakura > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 50% 0%, rgba(244,114,182,0.10) 0%, transparent 55%);
+            animation: lp-sakura-bloom 4s ease-in-out infinite alternate;
+        }
+        @keyframes lp-sakura-bloom { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* ── Magma Core: ember glow rising from bottom ── */
+        #right-panel.rp-lava #right-panel-inner::after {
+            opacity: 1 !important;
+            top: auto !important; bottom: 0 !important;
+            left: 0 !important; right: 0 !important;
+            height: 55% !important;
+            background: radial-gradient(ellipse at 50% 100%, rgba(249,115,22,0.20) 0%, rgba(239,68,68,0.08) 50%, transparent 75%) !important;
+            animation: rp-lava-ember 2.5s ease-in-out infinite alternate !important;
+        }
+        @keyframes rp-lava-ember { 0% { opacity: 0.5; transform: scaleY(0.85); } 100% { opacity: 1; transform: scaleY(1.15); } }
+        .qa-theme-lava .qa-panel::before,
+        #kc-launchpad.lp-lava > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 50% 110%, rgba(249,115,22,0.14) 0%, rgba(239,68,68,0.05) 50%, transparent 70%);
+            animation: rp-lava-ember 2.5s ease-in-out infinite alternate;
+        }
+
+        /* ── Frozen Tundra: icy bloom from top ── */
+        #right-panel.rp-arctic #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0 !important; height: 100% !important;
+            left: 0 !important; right: 0 !important;
+            background: radial-gradient(ellipse at 50% -5%, rgba(186,230,253,0.14) 0%, transparent 55%),
+                        radial-gradient(ellipse at 10% 60%, rgba(147,197,253,0.08) 0%, transparent 35%) !important;
+            animation: rp-arctic-bloom 5.5s ease-in-out infinite alternate !important;
+        }
+        @keyframes rp-arctic-bloom { 0% { opacity: 0.4; } 100% { opacity: 1; } }
+        .qa-theme-arctic .qa-panel::before,
+        #kc-launchpad.lp-arctic > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 50% 0%, rgba(186,230,253,0.10) 0%, transparent 60%);
+            animation: rp-arctic-bloom 5s ease-in-out infinite alternate;
+        }
+
+        /* ── Crystal Crown: rotating conic gem sparkle ── */
+        #right-panel.rp-amethyst #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 50% !important; left: 50% !important;
+            width: 150% !important; height: 150% !important;
+            right: auto !important;
+            transform: translate(-50%, -50%) rotate(0deg) !important;
+            background: conic-gradient(from 0deg, transparent 20%, rgba(167,139,250,0.08) 30%, rgba(216,180,254,0.14) 50%, rgba(167,139,250,0.06) 70%, transparent 80%) !important;
+            animation: rp-amethyst-spin 10s linear infinite !important;
+        }
+        @keyframes rp-amethyst-spin { 0% { transform: translate(-50%,-50%) rotate(0deg); } 100% { transform: translate(-50%,-50%) rotate(360deg); } }
+        .qa-theme-amethyst .qa-panel::before,
+        #kc-launchpad.lp-amethyst > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.10) 0%, transparent 50%),
+                        radial-gradient(ellipse at 20% 80%, rgba(216,180,254,0.08) 0%, transparent 45%);
+            animation: lp-void-breathe 5s ease-in-out infinite alternate;
+        }
+
+        /* ── Eldritch Void: writhing cosmic horror ── */
+        #right-panel.rp-cosmos #right-panel-inner::after {
+            opacity: 1 !important;
+            top: 0 !important; height: 100% !important;
+            left: 0 !important; right: 0 !important;
+            background: radial-gradient(ellipse at 15% 45%, rgba(88,28,135,0.12) 0%, transparent 55%),
+                        radial-gradient(ellipse at 85% 60%, rgba(6,95,70,0.10) 0%, transparent 50%) !important;
+            animation: rp-cosmos-writhe 6s ease-in-out infinite alternate !important;
+        }
+        @keyframes rp-cosmos-writhe { 0% { opacity: 0.4; transform: scale(0.96) skewY(0deg); } 50% { opacity: 0.9; } 100% { opacity: 0.5; transform: scale(1.04) skewY(1deg); } }
+        .qa-theme-cosmos .qa-panel::before,
+        #kc-launchpad.lp-cosmos > div::before {
+            opacity: 1;
+            background: radial-gradient(ellipse at 20% 50%, rgba(88,28,135,0.09) 0%, transparent 55%),
+                        radial-gradient(ellipse at 80% 60%, rgba(6,95,70,0.07) 0%, transparent 50%);
+            animation: rp-cosmos-writhe 6s ease-in-out infinite alternate;
         }
         .rp-link {
             display: flex;
@@ -669,22 +865,54 @@
                         radial-gradient(circle at 75% 65%, rgba(45,212,191,0.14), transparent 38%),
                         radial-gradient(circle at 50% 50%, rgba(15,23,42,0.85), rgba(8,12,20,1) 70%);
         }
+        /* ── Northern Lights ── */
+        .kc-bg-scene.aurora .kc-bg-far {
+            background: radial-gradient(circle at 50% 50%, rgba(6,20,30,0.98), rgba(2,8,18,1) 70%),
+                        linear-gradient(180deg, rgba(45,212,191,0.08) 0%, transparent 40%);
+        }
         .kc-bg-scene.aurora .kc-bg-mid {
-            background: radial-gradient(circle at 25% 40%, rgba(34,211,238,0.24), transparent 32%),
-                        radial-gradient(circle at 70% 50%, rgba(59,130,246,0.20), transparent 30%),
-                        radial-gradient(circle at 50% 80%, rgba(45,212,191,0.12), transparent 34%);
+            background: linear-gradient(180deg, rgba(45,212,191,0.22) 0%, rgba(56,189,248,0.18) 20%, rgba(99,102,241,0.10) 45%, transparent 65%),
+                        radial-gradient(circle at 30% 25%, rgba(45,212,191,0.18), transparent 40%),
+                        radial-gradient(circle at 70% 35%, rgba(56,189,248,0.14), transparent 35%);
+            animation: auroraWave 8s ease-in-out infinite alternate;
         }
-        /* Sunrise preset backgrounds */
+        @keyframes auroraWave {
+            0%   { filter: hue-rotate(0deg)   brightness(1);    }
+            50%  { filter: hue-rotate(15deg)  brightness(1.12); }
+            100% { filter: hue-rotate(-10deg) brightness(1.05); }
+        }
+        .kc-bg-scene.aurora .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 20%, rgba(45,212,191,0.18), rgba(56,189,248,0.10) 40%, transparent 65%);
+            animation: goldPulse 5s ease-in-out infinite alternate;
+        }
+        /* ── Solar Flare ── */
+        .kc-bg-scene.sunrise .kc-bg-far {
+            background: radial-gradient(circle at 50% 10%, rgba(251,191,36,0.30), transparent 45%),
+                        radial-gradient(circle at 20% 80%, rgba(249,115,22,0.20), transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(30,14,4,0.96), rgba(14,5,0,1) 70%);
+        }
         .kc-bg-scene.sunrise .kc-bg-mid {
-            background: radial-gradient(circle at 30% 35%, rgba(252, 165, 219, 0.24), transparent 32%),
-                        radial-gradient(circle at 75% 60%, rgba(253, 230, 138, 0.18), transparent 35%),
-                        radial-gradient(circle at 50% 80%, rgba(254, 215, 170, 0.14), transparent 38%);
+            background: radial-gradient(circle at 50% 20%, rgba(253,186,116,0.28), transparent 32%),
+                        radial-gradient(circle at 80% 70%, rgba(251,113,133,0.18), transparent 35%),
+                        radial-gradient(circle at 20% 60%, rgba(249,115,22,0.16), transparent 38%);
         }
-        /* Deep Sea preset backgrounds */
+        .kc-bg-scene.sunrise .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 5%, rgba(251,191,36,0.22), transparent 50%);
+            animation: lavaGlow 4s ease-in-out infinite alternate;
+        }
+        /* ── Abyssal Deep ── */
+        .kc-bg-scene.deepsea .kc-bg-far {
+            background: radial-gradient(circle at 30% 70%, rgba(6,182,212,0.18), transparent 45%),
+                        radial-gradient(circle at 70% 30%, rgba(8,145,178,0.12), transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(0,8,20,0.98), rgba(0,4,14,1) 70%);
+        }
         .kc-bg-scene.deepsea .kc-bg-mid {
-            background: radial-gradient(circle at 25% 50%, rgba(34,197,94,0.24), transparent 35%),
-                        radial-gradient(circle at 70% 40%, rgba(147,51,234,0.20), transparent 30%),
-                        radial-gradient(circle at 50% 75%, rgba(13,148,136,0.18), transparent 36%);
+            background: radial-gradient(circle at 25% 50%, rgba(6,182,212,0.16), transparent 30%),
+                        radial-gradient(circle at 70% 70%, rgba(56,189,248,0.10), transparent 28%),
+                        radial-gradient(circle at 50% 20%, rgba(8,145,178,0.08), transparent 35%);
+        }
+        .kc-bg-scene.deepsea .kc-bg-glow {
+            background: radial-gradient(ellipse at 50% 90%, rgba(6,182,212,0.12), transparent 50%);
         }
 
         /* ── Snake Pit ── */
@@ -716,20 +944,29 @@
             background: radial-gradient(ellipse at 50% 15%, rgba(239,68,68,0.18), transparent 50%);
         }
 
-        /* ── Cyber Grid ── */
+        /* ── Neon Circuit ── */
         .kc-bg-scene.cyber .kc-bg-far {
-            background: radial-gradient(circle at 25% 75%, rgba(6,182,212,0.20), transparent 40%),
-                        radial-gradient(circle at 75% 25%, rgba(139,92,246,0.18), transparent 38%),
-                        radial-gradient(circle at 50% 50%, rgba(8,6,22,0.96), rgba(2,4,18,1) 70%);
+            background: radial-gradient(circle at 20% 80%, rgba(34,211,238,0.26), transparent 40%),
+                        radial-gradient(circle at 80% 20%, rgba(168,85,247,0.22), transparent 38%),
+                        radial-gradient(circle at 50% 50%, rgba(4,4,20,0.97), rgba(2,2,14,1) 70%);
         }
         .kc-bg-scene.cyber .kc-bg-mid {
-            background: radial-gradient(circle at 20% 40%, rgba(14,165,233,0.16), transparent 30%),
-                        radial-gradient(circle at 80% 60%, rgba(168,85,247,0.14), transparent 28%),
-                        radial-gradient(circle at 50% 80%, rgba(6,182,212,0.09), transparent 32%);
+            background: radial-gradient(circle at 15% 45%, rgba(34,211,238,0.22), transparent 28%),
+                        radial-gradient(circle at 85% 55%, rgba(232,121,249,0.18), transparent 26%),
+                        radial-gradient(circle at 50% 85%, rgba(6,182,212,0.12), transparent 32%);
+            animation: cyberFlicker 0.1s step-end infinite;
+        }
+        @keyframes cyberFlicker {
+            0%, 92%  { opacity: 1;    }
+            93%       { opacity: 0.88; }
+            94%       { opacity: 1;    }
+            97%       { opacity: 0.92; }
+            100%      { opacity: 1;    }
         }
         .kc-bg-scene.cyber .kc-bg-glow {
-            background: radial-gradient(ellipse at 30% 50%, rgba(6,182,212,0.12), transparent 45%),
-                        radial-gradient(ellipse at 70% 50%, rgba(139,92,246,0.10), transparent 45%);
+            background: radial-gradient(ellipse at 25% 55%, rgba(34,211,238,0.16), transparent 42%),
+                        radial-gradient(ellipse at 75% 45%, rgba(168,85,247,0.14), transparent 42%);
+            animation: cyberFlicker 0.15s step-end infinite;
         }
 
         /* ── Golden Vault (Diamond Exclusive) ── */
@@ -810,19 +1047,20 @@
             background: radial-gradient(ellipse at 50% 20%, rgba(224,242,254,0.18), transparent 50%);
         }
 
-        /* ── Royal Amethyst ── */
+        /* ── Crystal Crown ── */
         .kc-bg-scene.amethyst .kc-bg-far {
-            background: radial-gradient(circle at 25% 40%, rgba(167,139,250,0.24), transparent 40%),
-                        radial-gradient(circle at 75% 65%, rgba(124,58,237,0.18), transparent 38%),
-                        radial-gradient(circle at 50% 50%, rgba(16,8,30,0.96), rgba(6,2,18,1) 70%);
+            background: radial-gradient(circle at 25% 35%, rgba(167,139,250,0.30), transparent 38%),
+                        radial-gradient(circle at 75% 70%, rgba(124,58,237,0.24), transparent 36%),
+                        radial-gradient(circle at 50% 50%, rgba(14,6,28,0.97), rgba(6,2,18,1) 70%);
         }
         .kc-bg-scene.amethyst .kc-bg-mid {
-            background: radial-gradient(circle at 35% 50%, rgba(196,181,253,0.18), transparent 32%),
-                        radial-gradient(circle at 68% 35%, rgba(139,92,246,0.16), transparent 30%),
-                        radial-gradient(circle at 20% 70%, rgba(167,139,250,0.12), transparent 36%);
+            background: radial-gradient(circle at 35% 45%, rgba(216,180,254,0.22), transparent 30%),
+                        radial-gradient(circle at 68% 30%, rgba(139,92,246,0.20), transparent 28%),
+                        radial-gradient(circle at 20% 75%, rgba(232,121,249,0.14), transparent 34%);
         }
         .kc-bg-scene.amethyst .kc-bg-glow {
-            background: radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.14), transparent 55%);
+            background: radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.18), rgba(232,121,249,0.08) 40%, transparent 65%);
+            animation: goldPulse 5s ease-in-out infinite alternate;
         }
 
         /* ── Matrix Code ── */
@@ -839,48 +1077,65 @@
             background: radial-gradient(ellipse at 50% 40%, rgba(74,222,128,0.10), transparent 50%);
         }
 
-        /* ── Cosmic Horror ── */
+        /* ── Eldritch Void ── */
         .kc-bg-scene.cosmos .kc-bg-far {
-            background: radial-gradient(circle at 30% 60%, rgba(88,28,135,0.26), transparent 42%),
-                        radial-gradient(circle at 72% 30%, rgba(6,78,59,0.18), transparent 38%),
-                        radial-gradient(circle at 50% 50%, rgba(8,4,20,0.97), rgba(2,0,8,1) 70%);
+            background: radial-gradient(circle at 25% 65%, rgba(88,28,135,0.30), transparent 44%),
+                        radial-gradient(circle at 75% 25%, rgba(6,95,70,0.22), transparent 40%),
+                        radial-gradient(circle at 50% 50%, rgba(6,2,18,0.98), rgba(2,0,6,1) 70%);
         }
         .kc-bg-scene.cosmos .kc-bg-mid {
-            background: radial-gradient(circle at 25% 45%, rgba(126,34,206,0.18), transparent 30%),
-                        radial-gradient(circle at 70% 60%, rgba(6,95,70,0.16), transparent 28%),
-                        radial-gradient(circle at 50% 80%, rgba(91,33,182,0.12), transparent 34%);
+            background: radial-gradient(circle at 20% 40%, rgba(126,34,206,0.22), transparent 32%),
+                        radial-gradient(circle at 78% 65%, rgba(6,95,70,0.18), transparent 30%),
+                        radial-gradient(circle at 50% 85%, rgba(139,92,246,0.14), transparent 36%);
+            animation: cosmosWritheGrad 7s ease-in-out infinite alternate;
+        }
+        @keyframes cosmosWritheGrad {
+            0%   { filter: hue-rotate(0deg)   saturate(1);   }
+            100% { filter: hue-rotate(20deg)  saturate(1.2); }
         }
         .kc-bg-scene.cosmos .kc-bg-glow {
-            background: radial-gradient(ellipse at 40% 60%, rgba(126,34,206,0.12), transparent 50%),
-                        radial-gradient(ellipse at 65% 30%, rgba(6,78,59,0.10), transparent 45%);
+            background: radial-gradient(ellipse at 35% 65%, rgba(126,34,206,0.16), transparent 50%),
+                        radial-gradient(ellipse at 70% 25%, rgba(16,185,129,0.12), transparent 45%);
+            animation: cosmosWritheGrad 8s ease-in-out infinite alternate-reverse;
         }
-        /* ── void (diamond) ── */
+        /* ── Event Horizon ── */
         .kc-bg-scene.void .kc-bg-far {
-            background: radial-gradient(circle at 30% 40%, rgba(99,102,241,0.18), transparent 45%),
-                        radial-gradient(circle at 70% 65%, rgba(129,140,248,0.10), transparent 40%),
-                        radial-gradient(circle at 50% 50%, rgba(10,6,30,0.97), rgba(4,4,18,1) 70%);
+            background: radial-gradient(circle at 50% 50%, rgba(2,0,10,1) 0%, rgba(10,6,30,0.98) 30%, rgba(4,4,18,1) 70%);
         }
         .kc-bg-scene.void .kc-bg-mid {
-            background: radial-gradient(circle at 25% 55%, rgba(99,102,241,0.14), transparent 32%),
-                        radial-gradient(circle at 75% 30%, rgba(196,181,253,0.08), transparent 28%);
+            background: radial-gradient(circle at 50% 50%, transparent 15%, rgba(99,102,241,0.18) 25%, rgba(129,140,248,0.12) 35%, transparent 55%),
+                        radial-gradient(circle at 50% 50%, transparent 8%, rgba(192,132,252,0.06) 18%, transparent 30%);
+            animation: voidRingPulse 5s ease-in-out infinite alternate;
+        }
+        @keyframes voidRingPulse {
+            0%   { opacity: 0.6; transform: scale(0.92); }
+            100% { opacity: 1;   transform: scale(1.08); }
         }
         .kc-bg-scene.void .kc-bg-glow {
-            background: radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.10), transparent 55%);
+            background: radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.14), rgba(76,29,149,0.06) 40%, transparent 65%);
+            animation: voidRingPulse 4s ease-in-out infinite alternate-reverse;
         }
-        /* ── prism (diamond) ── */
+        /* ── Shattered Glass ── */
         .kc-bg-scene.prism .kc-bg-far {
-            background: radial-gradient(circle at 20% 30%, rgba(168,85,247,0.22), transparent 40%),
-                        radial-gradient(circle at 78% 60%, rgba(244,114,182,0.18), transparent 38%),
-                        radial-gradient(circle at 50% 80%, rgba(251,191,36,0.10), transparent 35%),
-                        radial-gradient(circle at 50% 50%, rgba(15,6,28,0.92), rgba(6,4,18,1) 70%);
+            background: radial-gradient(circle at 15% 25%, rgba(168,85,247,0.28), transparent 38%),
+                        radial-gradient(circle at 80% 55%, rgba(244,114,182,0.24), transparent 36%),
+                        radial-gradient(circle at 50% 85%, rgba(34,211,238,0.16), transparent 32%),
+                        radial-gradient(circle at 50% 50%, rgba(12,4,24,0.94), rgba(4,2,14,1) 70%);
         }
         .kc-bg-scene.prism .kc-bg-mid {
-            background: radial-gradient(circle at 40% 40%, rgba(250,204,21,0.12), transparent 30%),
-                        radial-gradient(circle at 68% 55%, rgba(192,132,252,0.14), transparent 28%);
+            background: radial-gradient(circle at 40% 35%, rgba(251,191,36,0.16), transparent 28%),
+                        radial-gradient(circle at 65% 60%, rgba(192,132,252,0.20), transparent 26%),
+                        radial-gradient(circle at 25% 70%, rgba(34,211,238,0.12), transparent 30%);
+            animation: prismShift 6s ease-in-out infinite alternate;
+        }
+        @keyframes prismShift {
+            0%   { filter: hue-rotate(0deg);  }
+            100% { filter: hue-rotate(30deg); }
         }
         .kc-bg-scene.prism .kc-bg-glow {
-            background: radial-gradient(ellipse at 45% 55%, rgba(244,114,182,0.12), transparent 50%),
-                        radial-gradient(ellipse at 60% 35%, rgba(168,85,247,0.08), transparent 40%);
+            background: radial-gradient(ellipse at 40% 60%, rgba(244,114,182,0.16), transparent 48%),
+                        radial-gradient(ellipse at 65% 30%, rgba(168,85,247,0.12), transparent 42%);
+            animation: prismShift 8s ease-in-out infinite alternate-reverse;
         }
         /* ── starlight (diamond) ── */
         .kc-bg-scene.starlight .kc-bg-far {
@@ -3631,102 +3886,124 @@
 
         const BACKGROUND_PRESETS = {
             default: {
-                name: 'KC Nebula',
+                name: 'Neon Nebula',
                 tier: 'base',
-                description: 'Soft abstract 3D blur with slow parallax',
+                description: 'Glowing orbital rings drift through a blue-teal cosmos',
                 theme: { accent: '#3b82f6', rgb: '59,130,246', glow: '#2dd4bf' },
             },
             aurora: {
-                name: 'Aurora Drift',
+                name: 'Northern Lights',
                 tier: 'diamond',
-                description: 'Teal and blue flowing layered light fields',
+                icon: '🌌',
+                description: 'Sweeping curtains of teal and electric blue shimmer across the sky',
                 theme: { accent: '#2dd4bf', rgb: '45,212,191', glow: '#38bdf8' },
             },
             void: {
-                name: 'Void Bloom',
+                name: 'Event Horizon',
                 tier: 'diamond',
-                description: 'Dark glassy depth with subtle glowing forms',
+                icon: '🕳️',
+                description: 'Rings of collapsed light spiral into an indigo black hole',
                 theme: { accent: '#6366f1', rgb: '99,102,241', glow: '#818cf8' },
             },
             prism: {
-                name: 'Prism Orbit',
+                name: 'Shattered Glass',
                 tier: 'diamond',
-                description: 'Floating color shards and depth blur',
+                icon: '💠',
+                description: 'Rainbow crystal shards tumble through a fractured prismatic void',
                 theme: { accent: '#a855f7', rgb: '168,85,247', glow: '#f472b6' },
             },
             starlight: {
-                name: 'Starlight Pulse',
+                name: 'Deep Space',
                 tier: 'diamond',
-                description: 'Spacey particle ambience with soft bloom',
+                icon: '🚀',
+                description: 'Meteor trails and star clusters drift through the infinite dark',
                 theme: { accent: '#818cf8', rgb: '129,140,248', glow: '#c4b5fd' },
             },
             sunrise: {
-                name: 'Sunrise Cascade',
+                name: 'Solar Flare',
                 tier: 'base',
-                description: 'Warm pastel sunrise gradients with soft parallax',
+                icon: '☀️',
+                description: 'Blazing amber and coral rays burst from a burning star',
                 theme: { accent: '#f59e0b', rgb: '245,158,11', glow: '#f97316' },
             },
             deepsea: {
-                name: 'Deep Sea Current',
+                name: 'Abyssal Deep',
                 tier: 'base',
-                description: 'Dark cyan and purple swirls with gentle motion',
+                icon: '🌊',
+                description: 'Bioluminescent bubbles rise through the pitch-black ocean floor',
                 theme: { accent: '#06b6d4', rgb: '6,182,212', glow: '#8b5cf6' },
             },
             snake: {
-                name: 'Snake Pit',
+                name: 'Viper Pit',
                 tier: 'base',
                 icon: '🐍',
-                description: '3D sinusoidal snakes slithering through the void',
+                description: 'Sinuous neon serpents writhe through the darkness',
                 theme: { accent: '#22c55e', rgb: '34,197,94', glow: '#84cc16' },
             },
             bloodmoon: {
-                name: 'Blood Moon',
+                name: 'Crimson Eclipse',
                 tier: 'base',
                 icon: '🌑',
-                description: 'Crimson eclipse ambience — dark and dramatic',
+                description: 'Blood-red crescents pulse under a dying moon',
                 theme: { accent: '#ef4444', rgb: '239,68,68', glow: '#dc2626' },
             },
             cyber: {
-                name: 'Cyber Grid',
+                name: 'Neon Circuit',
                 tier: 'base',
                 icon: '⚡',
-                description: 'Neon-washed cyberpunk atmosphere in cyan and purple',
+                description: 'Lightning bolts crackle through a cyberpunk grid of cyan and violet',
                 theme: { accent: '#22d3ee', rgb: '34,211,238', glow: '#a855f7' },
             },
             golden: {
-                name: 'Golden Vault',
+                name: 'Gilded Throne',
                 tier: 'diamond',
                 icon: '👑',
-                description: 'Exclusive gilded splendour with shimmering gold veins',
+                description: 'Gold stars and jewel sparks rain down in gilded splendour',
                 theme: { accent: '#fbbf24', rgb: '251,191,36', glow: '#f59e0b' },
             },
             sakura: {
-                name: 'Sakura Storm',
+                name: 'Blossom Rain',
                 tier: 'diamond',
                 icon: '🌸',
-                description: 'Soft pink petal cascade drifting through dusk',
+                description: 'Pink cherry petals spiral softly through a twilight breeze',
                 theme: { accent: '#f472b6', rgb: '244,114,182', glow: '#fb7185' },
             },
             lava: {
-                name: 'Lava Flow',
+                name: 'Magma Core',
                 tier: 'diamond',
                 icon: '🌋',
-                description: 'Molten magma surging beneath the surface',
+                description: 'Molten lava blobs slowly churn up from the earth\'s core',
                 theme: { accent: '#f97316', rgb: '249,115,22', glow: '#ef4444' },
             },
             arctic: {
-                name: 'Arctic Freeze',
+                name: 'Frozen Tundra',
                 tier: 'diamond',
                 icon: '❄️',
-                description: 'Crisp ice and glacial depths — clean and cold',
+                description: 'Crystalline snowflakes fall silently over a glacial wasteland',
                 theme: { accent: '#7dd3fc', rgb: '125,211,252', glow: '#bae6fd' },
             },
             amethyst: {
-                name: 'Royal Amethyst',
+                name: 'Crystal Crown',
                 tier: 'diamond',
-                icon: '💜',
-                description: 'Deep jewel-toned royalty in violet and indigo',
+                icon: '💎',
+                description: 'Spinning gem facets catch the light in deep violet and amethyst',
                 theme: { accent: '#a78bfa', rgb: '167,139,250', glow: '#8b5cf6' },
+            },
+            matrix: {
+                name: 'The Matrix',
+                tier: 'diamond',
+                icon: '💻',
+                description: 'Green digital rain pours endlessly as the simulation runs',
+                theme: { accent: '#22c55e', rgb: '34,197,94', glow: '#4ade80' },
+            },
+            cosmos: {
+                name: 'Eldritch Void',
+                tier: 'diamond',
+                icon: '🐙',
+                description: 'Ancient cosmic horror stirs between galaxies in purple and deep emerald',
+                theme: { accent: '#8b5cf6', rgb: '139,92,246', glow: '#10b981' },
+            },
+        };
             },
             matrix: {
                 name: 'Matrix Code',
@@ -3752,67 +4029,67 @@
         // ── Geometric Shape Palette ──
         // Per-preset shape type distributions — gives each theme its own visual language
         const BG_SHAPE_TYPES = {
-            default:   ['triangle','hexagon','circle','rect','diamond'],
-            aurora:    ['hexagon','circle','bubble','hexagon','circle','diamond','bubble'],
-            sunrise:   ['circle','diamond','circle','droplet','circle','diamond'],
-            deepsea:   ['circle','bubble','hexagon','circle','ring','bubble'],
-            void:      ['triangle','diamond','triangle','hexagon','crescent','rect'],
-            prism:     ['triangle','diamond','triangle','diamond','triangle','hexagon'],
-            starlight: ['star','hexagon','star','circle','diamond','star','hexagon'],
-            // New themes
-            snake:     ['snake','snake','snake','snake','snake','snake'],
-            bloodmoon: ['circle','crescent','ring','crescent','circle','ring','crescent'],
-            cyber:     ['rect','lightning','rect','lightning','hexagon','rect','lightning'],
-            golden:    ['star','diamond','star','diamond','star','hexagon','star'],
-            sakura:    ['droplet','droplet','circle','droplet','diamond','droplet','circle'],
-            lava:      ['circle','ring','circle','triangle','ring','circle'],
-            arctic:    ['snowflake','snowflake','hexagon','snowflake','star','snowflake','ring'],
-            amethyst:  ['diamond','hexagon','star','diamond','bubble','diamond'],
-            matrix:    ['rect','rect','rect','rect','rect','rect'],
-            cosmos:    ['meteor','star','meteor','ring','hexagon','meteor','star'],
+            // Free tier — varied, colourful, instantly recognisable
+            default:   ['ring','circle','ring','bubble','ring','circle'],          // orbital rings
+            sunrise:   ['triangle','diamond','triangle','triangle','diamond'],     // blazing rays & sparks
+            deepsea:   ['bubble','bubble','bubble','circle','bubble','bubble'],    // bioluminescent bubbles
+            snake:     ['snake','snake','snake','snake','snake','snake'],          // serpents (unique renderer)
+            bloodmoon: ['crescent','crescent','ring','crescent','crescent','ring'],// moons & eclipse rings
+            cyber:     ['lightning','lightning','rect','lightning','lightning'],   // electric bolts
+            // Diamond tier — each completely distinct
+            aurora:    ['ring','circle','ring','bubble','ring','circle'],          // large glowing orbs
+            void:      ['ring','ring','ring','ring','ring'],                       // nothing but expanding rings
+            prism:     ['triangle','diamond','triangle','diamond','triangle'],     // only sharp shards
+            starlight: ['star','meteor','star','star','meteor','star'],            // stars & streaks
+            golden:    ['star','diamond','star','star','diamond'],                 // crowns & gems
+            sakura:    ['droplet','droplet','droplet','droplet','droplet'],        // only petals
+            lava:      ['bubble','circle','bubble','bubble','circle','bubble'],    // rising lava blobs
+            arctic:    ['snowflake','snowflake','snowflake','snowflake','snowflake'],// only snowflakes
+            amethyst:  ['diamond','diamond','hexagon','diamond','diamond'],        // gem facets
+            matrix:    ['rect','rect','rect','rect','rect','rect'],               // digital rain
+            cosmos:    ['meteor','ring','meteor','meteor','ring','meteor'],        // eldritch streaks
         };
 
         const BG_SHAPE_PALETTES = {
-            default:   ['rgba(59,130,246,',  'rgba(45,212,191,', 'rgba(99,102,241,',  'rgba(168,85,247,',  'rgba(14,165,233,'],
-            aurora:    ['rgba(34,211,238,',  'rgba(16,185,129,', 'rgba(59,130,246,',  'rgba(45,212,191,',  'rgba(6,182,212,'],
+            default:   ['rgba(59,130,246,',  'rgba(45,212,191,', 'rgba(99,102,241,',  'rgba(14,165,233,',  'rgba(56,189,248,'],
+            aurora:    ['rgba(45,212,191,',  'rgba(56,189,248,', 'rgba(34,211,238,',  'rgba(16,185,129,',  'rgba(96,165,250,'],
             sunrise:   ['rgba(251,113,133,', 'rgba(253,186,116,','rgba(251,191,36,',  'rgba(249,115,22,',  'rgba(244,63,94,'],
-            deepsea:   ['rgba(6,182,212,',   'rgba(52,211,153,', 'rgba(5,150,105,',   'rgba(99,102,241,',  'rgba(14,116,144,'],
-            void:      ['rgba(124,58,237,',  'rgba(139,92,246,', 'rgba(167,139,250,', 'rgba(76,29,149,',   'rgba(192,132,252,'],
-            prism:     ['rgba(236,72,153,',  'rgba(245,158,11,', 'rgba(16,185,129,',  'rgba(239,68,68,',   'rgba(59,130,246,'],
-            starlight: ['rgba(165,180,252,', 'rgba(196,181,253,','rgba(147,197,253,', 'rgba(167,243,208,', 'rgba(253,230,138,'],
-            // New themes
+            deepsea:   ['rgba(6,182,212,',   'rgba(8,145,178,',  'rgba(14,116,144,',  'rgba(56,189,248,',  'rgba(103,232,249,'],
+            void:      ['rgba(99,102,241,',  'rgba(129,140,248,','rgba(167,139,250,', 'rgba(76,29,149,',   'rgba(192,132,252,'],
+            prism:     ['rgba(236,72,153,',  'rgba(245,158,11,', 'rgba(34,211,238,',  'rgba(239,68,68,',   'rgba(168,85,247,'],
+            starlight: ['rgba(165,180,252,', 'rgba(196,181,253,','rgba(147,197,253,', 'rgba(253,230,138,', 'rgba(224,231,255,'],
             snake:     ['rgba(74,222,128,',  'rgba(34,197,94,',  'rgba(21,128,61,',   'rgba(5,150,105,',   'rgba(163,230,53,'],
-            bloodmoon: ['rgba(239,68,68,',   'rgba(220,38,38,',  'rgba(185,28,28,',   'rgba(248,113,113,', 'rgba(254,202,202,'],
-            cyber:     ['rgba(6,182,212,',   'rgba(139,92,246,', 'rgba(14,165,233,',  'rgba(168,85,247,',  'rgba(34,211,238,'],
-            golden:    ['rgba(251,191,36,',  'rgba(245,158,11,', 'rgba(217,119,6,',   'rgba(253,230,138,', 'rgba(251,211,84,'],
+            bloodmoon: ['rgba(239,68,68,',   'rgba(220,38,38,',  'rgba(185,28,28,',   'rgba(248,113,113,', 'rgba(252,165,165,'],
+            cyber:     ['rgba(34,211,238,',  'rgba(6,182,212,',  'rgba(168,85,247,',  'rgba(139,92,246,',  'rgba(232,121,249,'],
+            golden:    ['rgba(251,191,36,',  'rgba(245,158,11,', 'rgba(253,224,71,',  'rgba(253,230,138,', 'rgba(217,119,6,'],
             sakura:    ['rgba(244,114,182,', 'rgba(236,72,153,', 'rgba(251,207,232,', 'rgba(249,168,212,', 'rgba(253,164,175,'],
             lava:      ['rgba(249,115,22,',  'rgba(234,88,12,',  'rgba(239,68,68,',   'rgba(251,146,60,',  'rgba(253,186,116,'],
             arctic:    ['rgba(186,230,253,', 'rgba(147,197,253,','rgba(56,189,248,',  'rgba(224,242,254,', 'rgba(204,251,241,'],
-            amethyst:  ['rgba(167,139,250,', 'rgba(196,181,253,','rgba(124,58,237,',  'rgba(139,92,246,',  'rgba(216,180,254,'],
+            amethyst:  ['rgba(167,139,250,', 'rgba(196,181,253,','rgba(124,58,237,',  'rgba(216,180,254,', 'rgba(232,121,249,'],
             matrix:    ['rgba(34,197,94,',   'rgba(74,222,128,', 'rgba(16,185,129,',  'rgba(52,211,153,',  'rgba(163,230,53,'],
-            cosmos:    ['rgba(126,34,206,',  'rgba(88,28,135,',  'rgba(6,78,59,',     'rgba(167,139,250,', 'rgba(6,95,70,'],
+            cosmos:    ['rgba(139,92,246,',  'rgba(88,28,135,',  'rgba(6,95,70,',     'rgba(167,139,250,', 'rgba(16,185,129,'],
         };
 
         // Per-preset behavior configs: speed, density, rotation, size, opacity ranges
         const BG_PRESET_BEHAVIORS = {
             // preset: { countMul, speedMul, vy_bias, rotMul, sizeMul, opacityMul, pulse, spinFast }
-            default:   { countMul:1.0, speedMul:1.0,  vy_bias: 0,     rotMul:1.0, sizeMul:1.0, opacityMul:1.0  },
-            aurora:    { countMul:0.9, speedMul:0.65, vy_bias: 0,     rotMul:0.6, sizeMul:1.2, opacityMul:0.9  },
-            sunrise:   { countMul:1.0, speedMul:0.85, vy_bias: 0,     rotMul:1.0, sizeMul:1.0, opacityMul:1.0  },
-            deepsea:   { countMul:1.1, speedMul:0.5,  vy_bias: 0,     rotMul:0.4, sizeMul:1.3, opacityMul:0.8  },
-            void:      { countMul:0.9, speedMul:0.7,  vy_bias: 0,     rotMul:2.0, sizeMul:0.9, opacityMul:0.85 },
-            prism:     { countMul:1.1, speedMul:1.1,  vy_bias: 0,     rotMul:1.5, sizeMul:0.9, opacityMul:1.1  },
-            starlight: { countMul:1.3, speedMul:0.45, vy_bias: 0,     rotMul:0.3, sizeMul:1.1, opacityMul:0.7, spinFast:false },
-            snake:     { countMul:1.6, speedMul:1.5,  vy_bias: 0,     rotMul:0.05,sizeMul:1.2, opacityMul:1.0  },
-            bloodmoon: { countMul:0.8, speedMul:0.55, vy_bias: 0,     rotMul:0.3, sizeMul:1.4, opacityMul:1.0, pulse:true },
-            cyber:     { countMul:1.4, speedMul:1.3,  vy_bias: 0.05,  rotMul:0.5, sizeMul:0.8, opacityMul:1.2  },
-            golden:    { countMul:1.0, speedMul:0.75, vy_bias: 0,     rotMul:2.5, sizeMul:1.0, opacityMul:1.0  },
-            sakura:    { countMul:1.5, speedMul:0.4,  vy_bias: 0.09,  rotMul:1.2, sizeMul:0.75,opacityMul:0.9  },
-            lava:      { countMul:1.0, speedMul:0.55, vy_bias:-0.12,  rotMul:0.5, sizeMul:1.3, opacityMul:1.0  },
-            arctic:    { countMul:1.2, speedMul:0.3,  vy_bias: 0.04,  rotMul:0.15,sizeMul:1.1, opacityMul:0.75 },
-            amethyst:  { countMul:1.0, speedMul:0.8,  vy_bias: 0,     rotMul:1.8, sizeMul:1.0, opacityMul:1.0  },
-            matrix:    { countMul:1.8, speedMul:0.9,  vy_bias: 0.3,   rotMul:0.0, sizeMul:0.7, opacityMul:1.3  },
-            cosmos:    { countMul:0.9, speedMul:0.65, vy_bias:-0.05,  rotMul:0.2, sizeMul:1.5, opacityMul:0.85 },
+            default:   { countMul:0.8, speedMul:0.5,  vy_bias: 0,     rotMul:0.2, sizeMul:1.6, opacityMul:0.8  }, // slow drifting orbital rings
+            aurora:    { countMul:0.6, speedMul:0.35, vy_bias:-0.03,  rotMul:0.1, sizeMul:2.0, opacityMul:0.65 }, // huge slow glowing orbs
+            sunrise:   { countMul:1.2, speedMul:1.2,  vy_bias:-0.06,  rotMul:2.0, sizeMul:0.9, opacityMul:1.2  }, // fast spinning rising rays
+            deepsea:   { countMul:1.4, speedMul:0.3,  vy_bias:-0.08,  rotMul:0.0, sizeMul:1.1, opacityMul:0.7  }, // slow rising bubbles
+            void:      { countMul:0.7, speedMul:0.4,  vy_bias: 0,     rotMul:0.0, sizeMul:2.2, opacityMul:0.55 }, // huge still rings barely moving
+            prism:     { countMul:1.3, speedMul:1.4,  vy_bias: 0,     rotMul:3.0, sizeMul:0.75,opacityMul:1.2  }, // fast spinning shards
+            starlight: { countMul:1.0, speedMul:0.6,  vy_bias: 0.04,  rotMul:0.0, sizeMul:1.3, opacityMul:0.8  }, // slowly falling stars/meteors
+            snake:     { countMul:1.6, speedMul:1.5,  vy_bias: 0,     rotMul:0.05,sizeMul:1.2, opacityMul:1.0  }, // fast purposeful snakes
+            bloodmoon: { countMul:0.8, speedMul:0.5,  vy_bias: 0,     rotMul:0.15,sizeMul:1.6, opacityMul:1.0, pulse:true }, // large slow pulsing crescents
+            cyber:     { countMul:1.6, speedMul:1.6,  vy_bias: 0.08,  rotMul:0.0, sizeMul:0.8, opacityMul:1.4  }, // fast downward lightning
+            golden:    { countMul:1.2, speedMul:0.7,  vy_bias: 0.05,  rotMul:3.5, sizeMul:0.9, opacityMul:1.1  }, // spinning golden stars falling
+            sakura:    { countMul:1.8, speedMul:0.35, vy_bias: 0.09,  rotMul:1.2, sizeMul:0.7, opacityMul:0.9  }, // dense gentle petal rain
+            lava:      { countMul:1.0, speedMul:0.45, vy_bias:-0.14,  rotMul:0.2, sizeMul:1.5, opacityMul:1.0  }, // slow rising lava blobs
+            arctic:    { countMul:1.4, speedMul:0.25, vy_bias: 0.05,  rotMul:0.1, sizeMul:1.2, opacityMul:0.7  }, // very slow falling snowflakes
+            amethyst:  { countMul:1.0, speedMul:0.7,  vy_bias: 0,     rotMul:4.0, sizeMul:1.0, opacityMul:1.0  }, // fast-spinning gem facets
+            matrix:    { countMul:1.8, speedMul:0.9,  vy_bias: 0.3,   rotMul:0.0, sizeMul:0.7, opacityMul:1.3  }, // dense digital rain
+            cosmos:    { countMul:0.8, speedMul:0.55, vy_bias: 0.02,  rotMul:0.4, sizeMul:1.8, opacityMul:0.8  }, // big slow eldritch meteors
         };
 
         function _initBgShapes(preset) {
@@ -4291,19 +4568,31 @@
                 root.style.setProperty('--theme-glow', t.glow);
                 root.style.setProperty('--accent-blue', t.accent); // overrides the base variable
             }
-            // Apply per-theme classes to right panel and KC NOW wrapper
-            const _rp  = document.getElementById('right-panel');
-            const _qaW = document.getElementById('quick-actions-wrapper');
+            // Apply per-theme classes to right panel, KC NOW wrapper, dropdown, and launchpad
+            const _rp     = document.getElementById('right-panel');
+            const _qaW    = document.getElementById('quick-actions-wrapper');
+            const _qaMenu = document.getElementById('quick-actions-menu');
+            const _lp     = document.getElementById('kc-launchpad');
+            const _DIAMOND_RP_CLASSES = ['rp-scan','rp-aurora','rp-void','rp-prism','rp-starlight','rp-golden','rp-sakura','rp-lava','rp-arctic','rp-amethyst','rp-cosmos'];
             if (_rp) {
                 _rp.className = (_rp.className || '').replace(/\brp-theme-\S+/g, '').trim();
+                _DIAMOND_RP_CLASSES.forEach(c => _rp.classList.remove(c));
                 _rp.classList.add(`rp-theme-${preset}`);
-                // Matrix gets the scanline effect
                 if (preset === 'matrix') _rp.classList.add('rp-scan');
-                else _rp.classList.remove('rp-scan');
+                else if (['aurora','void','prism','starlight','golden','sakura','lava','arctic','amethyst','cosmos'].includes(preset))
+                    _rp.classList.add(`rp-${preset}`);
             }
             if (_qaW) {
                 _qaW.className = (_qaW.className || '').replace(/\bqa-theme-\S+/g, '').trim();
                 _qaW.classList.add(`qa-theme-${preset}`);
+            }
+            if (_qaMenu) {
+                _qaMenu.className = (_qaMenu.className || '').replace(/\bqa-theme-\S+/g, '').trim();
+                _qaMenu.classList.add(`qa-theme-${preset}`);
+            }
+            if (_lp) {
+                _lp.className = (_lp.className || '').replace(/\blp-\S+/g, '').trim();
+                _lp.classList.add(`lp-${preset}`);
             }
             if (!backgroundScene) return;
             backgroundScene.className = `kc-bg-scene ${preset}`;
@@ -8471,14 +8760,23 @@
             initDynamicBackground();
             switchTab('home');
 
-            // Apply initial theme classes to right panel + KC NOW on load
+            // Apply initial theme classes to right panel, KC NOW wrapper, dropdown + launchpad on load
             (function() {
                 const preset = (localStorage.getItem('kc-background-prefs') &&
                     JSON.parse(localStorage.getItem('kc-background-prefs')).preset) || 'default';
-                const rp  = document.getElementById('right-panel');
-                const qaW = document.getElementById('quick-actions-wrapper');
-                if (rp)  { rp.classList.add(`rp-theme-${preset}`); if (preset === 'matrix') rp.classList.add('rp-scan'); }
-                if (qaW) qaW.classList.add(`qa-theme-${preset}`);
+                const rp     = document.getElementById('right-panel');
+                const qaW    = document.getElementById('quick-actions-wrapper');
+                const qaMenu = document.getElementById('quick-actions-menu');
+                const lp     = document.getElementById('kc-launchpad');
+                const DIAMOND_RP = ['aurora','void','prism','starlight','golden','sakura','lava','arctic','amethyst','cosmos'];
+                if (rp) {
+                    rp.classList.add(`rp-theme-${preset}`);
+                    if (preset === 'matrix') rp.classList.add('rp-scan');
+                    else if (DIAMOND_RP.includes(preset)) rp.classList.add(`rp-${preset}`);
+                }
+                if (qaW)    qaW.classList.add(`qa-theme-${preset}`);
+                if (qaMenu) qaMenu.classList.add(`qa-theme-${preset}`);
+                if (lp)     lp.classList.add(`lp-${preset}`);
             })();
 
             window.addEventListener('keydown', e => {
