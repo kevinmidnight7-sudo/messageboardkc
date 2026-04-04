@@ -1879,7 +1879,7 @@
                         <div class="flex items-center gap-5 z-10 min-w-0 flex-1">
                             <div class="relative group flex-shrink-0">
                                 <div class="absolute -inset-1 bg-blue-500 rounded-full blur opacity-25 group-hover:opacity-50 transition"></div>
-                                <img id="user-avatar" src="https://via.placeholder.com/100" class="relative w-20 h-20 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
+                                <img id="user-avatar" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png" class="relative w-20 h-20 rounded-full border-4 border-[#1e293b] object-cover" alt="Avatar">
                                 <div id="online-indicator" class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 border-4 border-[#1e293b] rounded-full hidden"></div>
                             </div>
                             <div class="min-w-0">
@@ -1985,7 +1985,7 @@
                         <div class="flex items-end justify-between mb-4">
                             <div id="pf-avatar-wrap" class="relative flex-shrink-0">
                                 <div class="absolute -inset-1.5 rounded-full blur-md opacity-40" id="pf-avatar-glow" style="background:var(--theme-accent,#3b82f6);"></div>
-                                <img id="pf-avatar" src="https://via.placeholder.com/100"
+                                <img id="pf-avatar" src="https://kevinmidnight7-sudo.github.io/messageboardkc/1.png"
                                      class="relative w-24 h-24 rounded-full border-4 object-cover" style="border-color:var(--bg-primary,#080c14);" alt="Avatar">
                                 <div class="absolute bottom-1 right-1 w-5 h-5 bg-green-500 rounded-full border-4" style="border-color:var(--bg-primary,#080c14);"></div>
                             </div>
@@ -2788,7 +2788,7 @@
                     if (discordId) return _found(discordId, true); // cache to RTDB for speed
                 }
             } catch(e) {
-                console.warn('[getDiscordIdFromKcUid] Firestore read failed:', e.code || e.message);
+                if (e.code !== 'permission-denied') console.warn('[getDiscordIdFromKcUid] Firestore read failed:', e.code || e.message);
             }
 
             // 1. RTDB fast path: Discord ID persisted from a previous lookup
@@ -3780,7 +3780,7 @@
             panel.innerHTML = friendsList.length > 0 ? friendsList.map(friend => `
                 <div class="flex items-center gap-3 p-3 glass rounded-2xl hover:bg-white/10 cursor-pointer" onclick="window.openKcProfile('${friend.uid}')">
                     <div class="relative">
-                        <img src="${friend.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full">
+                        <img src="${friend.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full">
                         <div class="absolute bottom-0 right-0 w-3 h-3 ${friend.online ? 'bg-green-500' : 'bg-gray-500'} rounded-full border-2 border-[#1e293b]"></div>
                     </div>
                     <div class="flex-1">
@@ -3832,7 +3832,7 @@
                     <p class="text-xs text-gray-500 font-black uppercase mb-2">Search Results</p>
                     ${results.slice(0, 10).map(user => `
                         <div class="flex items-center gap-3 p-3 glass rounded-2xl">
-                            <img src="${user.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full">
                             <div class="flex-1">
                                 <p class="font-bold text-sm">${user.displayName}</p>
                             </div>
@@ -6924,7 +6924,7 @@
                             <div class="space-y-2">
                                 ${profiles.map((m,i)=>`
                                     <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up" style="animation-delay:${i*40}ms" onclick="window.openKcProfile && window.openKcProfile('${m.uid}')">
-                                        <img src="${m.photoURL||'https://via.placeholder.com/32'}" class="w-8 h-8 rounded-full object-cover">
+                                        <img src="${m.photoURL||'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-8 h-8 rounded-full object-cover">
                                         <span class="flex-1 font-bold">${m.displayName||'Unknown'}</span>
                                         ${m.uid===clan.leaderId?'<span class="text-xs text-yellow-400 font-bold"><i class="fa-solid fa-crown mr-1"></i>Leader</span>':''}
                                         ${m.overall?`<span class="text-xs text-gray-400">${m.overall}</span>`:''}
@@ -8306,7 +8306,7 @@
             panel.innerHTML = friendsList.length > 0 ? friendsList.map(friend => `
                 <div class="flex items-center gap-3 p-3 glass rounded-2xl hover:bg-white/10 cursor-pointer" onclick="window.openKcProfile('${friend.uid}')">
                     <div class="relative">
-                        <img src="${friend.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover">
+                        <img src="${friend.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
                         <div class="absolute bottom-0 right-0 w-3 h-3 ${friend.online ? 'bg-green-500' : 'bg-gray-500'} rounded-full border-2 border-[#1e293b]"></div>
                     </div>
                     <div class="flex-1">
@@ -8363,7 +8363,7 @@
                 Promise.all(uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))).then(users => {
                     list.innerHTML = users.map(u => `
                         <div class="flex items-center gap-3 p-3 glass rounded-2xl">
-                            <img src="${u.avatar || 'https://via.placeholder.com/40'}" class="w-9 h-9 rounded-full object-cover">
+                            <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-9 h-9 rounded-full object-cover">
                             <div class="flex-1 min-w-0">
                                 <p class="font-bold text-sm truncate">${u.displayName || 'Unknown'}</p>
                             </div>
@@ -8396,7 +8396,7 @@
                     <p class="text-xs text-gray-500 font-black uppercase mb-2">Search Results</p>
                     ${results.slice(0, 10).map(user => `
                         <div class="flex items-center gap-3 p-3 glass rounded-2xl">
-                            <img src="${user.avatar || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded-full object-cover">
+                            <img src="${user.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
                             <div class="flex-1">
                                 <p class="font-bold text-sm">${user.displayName}</p>
                             </div>
