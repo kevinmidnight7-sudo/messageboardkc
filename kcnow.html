@@ -2397,12 +2397,12 @@
 
             </div>
         </aside>
-    </main>
 
-    <!-- Mobile: semi-transparent backdrop behind the feed sheet -->
+    <!-- Mobile: semi-transparent backdrop — inside <main> so it shares the same stacking context as #kc-sidebar -->
     <div id="mobile-feed-backdrop"
          onclick="closeMobileFeed()"
          style="display:none;position:fixed;inset:0;z-index:9490;background:rgba(0,0,0,0.6);"></div>
+    </main>
 
     <!-- Mobile: floating Live button (hidden on desktop, shown via CSS on < 1024px) -->
     <button id="mobile-live-btn"
