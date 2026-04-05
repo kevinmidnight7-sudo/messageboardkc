@@ -2288,7 +2288,7 @@
                 <div class="px-5 pt-4 pb-3 bg-white/5 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,0.05);">
                     <h3 class="font-black text-sm tracking-widest" style="color:var(--theme-accent,#3b82f6)">KC NOW</h3>
                     <div class="flex items-center gap-2">
-                        <button onclick="openMobileFeed()" class="lg:hidden text-xs text-gray-500 p-1" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                        <button onclick="closeMobileFeed()" class="lg:hidden text-xs text-gray-500 p-1" title="Close" style="touch-action:manipulation;"><i class="fa-solid fa-xmark"></i></button>
                         <span class="flex h-2 w-2 rounded-full animate-pulse" style="background:var(--theme-accent,#3b82f6)"></span>
                     </div>
                 </div>
@@ -2413,6 +2413,7 @@
                    border:1px solid rgba(59,130,246,0.35);
                    box-shadow:0 0 18px rgba(59,130,246,0.35),0 4px 16px rgba(0,0,0,0.4);
                    flex-direction:column;align-items:center;justify-content:center;gap:2px;
+                   touch-action:manipulation;
                    transition:transform 0.15s,box-shadow 0.15s;">
         <span style="font-size:1.1rem;line-height:1;">📡</span>
         <span style="font-size:0.52rem;font-weight:800;letter-spacing:0.12em;color:#60a5fa;text-transform:uppercase;">Live</span>
@@ -3356,19 +3357,28 @@
         }
 
         // --- MOBILE FEED SHEET ---
+        let _mobileSheetOpenedAt = 0;
+
         function openMobileFeed() {
             const sidebar  = document.getElementById('kc-sidebar');
             const backdrop = document.getElementById('mobile-feed-backdrop');
             const btn      = document.getElementById('mobile-live-btn');
             if (!sidebar) return;
+            _mobileSheetOpenedAt = Date.now();
             sidebar.classList.add('mobile-open');
-            if (backdrop) backdrop.style.display = 'block';
+            if (backdrop) {
+                backdrop.style.display = 'block';
+                // Block backdrop for 600ms to absorb any ghost-click from the Live button tap
+                backdrop.style.pointerEvents = 'none';
+                setTimeout(() => { if (backdrop) backdrop.style.pointerEvents = ''; }, 600);
+            }
             if (btn) btn.style.transform = 'scale(0.92)';
-            // Prevent body scroll behind sheet
             document.body.style.overflow = 'hidden';
         }
 
         function closeMobileFeed() {
+            // Ignore accidental close within 400ms of opening (ghost-click protection)
+            if (Date.now() - _mobileSheetOpenedAt < 400) return;
             const sidebar  = document.getElementById('kc-sidebar');
             const backdrop = document.getElementById('mobile-feed-backdrop');
             const btn      = document.getElementById('mobile-live-btn');
@@ -3521,7 +3531,8 @@
         function loadBoardPanel() {
             if (boardLoaded) { renderBoardPosts(); return; }
             boardLoaded = true;
-            db.ref('board_posts').orderByChild('timestamp').limitToLast(40).on('value', snap => {
+            // Uses the same 'messages' collection as index.html (fields: user, uid, text, time, likes, likedBy, reactions, replies)
+            db.ref('messages').orderByChild('time').limitToLast(40).on('value', snap => {
                 boardPosts = [];
                 snap.forEach(child => boardPosts.unshift({ id: child.key, ...child.val() }));
                 renderBoardPosts();
@@ -3559,16 +3570,20 @@
 
         function _buildBoardPost(p) {
             const myUid = currentUser?.uid;
-            const liked = myUid && p.likes && p.likes[myUid];
-            const likeCount = p.likes ? Object.keys(p.likes).length : 0;
-            const commentCount = p.comments ? Object.keys(p.comments).length : 0;
+            // messages collection uses likedBy:{uid:true} for who liked, likes as numeric count
+            const liked = myUid && p.likedBy && p.likedBy[myUid];
+            const likeCount = p.likes || 0;
+            // replies = comments in messages schema
+            const commentCount = p.replies ? Object.keys(p.replies).length : 0;
             const reactions = p.reactions || {};
-            // top 2 reaction emojis
             const reactionHtml = Object.entries(reactions).map(([emo, users]) => {
                 const count = Object.keys(users).length;
                 const myReacted = myUid && users[myUid];
                 return `<button onclick="toggleBoardReaction('${p.id}','${emo}')" class="board-reaction-btn ${myReacted ? 'liked' : ''}">${emo} ${count}</button>`;
             }).join('');
+            // messages uses p.user (not p.displayName), p.time (not p.timestamp)
+            const authorName = p.user || p.displayName || 'Unknown';
+            const ts = p.time || p.timestamp;
             return `
             <div class="board-post">
                 <div class="flex items-center gap-2 mb-2">
@@ -3576,8 +3591,8 @@
                          class="w-7 h-7 rounded-full object-cover flex-shrink-0 cursor-pointer"
                          onclick="window.openKcProfile('${p.uid}')">
                     <div class="flex-1 min-w-0">
-                        <span class="text-xs font-bold cursor-pointer hover:underline" onclick="window.openKcProfile('${p.uid}')">${p.displayName || 'Unknown'}</span>
-                        <span class="text-[10px] text-gray-600 ml-1.5">${p.timestamp ? timeAgo(p.timestamp) : ''}</span>
+                        <span class="text-xs font-bold cursor-pointer hover:underline" onclick="window.openKcProfile('${p.uid}')">${escapeHtml(authorName)}</span>
+                        <span class="text-[10px] text-gray-600 ml-1.5">${ts ? timeAgo(ts) : ''}</span>
                     </div>
                     ${myUid === p.uid ? `<button onclick="deleteBoardPost('${p.id}')" class="text-gray-600 hover:text-red-400 transition text-[10px] p-1" style="touch-action:manipulation;"><i class="fa-solid fa-trash"></i></button>` : ''}
                 </div>
@@ -3633,12 +3648,13 @@
             if (!text) { showToast('Write something first!', 'warning'); return; }
             const post = {
                 uid: currentUser.uid,
-                displayName: currentUserData?.displayName || currentUser.displayName || 'Unknown',
+                user: currentUserData?.displayName || currentUser.displayName || 'Unknown',
                 avatar: currentUserData?.avatar || currentUser.photoURL || '',
                 text,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                time: firebase.database.ServerValue.TIMESTAMP,
+                likes: 0,
             };
-            db.ref('board_posts').push(post).then(() => {
+            db.ref('messages').push(post).then(() => {
                 closeBoardCompose();
                 showToast('Posted!', 'success');
             }).catch(() => showToast('Failed to post', 'error'));
@@ -3646,9 +3662,16 @@
 
         function toggleBoardLike(postId) {
             if (!currentUser) { openAuthModal(); return; }
-            const ref = db.ref(`board_posts/${postId}/likes/${currentUser.uid}`);
-            ref.once('value').then(snap => {
-                snap.exists() ? ref.remove() : ref.set(true);
+            const likedByRef = db.ref(`messages/${postId}/likedBy/${currentUser.uid}`);
+            const likesRef = db.ref(`messages/${postId}/likes`);
+            likedByRef.once('value').then(snap => {
+                if (snap.exists()) {
+                    likedByRef.remove();
+                    likesRef.transaction(n => Math.max(0, (n || 0) - 1));
+                } else {
+                    likedByRef.set(true);
+                    likesRef.transaction(n => (n || 0) + 1);
+                }
             });
         }
 
@@ -3668,30 +3691,31 @@
 
         function toggleBoardReaction(postId, emoji) {
             if (!currentUser) { openAuthModal(); return; }
-            const ref = db.ref(`board_posts/${postId}/reactions/${emoji}/${currentUser.uid}`);
+            const ref = db.ref(`messages/${postId}/reactions/${emoji}/${currentUser.uid}`);
             ref.once('value').then(snap => { snap.exists() ? ref.remove() : ref.set(true); });
         }
 
         function deleteBoardPost(postId) {
             if (!currentUser) return;
             kcConfirm('Delete this post?', () => {
-                db.ref(`board_posts/${postId}`).remove().catch(() => showToast('Failed to delete', 'error'));
+                db.ref(`messages/${postId}`).remove().catch(() => showToast('Failed to delete', 'error'));
             });
         }
 
         function openBoardComments(postId) {
             const post = boardPosts.find(p => p.id === postId);
             if (!post) return;
-            const comments = Object.entries(post.comments || {})
-                .sort((a,b) => (a[1].timestamp||0) - (b[1].timestamp||0));
+            // messages schema uses 'replies' for threaded responses
+            const replies = Object.entries(post.replies || {})
+                .sort((a,b) => (a[1].time||a[1].timestamp||0) - (b[1].time||b[1].timestamp||0));
             openModal(`Comments`, `
                 <div class="flex flex-col gap-3">
                     <div class="space-y-3 max-h-[40vh] overflow-y-auto custom-scroll">
-                        ${comments.length ? comments.map(([cid, c]) => `
+                        ${replies.length ? replies.map(([rid, c]) => `
                             <div class="flex items-start gap-2">
                                 <img src="${c.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5">
                                 <div class="flex-1 glass p-2.5 rounded-xl">
-                                    <p class="text-xs font-bold">${escapeHtml(c.displayName)}<span class="text-gray-600 font-normal ml-1.5">${timeAgo(c.timestamp)}</span></p>
+                                    <p class="text-xs font-bold">${escapeHtml(c.user || c.displayName || 'Unknown')}<span class="text-gray-600 font-normal ml-1.5">${timeAgo(c.time || c.timestamp)}</span></p>
                                     <p class="text-xs text-gray-300 mt-0.5">${escapeHtml(c.text)}</p>
                                 </div>
                             </div>
@@ -3717,12 +3741,12 @@
             if (!text) return;
             const comment = {
                 uid: currentUser.uid,
-                displayName: currentUserData?.displayName || currentUser.displayName || 'Unknown',
+                user: currentUserData?.displayName || currentUser.displayName || 'Unknown',
                 avatar: currentUserData?.avatar || currentUser.photoURL || '',
                 text,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                time: firebase.database.ServerValue.TIMESTAMP,
             };
-            db.ref(`board_posts/${postId}/comments`).push(comment).then(() => {
+            db.ref(`messages/${postId}/replies`).push(comment).then(() => {
                 closeModal();
                 showToast('Comment added!', 'success');
             }).catch(() => showToast('Failed to comment', 'error'));
@@ -3747,11 +3771,11 @@
                     addFeedItem({ type:'clips', title:`${friend.displayName || 'Friend'} posted a clip!`, user:friend.displayName, uid:friend.uid, detail:p.caption||'New clip', color:'text-blue-400', icon:'fa-clapperboard' });
                 });
                 _friendActivityRefs.push(clipRef);
-                // Board post by friend
-                const boardRef = db.ref('board_posts').orderByChild('uid').equalTo(friend.uid).limitToLast(1);
+                // Board post by friend (messages collection)
+                const boardRef = db.ref('messages').orderByChild('uid').equalTo(friend.uid).limitToLast(1);
                 boardRef.on('child_added', snap => {
                     const p = snap.val();
-                    if (!p || Date.now() - (p.timestamp||0) > 600000) return;
+                    if (!p || Date.now() - (p.time||p.timestamp||0) > 600000) return;
                     addFeedItem({ type:'users', title:`${friend.displayName || 'Friend'} posted`, user:friend.displayName, uid:friend.uid, detail:(p.text||'').slice(0,80), color:'text-purple-400', icon:'fa-comment' });
                 });
                 _friendActivityRefs.push(boardRef);
@@ -6298,10 +6322,12 @@
 
                     if (!players) {
                         // 2. Try direct userEconomy read (requires .read rule on collection)
+                        // If this fails with permission-denied, the outer catch will handle it silently.
                         let econSnap;
                         try {
                             econSnap = await db.ref('userEconomy').orderByChild('points').limitToLast(10).once('value');
                         } catch(e) {
+                            if (e.code === 'PERMISSION_DENIED') throw e; // let outer catch handle gracefully
                             econSnap = await db.ref('userEconomy').once('value');
                         }
                         players = [];
@@ -6319,8 +6345,8 @@
                     }
                     if (econEl) econEl.innerHTML = await buildLeaderboardHtml(players);
                 } catch(e) {
-                    console.error('[Economy leaderboard]', e);
-                    const isPerms = e.code === 'PERMISSION_DENIED' || (e.message || '').includes('permission');
+                    const isPerms = e.code === 'PERMISSION_DENIED' || (e.message || '').toLowerCase().includes('permission');
+                    if (!isPerms) console.warn('[Economy leaderboard]', e);
                     if (econEl) econEl.innerHTML = isPerms
                         ? '<p class="text-xs text-gray-500 text-center">Rankings updating…</p>'
                         : '<p class="text-xs text-gray-500 text-center">Could not load</p>';
