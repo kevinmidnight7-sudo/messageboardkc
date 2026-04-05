@@ -3529,16 +3529,24 @@
         let boardPosts = [], boardFilter = 'all', boardLoaded = false;
 
         function loadBoardPanel() {
+            const el = document.getElementById('board-posts-feed');
             if (boardLoaded) { renderBoardPosts(); return; }
             boardLoaded = true;
-            const el = document.getElementById('board-posts-feed');
             if (el) el.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">Loading...</div>';
-            // Use orderByChild('time') — same query index.html uses, guaranteed to work
-            db.ref('messages').orderByChild('time').limitToLast(60).on('value', snap => {
+            // No orderByChild — fetch latest by push-key so NO messages are skipped due to missing time field
+            db.ref('messages').limitToLast(100).on('value', snap => {
                 boardPosts = [];
-                snap.forEach(child => boardPosts.push({ id: child.key, ...child.val() }));
-                // Reverse so newest is first (Firebase returns oldest→newest with limitToLast)
-                boardPosts.reverse();
+                snap.forEach(child => {
+                    const v = child.val();
+                    if (v && (v.text || v.user)) boardPosts.push({ id: child.key, ...v });
+                });
+                // Sort newest-first: prefer time field, fallback to push-key (lexicographic = chronological)
+                boardPosts.sort((a, b) => {
+                    const ta = typeof a.time === 'number' ? a.time : 0;
+                    const tb = typeof b.time === 'number' ? b.time : 0;
+                    if (tb !== ta) return tb - ta;
+                    return b.id > a.id ? 1 : -1;
+                });
                 renderBoardPosts();
             });
         }
