@@ -133,7 +133,87 @@
         .view-transition { animation: slideUpFade 0.4s ease-out; }
         @keyframes slideUpFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .feed-chip.active { background-color: var(--accent-blue); color: white; opacity: 1; }
+        .feed-chip.active { background-color: var(--theme-accent, var(--accent-blue)); color: white; opacity: 1; }
+
+        /* ===== Right Panel 4-Tab System ===== */
+        .rp-tab {
+            flex-shrink: 0;
+            padding: 5px 11px;
+            border-radius: 99px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            color: #475569;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .rp-tab.active { color: #fff; background: var(--theme-accent, #3b82f6); }
+        .rp-tab:not(.active):hover { color: #94a3b8; background: rgba(255,255,255,0.07); }
+        /* Badge on Friends tab */
+        .rp-tab-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 14px; height: 14px; border-radius: 99px;
+            background: #ef4444; color: #fff; font-size: 0.52rem; font-weight: 900;
+        }
+
+        /* Mobile sheet: guarantee all content is touchable */
+        #kc-sidebar.mobile-open { touch-action: auto; }
+        #kc-sidebar button, #kc-sidebar a, #kc-sidebar input, #kc-sidebar textarea {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(255,255,255,0.08);
+        }
+        /* Themed accent line under panel header */
+        .rp-header-accent-line {
+            height: 2px;
+            background: linear-gradient(90deg, var(--theme-accent, #3b82f6), rgba(var(--theme-accent-rgb,59,130,246),0) 80%);
+        }
+
+        /* Friends sidebar */
+        .rp-friend-row {
+            display: flex; align-items: center; gap: 10px;
+            padding: 8px 10px; border-radius: 16px;
+            cursor: pointer; transition: background 0.12s;
+        }
+        .rp-friend-row:hover { background: rgba(255,255,255,0.07); }
+        @keyframes onlinePulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        .online-dot { animation: onlinePulse 2.2s ease-in-out infinite; }
+
+        /* Board post styles */
+        .board-post {
+            border-radius: 18px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255,255,255,0.025);
+            padding: 12px 14px;
+            transition: background 0.12s;
+        }
+        .board-post:hover { background: rgba(255,255,255,0.055); }
+        .board-reaction-btn {
+            display: inline-flex; align-items: center; gap: 3px;
+            padding: 3px 8px; border-radius: 99px;
+            font-size: 0.7rem; font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
+            cursor: pointer; touch-action: manipulation;
+            transition: background 0.12s, border-color 0.12s;
+        }
+        .board-reaction-btn:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22); }
+        .board-reaction-btn.liked { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.35); color: #f87171; }
+        .board-compose-area {
+            resize: none; width: 100%; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+            padding: 10px 12px; font-size: 0.82rem; color: #e2e8f0;
+            outline: none; transition: border-color 0.15s; touch-action: auto;
+            font-family: inherit;
+        }
+        .board-compose-area:focus { border-color: var(--theme-accent, #3b82f6); }
 
         @keyframes slideInRight {
             from { transform: translateX(400px); opacity: 0; }
@@ -179,21 +259,33 @@
                 display: flex !important;
                 position: fixed;
                 inset: auto 0 0 0;
-                height: auto;
-                max-height: 82vh;
-                z-index: 80;
+                height: 78vh;        /* fixed height so inner scroll works */
+                max-height: 78vh;
+                z-index: 9500;       /* above all other UI elements */
                 border-radius: 28px 28px 0 0;
                 animation: mobileSheetUp 0.32s cubic-bezier(0.16,1,0.3,1) both;
+                touch-action: auto;  /* allow scrolling inside sheet */
+                pointer-events: auto;
             }
             #kc-sidebar.mobile-open > .glass {
                 border-radius: 28px 28px 0 0 !important;
-                height: auto;
-                max-height: 82vh;
+                height: 100% !important;
+                max-height: none !important;
                 width: 100%;
                 /* Opaque sheet — content behind must not show through */
-                background: rgba(10, 18, 38, 0.98) !important;
+                background: rgba(10, 18, 38, 0.99) !important;
                 border: none !important;
                 border-top: 1px solid rgba(255,255,255,0.10) !important;
+                pointer-events: auto;
+                overflow: hidden;
+            }
+            /* Make sure all interactive elements in the sheet work */
+            #kc-sidebar.mobile-open button,
+            #kc-sidebar.mobile-open a,
+            #kc-sidebar.mobile-open input,
+            #kc-sidebar.mobile-open textarea {
+                pointer-events: auto;
+                touch-action: manipulation;
             }
             /* Drag handle shown inside sheet */
             #kc-sidebar.mobile-open::before {
@@ -2188,39 +2280,121 @@
 
         </section>
 
-        <!-- RIGHT Feed & Stats -->
+        <!-- RIGHT Panel — Feed / Friends / Stats / Board -->
         <aside id="kc-sidebar" class="hidden lg:flex flex-col h-full overflow-hidden">
             <div class="glass rounded-[40px] border-white/5 flex flex-col h-full overflow-hidden">
-                <div class="p-6 border-b border-white/5 bg-white/5 flex items-center justify-between">
-                    <h3 class="font-black text-sm tracking-widest">KC NOW</h3>
-                    <div class="flex items-center gap-3">
-                        <button onclick="openFeedFilters()" class="text-xs text-blue-400 hover:text-blue-300 transition" title="Filter feed"><i class="fa-solid fa-filter"></i></button>
-                        <span class="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
+
+                <!-- Header -->
+                <div class="px-5 pt-4 pb-3 bg-white/5 flex items-center justify-between" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <h3 class="font-black text-sm tracking-widest" style="color:var(--theme-accent,#3b82f6)">KC NOW</h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openMobileFeed()" class="lg:hidden text-xs text-gray-500 p-1" title="Close"><i class="fa-solid fa-xmark"></i></button>
+                        <span class="flex h-2 w-2 rounded-full animate-pulse" style="background:var(--theme-accent,#3b82f6)"></span>
                     </div>
                 </div>
-                <!-- Tabs for right panel -->
-                <div class="p-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
-                    <button onclick="switchRightTab('feed')" id="righttab-feed" class="feed-chip active px-4 py-1.5 rounded-full text-xs font-bold transition">Feed</button>
-                    <button onclick="switchRightTab('stats')" id="righttab-stats" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Stats</button>
+                <!-- Themed accent line -->
+                <div class="rp-header-accent-line"></div>
+
+                <!-- 4 Main Tabs -->
+                <div class="px-3 py-2 flex gap-1 overflow-x-auto no-scrollbar" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                    <button onclick="switchRightTab('feed')" id="righttab-feed" class="rp-tab active">
+                        <i class="fa-solid fa-bolt"></i> Feed
+                    </button>
+                    <button onclick="switchRightTab('friends')" id="righttab-friends" class="rp-tab">
+                        <i class="fa-solid fa-user-group"></i> Friends
+                        <span id="rp-friends-badge" class="rp-tab-badge hidden">0</span>
+                    </button>
+                    <button onclick="switchRightTab('stats')" id="righttab-stats" class="rp-tab">
+                        <i class="fa-solid fa-chart-line"></i> Stats
+                    </button>
+                    <button onclick="switchRightTab('board')" id="righttab-board" class="rp-tab">
+                        <i class="fa-solid fa-comments"></i> Board
+                    </button>
                 </div>
-                <!-- Feed Panel -->
-                <div id="rightpanel-feed" class="flex-1 flex flex-col">
-                    <div class="p-3 flex gap-2 overflow-x-auto no-scrollbar border-b border-white/5">
-                        <button onclick="filterFeed('all')" id="feed-filter-all" class="feed-chip active px-4 py-1.5 rounded-full text-xs font-bold transition">All</button>
-                        <button onclick="filterFeed('clips')" id="feed-filter-clips" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Clips</button>
-                        <button onclick="filterFeed('clans')" id="feed-filter-clans" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Clans</button>
-                        <button onclick="filterFeed('users')" id="feed-filter-users" class="feed-chip px-4 py-1.5 rounded-full glass text-xs font-bold text-gray-500 transition">Join</button>
-                        <!-- Feed Filters button -->
-                        <button onclick="openFeedFilters()" class="text-xs text-blue-400 hover:underline ml-auto">
-                            <i class="fa-solid fa-filter"></i> Filters
+
+                <!-- ── FEED PANEL ── -->
+                <div id="rightpanel-feed" class="flex-1 flex flex-col overflow-hidden">
+                    <div class="px-3 py-2 flex gap-1.5 overflow-x-auto no-scrollbar" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <button onclick="filterFeed('all')" id="feed-filter-all" class="feed-chip active px-3 py-1 rounded-full text-xs font-bold transition">All</button>
+                        <button onclick="filterFeed('clips')" id="feed-filter-clips" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition">Clips</button>
+                        <button onclick="filterFeed('clans')" id="feed-filter-clans" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition">Clans</button>
+                        <button onclick="filterFeed('users')" id="feed-filter-users" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition">Join</button>
+                        <button onclick="filterFeed('friends')" id="feed-filter-friends" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition">Friends</button>
+                        <button onclick="openFeedFilters()" class="ml-auto text-xs text-gray-500 hover:text-blue-400 transition px-1 flex-shrink-0" title="Filters">
+                            <i class="fa-solid fa-sliders"></i>
                         </button>
                     </div>
-                    <div id="lobby-notification-feed" class="flex-1 overflow-y-auto custom-scroll p-4 space-y-4"></div>
+                    <div id="lobby-notification-feed" class="flex-1 overflow-y-auto custom-scroll p-3 space-y-2"></div>
                 </div>
-                <!-- Stats Panel -->
+
+                <!-- ── FRIENDS PANEL ── -->
+                <div id="rightpanel-friends" class="hidden flex-1 flex flex-col overflow-hidden">
+                    <!-- Search bar -->
+                    <div class="p-3" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <div class="flex gap-2">
+                            <input id="rp-friend-search" type="text" placeholder="Search players..."
+                                   class="flex-1 px-3 py-2 rounded-xl text-xs font-semibold focus:outline-none board-compose-area"
+                                   style="height:36px;"
+                                   onkeydown="if(event.key==='Enter')rpSearchFriends()">
+                            <button onclick="rpSearchFriends()" class="px-3 py-2 rounded-xl font-bold text-xs transition flex-shrink-0"
+                                    style="background:var(--theme-accent,#3b82f6);color:#fff;touch-action:manipulation;">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Pending requests -->
+                    <div id="rp-pending-section" class="hidden px-3 pt-2 pb-1">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-1.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-clock"></i> Pending Requests
+                        </p>
+                        <div id="rp-pending-list" class="space-y-1.5"></div>
+                    </div>
+                    <!-- Search results -->
+                    <div id="rp-search-results" class="hidden px-3 pt-2 pb-1">
+                        <p class="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1.5">Results</p>
+                        <div id="rp-search-list" class="space-y-1.5"></div>
+                    </div>
+                    <!-- Friends list -->
+                    <div class="flex-1 overflow-y-auto custom-scroll px-3 py-2">
+                        <div id="rp-friends-list" class="space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- ── STATS PANEL ── -->
                 <div id="rightpanel-stats" class="hidden flex-1 overflow-y-auto custom-scroll p-4">
                     <!-- Populated dynamically by loadStatsPanel() -->
                 </div>
+
+                <!-- ── BOARD PANEL ── -->
+                <div id="rightpanel-board" class="hidden flex-1 flex flex-col overflow-hidden">
+                    <!-- Board filter + compose toggle -->
+                    <div class="px-3 py-2 flex items-center gap-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <button onclick="filterBoard('all')" id="board-filter-all" class="feed-chip active px-3 py-1 rounded-full text-xs font-bold transition">All</button>
+                        <button onclick="filterBoard('friends')" id="board-filter-friends" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition">Friends</button>
+                        <button onclick="openBoardCompose()" class="ml-auto px-3 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0"
+                                style="background:var(--theme-accent,#3b82f6);color:#fff;touch-action:manipulation;">
+                            <i class="fa-solid fa-pen-to-square mr-1"></i>Post
+                        </button>
+                    </div>
+                    <!-- Compose box (hidden until Post clicked) -->
+                    <div id="board-compose-box" class="hidden px-3 pt-2 pb-1" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <textarea id="board-compose-text" class="board-compose-area" rows="3" maxlength="280"
+                                  placeholder="What's on your mind? (max 280 chars)"></textarea>
+                        <div class="flex justify-between items-center mt-1.5">
+                            <span id="board-char-count" class="text-[10px] text-gray-600">0/280</span>
+                            <div class="flex gap-2">
+                                <button onclick="closeBoardCompose()" class="px-3 py-1.5 rounded-xl text-xs font-bold text-gray-500 hover:text-white transition" style="touch-action:manipulation;">Cancel</button>
+                                <button onclick="submitBoardPost()" class="px-4 py-1.5 rounded-xl text-xs font-bold transition"
+                                        style="background:var(--theme-accent,#3b82f6);color:#fff;touch-action:manipulation;">Post</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Posts list -->
+                    <div id="board-posts-feed" class="flex-1 overflow-y-auto custom-scroll p-3 space-y-2">
+                        <div class="text-center py-10 text-gray-600 text-xs italic">Loading board...</div>
+                    </div>
+                </div>
+
             </div>
         </aside>
     </main>
@@ -2228,7 +2402,7 @@
     <!-- Mobile: semi-transparent backdrop behind the feed sheet -->
     <div id="mobile-feed-backdrop"
          onclick="closeMobileFeed()"
-         style="display:none;position:fixed;inset:0;z-index:79;background:rgba(0,0,0,0.55);"></div>
+         style="display:none;position:fixed;inset:0;z-index:9490;background:rgba(0,0,0,0.6);"></div>
 
     <!-- Mobile: floating Live button (hidden on desktop, shown via CSS on < 1024px) -->
     <button id="mobile-live-btn"
@@ -2244,7 +2418,7 @@
         <span style="font-size:0.52rem;font-weight:800;letter-spacing:0.12em;color:#60a5fa;text-transform:uppercase;">Live</span>
     </button>
 
-    <div id="global-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-6 bg-black/60 backdrop-blur-xl transition-all">
+    <div id="global-modal" class="fixed inset-0 z-[10000] hidden items-center justify-center p-6 bg-black/60 backdrop-blur-xl transition-all">
         <div class="glass w-full max-w-2xl max-h-[85vh] rounded-[48px] border-white/10 flex flex-col overflow-hidden shadow-2xl">
             <div class="p-8 border-b border-white/5 flex items-center justify-between">
                 <h2 id="modal-title" class="text-2xl font-bold">Lobby Window</h2>
@@ -2761,6 +2935,7 @@
                     if (_firstUserData) { _firstUserData = false; KCLoader.advance('userdata'); }
                 });
                 initPersonalActivityListener();
+                initPresence();
             } else {
                 renderUserHeader({}, null);
                 KCLoader.advance('userdata'); // guest — no data to fetch
@@ -3204,20 +3379,383 @@
             document.body.style.overflow = '';
         }
 
-        // --- RIGHT PANEL TAB SYSTEM ---
+        // --- RIGHT PANEL TAB SYSTEM (4 tabs) ---
         function switchRightTab(tab) {
-            document.getElementById('righttab-feed').classList.remove('active');
-            document.getElementById('righttab-stats').classList.remove('active');
-            document.getElementById('rightpanel-feed').classList.add('hidden');
-            document.getElementById('rightpanel-stats').classList.add('hidden');
-            if (tab === 'feed') {
-                document.getElementById('righttab-feed').classList.add('active');
-                document.getElementById('rightpanel-feed').classList.remove('hidden');
-            } else if (tab === 'stats') {
-                document.getElementById('righttab-stats').classList.add('active');
-                document.getElementById('rightpanel-stats').classList.remove('hidden');
-                loadStatsPanel();
+            ['feed','friends','stats','board'].forEach(t => {
+                document.getElementById(`righttab-${t}`)?.classList.remove('active');
+                document.getElementById(`rightpanel-${t}`)?.classList.add('hidden');
+            });
+            const tabEl = document.getElementById(`righttab-${tab}`);
+            const panelEl = document.getElementById(`rightpanel-${tab}`);
+            if (tabEl) tabEl.classList.add('active');
+            if (panelEl) panelEl.classList.remove('hidden');
+            if (tab === 'stats') loadStatsPanel();
+            if (tab === 'friends') rpLoadFriendsPanel();
+            if (tab === 'board') loadBoardPanel();
+        }
+
+        // ===== PRESENCE SYSTEM =====
+        function initPresence() {
+            if (!currentUser || !db) return;
+            const presRef = db.ref(`users/${currentUser.uid}/kcnowOnline`);
+            presRef.set(true);
+            presRef.onDisconnect().remove();
+            // Also update on window unload as a fallback
+            window.addEventListener('beforeunload', () => presRef.remove(), { once: true });
+        }
+
+        // ===== FRIENDS SIDEBAR PANEL =====
+        let _rpFriendsLoaded = false;
+
+        function rpLoadFriendsPanel() {
+            // Load pending requests badge + list
+            if (currentUser) {
+                loadFriends(); // refreshes friendsList and calls rpRenderFriendsList
+                rpLoadPendingRequests();
+            } else {
+                rpRenderFriendsList();
             }
+        }
+
+        function rpRenderFriendsList() {
+            const el = document.getElementById('rp-friends-list');
+            if (!el) return;
+            if (!currentUser) {
+                el.innerHTML = '<p class="text-xs text-gray-500 text-center py-6">Sign in to see your friends</p>';
+                return;
+            }
+            if (friendsList.length === 0) {
+                el.innerHTML = '<p class="text-xs text-gray-500 text-center py-6">No friends yet — search to add some!</p>';
+                return;
+            }
+            // Sort: online first, then alphabetical
+            const sorted = [...friendsList].sort((a, b) => {
+                if (a.kcnowOnline && !b.kcnowOnline) return -1;
+                if (!a.kcnowOnline && b.kcnowOnline) return 1;
+                return (a.displayName || '').localeCompare(b.displayName || '');
+            });
+            el.innerHTML = sorted.map(f => {
+                const isOnline = !!f.kcnowOnline;
+                const dotClass = isOnline ? 'bg-green-400 online-dot' : 'bg-gray-600';
+                return `
+                <div class="rp-friend-row" onclick="window.openKcProfile('${f.uid}')">
+                    <div class="relative flex-shrink-0">
+                        <img src="${f.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}"
+                             class="w-9 h-9 rounded-full object-cover">
+                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 ${dotClass}"
+                             style="border-color:#080c14;"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold truncate">${f.displayName || 'Unknown'}</p>
+                        <p class="text-[10px] ${isOnline ? 'text-green-400' : 'text-gray-600'}">${isOnline ? 'On KC Now' : 'Offline'}</p>
+                    </div>
+                    <button onclick="event.stopPropagation();removeFriend('${f.uid}')"
+                            class="text-gray-600 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10"
+                            style="touch-action:manipulation;" title="Remove friend">
+                        <i class="fa-solid fa-user-minus text-xs"></i>
+                    </button>
+                </div>`;
+            }).join('');
+        }
+
+        function rpLoadPendingRequests() {
+            if (!currentUser) return;
+            db.ref(`users/${currentUser.uid}/friendRequests`).once('value').then(snap => {
+                const requests = snap.val() || {};
+                const uids = Object.keys(requests);
+                const section = document.getElementById('rp-pending-section');
+                const list = document.getElementById('rp-pending-list');
+                const badge = document.getElementById('rp-friends-badge');
+                if (!section || !list) return;
+                // Update badge
+                if (badge) {
+                    if (uids.length > 0) { badge.textContent = uids.length; badge.classList.remove('hidden'); }
+                    else { badge.classList.add('hidden'); }
+                }
+                if (uids.length === 0) { section.classList.add('hidden'); return; }
+                section.classList.remove('hidden');
+                Promise.all(uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val()||{}) })))).then(users => {
+                    list.innerHTML = users.map(u => `
+                        <div class="flex items-center gap-2 p-2 rounded-xl" style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);">
+                            <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+                            <span class="flex-1 text-xs font-bold truncate">${u.displayName || 'Unknown'}</span>
+                            <button onclick="acceptFriendRequest('${u.uid}');rpLoadFriendsPanel()" class="px-2 py-1 text-[10px] font-black rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition" style="touch-action:manipulation;">Accept</button>
+                            <button onclick="declineFriendRequest('${u.uid}');rpLoadFriendsPanel()" class="px-2 py-1 text-[10px] font-black rounded-lg bg-red-500/15 text-red-400 hover:bg-red-500/25 transition" style="touch-action:manipulation;">Decline</button>
+                        </div>
+                    `).join('');
+                });
+            });
+        }
+
+        function rpSearchFriends() {
+            const query = (document.getElementById('rp-friend-search')?.value || '').toLowerCase().trim();
+            if (!query) { document.getElementById('rp-search-results')?.classList.add('hidden'); return; }
+            const resultsSection = document.getElementById('rp-search-results');
+            const resultsList = document.getElementById('rp-search-list');
+            if (resultsSection) resultsSection.classList.remove('hidden');
+            if (resultsList) resultsList.innerHTML = '<p class="text-xs text-gray-500 py-2">Searching...</p>';
+            ensureSearchDataLoaded().then(() => {
+                const results = allUsersData.filter(u => u.displayName && u.displayName.toLowerCase().includes(query)).slice(0, 8);
+                if (!resultsList) return;
+                const myFriendUids = new Set(friendsList.map(f => f.uid));
+                resultsList.innerHTML = results.length > 0 ? results.map(u => {
+                    const isFriend = myFriendUids.has(u.uid);
+                    const isMe = currentUser && u.uid === currentUser.uid;
+                    return `
+                        <div class="flex items-center gap-2 p-2 rounded-xl" style="background:rgba(255,255,255,0.04);">
+                            <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
+                            <span class="flex-1 text-xs font-bold truncate">${u.displayName}</span>
+                            ${isMe ? '<span class="text-[10px] text-gray-500">You</span>' :
+                              isFriend ? '<span class="text-[10px] text-green-400"><i class="fa-solid fa-check mr-0.5"></i>Friends</span>' :
+                              `<button onclick="sendFriendRequest('${u.uid}');this.textContent='Sent ✓';this.disabled=true"
+                                       class="px-2 py-1 text-[10px] font-black rounded-lg text-white transition"
+                                       style="background:var(--theme-accent,#3b82f6);touch-action:manipulation;">Add</button>`}
+                        </div>`;
+                }).join('') : '<p class="text-xs text-gray-500 text-center py-2">No users found</p>';
+            });
+        }
+
+        // ===== BOARD PANEL =====
+        let boardPosts = [], boardFilter = 'all', boardLoaded = false;
+
+        function loadBoardPanel() {
+            if (boardLoaded) { renderBoardPosts(); return; }
+            boardLoaded = true;
+            db.ref('board_posts').orderByChild('timestamp').limitToLast(40).on('value', snap => {
+                boardPosts = [];
+                snap.forEach(child => boardPosts.unshift({ id: child.key, ...child.val() }));
+                renderBoardPosts();
+            });
+        }
+
+        function filterBoard(f) {
+            boardFilter = f;
+            ['all','friends'].forEach(k => {
+                const el = document.getElementById(`board-filter-${k}`);
+                if (el) {
+                    el.classList.toggle('active', k === f);
+                    el.classList.toggle('glass', k !== f);
+                    el.classList.toggle('text-gray-500', k !== f);
+                }
+            });
+            renderBoardPosts();
+        }
+
+        function renderBoardPosts() {
+            const el = document.getElementById('board-posts-feed');
+            if (!el) return;
+            let posts = boardPosts;
+            if (boardFilter === 'friends') {
+                const friendUids = new Set(friendsList.map(f => f.uid));
+                if (currentUser) friendUids.add(currentUser.uid);
+                posts = posts.filter(p => friendUids.has(p.uid));
+            }
+            if (posts.length === 0) {
+                el.innerHTML = `<div class="text-center py-10 text-gray-600 text-xs italic">${boardFilter === 'friends' ? 'No posts from friends yet' : 'No posts yet — be the first!'}</div>`;
+                return;
+            }
+            el.innerHTML = posts.map(p => _buildBoardPost(p)).join('');
+        }
+
+        function _buildBoardPost(p) {
+            const myUid = currentUser?.uid;
+            const liked = myUid && p.likes && p.likes[myUid];
+            const likeCount = p.likes ? Object.keys(p.likes).length : 0;
+            const commentCount = p.comments ? Object.keys(p.comments).length : 0;
+            const reactions = p.reactions || {};
+            // top 2 reaction emojis
+            const reactionHtml = Object.entries(reactions).map(([emo, users]) => {
+                const count = Object.keys(users).length;
+                const myReacted = myUid && users[myUid];
+                return `<button onclick="toggleBoardReaction('${p.id}','${emo}')" class="board-reaction-btn ${myReacted ? 'liked' : ''}">${emo} ${count}</button>`;
+            }).join('');
+            return `
+            <div class="board-post">
+                <div class="flex items-center gap-2 mb-2">
+                    <img src="${p.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}"
+                         class="w-7 h-7 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                         onclick="window.openKcProfile('${p.uid}')">
+                    <div class="flex-1 min-w-0">
+                        <span class="text-xs font-bold cursor-pointer hover:underline" onclick="window.openKcProfile('${p.uid}')">${p.displayName || 'Unknown'}</span>
+                        <span class="text-[10px] text-gray-600 ml-1.5">${p.timestamp ? timeAgo(p.timestamp) : ''}</span>
+                    </div>
+                    ${myUid === p.uid ? `<button onclick="deleteBoardPost('${p.id}')" class="text-gray-600 hover:text-red-400 transition text-[10px] p-1" style="touch-action:manipulation;"><i class="fa-solid fa-trash"></i></button>` : ''}
+                </div>
+                <p class="text-xs text-gray-300 leading-relaxed mb-2.5 whitespace-pre-wrap break-words">${escapeHtml(p.text)}</p>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button onclick="toggleBoardLike('${p.id}')" class="board-reaction-btn ${liked ? 'liked' : ''}" style="touch-action:manipulation;">
+                        <i class="fa-${liked ? 'solid' : 'regular'} fa-heart"></i> ${likeCount || ''}
+                    </button>
+                    ${reactionHtml}
+                    <button onclick="pickBoardReaction('${p.id}')" class="board-reaction-btn" style="touch-action:manipulation;" title="React">
+                        <i class="fa-regular fa-face-smile"></i>
+                    </button>
+                    <button onclick="openBoardComments('${p.id}')" class="board-reaction-btn ml-auto" style="touch-action:manipulation;">
+                        <i class="fa-regular fa-comment"></i> ${commentCount || ''}
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function openBoardCompose() {
+            if (!currentUser) { openAuthModal(); return; }
+            const box = document.getElementById('board-compose-box');
+            if (box) {
+                box.classList.toggle('hidden');
+                const ta = document.getElementById('board-compose-text');
+                if (ta && !box.classList.contains('hidden')) { ta.focus(); }
+            }
+        }
+
+        function closeBoardCompose() {
+            document.getElementById('board-compose-box')?.classList.add('hidden');
+            const ta = document.getElementById('board-compose-text');
+            if (ta) ta.value = '';
+            const cc = document.getElementById('board-char-count');
+            if (cc) cc.textContent = '0/280';
+        }
+
+        // Wire up character counter once DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            const ta = document.getElementById('board-compose-text');
+            const cc = document.getElementById('board-char-count');
+            if (ta && cc) ta.addEventListener('input', () => { cc.textContent = `${ta.value.length}/280`; });
+        });
+
+        function submitBoardPost() {
+            if (!currentUser) return;
+            const ta = document.getElementById('board-compose-text');
+            const text = (ta?.value || '').trim();
+            if (!text) { showToast('Write something first!', 'warning'); return; }
+            const post = {
+                uid: currentUser.uid,
+                displayName: currentUserData?.displayName || currentUser.displayName || 'Unknown',
+                avatar: currentUserData?.avatar || currentUser.photoURL || '',
+                text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+            };
+            db.ref('board_posts').push(post).then(() => {
+                closeBoardCompose();
+                showToast('Posted!', 'success');
+            }).catch(() => showToast('Failed to post', 'error'));
+        }
+
+        function toggleBoardLike(postId) {
+            if (!currentUser) { openAuthModal(); return; }
+            const ref = db.ref(`board_posts/${postId}/likes/${currentUser.uid}`);
+            ref.once('value').then(snap => {
+                snap.exists() ? ref.remove() : ref.set(true);
+            });
+        }
+
+        const _BOARD_REACTIONS = ['❤️','😂','🔥','👏','😮','💯'];
+        function pickBoardReaction(postId) {
+            if (!currentUser) { openAuthModal(); return; }
+            openModal('React', `
+                <div class="grid grid-cols-3 gap-3 py-4">
+                    ${_BOARD_REACTIONS.map(e => `
+                        <button onclick="toggleBoardReaction('${postId}','${e}');closeModal()"
+                                class="text-3xl p-4 rounded-2xl glass hover:bg-white/10 transition"
+                                style="touch-action:manipulation;">${e}</button>
+                    `).join('')}
+                </div>
+            `);
+        }
+
+        function toggleBoardReaction(postId, emoji) {
+            if (!currentUser) { openAuthModal(); return; }
+            const ref = db.ref(`board_posts/${postId}/reactions/${emoji}/${currentUser.uid}`);
+            ref.once('value').then(snap => { snap.exists() ? ref.remove() : ref.set(true); });
+        }
+
+        function deleteBoardPost(postId) {
+            if (!currentUser) return;
+            kcConfirm('Delete this post?', () => {
+                db.ref(`board_posts/${postId}`).remove().catch(() => showToast('Failed to delete', 'error'));
+            });
+        }
+
+        function openBoardComments(postId) {
+            const post = boardPosts.find(p => p.id === postId);
+            if (!post) return;
+            const comments = Object.entries(post.comments || {})
+                .sort((a,b) => (a[1].timestamp||0) - (b[1].timestamp||0));
+            openModal(`Comments`, `
+                <div class="flex flex-col gap-3">
+                    <div class="space-y-3 max-h-[40vh] overflow-y-auto custom-scroll">
+                        ${comments.length ? comments.map(([cid, c]) => `
+                            <div class="flex items-start gap-2">
+                                <img src="${c.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5">
+                                <div class="flex-1 glass p-2.5 rounded-xl">
+                                    <p class="text-xs font-bold">${escapeHtml(c.displayName)}<span class="text-gray-600 font-normal ml-1.5">${timeAgo(c.timestamp)}</span></p>
+                                    <p class="text-xs text-gray-300 mt-0.5">${escapeHtml(c.text)}</p>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-xs text-gray-500 text-center py-4">No comments yet</p>'}
+                    </div>
+                    ${currentUser ? `
+                    <div class="flex gap-2 mt-1">
+                        <input id="board-comment-input" type="text" placeholder="Add a comment..."
+                               class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none text-sm"
+                               maxlength="200"
+                               onkeydown="if(event.key==='Enter')submitBoardComment('${postId}')">
+                        <button onclick="submitBoardComment('${postId}')" class="px-5 py-3 font-bold rounded-2xl text-white transition"
+                                style="background:var(--theme-accent,#3b82f6);touch-action:manipulation;">Post</button>
+                    </div>` : '<p class="text-xs text-gray-500 text-center">Sign in to comment</p>'}
+                </div>
+            `);
+        }
+
+        function submitBoardComment(postId) {
+            if (!currentUser) return;
+            const input = document.getElementById('board-comment-input');
+            const text = (input?.value || '').trim();
+            if (!text) return;
+            const comment = {
+                uid: currentUser.uid,
+                displayName: currentUserData?.displayName || currentUser.displayName || 'Unknown',
+                avatar: currentUserData?.avatar || currentUser.photoURL || '',
+                text,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+            };
+            db.ref(`board_posts/${postId}/comments`).push(comment).then(() => {
+                closeModal();
+                showToast('Comment added!', 'success');
+            }).catch(() => showToast('Failed to comment', 'error'));
+        }
+
+        // ===== FRIEND ACTIVITY IN FEED (KC Now awareness) =====
+        // Called after friendsList is populated — listens to friends' clip posts
+        let _friendActivityRefs = [];
+        function initFriendActivityListeners() {
+            // Detach previous
+            _friendActivityRefs.forEach(r => r.off());
+            _friendActivityRefs = [];
+            if (!currentUser || !friendsList.length) return;
+            friendsList.forEach(friend => {
+                // New clip posted by friend
+                const clipRef = db.ref('social_posts').orderByChild('createdBy').equalTo(friend.uid).limitToLast(1);
+                clipRef.on('child_added', snap => {
+                    const p = snap.val();
+                    if (!p) return;
+                    // Only show events from the last 10 mins to avoid spamming on page load
+                    if (Date.now() - (p.timestamp || 0) > 600000) return;
+                    addFeedItem({ type:'clips', title:`${friend.displayName || 'Friend'} posted a clip!`, user:friend.displayName, uid:friend.uid, detail:p.caption||'New clip', color:'text-blue-400', icon:'fa-clapperboard' });
+                });
+                _friendActivityRefs.push(clipRef);
+                // Board post by friend
+                const boardRef = db.ref('board_posts').orderByChild('uid').equalTo(friend.uid).limitToLast(1);
+                boardRef.on('child_added', snap => {
+                    const p = snap.val();
+                    if (!p || Date.now() - (p.timestamp||0) > 600000) return;
+                    addFeedItem({ type:'users', title:`${friend.displayName || 'Friend'} posted`, user:friend.displayName, uid:friend.uid, detail:(p.text||'').slice(0,80), color:'text-purple-400', icon:'fa-comment' });
+                });
+                _friendActivityRefs.push(boardRef);
+            });
         }
 
         // --- FEED ADAPTER (Live Events) ---
@@ -3501,7 +4039,13 @@
         function renderFeed(filter = 'all') {
             const el = document.getElementById('lobby-notification-feed');
             // Build base list filtered by type
-            let data = filter === 'all' ? feedItems : feedItems.filter(i => i.type === filter);
+            let data;
+            if (filter === 'friends') {
+                const friendUids = new Set(friendsList.map(f => f.uid));
+                data = feedItems.filter(i => i.uid && friendUids.has(i.uid));
+            } else {
+                data = filter === 'all' ? feedItems : feedItems.filter(i => i.type === filter);
+            }
             // Apply search filter (Phase 5D)
             if (feedSearchQuery) {
                 const q = feedSearchQuery.toLowerCase();
@@ -3781,11 +4325,15 @@
             db.ref(`users/${currentUser.uid}/friends`).on('value', snap => {
                 friendsList = [];
                 const friendIds = snap.val() || {};
+                const uids = Object.keys(friendIds);
+                if (uids.length === 0) { renderFriendsPanel(); rpRenderFriendsList(); return; }
                 Promise.all(
-                    Object.keys(friendIds).map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...s.val() || {} })) )
+                    uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))
                 ).then(friends => {
                     friendsList = friends;
                     renderFriendsPanel();
+                    rpRenderFriendsList();
+                    initFriendActivityListeners();
                 });
             });
         }
@@ -8310,12 +8858,19 @@
             db.ref(`users/${currentUser.uid}/friends`).on('value', snap => {
                 const friendIds = snap.val() || {};
                 const uids = Object.keys(friendIds);
-                if (uids.length === 0) { friendsList = []; renderFriendsPanel(); return; }
+                if (uids.length === 0) {
+                    friendsList = [];
+                    renderFriendsPanel();
+                    rpRenderFriendsList();
+                    return;
+                }
                 Promise.all(
                     uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))
                 ).then(friends => {
                     friendsList = friends;
                     renderFriendsPanel();
+                    rpRenderFriendsList();
+                    initFriendActivityListeners();
                 });
             });
         }
