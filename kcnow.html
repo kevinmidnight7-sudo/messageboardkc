@@ -3531,19 +3531,14 @@
         function loadBoardPanel() {
             if (boardLoaded) { renderBoardPosts(); return; }
             boardLoaded = true;
-            // Don't order in Firebase — some old messages may have no 'time' field,
-            // which causes orderByChild to silently exclude them. Fetch all, sort JS-side.
-            db.ref('messages').limitToLast(50).on('value', snap => {
+            const el = document.getElementById('board-posts-feed');
+            if (el) el.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">Loading...</div>';
+            // Use orderByChild('time') — same query index.html uses, guaranteed to work
+            db.ref('messages').orderByChild('time').limitToLast(60).on('value', snap => {
                 boardPosts = [];
                 snap.forEach(child => boardPosts.push({ id: child.key, ...child.val() }));
-                // Sort newest-first using time, timestamp, or Firebase push-key order as fallback
-                boardPosts.sort((a, b) => {
-                    const ta = a.time || a.timestamp || 0;
-                    const tb = b.time || b.timestamp || 0;
-                    if (tb !== ta) return tb - ta;
-                    // Fallback: Firebase push-keys are lexicographically ordered by time
-                    return b.id > a.id ? 1 : -1;
-                });
+                // Reverse so newest is first (Firebase returns oldest→newest with limitToLast)
+                boardPosts.reverse();
                 renderBoardPosts();
             });
         }
