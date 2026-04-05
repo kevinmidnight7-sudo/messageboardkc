@@ -2309,6 +2309,7 @@
                     </button>
                     <button onclick="switchRightTab('board')" id="righttab-board" class="rp-tab">
                         <i class="fa-solid fa-comments"></i> Board
+                        <span id="rp-board-notif-badge" class="rp-tab-badge hidden">!</span>
                     </button>
                 </div>
 
@@ -2368,9 +2369,12 @@
                 <!-- ── BOARD PANEL ── -->
                 <div id="rightpanel-board" class="hidden flex-1 flex flex-col overflow-hidden">
                     <!-- Board filter + compose toggle -->
-                    <div class="px-3 py-2 flex items-center gap-2" style="border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <button onclick="filterBoard('all')" id="board-filter-all" class="feed-chip active px-3 py-1 rounded-full text-xs font-bold transition">All</button>
-                        <button onclick="filterBoard('friends')" id="board-filter-friends" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition">Friends</button>
+                    <div class="px-3 py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar" style="border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <button onclick="filterBoard('all')" id="board-filter-all" class="feed-chip active px-3 py-1 rounded-full text-xs font-bold transition flex-shrink-0">All</button>
+                        <button onclick="filterBoard('friends')" id="board-filter-friends" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition flex-shrink-0">Friends</button>
+                        <button onclick="filterBoard('mine')" id="board-filter-mine" class="feed-chip px-3 py-1 rounded-full glass text-xs font-bold text-gray-500 transition flex-shrink-0" style="position:relative;">
+                            My Posts<span id="board-mine-badge" class="rp-tab-badge hidden" style="position:absolute;top:-5px;right:-5px;min-width:14px;height:14px;font-size:9px;padding:0 3px;">!</span>
+                        </button>
                         <button onclick="openBoardCompose()" class="ml-auto px-3 py-1.5 rounded-xl text-xs font-bold transition flex-shrink-0"
                                 style="background:var(--theme-accent,#3b82f6);color:#fff;touch-action:manipulation;">
                             <i class="fa-solid fa-pen-to-square mr-1"></i>Post
@@ -3533,6 +3537,8 @@
             if (boardLoaded) { renderBoardPosts(); return; }
             boardLoaded = true;
             if (el) el.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">Loading...</div>';
+            // Pre-load user profiles for avatar lookups (non-blocking)
+            ensureSearchDataLoaded().catch(() => {});
             // No orderByChild — fetch latest by push-key so NO messages are skipped due to missing time field
             db.ref('messages').limitToLast(100).on('value', snap => {
                 boardPosts = [];
@@ -3548,12 +3554,13 @@
                     return b.id > a.id ? 1 : -1;
                 });
                 renderBoardPosts();
+                checkBoardNotifications();
             });
         }
 
         function filterBoard(f) {
             boardFilter = f;
-            ['all','friends'].forEach(k => {
+            ['all','friends','mine'].forEach(k => {
                 const el = document.getElementById(`board-filter-${k}`);
                 if (el) {
                     el.classList.toggle('active', k === f);
@@ -3561,6 +3568,16 @@
                     el.classList.toggle('text-gray-500', k !== f);
                 }
             });
+            // Viewing My Posts clears the notification badge
+            if (f === 'mine') {
+                const seen = boardPosts.filter(p => p.uid === currentUser?.uid).reduce((n, p) => {
+                    return n + Object.keys(p.replies || {}).length +
+                        Object.values(p.reactions || {}).reduce((rn, u) => rn + Object.keys(u).length, 0);
+                }, 0);
+                localStorage.setItem('kc_board_notif_seen', String(seen));
+                document.getElementById('rp-board-notif-badge')?.classList.add('hidden');
+                document.getElementById('board-mine-badge')?.classList.add('hidden');
+            }
             renderBoardPosts();
         }
 
@@ -3570,11 +3587,16 @@
             let posts = boardPosts;
             if (boardFilter === 'friends') {
                 const friendUids = new Set(friendsList.map(f => f.uid));
-                if (currentUser) friendUids.add(currentUser.uid);
+                // Don't add current user — "Friends" should show friends only, not own posts
                 posts = posts.filter(p => friendUids.has(p.uid));
+            } else if (boardFilter === 'mine') {
+                posts = posts.filter(p => p.uid === currentUser?.uid);
             }
+            const emptyMsg = boardFilter === 'friends' ? 'No posts from friends yet'
+                           : boardFilter === 'mine' ? (currentUser ? 'You haven\'t posted yet' : 'Sign in to see your posts')
+                           : 'No posts yet — be the first!';
             if (posts.length === 0) {
-                el.innerHTML = `<div class="text-center py-10 text-gray-600 text-xs italic">${boardFilter === 'friends' ? 'No posts from friends yet' : 'No posts yet — be the first!'}</div>`;
+                el.innerHTML = `<div class="text-center py-10 text-gray-600 text-xs italic">${emptyMsg}</div>`;
                 return;
             }
             el.innerHTML = posts.map(p => _buildBoardPost(p)).join('');
@@ -3582,6 +3604,9 @@
 
         function _buildBoardPost(p) {
             const myUid = currentUser?.uid;
+            // Look up real avatar from cached user data (messages don't store avatars)
+            const cachedUser = allUsersData.find(u => u.uid === p.uid);
+            const avatar = p.avatar || cachedUser?.profilePicture || cachedUser?.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
             // messages collection uses likedBy:{uid:true} for who liked, likes as numeric count
             const liked = myUid && p.likedBy && p.likedBy[myUid];
             const likeCount = p.likes || 0;
@@ -3601,7 +3626,7 @@
             return `
             <div class="board-post">
                 <div class="flex items-center gap-2 mb-2">
-                    <img src="${p.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}"
+                    <img src="${avatar}"
                          class="w-7 h-7 rounded-full object-cover flex-shrink-0 cursor-pointer"
                          onclick="window.openKcProfile('${p.uid}')">
                     <div class="flex-1 min-w-0">
@@ -3624,6 +3649,26 @@
                     </button>
                 </div>
             </div>`;
+        }
+
+        function checkBoardNotifications() {
+            if (!currentUser) return;
+            // Count total interactions (replies + reactions/likes from others) on own posts
+            const myPosts = boardPosts.filter(p => p.uid === currentUser.uid);
+            let total = 0;
+            myPosts.forEach(p => {
+                total += Object.keys(p.replies || {}).length;
+                Object.values(p.reactions || {}).forEach(users => {
+                    total += Object.keys(users).filter(u => u !== currentUser.uid).length;
+                });
+                total += Object.keys(p.likedBy || {}).filter(u => u !== currentUser.uid).length;
+            });
+            const lastSeen = parseInt(localStorage.getItem('kc_board_notif_seen') || '0', 10);
+            const newCount = Math.max(0, total - lastSeen);
+            const tabBadge = document.getElementById('rp-board-notif-badge');
+            const chipBadge = document.getElementById('board-mine-badge');
+            if (tabBadge) { tabBadge.textContent = newCount || '•'; tabBadge.classList.toggle('hidden', newCount === 0); }
+            if (chipBadge) { chipBadge.textContent = newCount || '•'; chipBadge.classList.toggle('hidden', newCount === 0); }
         }
 
         function escapeHtml(str) {
