@@ -578,15 +578,28 @@
 
         /* ===== Graphics Quality Modes ===== */
         /* Applied via <html class="graphics-low|graphics-high"> */
+
+        /* Low graphics: remove backdrop-filter entirely (biggest GPU win),
+           kill all CSS animations on the background scene, and hide diamond
+           overlay animations. The JS loop is also cancelled (see initDynamicBackground). */
         .graphics-low .glass,
         .graphics-low .glass-hover {
-            backdrop-filter: blur(4px) !important;
-            -webkit-backdrop-filter: blur(4px) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background: rgba(12, 18, 30, 0.82) !important;
         }
         .graphics-low .animated-gradient { animation: none !important; transform: none !important; }
-        .graphics-low .kc-bg-layer     { transform: none !important; filter: none !important; }
-        .graphics-low .glass-hover:hover { transform: translateY(-2px) !important; box-shadow: none !important; }
-        .graphics-low .glow-on-hover:hover { box-shadow: none !important; transform: translateY(-2px) !important; }
+        .graphics-low .kc-bg-layer { animation: none !important; transform: none !important; filter: none !important; transition: none !important; }
+        .graphics-low .kc-bg-scene > * { animation: none !important; transition: none !important; }
+        .graphics-low .glass-hover:hover { transform: none !important; box-shadow: none !important; }
+        .graphics-low .glow-on-hover:hover { box-shadow: none !important; transform: none !important; }
+        .graphics-low .btn-lift { transition: none !important; transform: none !important; }
+        /* Kill diamond panel overlay animations in low mode */
+        .graphics-low #right-panel-inner::after,
+        .graphics-low .qa-panel::before,
+        .graphics-low #kc-launchpad > div::before { display: none !important; }
+        /* Hide the shapes canvas entirely */
+        .graphics-low #bg-shapes-canvas { display: none !important; }
         /* First-run graphics picker overlay */
         #graphics-firstrun {
             position: fixed; inset: 0; z-index: 99999;
@@ -3624,6 +3637,9 @@
             localStorage.setItem('kc_graphics', mode);
             const ind = document.getElementById('qa-graphics-indicator');
             if (ind) ind.textContent = mode === 'low' ? 'Low' : 'High';
+            // Re-init background: low mode kills the rAF loop + canvas entirely,
+            // high mode restores them.
+            if (document.getElementById('bg-canvas')) initDynamicBackground();
         }
 
         function openGraphicsSettings() {
@@ -4509,11 +4525,15 @@
             backgroundScene = document.getElementById('bg-3d-root');
             applyBackgroundPreset(backgroundPrefs.preset);
 
+            // Low graphics mode: static background only — no canvas, no animation loop
+            if (document.documentElement.classList.contains('graphics-low')) return;
+
             // Add floating-shapes canvas on top of gradient layers
             // Extend 10% beyond viewport on each side so shapes don't pop in/out at edges
             const _cw = Math.ceil(window.innerWidth * 1.2), _ch = Math.ceil(window.innerHeight * 1.2);
             const _dpr = window.devicePixelRatio || 1;
             bgShapesCanvas = document.createElement('canvas');
+            bgShapesCanvas.id = 'bg-shapes-canvas';
             bgShapesCanvas.style.cssText = 'position:absolute;top:-10%;left:-10%;width:120%;height:120%;pointer-events:none;';
             bgShapesCanvas.width  = Math.ceil(_cw * _dpr);
             bgShapesCanvas.height = Math.ceil(_ch * _dpr);
