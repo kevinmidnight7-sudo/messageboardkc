@@ -5649,7 +5649,7 @@
                 modal.update(`
                     <div class="space-y-6">
                         <div class="text-center py-6">
-                            <div class="text-7xl mb-4"><i class="fa-solid fa-worm text-green-400"></i></div>
+                            <div class="text-5xl mb-4"><i class="fa-solid fa-worm text-green-400"></i></div>
                             <p class="text-xl font-bold mb-2">Live Servers via Discord Bot</p>
                             <p class="text-gray-400 text-sm max-w-sm mx-auto">
                                 Slither.io server listings are fetched live from the NTL network by the KC Discord bot.
@@ -5691,7 +5691,7 @@
                 modal.update(`
                     <div class="space-y-6">
                         <div class="text-center py-4">
-                            <div class="text-6xl mb-3"><i class="fa-solid fa-worm text-green-400"></i></div>
+                            <div class="text-5xl mb-3"><i class="fa-solid fa-worm text-green-400"></i></div>
                             <p class="text-xl font-bold mb-2">Server Data Unavailable</p>
                             <p class="text-gray-400 text-sm max-w-sm mx-auto">Live server listings are managed by the KC Discord bot. Use the command below in the KC Discord server.</p>
                         </div>
@@ -7482,10 +7482,10 @@
                             <div class="glass p-3 rounded-2xl text-xs text-left">
                                 <p class="font-bold mb-2">Payouts (3 of a kind):</p>
                                 <div class="grid grid-cols-2 gap-1 text-gray-400">
-                                    <span>💎 Diamond ×10</span><span>7️⃣ Seven ×50</span>
-                                    <span>🎰 Slots ×20</span><span>⭐ Star ×5</span>
-                                    <span>🍊 Orange ×4</span><span>🍋 Lemon ×3</span>
-                                    <span>🍒 Cherry ×2</span><span>Pair: ½ bet back</span>
+                                    <span><i class="fa-solid fa-gem text-blue-300"></i> Diamond ×10</span><span>7️⃣ Seven ×50</span>
+                                    <span><i class="fa-solid fa-dice text-yellow-400"></i> Slots ×20</span><span><i class="fa-solid fa-star text-yellow-300"></i> Star ×5</span>
+                                    <span><i class="fa-solid fa-circle-dot text-orange-400"></i> Orange ×4</span><span><i class="fa-solid fa-circle-dot text-yellow-400"></i> Lemon ×3</span>
+                                    <span><i class="fa-solid fa-circle-dot text-red-400"></i> Cherry ×2</span><span>Pair: ½ bet back</span>
                                 </div>
                             </div>
                         </div>
@@ -7531,19 +7531,19 @@
 
             setTimeout(()=>{
                 slotsSpinning=false;
-                if(btn){btn.disabled=false;btn.textContent='<i class="fa-solid fa-arrows-spin mr-1"></i>SPIN!';}
+                if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-arrows-spin mr-1"></i>SPIN!';}
                 const [a,b,c]=finals;
                 let delta=-slotsBet, msg='';
                 if(a===b&&b===c){
                     const mult=SLOT_PAY[a]||2;
                     delta=slotsBet*mult;
-                    msg=a==='7️⃣'?`🎉 JACKPOT! +${delta} pts`:`🎉 TRIPLE ${a}! +${delta} pts`;
+                    msg=a==='7️⃣'?`JACKPOT! +${delta} pts`:`TRIPLE ${a}! +${delta} pts`;
                     [0,1,2].forEach(i=>{const el=document.getElementById(`slot-${i}`);if(el)el.classList.add('jackpot-flash');});
                 } else if(a===b||b===c||a===c){
                     delta=Math.floor(slotsBet*0.5);
                     msg=`✨ Pair! +${delta} pts`;
                 } else {
-                    msg=`😞 No match. -${slotsBet} pts`;
+                    msg=`<i class='fa-solid fa-face-sad-tear text-red-400'></i> No match. -${slotsBet} pts`;
                 }
                 const res=document.getElementById('slots-result');
                 if(res){res.textContent=msg;res.className=`text-sm font-bold min-h-[22px] ${delta>0?'text-green-400':'text-red-400'}`;}
@@ -7601,7 +7601,7 @@
 
         // ===== CLAN DETAILS (Phase 4) =====
         async function openClanDetails(clanId) {
-            const modal = openModalWithLoading('🛡 Clan', 'Loading clan...');
+            const modal = openModalWithLoading('Clan', 'Loading clan...');
             if (!modal) return;
             try {
                 const clanSnap = await db.ref(`clans/${clanId}`).once('value');
@@ -7681,7 +7681,7 @@
                     return showToast('Use /buy ' + itemKey + ' in Discord to configure this item', 'info');
                 }
                 await db.ref(`userEconomy/${discordId}`).update(updates);
-                showToast('Purchased! ✓', 'success');
+                showToast('Purchased!', 'success');
                 closeModal();
                 setTimeout(openEconomyShop, 200);
             } catch(e) {
@@ -7691,7 +7691,7 @@
 
         function openEconomyShop() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('🛒 Economy Shop', 'Loading your balance...');
+            const modal = openModalWithLoading('Economy Shop', 'Loading your balance...');
             if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const economyPromise = discordId
@@ -7734,10 +7734,10 @@
                                 <p class="text-xs text-gray-500 mt-1">Use /buy in Discord to purchase items</p>
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">🎨 Customization</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-palette text-purple-400 mr-1"></i>Customization</h3>
                                 ${hasCustomization ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Profile Customization</p>
+                                        <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Profile Customization</p>
                                         <p class="text-xs text-gray-400">Unlocked! Use Discord /customize command</p>
                                     </div>
                                 ` : `
@@ -7758,7 +7758,7 @@
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <p class="font-bold text-green-400">✅ Custom Badge</p>
+                                                <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Custom Badge</p>
                                                 <p class="text-xs text-gray-400">Already created</p>
                                             </div>
                                             <div class="text-right">
@@ -7783,10 +7783,10 @@
                                 `}
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">🔓 Unlocks</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-lock-open mr-1"></i>Unlocks</h3>
                                 ${betLimitIncreased ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Increased Bet Limit</p>
+                                        <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Increased Bet Limit</p>
                                         <p class="text-xs text-gray-400">Max bet raised to 10,000 pts</p>
                                     </div>
                                 ` : `
@@ -7805,7 +7805,7 @@
                                 `}
                                 ${specialGameUnlocked ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Stock Market</p>
+                                        <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Stock Market</p>
                                         <p class="text-xs text-gray-400">Special game unlocked — use /stocks in Discord</p>
                                     </div>
                                 ` : `
@@ -7824,7 +7824,7 @@
                                 `}
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">🎮 Gameplay Items</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-gamepad text-blue-400 mr-1"></i>Gameplay Items</h3>
                                 <div class="glass p-4 rounded-2xl border border-white/10">
                                     <div class="flex items-center justify-between">
                                         <div>
@@ -7862,12 +7862,12 @@
                                     </div>
                                 </div>
                                 <div class="space-y-2">
-                                    <p class="text-sm font-semibold text-gray-300">⚡ Points Boost</p>
+                                    <p class="text-sm font-semibold text-gray-300"><i class="fa-solid fa-bolt text-yellow-400 mr-1"></i>Points Boost</p>
                                     ${boostHtml}
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">💬 Other</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-comment text-blue-400 mr-1"></i>Other</h3>
                                 <div class="glass p-4 rounded-2xl border border-white/10">
                                     <div class="flex items-center justify-between">
                                         <div>
@@ -7936,14 +7936,14 @@
                     modal.update(`
                         <div class="space-y-5">
                             <div class="text-center space-y-3">
-                                <div class="text-6xl">✅</div>
+                                <div class="text-6xl"><i class="fa-solid fa-circle-check text-green-400"></i></div>
                                 <p class="text-xl font-bold">Already Claimed Today</p>
                                 <p class="text-gray-400 text-sm">Next reward available in <span class="text-blue-400 font-bold">${h}h ${m}m</span></p>
                             </div>
                             <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">Current Streak</p>
-                                    <p class="text-3xl font-black text-orange-400">${currentStreak} 🔥</p>
+                                    <p class="text-3xl font-black text-orange-400">${currentStreak} <i class="fa-solid fa-fire text-orange-400"></i></p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">KC Points</p>
@@ -7972,19 +7972,19 @@
                 modal.update(`
                     <div class="space-y-5">
                         <div class="text-center space-y-3">
-                            <div class="text-6xl animate-bounce">🎁</div>
+                            <div class="text-6xl animate-bounce"><i class="fa-solid fa-gift text-purple-400" style="font-size:2.5rem;"></i></div>
                             <p class="text-xl font-bold">Claim Your Daily Reward</p>
-                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak${milestoneBonus ? ` — <span class="text-yellow-400 font-bold">🏆 Milestone Bonus +${milestoneBonus}!</span>` : ''}</p>
-                            ${usedProtection ? `<p class="text-xs text-purple-400">🛡 Streak protection used to maintain streak</p>` : ''}
+                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak${milestoneBonus ? ` — <span class="text-yellow-400 font-bold"><i class="fa-solid fa-trophy text-yellow-400 mr-1"></i>Milestone Bonus +${milestoneBonus}!</span>` : ''}</p>
+                            ${usedProtection ? `<p class="text-xs text-purple-400"><i class="fa-solid fa-shield text-blue-400 mr-1"></i>Streak protection used to maintain streak</p>` : ''}
                         </div>
                         <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                             <div>
                                 <p class="text-xs text-gray-500 uppercase font-bold mb-1">New Streak</p>
-                                <p class="text-3xl font-black text-orange-400">${newStreak} 🔥</p>
+                                <p class="text-3xl font-black text-orange-400">${newStreak} <i class="fa-solid fa-fire text-orange-400"></i></p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 uppercase font-bold mb-1">Reward</p>
-                                <p class="text-3xl font-black text-yellow-400">+${reward} 💰</p>
+                                <p class="text-3xl font-black text-yellow-400">+${reward} <i class="fa-solid fa-coins text-yellow-400"></i></p>
                             </div>
                         </div>
                         <button id="daily-claim-btn" onclick="executeDailyClaim('${discordId}',${newStreak},${newLongest},${reward},${points},${usedProtection})" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 font-black text-lg rounded-2xl transition">
@@ -8029,7 +8029,7 @@
                             <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">Streak</p>
-                                    <p class="text-3xl font-black text-orange-400">${newStreak} 🔥</p>
+                                    <p class="text-3xl font-black text-orange-400">${newStreak} <i class="fa-solid fa-fire text-orange-400"></i></p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">Points</p>
@@ -8144,19 +8144,19 @@
                     const badges = snap.val() || {};
                     const badgeList = Object.entries(badges).map(([id, timestamp]) => ({ id, timestamp }));
                     const badgeDefs = {
-                        first_win:        { emoji: '🎯', name: 'First Win',        desc: 'Won your first game' },
-                        blackjack_master:  { emoji: '🃏', name: 'Blackjack Master', desc: '10 blackjack wins' },
-                        high_roller:       { emoji: '💎', name: 'High Roller',      desc: 'Bet 1000+ points' },
-                        consistent:        { emoji: '📅', name: 'Consistent',       desc: '7 day login streak' },
-                        dedicated:         { emoji: '⭐', name: 'Dedicated',        desc: '30 day login streak' },
-                        legend:            { emoji: '👑', name: 'Legend',           desc: '100 day login streak' },
-                        eternal:           { emoji: '♾️', name: 'Eternal',          desc: '365 day login streak' },
-                        lucky_seven:       { emoji: '🎰', name: 'Lucky Seven',      desc: 'Triple 7s on slots' },
-                        millionaire:       { emoji: '💰', name: 'Millionaire',      desc: 'Earned 1M points total' }
+                        first_win:        { emoji: '<i class="fa-solid fa-bullseye text-green-400"></i>',  name: 'First Win',        desc: 'Won your first game' },
+                        blackjack_master:  { emoji: '<i class="fa-solid fa-cards text-blue-400"></i>',    name: 'Blackjack Master', desc: '10 blackjack wins' },
+                        high_roller:       { emoji: '<i class="fa-solid fa-gem text-blue-300"></i>',      name: 'High Roller',      desc: 'Bet 1000+ points' },
+                        consistent:        { emoji: '<i class="fa-solid fa-calendar-check text-blue-400"></i>', name: 'Consistent', desc: '7 day login streak' },
+                        dedicated:         { emoji: '<i class="fa-solid fa-star text-yellow-400"></i>',   name: 'Dedicated',        desc: '30 day login streak' },
+                        legend:            { emoji: '<i class="fa-solid fa-crown text-yellow-400"></i>',  name: 'Legend',           desc: '100 day login streak' },
+                        eternal:           { emoji: '<i class="fa-solid fa-infinity text-purple-400"></i>', name: 'Eternal',        desc: '365 day login streak' },
+                        lucky_seven:       { emoji: '<i class="fa-solid fa-dice text-yellow-400"></i>',   name: 'Lucky Seven',      desc: 'Triple 7s on slots' },
+                        millionaire:       { emoji: '<i class="fa-solid fa-coins text-yellow-400"></i>',  name: 'Millionaire',      desc: 'Earned 1M points total' }
                     };
                     const listHTML = badgeList.length > 0
                         ? badgeList.map(b => {
-                            const def = badgeDefs[b.id] || { emoji: '🏅', name: b.id, desc: 'Unknown achievement' };
+                            const def = badgeDefs[b.id] || { emoji: '<i class="fa-solid fa-medal text-yellow-400"></i>', name: b.id, desc: 'Unknown achievement' };
                             return `
                                 <div class="glass p-4 rounded-3xl flex items-center gap-4 hover:bg-white/10 transition">
                                     <div class="text-5xl">${def.emoji}</div>
@@ -8193,7 +8193,7 @@
                 // New achievements
                 db.ref(`userEconomy/${discordId}/badges`).on('child_added', snap => {
                     if (Date.now() - snap.val() < 10000) {
-                        showToast(`🏆 Achievement Unlocked: ${snap.key}`, 'success', 5000);
+                        showToast('Achievementnt Unlocked: ${snap.key}`, 'success', 5000);
                     }
                 });
                 // Points increases
@@ -8201,7 +8201,7 @@
                 db.ref(`userEconomy/${discordId}/points`).on('value', snap => {
                     const newPoints = snap.val() || 0;
                     if (lastPoints !== null && newPoints > lastPoints) {
-                        showToast(`💰 +${(newPoints - lastPoints).toLocaleString()} points earned!`, 'success', 3000);
+                        showToast(`+${(newPoints - lastPoints).toLocaleString()} points earned!`, 'success', 3000);
                     }
                     lastPoints = newPoints;
                 });
@@ -8344,7 +8344,7 @@
                     custBadgeEl.classList.remove('hidden');
                     custBadgeEl.innerHTML =
                         `<div class="glass rounded-2xl p-4 flex items-center gap-3" style="border:1px solid rgba(255,255,255,0.06);">
-                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '⭐'}</span>
+                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '<i class="fa-solid fa-star"></i>'</span>
                             <div>
                                 <p class="font-black text-sm">${u.customBadge.name || 'Custom Badge'}</p>
                                 ${u.customBadge.description ? `<p class="text-xs text-gray-400 mt-0.5">${u.customBadge.description}</p>` : ''}
@@ -8370,7 +8370,7 @@
                                     <img src="${d.icon}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">
                                 </div>
                                 <span style="font-size:0.6rem;font-weight:800;letter-spacing:0.06em;color:#94a3b8;text-transform:uppercase;">${d.label}</span>
-                                <span style="font-size:0.8rem;font-weight:900;color:#fff;">${locked?'🔒':'×'+score}</span>
+                                <span style="font-size:0.8rem;font-weight:900;color:#fff;">${locked?'<i class="fa-solid fa-lock"></i>':'×'+score}</span>
                             </div>`;
                         }).join('');
                     }
@@ -8387,7 +8387,7 @@
                     const pts    = economy.points || 0;
                     const streak = economy.streaks?.login?.current || 0;
                     setText('pf-points', pts.toLocaleString());
-                    setText('pf-streak', streak > 0 ? streak + ' 🔥' : '–');
+                    setText('pf-streak', streak > 0 ? streak + ' <i class="fa-solid fa-fire text-orange-400"></i>' : '–');
                     // Rank: use bot-written economy.rank field if present
                     const rank = economy.rank;
                     if (rank != null && rank !== '') {
@@ -8419,7 +8419,7 @@
 
         async function openBadgeManager() {
             if (!currentUser) return openAuthModal();
-            const M = openModalWithLoading('🏅 My Badges', 'Loading badges...');
+            const M = openModalWithLoading('My Badges', 'Loading badges...');
             if (!M) return;
             const uid = currentUser.uid;
             try {
@@ -8463,7 +8463,7 @@
                 return `<div style="flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:16px;background:${bg};opacity:${locked?0.5:1};${isHigh&&!locked?`box-shadow:0 4px 20px ${s.glow}55;`:''}" class="${isHigh&&!locked?'bdg-float':''}">
                     <img src="${s.icon}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">
                     <span style="font-size:0.6rem;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,0.85);text-transform:uppercase;text-align:center;line-height:1.2;">${s.label}</span>
-                    <span style="font-size:0.9rem;font-weight:900;color:#fff;">${locked?'🔒':`×${cnt}`}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:#fff;">${locked?'<i class="fa-solid fa-lock"></i>':`×${cnt}`}</span>
                 </div>`;
             }).join('');
 
@@ -8473,16 +8473,16 @@
                 const badge = customData[key];
                 const bg = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
                 return `<div id="cbdg_${key}" onclick="_bdgEditCustom('${key}')" style="flex:1;min-width:100px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:${bg};cursor:pointer;position:relative;${isHigh?'box-shadow:0 4px 16px rgba(0,0,0,0.4);':''}" class="${isHigh?'bdg-float':''}">
-                    <span style="font-size:2rem;line-height:1;">${badge.icon||'⭐'}</span>
+                    <span style="font-size:2rem;line-height:1;">${badge.icon||'<i class="fa-solid fa-star"></i>'</span>
                     <span style="font-size:0.65rem;font-weight:800;color:${badge.textColor||'#e5e7eb'};text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${badge.name||'Badge'}</span>
-                    <span style="position:absolute;top:5px;right:8px;font-size:0.75rem;opacity:0.7;">✏️</span>
-                    <button onclick="event.stopPropagation();_bdgDeleteCustom('${key}')" style="position:absolute;top:5px;left:8px;font-size:0.65rem;background:rgba(0,0,0,0.35);border:none;color:#fff;border-radius:6px;padding:1px 5px;cursor:pointer;">✕</button>
+                    <span style="position:absolute;top:5px;right:8px;font-size:0.75rem;opacity:0.7;"><i class="fa-solid fa-pen"></i></span>
+                    <button onclick="event.stopPropagation();_bdgDeleteCustom('${key}')" style="position:absolute;top:5px;left:8px;font-size:0.65rem;background:rgba(0,0,0,0.35);border:none;color:#fff;border-radius:6px;padding:1px 5px;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                 </div>`;
             }).join('');
 
             const createBtn = canCreate ? `
                 <button onclick="_bdgStartCreate()" style="flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%);cursor:pointer;border:none;" class="${isHigh?'bdg-float':''}">
-                    <span style="font-size:2rem;">➕</span>
+                    <span style="font-size:2rem;"><i class="fa-solid fa-plus"></i></span>
                     <span style="font-size:0.6rem;font-weight:800;color:#78716c;text-transform:uppercase;">Create Badge</span>
                 </button>` : (!allowCreate ? `<p class="text-xs text-gray-500 text-center mt-2">Reach a 50-day login streak or unlock a code to create custom badges.</p>` : `<p class="text-xs text-gray-500 text-center mt-2">Badge slots full (${customKeys.length}/${maxCustom}).</p>`);
 
@@ -8773,7 +8773,7 @@
 
                 openModal('Profile Customization', `
                     <div class="space-y-6">
-                        ${locked ? `<div class="glass p-4 rounded-2xl border border-yellow-500/30 text-sm text-yellow-300 text-center">🔒 Unlock customization via Discord: <code class="bg-white/5 px-2 rounded">/customize</code></div>` : ''}
+                        ${locked ? `<div class="glass p-4 rounded-2xl border border-yellow-500/30 text-sm text-yellow-300 text-center"><i class="fa-solid fa-lock mr-1"></i>Unlock customization via Discord: <code class="bg-white/5 px-2 rounded">/customize</code></div>` : ''}
                         <!-- Live Preview Card -->
                         <div id="cust-preview-card" class="rounded-[30px] relative overflow-hidden min-h-[120px] flex flex-col items-center justify-center py-6 px-8" style="background:${_custState.gradient}">
                             <div id="cust-preview-banner" class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image:${_custState.banner ? `url('${_custState.banner}')` : 'none'};display:${_custState.banner ? 'block' : 'none'}"></div>
@@ -8853,7 +8853,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🔥 Streak Performance</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-fire text-orange-400 mr-1"></i>Streak Performance</p>
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <p class="text-sm text-gray-400">Current Streak</p>
@@ -8869,7 +8869,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🎮 Gaming Stats</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-gamepad text-blue-400 mr-1"></i>Gaming Stats</p>
                                 <div class="space-y-3">
                                     <div class="flex justify-between"><span class="text-sm text-gray-400">Total Games Played</span><span class="font-bold">${gamesPlayed}</span></div>
                                     <div class="flex justify-between"><span class="text-sm text-gray-400">Blackjack Win Rate</span><span class="font-bold text-green-400">${winRate}%</span></div>
@@ -8877,7 +8877,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">💎 KC Profile</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-gem text-blue-300 mr-1"></i>KC Profile</p>
                                 <div class="grid grid-cols-3 gap-3 text-center">
                                     <div><p class="text-xs text-gray-400">Overall</p><p class="text-xl font-bold text-blue-400">${u.overall || 0}</p></div>
                                     <div><p class="text-xs text-gray-400">Offence</p><p class="text-xl font-bold text-red-400">${u.offence || 0}</p></div>
@@ -8885,7 +8885,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🏟️ Battledome</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-building text-gray-400 mr-1"></i>Battledome</p>
                                 <div class="text-center">
                                     <p class="text-xs text-gray-400 mb-2">Personal Best</p>
                                     <p class="text-4xl font-bold text-red-400">${(u.bdHighscore || 0).toLocaleString()}</p>
@@ -9198,7 +9198,7 @@
                         <button onclick="applyFeedFilters()" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">Apply Filters</button>
                         <button onclick="clearFeedFilters()" class="px-6 py-3 glass font-bold rounded-2xl hover:bg-white/10 transition">Clear</button>
                     </div>
-                    ${(feedSearchQuery || feedDateFilter !== 'all') ? '<p class="text-center text-xs text-blue-400">⚡ Filters active</p>' : ''}
+                    ${(feedSearchQuery || feedDateFilter !== 'all') ? '<p class="text-center text-xs text-blue-400"><i class="fa-solid fa-bolt text-blue-400 mr-1"></i>Filters active</p>' : ''}
                 </div>
             `);
         }
@@ -9500,7 +9500,7 @@
             });
             if (!localStorage.getItem('kcnow_shortcuts_v3')) {
                 setTimeout(() => {
-                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • F=Friends', 'info', 9000);
+                    showToast('Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • F=Friends', 'info', 9000);
                     localStorage.setItem('kcnow_shortcuts_v3', 'true');
                 }, 2000);
             }
