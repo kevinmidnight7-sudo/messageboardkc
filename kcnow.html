@@ -1926,7 +1926,7 @@
                                     style="padding:0.8rem 2.2rem;background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);color:white;font-weight:800;font-size:0.9rem;border-radius:16px;border:none;cursor:pointer;box-shadow:0 4px 22px rgba(59,130,246,0.42);letter-spacing:0.03em;transition:all 0.2s;font-family:Poppins,sans-serif;"
                                     onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(59,130,246,0.58)'"
                                     onmouseout="this.style.transform='';this.style.boxShadow='0 4px 22px rgba(59,130,246,0.42)'">
-                                    🚀 Join KC NOW
+                                    <i class="fa-solid fa-rocket mr-1"></i>Join KC NOW
                                 </button>
                                 <button onclick="openAuthModal()"
                                     style="padding:0.8rem 1.75rem;background:rgba(255,255,255,0.06);color:#cbd5e1;font-weight:700;font-size:0.88rem;border-radius:16px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:background 0.2s;font-family:Poppins,sans-serif;"
@@ -1952,17 +1952,17 @@
                     <!-- Feature preview row -->
                     <div class="grid grid-cols-3 gap-3">
                         <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
-                            <div style="font-size:1.75rem;">🏆</div>
+                            <div style="font-size:1.4rem;"><i class="fa-solid fa-trophy text-yellow-400"></i></div>
                             <div style="font-size:0.75rem;font-weight:800;color:#fbbf24;">Leaderboard</div>
                             <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Compete for<br>the top spot</div>
                         </div>
                         <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
-                            <div style="font-size:1.75rem;">💰</div>
+                            <div style="font-size:1.4rem;"><i class="fa-solid fa-coins text-yellow-400"></i></div>
                             <div style="font-size:0.75rem;font-weight:800;color:#60a5fa;">Economy</div>
                             <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Earn, spend<br>and flex</div>
                         </div>
                         <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
-                            <div style="font-size:1.75rem;">⚔️</div>
+                            <div style="font-size:1.4rem;"><i class="fa-solid fa-swords text-red-400"></i></div>
                             <div style="font-size:0.75rem;font-weight:800;color:#f87171;">Battledome</div>
                             <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Climb the<br>arena ranks</div>
                         </div>
@@ -2024,7 +2024,7 @@
 
                     <button onclick="renderBattledome()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
                         <div class="hub-icon w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition">
-                            ⚔️
+                            <i class="fa-solid fa-swords"></i>
                         </div>
                         <span class="font-bold text-sm tracking-wide">Battledome</span>
                         <div id="bd-hub-counts" class="text-[10px] bg-red-500/15 text-red-300 px-3 py-0.5 rounded-full font-black" style="letter-spacing:0.02em">EU: – &nbsp; NA: –</div>
@@ -2205,7 +2205,7 @@
                         </button>
                         <button id="clans-subtab-battles" onclick="switchClansSubTab('battles')"
                             class="px-5 py-2 rounded-xl text-sm font-bold transition glass text-gray-400 hover:text-white">
-                            ⚔️ Battles
+                            <i class="fa-solid fa-swords mr-1"></i> Battles
                         </button>
                     </div>
                     <!-- Clans panel -->
@@ -2217,7 +2217,7 @@
                         <div class="flex gap-2 mb-5 flex-wrap">
                             <button id="battles-filter-upcoming" onclick="setKcnowBattlesFilter('upcoming')"
                                 class="px-4 py-1.5 rounded-full text-sm font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 transition">
-                                🔥 Upcoming
+                                <i class="fa-solid fa-fire text-orange-400 mr-1"></i> Upcoming
                             </button>
                             <button id="battles-filter-past" onclick="setKcnowBattlesFilter('past')"
                                 class="px-4 py-1.5 rounded-full text-sm font-bold glass text-gray-400 border border-white/10 transition hover:text-white">
@@ -2419,7 +2419,7 @@
                    flex-direction:column;align-items:center;justify-content:center;gap:2px;
                    touch-action:manipulation;
                    transition:transform 0.15s,box-shadow 0.15s;">
-        <span style="font-size:1.1rem;line-height:1;">📡</span>
+        <i class="fa-solid fa-satellite-dish" style="font-size:0.95rem;"></i>
         <span style="font-size:0.52rem;font-weight:800;letter-spacing:0.12em;color:#60a5fa;text-transform:uppercase;">Live</span>
     </button>
 
@@ -2924,7 +2924,7 @@
                 // ── Discord OAuth return: show success toast once signed in ──────
                 if (sessionStorage.getItem('kc-discord-just-linked')) {
                     sessionStorage.removeItem('kc-discord-just-linked');
-                    setTimeout(() => showToast('🎉 Discord linked successfully!', 'success', 5000), 800);
+                    setTimeout(() => showToast('Discord linked successfully!', 'success', 5000), 800);
                 }
 
                 try { await user.reload(); } catch (e) {}
@@ -3521,7 +3521,7 @@
                             <span class="flex-1 text-xs font-bold truncate">${u.displayName}</span>
                             ${isMe ? '<span class="text-[10px] text-gray-500">You</span>' :
                               isFriend ? '<span class="text-[10px] text-green-400"><i class="fa-solid fa-check mr-0.5"></i>Friends</span>' :
-                              `<button onclick="sendFriendRequest('${u.uid}');this.textContent='Sent ✓';this.disabled=true"
+                              `<button onclick="sendFriendRequest('${u.uid}');this.innerHTML='<i class="fa-solid fa-check"></i> Sent';this.disabled=true"
                                        class="px-2 py-1 text-[10px] font-black rounded-lg text-white transition"
                                        style="background:var(--theme-accent,#3b82f6);touch-action:manipulation;">Add</button>`}
                         </div>`;
@@ -3531,29 +3531,73 @@
 
         // ===== BOARD PANEL =====
         let boardPosts = [], boardFilter = 'all', boardLoaded = false;
+        // Lightweight per-UID avatar cache — avoids loading all users just for avatars
+        const _uidAvatarCache = {};
+        let _boardNewMsgRef = null; // listener for new messages (child_added after last key)
+
+        function _resolveAvatar(uid) {
+            // 1. Check cache, 2. Check allUsersData (if already loaded), 3. Fetch specific user
+            if (_uidAvatarCache[uid] !== undefined) return _uidAvatarCache[uid];
+            const cached = allUsersData.find(u => u.uid === uid);
+            if (cached) {
+                _uidAvatarCache[uid] = cached.profilePicture || cached.avatar || '';
+                return _uidAvatarCache[uid];
+            }
+            // Async fetch — fetch only this user's avatar fields, re-render when done
+            db.ref(`users/${uid}`).once('value').then(s => {
+                const u = s.val() || {};
+                _uidAvatarCache[uid] = u.profilePicture || u.avatar || '';
+                // Re-render so avatars appear once they arrive
+                if (document.getElementById('rightpanel-board') && !document.getElementById('rightpanel-board').classList.contains('hidden')) {
+                    renderBoardPosts();
+                }
+            }).catch(() => { _uidAvatarCache[uid] = ''; });
+            return ''; // placeholder while loading
+        }
 
         function loadBoardPanel() {
             const el = document.getElementById('board-posts-feed');
             if (boardLoaded) { renderBoardPosts(); return; }
             boardLoaded = true;
             if (el) el.innerHTML = '<div class="text-center py-10 text-gray-600 text-xs italic">Loading...</div>';
-            // Pre-load user profiles for avatar lookups (non-blocking)
-            ensureSearchDataLoaded().catch(() => {});
-            // No orderByChild — fetch latest by push-key so NO messages are skipped due to missing time field
-            db.ref('messages').limitToLast(100).on('value', snap => {
+
+            // COST OPTIMISATION: .once() for initial batch (no re-download on every like/reaction).
+            // A separate child_added listener then picks up genuinely new posts.
+            db.ref('messages').limitToLast(50).once('value').then(snap => {
                 boardPosts = [];
                 snap.forEach(child => {
                     const v = child.val();
                     if (v && (v.text || v.user)) boardPosts.push({ id: child.key, ...v });
                 });
-                // Sort newest-first: prefer time field, fallback to push-key (lexicographic = chronological)
                 boardPosts.sort((a, b) => {
                     const ta = typeof a.time === 'number' ? a.time : 0;
                     const tb = typeof b.time === 'number' ? b.time : 0;
                     if (tb !== ta) return tb - ta;
                     return b.id > a.id ? 1 : -1;
                 });
+                // Prefetch avatars for posts currently visible (async, no spinner)
+                const uids = [...new Set(boardPosts.map(p => p.uid).filter(Boolean))];
+                uids.forEach(uid => _resolveAvatar(uid));
+
                 renderBoardPosts();
+                checkBoardNotifications();
+
+                // Listen for brand-new posts only (not value changes on existing ones)
+                const newestKey = boardPosts.length ? boardPosts[0].id : '0';
+                if (_boardNewMsgRef) _boardNewMsgRef.off();
+                _boardNewMsgRef = db.ref('messages').orderByKey().startAfter(newestKey).limitToLast(5);
+                _boardNewMsgRef.on('child_added', child => {
+                    const v = child.val();
+                    if (!v || (!v.text && !v.user)) return;
+                    // Prepend only if not already present
+                    if (!boardPosts.find(p => p.id === child.key)) {
+                        boardPosts.unshift({ id: child.key, ...v });
+                        _resolveAvatar(v.uid);
+                    }
+                    renderBoardPosts();
+                    checkBoardNotifications();
+                });
+            });
                 checkBoardNotifications();
             });
         }
@@ -3604,9 +3648,9 @@
 
         function _buildBoardPost(p) {
             const myUid = currentUser?.uid;
-            // Look up real avatar from cached user data (messages don't store avatars)
-            const cachedUser = allUsersData.find(u => u.uid === p.uid);
-            const avatar = p.avatar || cachedUser?.profilePicture || cachedUser?.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+            // Use per-UID cache (avoids downloading all users for avatars)
+            const cachedAvatar = _resolveAvatar(p.uid);
+            const avatar = p.avatar || cachedAvatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
             // messages collection uses likedBy:{uid:true} for who liked, likes as numeric count
             const liked = myUid && p.likedBy && p.likedBy[myUid];
             const likeCount = p.likes || 0;
@@ -3616,7 +3660,7 @@
             const reactionHtml = Object.entries(reactions).map(([emo, users]) => {
                 const count = Object.keys(users).length;
                 const myReacted = myUid && users[myUid];
-                return `<button onclick="toggleBoardReaction('${p.id}','${emo}')" class="board-reaction-btn ${myReacted ? 'liked' : ''}">${emo} ${count}</button>`;
+                return `<button onclick="toggleBoardReaction('${p.id}','${emo}')" class="board-reaction-btn ${myReacted ? 'liked' : ''}">${_reactionDisplay(emo)} ${count}</button>`;
             }).join('');
             // messages uses p.user (not p.displayName), p.time (not p.timestamp)
             const authorName = p.user || p.displayName || 'Unknown';
@@ -3734,15 +3778,30 @@
             });
         }
 
-        const _BOARD_REACTIONS = ['❤️','😂','🔥','👏','😮','💯'];
+        // Reactions stored as emoji keys in Firebase — map to FA icons for display
+        const _BOARD_REACTIONS = [
+            { key:'❤️',  icon:'fa-heart',            color:'text-red-400' },
+            { key:'😂',  icon:'fa-face-laugh-tears', color:'text-yellow-400' },
+            { key:'🔥',  icon:'fa-fire',             color:'text-orange-400' },
+            { key:'👏',  icon:'fa-hands-clapping',   color:'text-yellow-300' },
+            { key:'😮',  icon:'fa-face-surprise',    color:'text-blue-400' },
+            { key:'💯',  icon:'fa-circle-check',     color:'text-green-400' },
+        ];
+        // Returns display HTML for a reaction emoji key (falls back to the emoji itself)
+        function _reactionDisplay(emojiKey) {
+            const r = _BOARD_REACTIONS.find(r => r.key === emojiKey);
+            return r ? `<i class="fa-solid ${r.icon} ${r.color}"></i>` : emojiKey;
+        }
         function pickBoardReaction(postId) {
             if (!currentUser) { openAuthModal(); return; }
             openModal('React', `
                 <div class="grid grid-cols-3 gap-3 py-4">
-                    ${_BOARD_REACTIONS.map(e => `
-                        <button onclick="toggleBoardReaction('${postId}','${e}');closeModal()"
-                                class="text-3xl p-4 rounded-2xl glass hover:bg-white/10 transition"
-                                style="touch-action:manipulation;">${e}</button>
+                    ${_BOARD_REACTIONS.map(r => `
+                        <button onclick="toggleBoardReaction('${postId}','${r.key}');closeModal()"
+                                class="text-3xl p-4 rounded-2xl glass hover:bg-white/10 transition flex items-center justify-center"
+                                style="touch-action:manipulation;">
+                            <i class="fa-solid ${r.icon} ${r.color}"></i>
+                        </button>
                     `).join('')}
                 </div>
             `);
@@ -3812,32 +3871,25 @@
         }
 
         // ===== FRIEND ACTIVITY IN FEED (KC Now awareness) =====
-        // Called after friendsList is populated — listens to friends' clip posts
+        // COST NOTE: per-friend `orderByChild('uid').equalTo(uid)` queries each scan the entire
+        // messages collection. With N friends that's N full-collection scans kept open permanently.
+        // Board-post listeners removed; clip listeners kept but limited to 3 friends max.
         let _friendActivityRefs = [];
         function initFriendActivityListeners() {
-            // Detach previous
             _friendActivityRefs.forEach(r => r.off());
             _friendActivityRefs = [];
             if (!currentUser || !friendsList.length) return;
-            friendsList.forEach(friend => {
-                // New clip posted by friend
+            // Limit to first 3 friends to cap listener count
+            friendsList.slice(0, 3).forEach(friend => {
                 const clipRef = db.ref('social_posts').orderByChild('createdBy').equalTo(friend.uid).limitToLast(1);
                 clipRef.on('child_added', snap => {
                     const p = snap.val();
-                    if (!p) return;
-                    // Only show events from the last 10 mins to avoid spamming on page load
-                    if (Date.now() - (p.timestamp || 0) > 600000) return;
+                    if (!p || Date.now() - (p.timestamp || 0) > 600000) return;
                     addFeedItem({ type:'clips', title:`${friend.displayName || 'Friend'} posted a clip!`, user:friend.displayName, uid:friend.uid, detail:p.caption||'New clip', color:'text-blue-400', icon:'fa-clapperboard' });
                 });
                 _friendActivityRefs.push(clipRef);
-                // Board post by friend (messages collection)
-                const boardRef = db.ref('messages').orderByChild('uid').equalTo(friend.uid).limitToLast(1);
-                boardRef.on('child_added', snap => {
-                    const p = snap.val();
-                    if (!p || Date.now() - (p.time||p.timestamp||0) > 600000) return;
-                    addFeedItem({ type:'users', title:`${friend.displayName || 'Friend'} posted`, user:friend.displayName, uid:friend.uid, detail:(p.text||'').slice(0,80), color:'text-purple-400', icon:'fa-comment' });
-                });
-                _friendActivityRefs.push(boardRef);
+                // Board post listener removed — orderByChild('uid') scans ALL messages per friend
+                // which is too expensive. New board posts show up when user opens the Board tab.
             });
         }
 
@@ -4075,10 +4127,12 @@
          * still operate safely on empty collections. This helper is idempotent and can be
          * called repeatedly without refetching once data has been loaded.
          */
+        let _postsLoadAttempted = false;
         async function ensureSearchDataLoaded() {
             try {
                 if (typeof db === 'undefined' || !db || typeof db.ref !== 'function') return;
-                // Load users — uses the session singleton so all callers share one download
+                // Load users — session singleton (one download per page load, shared by all callers)
+                // COST: fetches all users once. allUsersData is re-used by search, profile lookups etc.
                 if (!allUsersData.length) {
                     const usersSnap = await _getUsersOnce();
                     allUsersData = [];
@@ -4086,15 +4140,15 @@
                         allUsersData.push({ uid: child.key, ...child.val() });
                     });
                 }
-                // Load clans (only if not already populated by loadAllClans)
+                // Load clans only if needed
                 if (!Object.keys(allClansData || {}).length) {
                     const clansSnap = await db.ref('clans').once('value');
                     allClansData = clansSnap.val() || {};
                 }
-                // Load posts/clips — limited to 100, only attempted once
+                // Load posts/clips — REDUCED from 100→20 to cut download cost
                 if (!allPostsData.length && !_postsLoadAttempted) {
                     _postsLoadAttempted = true;
-                    const postsSnap = await db.ref('social_posts').limitToLast(100).once('value').catch(() => null);
+                    const postsSnap = await db.ref('social_posts').limitToLast(20).once('value').catch(() => null);
                     if (postsSnap) {
                         allPostsData = [];
                         postsSnap.forEach(child => {
@@ -4106,7 +4160,6 @@
                 console.warn('ensureSearchDataLoaded error:', err);
             }
         }
-        let _postsLoadAttempted = false;
 
         function filterFeed(f) {
             // Toggle only the category filter chips
@@ -4149,7 +4202,7 @@
             }
             // Render feed
             const clearAllBtn = data.length > 0
-                ? `<div class="flex justify-end mb-2"><button onclick="dismissAllNotifs()" class="text-[10px] text-gray-500 hover:text-red-400 transition font-bold uppercase tracking-widest">Clear All ✕</button></div>`
+                ? `<div class="flex justify-end mb-2"><button onclick="dismissAllNotifs()" class="text-[10px] text-gray-500 hover:text-red-400 transition font-bold uppercase tracking-widest"><i class="fa-solid fa-xmark mr-1"></i>Clear All</button></div>`
                 : '';
             const items = data.map(item => `
                 <div class="glass glass-hover p-4 rounded-3xl border-white/5 cursor-pointer overflow-hidden max-h-16 transition-all duration-500" onclick="toggleFeedItem(this)">
@@ -4276,7 +4329,7 @@
                     <p class="text-center text-sm text-gray-400">Choose how KC Now renders visual effects.<br>Low quality is faster and uses less battery.</p>
                     <div class="grid grid-cols-2 gap-4">
                         <button onclick="applyGraphicsMode('high');closeModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${current==='high' ? 'border-blue-500 bg-blue-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}">
-                            <span style="font-size:2rem">✨</span>
+                            <span style="font-size:1.4rem"><i class="fa-solid fa-sparkles text-purple-400"></i></span>
                             <div>
                                 <p class="font-bold text-sm">High Quality</p>
                                 <p class="text-xs text-gray-400 mt-0.5">Full blur, animations &amp; parallax</p>
@@ -4284,7 +4337,7 @@
                             ${current==='high' ? '<span class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Active</span>' : ''}
                         </button>
                         <button onclick="applyGraphicsMode('low');closeModal()" class="flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all ${current==='low' ? 'border-green-500 bg-green-500/10' : 'border-white/10 bg-white/5 hover:border-white/30'}">
-                            <span style="font-size:2rem">⚡</span>
+                            <span style="font-size:1.4rem"><i class="fa-solid fa-bolt text-yellow-400"></i></span>
                             <div>
                                 <p class="font-bold text-sm">Low Quality</p>
                                 <p class="text-xs text-gray-400 mt-0.5">Minimal effects, better performance</p>
@@ -4311,13 +4364,13 @@
                     </div>
                     <div style="display:flex;gap:1rem;width:100%;justify-content:center;flex-wrap:wrap;">
                         <div class="gfx-card gfx-high" onclick="applyGraphicsMode('high');document.getElementById('graphics-firstrun').remove()">
-                            <span style="font-size:3rem;line-height:1;">✨</span>
+                            <i class="fa-solid fa-sparkles text-purple-400" style="font-size:2.2rem;"></i>
                             <p style="font-size:1.1rem;font-weight:900;color:#f8fafc;margin:0;">High Quality</p>
                             <p style="font-size:0.78rem;color:#94a3b8;text-align:center;margin:0;line-height:1.5;">Full blur effects, smooth<br>animations &amp; parallax background</p>
                             <span style="font-size:0.68rem;font-weight:700;color:#60a5fa;text-transform:uppercase;letter-spacing:0.1em;">Best visuals</span>
                         </div>
                         <div class="gfx-card gfx-low" onclick="applyGraphicsMode('low');document.getElementById('graphics-firstrun').remove()">
-                            <span style="font-size:3rem;line-height:1;">⚡</span>
+                            <i class="fa-solid fa-bolt text-yellow-400" style="font-size:2.2rem;"></i>
                             <p style="font-size:1.1rem;font-weight:900;color:#f8fafc;margin:0;">Low Quality</p>
                             <p style="font-size:0.78rem;color:#94a3b8;text-align:center;margin:0;line-height:1.5;">Minimal effects for faster<br>load times &amp; better battery</p>
                             <span style="font-size:0.68rem;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:0.1em;">Best performance</span>
@@ -4541,112 +4594,112 @@
             aurora: {
                 name: 'Northern Lights',
                 tier: 'diamond',
-                icon: '🌌',
+                icon: 'fa-moon',
                 description: 'Sweeping curtains of teal and electric blue shimmer across the sky',
                 theme: { accent: '#2dd4bf', rgb: '45,212,191', glow: '#38bdf8' },
             },
             void: {
                 name: 'Event Horizon',
                 tier: 'diamond',
-                icon: '🕳️',
+                icon: 'fa-circle-dot',
                 description: 'Rings of collapsed light spiral into an indigo black hole',
                 theme: { accent: '#6366f1', rgb: '99,102,241', glow: '#818cf8' },
             },
             prism: {
                 name: 'Shattered Glass',
                 tier: 'diamond',
-                icon: '💠',
+                icon: 'fa-diamond',
                 description: 'Rainbow crystal shards tumble through a fractured prismatic void',
                 theme: { accent: '#a855f7', rgb: '168,85,247', glow: '#f472b6' },
             },
             starlight: {
                 name: 'Deep Space',
                 tier: 'diamond',
-                icon: '🚀',
+                icon: 'fa-rocket',
                 description: 'Meteor trails and star clusters drift through the infinite dark',
                 theme: { accent: '#818cf8', rgb: '129,140,248', glow: '#c4b5fd' },
             },
             sunrise: {
                 name: 'Solar Flare',
                 tier: 'base',
-                icon: '☀️',
+                icon: 'fa-sun',
                 description: 'Blazing amber and coral rays burst from a burning star',
                 theme: { accent: '#f59e0b', rgb: '245,158,11', glow: '#f97316' },
             },
             deepsea: {
                 name: 'Abyssal Deep',
                 tier: 'base',
-                icon: '🌊',
+                icon: 'fa-water',
                 description: 'Bioluminescent bubbles rise through the pitch-black ocean floor',
                 theme: { accent: '#06b6d4', rgb: '6,182,212', glow: '#8b5cf6' },
             },
             snake: {
                 name: 'Viper Pit',
                 tier: 'base',
-                icon: '🐍',
+                icon: 'fa-worm',
                 description: 'Sinuous neon serpents writhe through the darkness',
                 theme: { accent: '#22c55e', rgb: '34,197,94', glow: '#84cc16' },
             },
             bloodmoon: {
                 name: 'Crimson Eclipse',
                 tier: 'base',
-                icon: '🌑',
+                icon: 'fa-circle',
                 description: 'Blood-red crescents pulse under a dying moon',
                 theme: { accent: '#ef4444', rgb: '239,68,68', glow: '#dc2626' },
             },
             cyber: {
                 name: 'Neon Circuit',
                 tier: 'base',
-                icon: '⚡',
+                icon: 'fa-bolt',
                 description: 'Lightning bolts crackle through a cyberpunk grid of cyan and violet',
                 theme: { accent: '#22d3ee', rgb: '34,211,238', glow: '#a855f7' },
             },
             golden: {
                 name: 'Gilded Throne',
                 tier: 'diamond',
-                icon: '👑',
+                icon: 'fa-crown',
                 description: 'Gold stars and jewel sparks rain down in gilded splendour',
                 theme: { accent: '#fbbf24', rgb: '251,191,36', glow: '#f59e0b' },
             },
             sakura: {
                 name: 'Blossom Rain',
                 tier: 'diamond',
-                icon: '🌸',
+                icon: 'fa-leaf',
                 description: 'Pink cherry petals spiral softly through a twilight breeze',
                 theme: { accent: '#f472b6', rgb: '244,114,182', glow: '#fb7185' },
             },
             lava: {
                 name: 'Magma Core',
                 tier: 'diamond',
-                icon: '🌋',
+                icon: 'fa-mountain',
                 description: 'Molten lava blobs slowly churn up from the earth\'s core',
                 theme: { accent: '#f97316', rgb: '249,115,22', glow: '#ef4444' },
             },
             arctic: {
                 name: 'Frozen Tundra',
                 tier: 'diamond',
-                icon: '❄️',
+                icon: 'fa-snowflake',
                 description: 'Crystalline snowflakes fall silently over a glacial wasteland',
                 theme: { accent: '#7dd3fc', rgb: '125,211,252', glow: '#bae6fd' },
             },
             amethyst: {
                 name: 'Crystal Crown',
                 tier: 'diamond',
-                icon: '💎',
+                icon: 'fa-gem',
                 description: 'Spinning gem facets catch the light in deep violet and amethyst',
                 theme: { accent: '#a78bfa', rgb: '167,139,250', glow: '#8b5cf6' },
             },
             matrix: {
                 name: 'The Matrix',
                 tier: 'diamond',
-                icon: '💻',
+                icon: 'fa-laptop',
                 description: 'Green digital rain pours endlessly as the simulation runs',
                 theme: { accent: '#22c55e', rgb: '34,197,94', glow: '#4ade80' },
             },
             cosmos: {
                 name: 'Eldritch Void',
                 tier: 'diamond',
-                icon: '🐙',
+                icon: 'fa-spider',
                 description: 'Ancient cosmic horror stirs between galaxies in purple and deep emerald',
                 theme: { accent: '#8b5cf6', rgb: '139,92,246', glow: '#10b981' },
             },
@@ -5301,7 +5354,9 @@
                 const active  = backgroundPrefs.preset === key;
                 const locked  = preset.tier === 'diamond' && !hasDiamond;
                 const border  = active ? 'border-2 border-blue-500' : locked ? 'border border-yellow-500/30' : 'border border-white/5';
-                const icon    = preset.icon || (preset.tier === 'diamond' ? '💎' : '🎨');
+                // preset.icon is now an FA class string (e.g. 'fa-moon') — wrap in <i>
+                const _rawIcon = preset.icon || (preset.tier === 'diamond' ? 'fa-gem' : 'fa-palette');
+                const icon = `<i class="fa-solid ${_rawIcon}"></i>`;
                 return `
                     <button onclick="setBackgroundPreset('${key}')"
                         class="w-full glass p-4 rounded-2xl text-left transition group ${border} ${locked ? 'opacity-70 hover:opacity-90' : 'hover:bg-white/10'}">
@@ -5310,7 +5365,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2">
                                     <p class="font-bold text-sm">${preset.name}</p>
-                                    ${locked ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">💎 DIAMOND</span>' : ''}
+                                    ${locked ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"><i class="fa-solid fa-gem text-blue-300 mr-1"></i>DIAMOND</span>' : ''}
                                     ${active ? '<span class="text-[9px] font-black px-1.5 py-0.5 rounded-full bg-blue-600 text-white">ACTIVE</span>' : ''}
                                 </div>
                                 <p class="text-xs text-gray-500 mt-0.5 truncate">${preset.description}</p>
@@ -5352,9 +5407,9 @@
             const preset = BACKGROUND_PRESETS[presetKey];
             if (!preset) return;
             if (preset.tier === 'diamond' && !userHasDiamondCustomization()) {
-                openModal('💎 Diamond Exclusive', `
+                openModal('Diamond Exclusive', `
                     <div class="text-center space-y-5 py-4">
-                        <div class="text-6xl">${preset.icon || '💎'}</div>
+                        <div class="text-6xl"><i class="fa-solid ${preset.icon || 'fa-gem'}"></i></div>
                         <div>
                             <p class="text-xl font-black">${preset.name}</p>
                             <p class="text-gray-400 text-sm mt-2">${preset.description}</p>
@@ -5566,7 +5621,7 @@
         // direct access). Use the /slitherservers Discord command to see live servers.
         // If a future integration writes server data to Firebase, it will appear here automatically.
         async function openSlitherServers() {
-            const modal = openModalWithLoading('🐍 Slither.io Servers', 'Checking for active servers...');
+            const modal = openModalWithLoading('Slither.io Servers', 'Checking for active servers...');
             if (!modal) return;
             try {
                 // Check if the bot has written any cached server data to Firebase
@@ -5594,7 +5649,7 @@
                 modal.update(`
                     <div class="space-y-6">
                         <div class="text-center py-6">
-                            <div class="text-7xl mb-4">🐍</div>
+                            <div class="text-5xl mb-4"><i class="fa-solid fa-worm text-green-400"></i></div>
                             <p class="text-xl font-bold mb-2">Live Servers via Discord Bot</p>
                             <p class="text-gray-400 text-sm max-w-sm mx-auto">
                                 Slither.io server listings are fetched live from the NTL network by the KC Discord bot.
@@ -5636,7 +5691,7 @@
                 modal.update(`
                     <div class="space-y-6">
                         <div class="text-center py-4">
-                            <div class="text-6xl mb-3">🐍</div>
+                            <div class="text-5xl mb-3"><i class="fa-solid fa-worm text-green-400"></i></div>
                             <p class="text-xl font-bold mb-2">Server Data Unavailable</p>
                             <p class="text-gray-400 text-sm max-w-sm mx-auto">Live server listings are managed by the KC Discord bot. Use the command below in the KC Discord server.</p>
                         </div>
@@ -5882,7 +5937,7 @@
             };
 
             const winnerBadge = (won) => won
-                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 ml-1">🏆 Winner</span>`
+                ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 ml-1"><i class="fa-solid fa-trophy text-yellow-400 mr-1"></i>Winner</span>`
                 : '';
 
             const serverStr = b.server ? `<span class="text-[10px] text-gray-500"><i class="fa-solid fa-server mr-1"></i>${b.server}</span>` : '';
@@ -5898,7 +5953,7 @@
                             <p class="text-xs font-bold text-center truncate w-full">${challName.replace(/</g,'&lt;')}${winnerBadge(challWon)}</p>
                         </div>
                         <div class="flex flex-col items-center gap-1 shrink-0">
-                            <span class="text-lg font-black ${isFinished ? 'text-gray-400' : 'text-orange-400'}">⚔️</span>
+                            <span class="text-lg font-black ${isFinished ? 'text-gray-400' : 'text-orange-400'}"><i class="fa-solid fa-swords"></i></span>
                             <span class="text-[10px] font-bold ${isFinished ? 'text-gray-500' : 'text-orange-400/80'}">${isFinished ? 'FINISHED' : 'VS'}</span>
                         </div>
                         <div class="flex flex-col items-center gap-1 flex-1 min-w-0">
@@ -6259,7 +6314,7 @@
                     <!-- Top BD Scores — KC members' personal bests from their profiles -->
                     <div class="glass p-4 rounded-3xl">
                         <div class="flex items-center justify-between mb-3">
-                            <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest">🏆 Top BD Scores</p>
+                            <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest"><i class="fa-solid fa-trophy text-yellow-400 mr-1"></i>Top BD Scores</p>
                             <button onclick="renderBattledome()" class="text-[10px] text-blue-400 hover:text-blue-300 transition font-semibold">Full →</button>
                         </div>
                         <div id="bd-leaderboard" class="space-y-1">
@@ -6268,7 +6323,7 @@
                     </div>
                     <!-- Top Economy -->
                     <div class="glass p-4 rounded-3xl">
-                        <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest mb-3">💰 Top Economy</p>
+                        <p class="text-[10px] text-gray-600 font-black uppercase tracking-widest mb-3"><i class="fa-solid fa-coins text-yellow-400 mr-1"></i>Top Economy</p>
                         <div id="top-economy" class="space-y-1">
                             ${[1,2,3].map(()=>`<div class="animate-pulse bg-white/5 h-5 rounded-lg"></div>`).join('')}
                         </div>
@@ -6308,7 +6363,7 @@
             // the same accurate data as Leaderboard → BD Score, with zero extra reads.
             _getUsersOnce().then(snap => {
                 const usersData = snap.val() || {};
-                const medals = ['🥇','🥈','🥉'];
+                const medals = ['<span class="text-yellow-400 font-black">#1</span>','<span class="text-gray-300 font-black">#2</span>','<span class="text-orange-400 font-black">#3</span>'];
                 const rowHtml = (p, i) => `
                     <div class="flex justify-between items-center py-0.5">
                         <div class="flex items-center gap-2">
@@ -6353,7 +6408,7 @@
                         }
                         return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
                     }));
-                    const medals = ['🥇','🥈','🥉'];
+                    const medals = ['<span class="text-yellow-400 font-black">#1</span>','<span class="text-gray-300 font-black">#2</span>','<span class="text-orange-400 font-black">#3</span>'];
                     return enriched.map((p, i) => `
                         <div class="flex justify-between items-center py-0.5">
                             <div class="flex items-center gap-2">
@@ -6505,7 +6560,7 @@
 
         async function renderLeaderboard(category) {
             category = category || 'overall';
-            const modal = openModalWithLoading('🏅 Leaderboard', 'Loading rankings...');
+            const modal = openModalWithLoading('Leaderboard', 'Loading rankings...');
             if (!modal) return;
             try {
                 // Use session singletons — these are already in memory if anything else
@@ -6540,7 +6595,7 @@
                         <div class="flex gap-2 flex-wrap">
                             ${Object.entries(labels).map(([k,{label,img}]) => `
                                 <button onclick="renderLeaderboard('${k}')" class="btn-press text-xs px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5 ${k===category?'bg-blue-600':'glass hover:bg-white/10'}">
-                                    ${img ? `<img src="${img}" style="width:14px;height:14px;object-fit:contain;">` : '⚔️'}
+                                    ${img ? `<img src="${img}" style="width:14px;height:14px;object-fit:contain;">` : '<i class="fa-solid fa-swords"></i>'}
                                     ${label}
                                 </button>
                             `).join('')}
@@ -6548,7 +6603,7 @@
                         <div class="space-y-2">
                             ${users.filter(u => (u[category]||0) > 0).slice(0,15).map((u,i) => {
                                 const isMe = currentUser && u.uid === currentUser.uid;
-                                const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
+                                const medal = i===0?'<span class="text-yellow-400 font-black">#1</span>':i===1?'<span class="text-gray-300 font-black">#2</span>':i===2?'<span class="text-orange-400 font-black">#3</span>':`<span class="text-gray-500 text-sm">#${i+1}</span>`;
                                 return `
                                     <div class="glass p-3 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition fade-in-up ${isMe?'border border-blue-500/40':''}" style="animation-delay:${i*30}ms" onclick="window.openKcProfile && window.openKcProfile('${u.uid}')">
                                         <span class="w-8 text-center font-black">${medal}</span>
@@ -6649,7 +6704,7 @@
         }
 
         function _bdMedal(i) {
-            return i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉'
+            return i === 0 ? '<span class="text-yellow-400 font-black">#1</span>' : i === 1 ? '<span class="text-gray-300 font-black">#2</span>' : i === 2 ? '<span class="text-orange-400 font-black">#3</span>'
                 : `<span class="text-gray-500 text-xs">#${i+1}</span>`;
         }
 
@@ -6657,8 +6712,8 @@
             const isUser = userBdName && e.name.toLowerCase() === userBdName.toLowerCase();
             const ts = e.seenAt ? ` · ${_bdRelTime(e.seenAt)}` : '';
             const nameEl = e.uid
-                ? `<span class="flex-1 font-semibold text-sm truncate cursor-pointer hover:underline ${isUser ? 'text-blue-400' : ''}" onclick="window.openKcProfile('${e.uid}')">${e.name}${isUser ? ' 👤' : ''}</span>`
-                : `<span class="flex-1 font-semibold text-sm truncate ${isUser ? 'text-blue-400' : ''}">${e.name}${isUser ? ' 👤' : ''}</span>`;
+                ? `<span class="flex-1 font-semibold text-sm truncate cursor-pointer hover:underline ${isUser ? 'text-blue-400' : ''}" onclick="window.openKcProfile('${e.uid}')">${e.name}${isUser ? ' <i class="fa-solid fa-user text-blue-400"></i>' : ''}</span>`
+                : `<span class="flex-1 font-semibold text-sm truncate ${isUser ? 'text-blue-400' : ''}">${e.name}${isUser ? ' <i class="fa-solid fa-user text-blue-400"></i>' : ''}</span>`;
             return `<div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 transition ${i < 3 ? 'bg-yellow-500/5' : ''} ${isUser ? 'ring-1 ring-blue-500/50' : ''}">
                 <span class="w-7 text-center font-black shrink-0">${_bdMedal(i)}</span>
                 ${nameEl}
@@ -6816,7 +6871,7 @@
                     <!-- User stats compact -->
                     <div class="glass p-4 rounded-2xl flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-lg">⚔️</div>
+                            <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-lg"><i class="fa-solid fa-swords"></i></div>
                             <div>
                                 <p class="font-bold text-sm text-blue-400">${userBdName}</p>
                                 <p class="text-xs text-gray-500">Personal best: <span class="text-red-400 font-bold">${userBdScore.toLocaleString()}</span></p>
@@ -6845,9 +6900,9 @@
                     <!-- Region filter — hidden on Live (shows both) and KC (no region split) -->
                     ${tab !== 'kc' ? `<div class="flex gap-1.5 items-center">
                         <span class="text-[10px] text-gray-600 uppercase tracking-wider font-bold mr-1">Region</span>
-                        ${regBtn('global','🌍 Global')}
-                        ${regBtn('East','🇺🇸 East')}
-                        ${regBtn('EU','🇪🇺 EU')}
+                        ${regBtn('global','<i class="fa-solid fa-globe"></i> Global')}
+                        ${regBtn('East','<i class="fa-solid fa-flag"></i> East')}
+                        ${regBtn('EU','EU')}
                     </div>` : ''}
 
                     <!-- Leaderboard content -->
@@ -6864,7 +6919,7 @@
 
         async function renderBattledome() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('⚔️ Battledome', 'Loading arena…');
+            const modal = openModalWithLoading('Battledome', 'Loading arena…');
             if (!modal) return;
 
             // Wire global callbacks before fetching
@@ -6946,7 +7001,7 @@
 
         function openGamesHub() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('🎮 Games Hub', 'Loading game stats...');
+            const modal = openModalWithLoading('Games Hub', 'Loading game stats...');
             if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const dataPromise = discordId
@@ -6989,77 +7044,77 @@
                             <div class="games-3d-stage">
                                 <div class="grid grid-cols-2 gap-3">
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="closeModal();setTimeout(openBlackjackGame,200)">
-                                        <span class="gc-emoji">🃏</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-cards text-blue-400"></i></span>
                                         <p class="font-bold text-sm">Blackjack</p>
                                         <p class="text-xs text-gray-400 mt-1">${bjWins}W / ${bjGames} games</p>
                                         <p class="text-xs text-gray-500">50–2,000 pts</p>
                                         <div class="gc-badge mt-3 py-2 bg-blue-600/30 rounded-xl text-xs font-bold text-blue-300">▶ Play Now</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="closeModal();setTimeout(openSlotsGame,200)">
-                                        <span class="gc-emoji">🎰</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-dice text-yellow-400"></i></span>
                                         <p class="font-bold text-sm">Slots</p>
                                         <p class="text-xs text-gray-400 mt-1">${slotsWins}W / ${slotsSpins} spins</p>
                                         <p class="text-xs text-gray-500">50–1,000 pts</p>
                                         <div class="gc-badge mt-3 py-2 bg-yellow-600/30 rounded-xl text-xs font-bold text-yellow-300">▶ Play Now</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Coinflip','/coinflip','Bet 50–5,000 pts on heads or tails. Win double your bet!')">
-                                        <span class="gc-emoji">🪙</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-coins text-yellow-400"></i></span>
                                         <p class="font-bold text-sm">Coinflip</p>
                                         <p class="text-xs text-gray-400 mt-1">${cfWins}W / ${cfFlips} flips</p>
                                         <p class="text-xs text-gray-500">50–5,000 pts</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Dice Duel','/roll','Roll against friends and climb the daily leaderboard. One roll per day!')">
-                                        <span class="gc-emoji">🎲</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-dice-d6 text-blue-400"></i></span>
                                         <p class="font-bold text-sm">Dice Duel</p>
                                         <p class="text-xs text-gray-400 mt-1">Daily competition</p>
                                         <p class="text-xs text-gray-500">&nbsp;</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Trivia','/trivia','Test your knowledge. Easy: 100 pts · Medium: 200 pts · Hard: 500 pts')">
-                                        <span class="gc-emoji">🧠</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-brain text-purple-400"></i></span>
                                         <p class="font-bold text-sm">Trivia</p>
                                         <p class="text-xs text-gray-400 mt-1">${triviaOk} / ${triviaTotal} correct</p>
                                         <p class="text-xs text-gray-500">&nbsp;</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Higher / Lower','/highlow','Guess if the next number is higher or lower. Streak multiplies your reward!')">
-                                        <span class="gc-emoji">📈</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-chart-line text-green-400"></i></span>
                                         <p class="font-bold text-sm">Higher / Lower</p>
                                         <p class="text-xs text-gray-400 mt-1">Best streak: ${hlBest}</p>
                                         <p class="text-xs text-gray-500">${hlGames} games</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Minesweeper','/minesweeper','Sweep without hitting a mine! Easy: 200 pts · Medium: 500 pts · Hard: 1,000 pts')">
-                                        <span class="gc-emoji">💣</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-bomb text-red-400"></i></span>
                                         <p class="font-bold text-sm">Minesweeper</p>
                                         <p class="text-xs text-gray-400 mt-1">${msWins} wins</p>
                                         <p class="text-xs text-gray-500">&nbsp;</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Hangman','/hangman','Guess the word before running out of tries. Win 150 pts per correct game!')">
-                                        <span class="gc-emoji">🪢</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-link text-purple-400"></i></span>
                                         <p class="font-bold text-sm">Hangman</p>
                                         <p class="text-xs text-gray-400 mt-1">${hgWins}W / ${hgGames} games</p>
                                         <p class="text-xs text-gray-500">&nbsp;</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Rock Paper Scissors','/rps','Challenge someone to RPS. Bet 50–1,000 pts per match!')">
-                                        <span class="gc-emoji">✊</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-hand-fist text-orange-400"></i></span>
                                         <p class="font-bold text-sm">Rock Paper Scissors</p>
                                         <p class="text-xs text-gray-400 mt-1">${rpsWins}W / ${rpsGames} games</p>
                                         <p class="text-xs text-gray-500">50–1,000 pts</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Color Conquest','/area','Claim territory on a grid. Win 500 pts for dominating!')">
-                                        <span class="gc-emoji">🗺️</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-map text-teal-400"></i></span>
                                         <p class="font-bold text-sm">Color Conquest</p>
                                         <p class="text-xs text-gray-400 mt-1">${areaWins} wins</p>
                                         <p class="text-xs text-gray-500">&nbsp;</p>
                                         <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-300">Discord</div>
                                     </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Connect Four','/connectfour','Drop pieces to connect 4 in a row. Win 300 pts!')">
-                                        <span class="gc-emoji">🔴</span>
+                                        <span class="gc-emoji"><i class="fa-solid fa-circle text-red-500"></i></span>
                                         <p class="font-bold text-sm">Connect Four</p>
                                         <p class="text-xs text-gray-400 mt-1">${c4Wins} wins</p>
                                         <p class="text-xs text-gray-500">&nbsp;</p>
@@ -7067,7 +7122,7 @@
                                     </div>
                                     ${data.specialGameUnlocked ? `
                                         <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="showDiscordGameCommand('Stock Market','/stocks','Invest in volatile stocks. Buy low, sell high, grow your portfolio!')">
-                                            <span class="gc-emoji">📊</span>
+                                            <span class="gc-emoji"><i class="fa-solid fa-chart-bar text-blue-400"></i></span>
                                             <p class="font-bold text-sm">Stock Market</p>
                                             <p class="text-xs text-gray-400 mt-1">${stockTrades} trades</p>
                                             <p class="text-xs text-gray-500">&nbsp;</p>
@@ -7075,11 +7130,11 @@
                                         </div>
                                     ` : `
                                         <div class="game-card-3d glass p-5 rounded-3xl text-center opacity-40" style="pointer-events:none">
-                                            <span class="gc-emoji">📊</span>
+                                            <span class="gc-emoji"><i class="fa-solid fa-chart-bar text-blue-400"></i></span>
                                             <p class="font-bold text-sm">Stock Market</p>
                                             <p class="text-xs text-gray-400 mt-1">Locked</p>
                                             <p class="text-xs text-gray-500">&nbsp;</p>
-                                            <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-500">🔒 100k pts</div>
+                                            <div class="gc-badge mt-3 py-2 bg-white/5 rounded-xl text-xs font-bold text-gray-500"><i class="fa-solid fa-lock mr-1"></i>100k pts</div>
                                         </div>
                                     `}
                                 </div>
@@ -7249,7 +7304,7 @@
             const natural=result==='win'&&bjPlayerHand.length===2&&pt===21;
             const mult=natural?1.5:result==='win'?1:result==='push'?0:-1;
             const delta=Math.floor(bjBet*mult);
-            const msgs={bust:'💥 BUST!',win:natural?'🃏 BLACKJACK!':'🎉 WIN!',push:'🤝 PUSH',lose:'😞 LOSE'};
+            const msgs={bust:'<i class="fa-solid fa-explosion text-red-400"></i> BUST!',win:natural?'<i class="fa-solid fa-cards text-green-400"></i> BLACKJACK!':'<i class="fa-solid fa-trophy text-yellow-400"></i> WIN!',push:'<i class="fa-solid fa-handshake text-blue-400"></i> PUSH',lose:'<i class="fa-solid fa-face-sad-cry text-red-400"></i> LOSE'};
             const colors={bust:'text-red-400',win:'text-green-400',push:'text-blue-400',lose:'text-red-400'};
             if(natural) colors.win='text-yellow-400';
             const dt=bjTotal(bjDealerHand);
@@ -7320,7 +7375,7 @@
                     }
                     bjGameOver = false;
                     bjBet = Math.min(100, Math.floor(points / 2), points);
-                    openModal('♠ Blackjack', `
+                    openModal('Blackjack', `
                         <div class="space-y-4">
                             <div class="glass p-4 rounded-2xl">
                                 <div class="flex items-center justify-between mb-3">
@@ -7337,7 +7392,7 @@
                                 </div>
                             </div>
                             <button onclick="bjDeal()" class="btn-press btn-lift w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl font-black text-lg transition glow-on-hover">
-                                🃏 DEAL CARDS
+                                <i class="fa-solid fa-cards mr-1"></i>DEAL
                             </button>
                             <div id="bj-area" class="min-h-[200px]"></div>
                         </div>
@@ -7403,7 +7458,7 @@
                     }
                     slotsSpinning = false;
                     slotsBet = Math.min(50, points);
-                    openModal('🎰 Slots', `
+                    openModal('Slots', `
                         <div class="space-y-5 text-center">
                             <div class="glass p-4 rounded-2xl flex items-center justify-between">
                                 <span class="text-sm text-gray-400">Balance</span>
@@ -7422,15 +7477,15 @@
                             </div>
                             <div id="slots-result" class="text-sm text-gray-400 min-h-[24px]"></div>
                             <button id="slots-spin-btn" onclick="slotsSpin()" class="btn-press w-full py-4 bg-yellow-600 hover:bg-yellow-500 rounded-2xl font-black text-lg transition glow-on-hover">
-                                🎰 SPIN!
+                                <i class="fa-solid fa-arrows-spin mr-1"></i>SPIN!
                             </button>
                             <div class="glass p-3 rounded-2xl text-xs text-left">
                                 <p class="font-bold mb-2">Payouts (3 of a kind):</p>
                                 <div class="grid grid-cols-2 gap-1 text-gray-400">
-                                    <span>💎 Diamond ×10</span><span>7️⃣ Seven ×50</span>
-                                    <span>🎰 Slots ×20</span><span>⭐ Star ×5</span>
-                                    <span>🍊 Orange ×4</span><span>🍋 Lemon ×3</span>
-                                    <span>🍒 Cherry ×2</span><span>Pair: ½ bet back</span>
+                                    <span><i class="fa-solid fa-gem text-blue-300"></i> Diamond ×10</span><span>7️⃣ Seven ×50</span>
+                                    <span><i class="fa-solid fa-dice text-yellow-400"></i> Slots ×20</span><span><i class="fa-solid fa-star text-yellow-300"></i> Star ×5</span>
+                                    <span><i class="fa-solid fa-circle-dot text-orange-400"></i> Orange ×4</span><span><i class="fa-solid fa-circle-dot text-yellow-400"></i> Lemon ×3</span>
+                                    <span><i class="fa-solid fa-circle-dot text-red-400"></i> Cherry ×2</span><span>Pair: ½ bet back</span>
                                 </div>
                             </div>
                         </div>
@@ -7476,19 +7531,19 @@
 
             setTimeout(()=>{
                 slotsSpinning=false;
-                if(btn){btn.disabled=false;btn.textContent='🎰 SPIN!';}
+                if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-arrows-spin mr-1"></i>SPIN!';}
                 const [a,b,c]=finals;
                 let delta=-slotsBet, msg='';
                 if(a===b&&b===c){
                     const mult=SLOT_PAY[a]||2;
                     delta=slotsBet*mult;
-                    msg=a==='7️⃣'?`🎉 JACKPOT! +${delta} pts`:`🎉 TRIPLE ${a}! +${delta} pts`;
+                    msg=a==='7️⃣'?`JACKPOT! +${delta} pts`:`TRIPLE ${a}! +${delta} pts`;
                     [0,1,2].forEach(i=>{const el=document.getElementById(`slot-${i}`);if(el)el.classList.add('jackpot-flash');});
                 } else if(a===b||b===c||a===c){
                     delta=Math.floor(slotsBet*0.5);
                     msg=`✨ Pair! +${delta} pts`;
                 } else {
-                    msg=`😞 No match. -${slotsBet} pts`;
+                    msg=`<i class='fa-solid fa-face-sad-tear text-red-400'></i> No match. -${slotsBet} pts`;
                 }
                 const res=document.getElementById('slots-result');
                 if(res){res.textContent=msg;res.className=`text-sm font-bold min-h-[22px] ${delta>0?'text-green-400':'text-red-400'}`;}
@@ -7516,14 +7571,14 @@
         // ===== SLITHER SERVERS (Phase 4) ===== (legacy, renamed)
         // Retain legacy implementation under a different name so it does not override the Phase 5 version.
         async function openSlitherServersLegacy() {
-            const modal = openModalWithLoading('🐍 Slither.io Servers', 'Fetching servers...');
+            const modal = openModalWithLoading('Slither.io Servers', 'Fetching servers...');
             if (!modal) return;
             try {
                 const snap = await db.ref('slitherServers').once('value');
                 const raw = snap.val() || {};
                 const list = Object.entries(raw).map(([k,v])=>({key:k,...v}));
                 if(list.length===0){
-                    modal.update('<div class="text-center py-10 text-gray-400"><div class="text-5xl mb-3">🐍</div><p>No active servers found</p><p class="text-xs mt-2">Check back later or ask staff to start a server</p></div>');
+                    modal.update('<div class="text-center py-10 text-gray-400"><div class="text-5xl mb-3"><i class="fa-solid fa-worm text-green-400"></i></div><p>No active servers found</p><p class="text-xs mt-2">Check back later or ask staff to start a server</p></div>');
                     return;
                 }
                 modal.update(`
@@ -7546,7 +7601,7 @@
 
         // ===== CLAN DETAILS (Phase 4) =====
         async function openClanDetails(clanId) {
-            const modal = openModalWithLoading('🛡 Clan', 'Loading clan...');
+            const modal = openModalWithLoading('Clan', 'Loading clan...');
             if (!modal) return;
             try {
                 const clanSnap = await db.ref(`clans/${clanId}`).once('value');
@@ -7626,7 +7681,7 @@
                     return showToast('Use /buy ' + itemKey + ' in Discord to configure this item', 'info');
                 }
                 await db.ref(`userEconomy/${discordId}`).update(updates);
-                showToast('Purchased! ✓', 'success');
+                showToast('Purchased!', 'success');
                 closeModal();
                 setTimeout(openEconomyShop, 200);
             } catch(e) {
@@ -7636,7 +7691,7 @@
 
         function openEconomyShop() {
             if (!currentUser) return openAuthModal();
-            const modal = openModalWithLoading('🛒 Economy Shop', 'Loading your balance...');
+            const modal = openModalWithLoading('Economy Shop', 'Loading your balance...');
             if (!modal) return;
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 const economyPromise = discordId
@@ -7679,10 +7734,10 @@
                                 <p class="text-xs text-gray-500 mt-1">Use /buy in Discord to purchase items</p>
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">🎨 Customization</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-palette text-purple-400 mr-1"></i>Customization</h3>
                                 ${hasCustomization ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Profile Customization</p>
+                                        <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Profile Customization</p>
                                         <p class="text-xs text-gray-400">Unlocked! Use Discord /customize command</p>
                                     </div>
                                 ` : `
@@ -7703,7 +7758,7 @@
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
                                         <div class="flex items-center justify-between">
                                             <div>
-                                                <p class="font-bold text-green-400">✅ Custom Badge</p>
+                                                <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Custom Badge</p>
                                                 <p class="text-xs text-gray-400">Already created</p>
                                             </div>
                                             <div class="text-right">
@@ -7728,10 +7783,10 @@
                                 `}
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">🔓 Unlocks</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-lock-open mr-1"></i>Unlocks</h3>
                                 ${betLimitIncreased ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Increased Bet Limit</p>
+                                        <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Increased Bet Limit</p>
                                         <p class="text-xs text-gray-400">Max bet raised to 10,000 pts</p>
                                     </div>
                                 ` : `
@@ -7750,7 +7805,7 @@
                                 `}
                                 ${specialGameUnlocked ? `
                                     <div class="glass p-4 rounded-2xl border-2 border-green-500/30">
-                                        <p class="font-bold text-green-400">✅ Stock Market</p>
+                                        <p class="font-bold text-green-400"><i class="fa-solid fa-circle-check text-green-400 mr-1"></i>Stock Market</p>
                                         <p class="text-xs text-gray-400">Special game unlocked — use /stocks in Discord</p>
                                     </div>
                                 ` : `
@@ -7769,7 +7824,7 @@
                                 `}
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">🎮 Gameplay Items</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-gamepad text-blue-400 mr-1"></i>Gameplay Items</h3>
                                 <div class="glass p-4 rounded-2xl border border-white/10">
                                     <div class="flex items-center justify-between">
                                         <div>
@@ -7807,12 +7862,12 @@
                                     </div>
                                 </div>
                                 <div class="space-y-2">
-                                    <p class="text-sm font-semibold text-gray-300">⚡ Points Boost</p>
+                                    <p class="text-sm font-semibold text-gray-300"><i class="fa-solid fa-bolt text-yellow-400 mr-1"></i>Points Boost</p>
                                     ${boostHtml}
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold">💬 Other</h3>
+                                <h3 class="text-lg font-bold"><i class="fa-solid fa-comment text-blue-400 mr-1"></i>Other</h3>
                                 <div class="glass p-4 rounded-2xl border border-white/10">
                                     <div class="flex items-center justify-between">
                                         <div>
@@ -7881,14 +7936,14 @@
                     modal.update(`
                         <div class="space-y-5">
                             <div class="text-center space-y-3">
-                                <div class="text-6xl">✅</div>
+                                <div class="text-6xl"><i class="fa-solid fa-circle-check text-green-400"></i></div>
                                 <p class="text-xl font-bold">Already Claimed Today</p>
                                 <p class="text-gray-400 text-sm">Next reward available in <span class="text-blue-400 font-bold">${h}h ${m}m</span></p>
                             </div>
                             <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">Current Streak</p>
-                                    <p class="text-3xl font-black text-orange-400">${currentStreak} 🔥</p>
+                                    <p class="text-3xl font-black text-orange-400">${currentStreak} <i class="fa-solid fa-fire text-orange-400"></i></p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">KC Points</p>
@@ -7917,19 +7972,19 @@
                 modal.update(`
                     <div class="space-y-5">
                         <div class="text-center space-y-3">
-                            <div class="text-6xl animate-bounce">🎁</div>
+                            <div class="text-6xl animate-bounce"><i class="fa-solid fa-gift text-purple-400" style="font-size:2.5rem;"></i></div>
                             <p class="text-xl font-bold">Claim Your Daily Reward</p>
-                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak${milestoneBonus ? ` — <span class="text-yellow-400 font-bold">🏆 Milestone Bonus +${milestoneBonus}!</span>` : ''}</p>
-                            ${usedProtection ? `<p class="text-xs text-purple-400">🛡 Streak protection used to maintain streak</p>` : ''}
+                            <p class="text-gray-400 text-sm">Day <span class="text-orange-400 font-bold">${newStreak}</span> streak${milestoneBonus ? ` — <span class="text-yellow-400 font-bold"><i class="fa-solid fa-trophy text-yellow-400 mr-1"></i>Milestone Bonus +${milestoneBonus}!</span>` : ''}</p>
+                            ${usedProtection ? `<p class="text-xs text-purple-400"><i class="fa-solid fa-shield text-blue-400 mr-1"></i>Streak protection used to maintain streak</p>` : ''}
                         </div>
                         <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                             <div>
                                 <p class="text-xs text-gray-500 uppercase font-bold mb-1">New Streak</p>
-                                <p class="text-3xl font-black text-orange-400">${newStreak} 🔥</p>
+                                <p class="text-3xl font-black text-orange-400">${newStreak} <i class="fa-solid fa-fire text-orange-400"></i></p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 uppercase font-bold mb-1">Reward</p>
-                                <p class="text-3xl font-black text-yellow-400">+${reward} 💰</p>
+                                <p class="text-3xl font-black text-yellow-400">+${reward} <i class="fa-solid fa-coins text-yellow-400"></i></p>
                             </div>
                         </div>
                         <button id="daily-claim-btn" onclick="executeDailyClaim('${discordId}',${newStreak},${newLongest},${reward},${points},${usedProtection})" class="btn-press w-full py-4 bg-blue-600 hover:bg-blue-500 font-black text-lg rounded-2xl transition">
@@ -7974,7 +8029,7 @@
                             <div class="glass p-5 rounded-3xl grid grid-cols-2 gap-4 text-center">
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">Streak</p>
-                                    <p class="text-3xl font-black text-orange-400">${newStreak} 🔥</p>
+                                    <p class="text-3xl font-black text-orange-400">${newStreak} <i class="fa-solid fa-fire text-orange-400"></i></p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-gray-500 uppercase font-bold mb-1">Points</p>
@@ -8089,19 +8144,19 @@
                     const badges = snap.val() || {};
                     const badgeList = Object.entries(badges).map(([id, timestamp]) => ({ id, timestamp }));
                     const badgeDefs = {
-                        first_win:        { emoji: '🎯', name: 'First Win',        desc: 'Won your first game' },
-                        blackjack_master:  { emoji: '🃏', name: 'Blackjack Master', desc: '10 blackjack wins' },
-                        high_roller:       { emoji: '💎', name: 'High Roller',      desc: 'Bet 1000+ points' },
-                        consistent:        { emoji: '📅', name: 'Consistent',       desc: '7 day login streak' },
-                        dedicated:         { emoji: '⭐', name: 'Dedicated',        desc: '30 day login streak' },
-                        legend:            { emoji: '👑', name: 'Legend',           desc: '100 day login streak' },
-                        eternal:           { emoji: '♾️', name: 'Eternal',          desc: '365 day login streak' },
-                        lucky_seven:       { emoji: '🎰', name: 'Lucky Seven',      desc: 'Triple 7s on slots' },
-                        millionaire:       { emoji: '💰', name: 'Millionaire',      desc: 'Earned 1M points total' }
+                        first_win:        { emoji: '<i class="fa-solid fa-bullseye text-green-400"></i>',  name: 'First Win',        desc: 'Won your first game' },
+                        blackjack_master:  { emoji: '<i class="fa-solid fa-cards text-blue-400"></i>',    name: 'Blackjack Master', desc: '10 blackjack wins' },
+                        high_roller:       { emoji: '<i class="fa-solid fa-gem text-blue-300"></i>',      name: 'High Roller',      desc: 'Bet 1000+ points' },
+                        consistent:        { emoji: '<i class="fa-solid fa-calendar-check text-blue-400"></i>', name: 'Consistent', desc: '7 day login streak' },
+                        dedicated:         { emoji: '<i class="fa-solid fa-star text-yellow-400"></i>',   name: 'Dedicated',        desc: '30 day login streak' },
+                        legend:            { emoji: '<i class="fa-solid fa-crown text-yellow-400"></i>',  name: 'Legend',           desc: '100 day login streak' },
+                        eternal:           { emoji: '<i class="fa-solid fa-infinity text-purple-400"></i>', name: 'Eternal',        desc: '365 day login streak' },
+                        lucky_seven:       { emoji: '<i class="fa-solid fa-dice text-yellow-400"></i>',   name: 'Lucky Seven',      desc: 'Triple 7s on slots' },
+                        millionaire:       { emoji: '<i class="fa-solid fa-coins text-yellow-400"></i>',  name: 'Millionaire',      desc: 'Earned 1M points total' }
                     };
                     const listHTML = badgeList.length > 0
                         ? badgeList.map(b => {
-                            const def = badgeDefs[b.id] || { emoji: '🏅', name: b.id, desc: 'Unknown achievement' };
+                            const def = badgeDefs[b.id] || { emoji: '<i class="fa-solid fa-medal text-yellow-400"></i>', name: b.id, desc: 'Unknown achievement' };
                             return `
                                 <div class="glass p-4 rounded-3xl flex items-center gap-4 hover:bg-white/10 transition">
                                     <div class="text-5xl">${def.emoji}</div>
@@ -8138,7 +8193,7 @@
                 // New achievements
                 db.ref(`userEconomy/${discordId}/badges`).on('child_added', snap => {
                     if (Date.now() - snap.val() < 10000) {
-                        showToast(`🏆 Achievement Unlocked: ${snap.key}`, 'success', 5000);
+                        showToast('Achievementnt Unlocked: ${snap.key}`, 'success', 5000);
                     }
                 });
                 // Points increases
@@ -8146,7 +8201,7 @@
                 db.ref(`userEconomy/${discordId}/points`).on('value', snap => {
                     const newPoints = snap.val() || 0;
                     if (lastPoints !== null && newPoints > lastPoints) {
-                        showToast(`💰 +${(newPoints - lastPoints).toLocaleString()} points earned!`, 'success', 3000);
+                        showToast(`+${(newPoints - lastPoints).toLocaleString()} points earned!`, 'success', 3000);
                     }
                     lastPoints = newPoints;
                 });
@@ -8185,7 +8240,7 @@
                             style="padding:0.75rem 2rem;background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;font-weight:800;font-size:0.88rem;border-radius:14px;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(59,130,246,0.38);font-family:Poppins,sans-serif;transition:all 0.2s;"
                             onmouseover="this.style.transform='translateY(-1px)'"
                             onmouseout="this.style.transform=''">
-                            🚀 Join KC NOW
+                            <i class="fa-solid fa-rocket mr-1"></i>Join KC NOW
                         </button>
                     `;
                     pfHero.appendChild(prompt);
@@ -8289,7 +8344,7 @@
                     custBadgeEl.classList.remove('hidden');
                     custBadgeEl.innerHTML =
                         `<div class="glass rounded-2xl p-4 flex items-center gap-3" style="border:1px solid rgba(255,255,255,0.06);">
-                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '⭐'}</span>
+                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '<i class="fa-solid fa-star"></i>'</span>
                             <div>
                                 <p class="font-black text-sm">${u.customBadge.name || 'Custom Badge'}</p>
                                 ${u.customBadge.description ? `<p class="text-xs text-gray-400 mt-0.5">${u.customBadge.description}</p>` : ''}
@@ -8315,7 +8370,7 @@
                                     <img src="${d.icon}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">
                                 </div>
                                 <span style="font-size:0.6rem;font-weight:800;letter-spacing:0.06em;color:#94a3b8;text-transform:uppercase;">${d.label}</span>
-                                <span style="font-size:0.8rem;font-weight:900;color:#fff;">${locked?'🔒':'×'+score}</span>
+                                <span style="font-size:0.8rem;font-weight:900;color:#fff;">${locked?'<i class="fa-solid fa-lock"></i>':'×'+score}</span>
                             </div>`;
                         }).join('');
                     }
@@ -8332,7 +8387,7 @@
                     const pts    = economy.points || 0;
                     const streak = economy.streaks?.login?.current || 0;
                     setText('pf-points', pts.toLocaleString());
-                    setText('pf-streak', streak > 0 ? streak + ' 🔥' : '–');
+                    setText('pf-streak', streak > 0 ? streak + ' <i class="fa-solid fa-fire text-orange-400"></i>' : '–');
                     // Rank: use bot-written economy.rank field if present
                     const rank = economy.rank;
                     if (rank != null && rank !== '') {
@@ -8364,7 +8419,7 @@
 
         async function openBadgeManager() {
             if (!currentUser) return openAuthModal();
-            const M = openModalWithLoading('🏅 My Badges', 'Loading badges...');
+            const M = openModalWithLoading('My Badges', 'Loading badges...');
             if (!M) return;
             const uid = currentUser.uid;
             try {
@@ -8408,7 +8463,7 @@
                 return `<div style="flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 8px;border-radius:16px;background:${bg};opacity:${locked?0.5:1};${isHigh&&!locked?`box-shadow:0 4px 20px ${s.glow}55;`:''}" class="${isHigh&&!locked?'bdg-float':''}">
                     <img src="${s.icon}" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'">
                     <span style="font-size:0.6rem;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,0.85);text-transform:uppercase;text-align:center;line-height:1.2;">${s.label}</span>
-                    <span style="font-size:0.9rem;font-weight:900;color:#fff;">${locked?'🔒':`×${cnt}`}</span>
+                    <span style="font-size:0.9rem;font-weight:900;color:#fff;">${locked?'<i class="fa-solid fa-lock"></i>':`×${cnt}`}</span>
                 </div>`;
             }).join('');
 
@@ -8418,16 +8473,16 @@
                 const badge = customData[key];
                 const bg = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
                 return `<div id="cbdg_${key}" onclick="_bdgEditCustom('${key}')" style="flex:1;min-width:100px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:${bg};cursor:pointer;position:relative;${isHigh?'box-shadow:0 4px 16px rgba(0,0,0,0.4);':''}" class="${isHigh?'bdg-float':''}">
-                    <span style="font-size:2rem;line-height:1;">${badge.icon||'⭐'}</span>
+                    <span style="font-size:2rem;line-height:1;">${badge.icon||'<i class="fa-solid fa-star"></i>'</span>
                     <span style="font-size:0.65rem;font-weight:800;color:${badge.textColor||'#e5e7eb'};text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${badge.name||'Badge'}</span>
-                    <span style="position:absolute;top:5px;right:8px;font-size:0.75rem;opacity:0.7;">✏️</span>
-                    <button onclick="event.stopPropagation();_bdgDeleteCustom('${key}')" style="position:absolute;top:5px;left:8px;font-size:0.65rem;background:rgba(0,0,0,0.35);border:none;color:#fff;border-radius:6px;padding:1px 5px;cursor:pointer;">✕</button>
+                    <span style="position:absolute;top:5px;right:8px;font-size:0.75rem;opacity:0.7;"><i class="fa-solid fa-pen"></i></span>
+                    <button onclick="event.stopPropagation();_bdgDeleteCustom('${key}')" style="position:absolute;top:5px;left:8px;font-size:0.65rem;background:rgba(0,0,0,0.35);border:none;color:#fff;border-radius:6px;padding:1px 5px;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
                 </div>`;
             }).join('');
 
             const createBtn = canCreate ? `
                 <button onclick="_bdgStartCreate()" style="flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:linear-gradient(90deg,#fdf497 30%,#fdf6ea 100%);cursor:pointer;border:none;" class="${isHigh?'bdg-float':''}">
-                    <span style="font-size:2rem;">➕</span>
+                    <span style="font-size:2rem;"><i class="fa-solid fa-plus"></i></span>
                     <span style="font-size:0.6rem;font-weight:800;color:#78716c;text-transform:uppercase;">Create Badge</span>
                 </button>` : (!allowCreate ? `<p class="text-xs text-gray-500 text-center mt-2">Reach a 50-day login streak or unlock a code to create custom badges.</p>` : `<p class="text-xs text-gray-500 text-center mt-2">Badge slots full (${customKeys.length}/${maxCustom}).</p>`);
 
@@ -8718,7 +8773,7 @@
 
                 openModal('Profile Customization', `
                     <div class="space-y-6">
-                        ${locked ? `<div class="glass p-4 rounded-2xl border border-yellow-500/30 text-sm text-yellow-300 text-center">🔒 Unlock customization via Discord: <code class="bg-white/5 px-2 rounded">/customize</code></div>` : ''}
+                        ${locked ? `<div class="glass p-4 rounded-2xl border border-yellow-500/30 text-sm text-yellow-300 text-center"><i class="fa-solid fa-lock mr-1"></i>Unlock customization via Discord: <code class="bg-white/5 px-2 rounded">/customize</code></div>` : ''}
                         <!-- Live Preview Card -->
                         <div id="cust-preview-card" class="rounded-[30px] relative overflow-hidden min-h-[120px] flex flex-col items-center justify-center py-6 px-8" style="background:${_custState.gradient}">
                             <div id="cust-preview-banner" class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image:${_custState.banner ? `url('${_custState.banner}')` : 'none'};display:${_custState.banner ? 'block' : 'none'}"></div>
@@ -8798,7 +8853,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🔥 Streak Performance</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-fire text-orange-400 mr-1"></i>Streak Performance</p>
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div>
                                         <p class="text-sm text-gray-400">Current Streak</p>
@@ -8814,7 +8869,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🎮 Gaming Stats</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-gamepad text-blue-400 mr-1"></i>Gaming Stats</p>
                                 <div class="space-y-3">
                                     <div class="flex justify-between"><span class="text-sm text-gray-400">Total Games Played</span><span class="font-bold">${gamesPlayed}</span></div>
                                     <div class="flex justify-between"><span class="text-sm text-gray-400">Blackjack Win Rate</span><span class="font-bold text-green-400">${winRate}%</span></div>
@@ -8822,7 +8877,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">💎 KC Profile</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-gem text-blue-300 mr-1"></i>KC Profile</p>
                                 <div class="grid grid-cols-3 gap-3 text-center">
                                     <div><p class="text-xs text-gray-400">Overall</p><p class="text-xl font-bold text-blue-400">${u.overall || 0}</p></div>
                                     <div><p class="text-xs text-gray-400">Offence</p><p class="text-xl font-bold text-red-400">${u.offence || 0}</p></div>
@@ -8830,7 +8885,7 @@
                                 </div>
                             </div>
                             <div class="glass p-6 rounded-3xl">
-                                <p class="text-xs text-gray-500 font-black uppercase mb-4">🏟️ Battledome</p>
+                                <p class="text-xs text-gray-500 font-black uppercase mb-4"><i class="fa-solid fa-building text-gray-400 mr-1"></i>Battledome</p>
                                 <div class="text-center">
                                     <p class="text-xs text-gray-400 mb-2">Personal Best</p>
                                     <p class="text-4xl font-bold text-red-400">${(u.bdHighscore || 0).toLocaleString()}</p>
@@ -9061,7 +9116,7 @@
                                 <p class="font-bold text-sm">${user.displayName}</p>
                             </div>
                             ${currentUser && user.uid !== currentUser.uid ? `
-                                <button onclick="sendFriendRequest('${user.uid}');this.textContent='Sent ✓';this.disabled=true" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl text-xs transition">
+                                <button onclick="sendFriendRequest('${user.uid}');this.innerHTML='<i class="fa-solid fa-check"></i> Sent';this.disabled=true" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-xl text-xs transition">
                                     Add
                                 </button>
                             ` : '<span class="text-xs text-gray-500">You</span>'}
@@ -9143,7 +9198,7 @@
                         <button onclick="applyFeedFilters()" class="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-500 font-bold rounded-2xl transition">Apply Filters</button>
                         <button onclick="clearFeedFilters()" class="px-6 py-3 glass font-bold rounded-2xl hover:bg-white/10 transition">Clear</button>
                     </div>
-                    ${(feedSearchQuery || feedDateFilter !== 'all') ? '<p class="text-center text-xs text-blue-400">⚡ Filters active</p>' : ''}
+                    ${(feedSearchQuery || feedDateFilter !== 'all') ? '<p class="text-center text-xs text-blue-400"><i class="fa-solid fa-bolt text-blue-400 mr-1"></i>Filters active</p>' : ''}
                 </div>
             `);
         }
@@ -9445,7 +9500,7 @@
             });
             if (!localStorage.getItem('kcnow_shortcuts_v3')) {
                 setTimeout(() => {
-                    showToast('💡 Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • F=Friends', 'info', 9000);
+                    showToast('Shortcuts: 1-5 tabs • G=Games • J=Blackjack • M=Slots • B=BD • L=LB • /=Search • F=Friends', 'info', 9000);
                     localStorage.setItem('kcnow_shortcuts_v3', 'true');
                 }, 2000);
             }
