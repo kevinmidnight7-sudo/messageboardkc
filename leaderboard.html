@@ -333,8 +333,10 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // --- Fetch leaderboard data
+  // --- Fetch leaderboard data (session-cached: only one download per page load)
+  let _lbDataLoaded = false;
   async function fetchData() {
+    if (_lbDataLoaded) { renderAll(); return; }
     const [usersSnap, badgesSnap] = await Promise.all([
       db.ref('users').once('value'),
       db.ref('badges').once('value')
@@ -353,6 +355,7 @@
         defenceScore: b.defence || 0
       };
     });
+    _lbDataLoaded = true;
     renderAll();
   }
 

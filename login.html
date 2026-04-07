@@ -2373,34 +2373,45 @@ document.getElementById("adminLoginBtn").onclick = ()=>{
   } else kcAlert("Wrong admin password");
 };
 function ensureAdmin(){return adminAuthenticated;}
+
+// COST: shared session cache — refreshUserSelect + loadAllUsersToAdmin both need the same
+// users collection. Fetch once, reuse for both; set _adminDataDirty=true after writes.
+let _adminUsersSnap = null, _adminBadgesSnap = null, _adminDataDirty = false;
+function _getAdminData() {
+  if (_adminUsersSnap && _adminBadgesSnap && !_adminDataDirty) {
+    return Promise.resolve([_adminUsersSnap, _adminBadgesSnap]);
+  }
+  _adminDataDirty = false;
+  return Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
+    .then(([us, bad]) => { _adminUsersSnap = us; _adminBadgesSnap = bad; return [us, bad]; });
+}
+
 function refreshUserSelect(){
-  db.ref("users").once("value").then(snap=>{
+  _getAdminData().then(([us]) => {
     const sel=document.getElementById("userSelect");
     sel.innerHTML="";
-    snap.forEach(u=>{
+    us.forEach(u=>{
       const o=document.createElement("option");
       o.value=u.key; o.textContent=u.val().displayName;
       sel.appendChild(o);
     });
   });
 }
-// Optimized: Use Promise.all to fetch data concurrently
 function loadAllUsersToAdmin(){
-  Promise.all([db.ref("users").once("value"), db.ref("badges").once("value")])
-    .then(([us,bad])=>{
-      let html="<ul>";
-      us.forEach(u=>{
-        const b=bad.child(u.key).val()||{};
-        html+=`<li><b>${u.val().displayName}</b>
-          <span class="admin-badge-list">
-            <span>🏆<span class="admin-badge-count">${b.overall||0}</span></span>
-            <span>🔥<span class="admin-badge-count">${b.offence||0}</span></span>
-            <span>🛡️<span class="admin-badge-count">${b.defence||0}</span></span>
-          </span></li>`;
-      });
-      html+="</ul>";
-      document.getElementById("adminUsersList").innerHTML=html;
+  _getAdminData().then(([us,bad])=>{
+    let html="<ul>";
+    us.forEach(u=>{
+      const b=bad.child(u.key).val()||{};
+      html+=`<li><b>${u.val().displayName}</b>
+        <span class="admin-badge-list">
+          <span>🏆<span class="admin-badge-count">${b.overall||0}</span></span>
+          <span>🔥<span class="admin-badge-count">${b.offence||0}</span></span>
+          <span>🛡️<span class="admin-badge-count">${b.defence||0}</span></span>
+        </span></li>`;
     });
+    html+="</ul>";
+    document.getElementById("adminUsersList").innerHTML=html;
+  });
 }
 ["Offence","Defence","Overall"].forEach(type=>{
   document.getElementById("add"+type).onclick = ()=>{
@@ -2672,8 +2683,15 @@ auth.onAuthStateChanged(async (u) => {
     // Optimized: Start a single listener for user data
     fetchUserDataAndListen(u);
     
-    // Optimized: Get a one-time count of all users
-    db.ref("users").once("value").then(s => userCounter.textContent = `There are now ${s.numChildren()} users registered!`);
+    // COST: reuse admin cache if already loaded, otherwise piggyback on meta/userCount if available
+    db.ref("meta/userCount").once("value").then(s => {
+      const count = s.val();
+      if (count) { userCounter.textContent = `There are now ${count} users registered!`; }
+      else {
+        // Fallback: count from users collection (only if meta path not maintained)
+        _getAdminData().then(([us]) => { userCounter.textContent = `There are now ${us.numChildren()} users registered!`; });
+      }
+    });
     
     badgesCard.style.display = "flex";
     document.querySelector(".kc-title").textContent = "KC Events";

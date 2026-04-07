@@ -1292,8 +1292,8 @@
     
     // Optimized: Use a single listener for all leaderboard data to reduce costs
     function setupLeaderboardListeners() {
-        // Listen only to the most recent 200 votes to reduce download costs
-        votesRef.orderByChild('time').limitToLast(200).on('value', snap => {
+        // COST: was limitToLast(200) — reduced to 100 to halve leaderboard download size
+        votesRef.orderByChild('time').limitToLast(100).on('value', snap => {
             allVotesCache = snap.val() || {};
             processLeaderboardData();
         });
@@ -1647,7 +1647,7 @@
     // Optimized: Use a single listener for average rating
     function updateAverageRating(){
       // Listen only to recent votes to compute the average rating
-      votesRef.orderByChild('time').limitToLast(200).on('value', snap => {
+      votesRef.orderByChild('time').limitToLast(100).on('value', snap => {
         let sum = 0, n = 0;
         snap.forEach(c => {
           const r = c.val().rating;
