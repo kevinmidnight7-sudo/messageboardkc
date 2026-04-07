@@ -632,6 +632,7 @@
               <button onclick="exportData()">📥 Export CSV</button>
               <button onclick="showAddModal()">➕ Add Score</button>
               <button onclick="showBulkDeleteModal()" class="danger">🗑️ Bulk Delete</button>
+              <button onclick="deleteSelectedScores()" class="danger" id="delete-selected-btn" style="display: none;">🗑️ Delete Selected (<span id="selected-count">0</span>)</button>
             </div>
           </div>
         </div>
@@ -676,6 +677,9 @@
           <table id="scores-table">
             <thead>
               <tr>
+                <th style="width: 40px; text-align: center;">
+                  <input type="checkbox" id="select-all-scores" title="Select all on this page" style="width: auto; cursor: pointer;">
+                </th>
                 <th class="sortable" data-sort="name">Player Name</th>
                 <th class="sortable" data-sort="score">Score</th>
                 <th class="sortable" data-sort="region">Region</th>
@@ -686,7 +690,7 @@
             </thead>
             <tbody id="scores-tbody">
               <tr>
-                <td colspan="6" class="loading">
+                <td colspan="7" class="loading">
                   <div class="spinner"></div>
                   Loading data...
                 </td>
@@ -1086,6 +1090,17 @@
     let currentPage = 1;
     let pageSize = 50;
     let filteredScoresData = [];
+
+    // Selection — keys are "name||region"
+    let selectedScores = new Set();
+
+    function updateSelectionUI() {
+      const count = selectedScores.size;
+      const btn = document.getElementById('delete-selected-btn');
+      const counter = document.getElementById('selected-count');
+      if (btn) btn.style.display = count > 0 ? 'inline-block' : 'none';
+      if (counter) counter.textContent = count;
+    }
 
     // URL encoding function matching the bot's toRtdbKey
     function toRtdbKey(raw) {
@@ -1523,31 +1538,38 @@
       if (filteredScoresData.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <div class="empty-state-icon">🔍</div>
               <div>No scores found matching your filters</div>
             </td>
           </tr>
         `;
+        // Uncheck select-all when no rows
+        const selectAll = document.getElementById('select-all-scores');
+        if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
         return;
       }
-      
+
       const html = pageData.map((score, idx) => {
-        const badgeClass = score.region === 'East' ? 'region-east' : 
+        const badgeClass = score.region === 'East' ? 'region-east' :
                           score.region === 'EU' ? 'region-eu' : 'region-global';
-        const lastSeen = score.seenAt 
+        const lastSeen = score.seenAt
           ? new Date(score.seenAt).toLocaleString()
           : 'Unknown';
-        
-        const highlightedName = searchTerm 
+
+        const highlightedName = searchTerm
           ? score.name.replace(new RegExp(searchTerm, 'gi'), match => `<span class="search-highlight">${match}</span>`)
           : score.name;
-        
-        // Use data attributes instead of onclick to avoid escaping issues
+
         const rowId = `score-row-${startIdx + idx}`;
-        
+        const selKey = score.name + '||' + score.region;
+        const isChecked = selectedScores.has(selKey) ? 'checked' : '';
+
         return `
-          <tr id="${rowId}">
+          <tr id="${rowId}" ${selectedScores.has(selKey) ? 'style="background: rgba(0,212,255,0.08);"' : ''}>
+            <td style="text-align: center;">
+              <input type="checkbox" class="score-checkbox" data-name="${score.name}" data-region="${score.region}" ${isChecked} style="width: auto; cursor: pointer;">
+            </td>
             <td>${highlightedName}</td>
             <td><strong>${score.score.toLocaleString()}</strong></td>
             <td><span class="region-badge ${badgeClass}">${score.region}</span></td>
@@ -1562,21 +1584,50 @@
           </tr>
         `;
       }).join('');
-      
+
       tbody.innerHTML = html;
-      
-      // Add event listeners to the buttons
+
+      // Row checkbox listeners
+      tbody.querySelectorAll('.score-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const key = cb.dataset.name + '||' + cb.dataset.region;
+          if (cb.checked) {
+            selectedScores.add(key);
+            cb.closest('tr').style.background = 'rgba(0,212,255,0.08)';
+          } else {
+            selectedScores.delete(key);
+            cb.closest('tr').style.background = '';
+          }
+          updateSelectAllState();
+          updateSelectionUI();
+        });
+      });
+
+      // Edit / Delete button listeners
       tbody.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', () => {
           editScore(btn.dataset.name, btn.dataset.region);
         });
       });
-      
+
       tbody.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', () => {
           deleteScore(btn.dataset.name, btn.dataset.region);
         });
       });
+
+      // Sync select-all checkbox state
+      updateSelectAllState();
+    }
+
+    function updateSelectAllState() {
+      const selectAll = document.getElementById('select-all-scores');
+      if (!selectAll) return;
+      const checkboxes = document.querySelectorAll('.score-checkbox');
+      const total = checkboxes.length;
+      const checked = Array.from(checkboxes).filter(c => c.checked).length;
+      selectAll.checked = total > 0 && checked === total;
+      selectAll.indeterminate = checked > 0 && checked < total;
     }
 
     function updatePaginationUI(totalFiltered, totalPages, startIdx, endIdx) {
@@ -1616,6 +1667,12 @@
     window.goToLastPage = function() {
       const totalPages = Math.ceil(filteredScoresData.length / pageSize);
       currentPage = totalPages;
+      renderScoresTable();
+    };
+
+    window.clearSelection = function() {
+      selectedScores.clear();
+      updateSelectionUI();
       renderScoresTable();
     };
 
@@ -2078,6 +2135,49 @@
       }
     };
 
+    window.deleteSelectedScores = async function() {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to delete scores', 'error');
+        return;
+      }
+      if (selectedScores.size === 0) {
+        showToast('No scores selected', 'warning');
+        return;
+      }
+
+      const count = selectedScores.size;
+      bdConfirm(`Permanently delete ${count} selected score${count !== 1 ? 's' : ''}? This cannot be undone.`, async () => {
+        const btn = document.getElementById('delete-selected-btn');
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
+        try {
+          const deletePromises = [];
+          for (const key of selectedScores) {
+            const [name, region] = key.split('||');
+            const encodedKey = toRtdbKey(name);
+            deletePromises.push(remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`)));
+            // If regional, also remove from global
+            if (region !== 'global') {
+              deletePromises.push(remove(ref(database, `config/bdTopScores/global/${encodedKey}`)));
+            }
+          }
+
+          await Promise.all(deletePromises);
+          selectedScores.clear();
+          updateSelectionUI();
+
+          await loadScoreStats();
+          await loadScoresPage();
+          showToast(`Successfully deleted ${count} score${count !== 1 ? 's' : ''}`, 'success');
+        } catch (error) {
+          console.error('Delete selected error:', error);
+          showToast('Error deleting scores: ' + error.message, 'error');
+        } finally {
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        }
+      });
+    };
+
     window.showBulkDeleteModal = async function() {
       if (!isAdmin) {
         showToast('You must be logged in as an admin to bulk delete scores', 'error');
@@ -2292,6 +2392,23 @@
           modal.classList.remove('active');
         }
       });
+    });
+
+    // Select-all checkbox for scores table
+    document.getElementById('select-all-scores')?.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.score-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = e.target.checked;
+        const key = cb.dataset.name + '||' + cb.dataset.region;
+        if (e.target.checked) {
+          selectedScores.add(key);
+          cb.closest('tr').style.background = 'rgba(0,212,255,0.08)';
+        } else {
+          selectedScores.delete(key);
+          cb.closest('tr').style.background = '';
+        }
+      });
+      updateSelectionUI();
     });
 
     // Auto-preview on bulk delete threshold change
