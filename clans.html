@@ -763,25 +763,51 @@
     }
 
     // ========== DATA LISTENERS ==========
+    // COST: was 5x persistent .on('value') on full collections — re-downloaded ALL data
+    // on every change. Switched to .once() for initial load + targeted child_changed
+    // listeners for clans only (the most frequently mutated collection).
+    let _clansChangeRef = null;
     function attachDataListeners() {
-        db.ref('clans').on('value', snap => { allClansData = snap.val() || {}; renderPage(); });
-        db.ref('users').on('value', snap => { allUsersData = snap.val() || {}; renderPage(); });
-        db.ref('badges').on('value', snap => { allBadgesData = snap.val() || {}; renderPage(); });
-        db.ref('admins').on('value', snap => { allAdminsData = snap.val() || {}; renderPage(); });
-        db.ref('battles').on('value', snap => { 
-            allBattlesData = snap.val() || {}; 
-            if(!document.getElementById('clanBattlesModal').classList.contains('hidden')){
-                renderBattlesList(currentBattlesView);
-            }
+        // Load all 5 collections once upfront
+        Promise.all([
+            db.ref('clans').once('value'),
+            db.ref('users').once('value'),
+            db.ref('badges').once('value'),
+            db.ref('admins').once('value'),
+            db.ref('battles').once('value'),
+        ]).then(([clansSnap, usersSnap, badgesSnap, adminsSnap, battlesSnap]) => {
+            allClansData   = clansSnap.val()   || {};
+            allUsersData   = usersSnap.val()   || {};
+            allBadgesData  = badgesSnap.val()  || {};
+            allAdminsData  = adminsSnap.val()  || {};
+            allBattlesData = battlesSnap.val() || {};
+            renderPage();
+
+            // After initial load, listen for clan mutations (joins, settings changes, battles)
+            // using child_changed so only the modified clan re-downloads, not the whole collection.
+            if (_clansChangeRef) _clansChangeRef.off();
+            _clansChangeRef = db.ref('clans');
+            _clansChangeRef.on('child_changed', snap => {
+                allClansData[snap.key] = snap.val();
+                renderPage();
+            });
+            _clansChangeRef.on('child_added', snap => {
+                if (!allClansData[snap.key]) { allClansData[snap.key] = snap.val(); renderPage(); }
+            });
+            _clansChangeRef.on('child_removed', snap => {
+                delete allClansData[snap.key]; renderPage();
+            });
         });
     }
 
     function detachDataListeners() {
-        db.ref('clans').off();
-        db.ref('users').off();
-        db.ref('badges').off();
-        db.ref('admins').off();
-        db.ref('battles').off();
+        if (_clansChangeRef) { _clansChangeRef.off(); _clansChangeRef = null; }
+    }
+
+    // Call to force a full data refresh (e.g. after creating/deleting a clan)
+    function refreshAllData() {
+        detachDataListeners();
+        attachDataListeners();
     }
 
 

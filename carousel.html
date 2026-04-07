@@ -508,55 +508,12 @@
         });
     }
 
-    // Members (alphabetical)
+    // COST: was 3 separate db.ref('users').once('value') calls (3x full collection download).
+    // Now a single Promise.all fetches users + badges once and builds all three leaderboards.
     const lbMembers = document.getElementById('lb-members');
-    db.ref('users').once('value').then(snapshot => {
-      let arr = [];
-      snapshot.forEach(child => {
-        const data = child.val();
-        arr.push({
-          uid: child.key,
-          name: data.displayName || data.email || child.key,
-          avatar: getAvatarUrl(data)
-        });
-      });
-      arr.sort((a, b) => a.name.localeCompare(b.name));
-      lbMembers.innerHTML = arr.map((u, i) => `
-        <div class="lb-row top${i<3?i+1:''}">
-          <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
-          <span class="lb-user" data-uid="${u.uid}">${u.name}<span class="tooltip">View Profile</span></span>
-        </div>
-      `).join('') || `<div class="lb-row">No members yet</div>`;
-      attachClickListeners();
-    });
-
-    // Streaks (from users/{uid}/loginStreak)
     const lbStreaks = document.getElementById('lb-streaks');
-    db.ref('users').once('value').then(snapshot => {
-      let arr = [];
-      snapshot.forEach(child => {
-        const v = child.val();
-        let streakNum = typeof v.loginStreak === "number" ? v.loginStreak : (parseInt(v.loginStreak)||0);
-        arr.push({
-          uid: child.key,
-          name: v.displayName || v.email || child.key,
-          streak: streakNum,
-          avatar: getAvatarUrl(v)
-        });
-      });
-      arr.sort((a, b) => b.streak - a.streak || a.name.localeCompare(b.name));
-      lbStreaks.innerHTML = arr.map((u, i) => `
-        <div class="lb-row top${i<3?i+1:''}">
-          <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
-          <span class="lb-user" data-uid="${u.uid}"><span class="lb-icon">🔥</span>${u.name}<span class="tooltip">View Profile</span></span>
-          <span class="lb-count">${u.streak}</span>
-        </div>
-      `).join('') || `<div class="lb-row">No streaks yet</div>`;
-      attachClickListeners();
-    });
+    const lbBadges  = document.getElementById('lb-badges');
 
-    // Badges (total for each user, show avatars)
-    const lbBadges = document.getElementById('lb-badges');
     Promise.all([
       db.ref('users').once('value'),
       db.ref('badges').once('value')
@@ -567,19 +524,37 @@
         users.push({
           uid: child.key,
           name: v.displayName || v.email || child.key,
+          streak: typeof v.loginStreak === 'number' ? v.loginStreak : (parseInt(v.loginStreak) || 0),
           avatar: getAvatarUrl(v)
         });
       });
-      let badgeTotals = users.map(user => {
+
+      // Members (alphabetical)
+      const membersSorted = [...users].sort((a, b) => a.name.localeCompare(b.name));
+      lbMembers.innerHTML = membersSorted.map((u, i) => `
+        <div class="lb-row top${i<3?i+1:''}">
+          <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
+          <span class="lb-user" data-uid="${u.uid}">${u.name}<span class="tooltip">View Profile</span></span>
+        </div>
+      `).join('') || `<div class="lb-row">No members yet</div>`;
+
+      // Streaks
+      const streaksSorted = [...users].sort((a, b) => b.streak - a.streak || a.name.localeCompare(b.name));
+      lbStreaks.innerHTML = streaksSorted.map((u, i) => `
+        <div class="lb-row top${i<3?i+1:''}">
+          <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
+          <span class="lb-user" data-uid="${u.uid}"><span class="lb-icon">🔥</span>${u.name}<span class="tooltip">View Profile</span></span>
+          <span class="lb-count">${u.streak}</span>
+        </div>
+      `).join('') || `<div class="lb-row">No streaks yet</div>`;
+
+      // Badges
+      const badgeTotals = users.map(user => {
         const badgeObj = badgeSnap.child(user.uid).val() || {};
         let sum = 0;
         for (let k in badgeObj) sum += parseInt(badgeObj[k]) || 0;
-        return {
-          ...user,
-          count: sum
-        };
-      });
-      badgeTotals.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+        return { ...user, count: sum };
+      }).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
       lbBadges.innerHTML = badgeTotals.map((u, i) => `
         <div class="lb-row top${i<3?i+1:''}">
           <img class="lb-avatar" src="${u.avatar}" alt="avatar" />
@@ -587,6 +562,7 @@
           <span class="lb-badgecount">${u.count}</span>
         </div>
       `).join('') || `<div class="lb-row">No badges yet</div>`;
+
       attachClickListeners();
     });
   </script>

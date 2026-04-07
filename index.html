@@ -1157,16 +1157,27 @@ a { color: var(--theme-accent); }
 
 
   // --- Discord Integration Helpers ---
+  const _discordIdCache = {};
   async function getDiscordIdFromKcUid(kcUid) {
+      if (_discordIdCache[kcUid] !== undefined) return _discordIdCache[kcUid];
       try {
+          // COST: try direct path first (users/{uid}/discordId written by bot)
+          // Falls back to scanning discordLinks only if needed.
+          const directSnap = await db.ref(`users/${kcUid}/discordId`).once('value');
+          if (directSnap.val()) {
+              _discordIdCache[kcUid] = directSnap.val();
+              return _discordIdCache[kcUid];
+          }
+          // Fallback: scan discordLinks (expensive — only reached if direct path missing)
           const linksSnap = await db.ref('discordLinks').once('value');
           const links = linksSnap.val() || {};
           for (const [discordId, data] of Object.entries(links)) {
-              if (data.uid === kcUid) return discordId;
+              if (data.uid === kcUid) { _discordIdCache[kcUid] = discordId; return discordId; }
           }
       } catch (e) {
           console.error('getDiscordIdFromKcUid error:', e);
       }
+      _discordIdCache[kcUid] = null;
       return null;
   }
 
@@ -1789,7 +1800,8 @@ const hasCustomization =
     window.currentUser = u; // expose for profile-popup.js friend bar
     if (u) {
       currentUserUid = u.uid;
-      db.ref(`users/${u.uid}`).on('value', snap => {
+      // COST: .once() — profile (theme, diamond status) doesn't need live re-downloads
+      db.ref(`users/${u.uid}`).once('value').then(snap => {
         currentUserProfile = snap.val() || {};
 
         applyTheme(currentUserProfile.theme || 'light');
