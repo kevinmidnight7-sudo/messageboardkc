@@ -2005,6 +2005,16 @@
               await remove(ref(database, `config/bdTopScores/global/${globalKey}`));
             }
           }
+
+          // Verify the deletion actually persisted in Firebase
+          const verifySnap = await get(ref(database, `config/bdTopScores/${region}/${encodedKey}`));
+          if (verifySnap.exists()) {
+            showToast(`⚠️ Delete failed — "${name}" is still in the database. This is likely a permissions issue or a bot is re-writing scores instantly.`, 'error');
+            await loadScoreStats();
+            await loadScoresPage();
+            return;
+          }
+
           await loadScoreStats();
           await loadScoresPage();
           showSaveConfirm('Score Deleted', `${name} (${region}) has been permanently removed from the database.`);
@@ -2190,6 +2200,20 @@
           }
 
           await Promise.all(deletePromises);
+
+          // Spot-check the first deleted entry to verify it's actually gone
+          const [firstKey] = selectedScores;
+          const [firstName, firstRegion] = firstKey.split('||');
+          const firstEntry = allScoresData.find(s => s.name === firstName && s.region === firstRegion);
+          const firstEncodedKey = firstEntry?.encodedKey || toRtdbKey(firstName);
+          const verifySnap = await get(ref(database, `config/bdTopScores/${firstRegion}/${firstEncodedKey}`));
+          if (verifySnap.exists()) {
+            showToast('⚠️ Delete failed — scores are still in the database. This is likely a permissions issue or a bot is re-writing scores instantly.', 'error');
+            await loadScoreStats();
+            await loadScoresPage();
+            return;
+          }
+
           selectedScores.clear();
           updateSelectionUI();
 
