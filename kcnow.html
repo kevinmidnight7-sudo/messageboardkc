@@ -2928,17 +2928,18 @@
                 }
 
                 try { await user.reload(); } catch (e) {}
-                let _firstUserData = true;
-                db.ref(`users/${user.uid}`).on('value', snap => {
+                // COST: .once() instead of .on() — profile data (avatar, name, badges) does not
+                // need live re-downloads during a session; presence is written by initPresence()
+                // separately and does not need to trigger a full profile re-download.
+                db.ref(`users/${user.uid}`).once('value').then(snap => {
                     const data = snap.val() || {};
                     currentUserData = data;
                     renderUserHeader(data, user);
-                    // Render premium customization status and Discord link banners when data loads
                     renderDiamondCustomizationStatus();
                     renderDiscordLinkBanner();
                     if (activeTab === 'profile') loadProfileLite();
-                    if (_firstUserData) { _firstUserData = false; KCLoader.advance('userdata'); }
-                });
+                    KCLoader.advance('userdata');
+                }).catch(() => KCLoader.advance('userdata'));
                 initPersonalActivityListener();
                 initPresence();
             } else {
@@ -3842,10 +3843,10 @@
             { key:'😮',  icon:'fa-face-surprise',    color:'text-blue-400' },
             { key:'💯',  icon:'fa-circle-check',     color:'text-green-400' },
         ];
-        // Returns display HTML for a reaction emoji key (falls back to the emoji itself)
+        // Returns the emoji directly — reactions are stored as emojis in Firebase so we
+        // keep them as-is in the UI rather than converting to FA icons.
         function _reactionDisplay(emojiKey) {
-            const r = _BOARD_REACTIONS.find(r => r.key === emojiKey);
-            return r ? `<i class="fa-solid ${r.icon} ${r.color}"></i>` : emojiKey;
+            return emojiKey;
         }
         function pickBoardReaction(postId) {
             if (!currentUser) { openAuthModal(); return; }
@@ -4554,21 +4555,63 @@
         }
 
         // === Friend System (Phase 5) ===
+        // Per-session profile cache: avoids re-downloading the same friend profile
+        // every time the friends list node changes.
+        const _friendProfileCache = {};
+
+        function _getFriendProfile(uid) {
+            if (_friendProfileCache[uid]) return Promise.resolve(_friendProfileCache[uid]);
+            return db.ref(`users/${uid}`).once('value').then(s => {
+                const data = { uid, ...(s.val() || {}) };
+                _friendProfileCache[uid] = data;
+                return data;
+            });
+        }
+
+        let _friendsRef = null;
         function loadFriends() {
             if (!currentUser) return;
-            db.ref(`users/${currentUser.uid}/friends`).on('value', snap => {
-                friendsList = [];
-                const friendIds = snap.val() || {};
-                const uids = Object.keys(friendIds);
-                if (uids.length === 0) { renderFriendsPanel(); rpRenderFriendsList(); return; }
-                Promise.all(
-                    uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))
-                ).then(friends => {
+            // Detach previous listener to avoid duplicates (called from multiple places)
+            if (_friendsRef) { _friendsRef.off(); _friendsRef = null; }
+            // COST: child_added + child_removed instead of .on('value') so we never
+            // re-download all N profiles when a single friend is added/removed.
+            const base = db.ref(`users/${currentUser.uid}/friends`);
+            _friendsRef = base;
+
+            // Initial load — fetch full list once, use cache
+            base.once('value').then(snap => {
+                const uids = Object.keys(snap.val() || {});
+                if (uids.length === 0) { friendsList = []; renderFriendsPanel(); rpRenderFriendsList(); initFriendActivityListeners(); return; }
+                Promise.all(uids.map(_getFriendProfile)).then(friends => {
                     friendsList = friends;
                     renderFriendsPanel();
                     rpRenderFriendsList();
                     initFriendActivityListeners();
                 });
+            });
+
+            // Incremental: only fetch the newly added friend's profile
+            let _friendsInitDone = false;
+            setTimeout(() => { _friendsInitDone = true; }, 3000);
+            base.on('child_added', snap => {
+                if (!_friendsInitDone) return; // skip initial population
+                const uid = snap.key;
+                if (friendsList.find(f => f.uid === uid)) return;
+                _getFriendProfile(uid).then(profile => {
+                    friendsList.push(profile);
+                    renderFriendsPanel();
+                    rpRenderFriendsList();
+                    initFriendActivityListeners();
+                });
+            });
+
+            base.on('child_removed', snap => {
+                const uid = snap.key;
+                friendsList = friendsList.filter(f => f.uid !== uid);
+                delete _friendProfileCache[uid];
+                renderFriendsPanel();
+                rpRenderFriendsList();
+                initFriendActivityListeners();
             });
         }
 
@@ -4614,16 +4657,11 @@
         }
 
         function searchUsers() {
-            const query = document.getElementById('friend-search').value.toLowerCase();
+            const query = (document.getElementById('friend-search')?.value || '').toLowerCase().trim();
             if (!query) return;
-            db.ref('users').orderByChild('displayName').once('value').then(snap => {
-                const results = [];
-                snap.forEach(child => {
-                    const user = child.val();
-                    if (user.displayName && user.displayName.toLowerCase().includes(query)) {
-                        results.push({ uid: child.key, ...user });
-                    }
-                });
+            // COST: use session-level cache instead of a fresh full-collection scan each call
+            ensureSearchDataLoaded().then(() => {
+                const results = allUsersData.filter(u => u.displayName && u.displayName.toLowerCase().includes(query));
                 const resultsPanel = document.getElementById('search-results');
                 resultsPanel.classList.remove('hidden');
                 resultsPanel.innerHTML = results.length > 0 ? `
@@ -6295,7 +6333,7 @@
 
                 // Secondary: also scan social_posts (flat collection, some bots write here)
                 try {
-                    const spSnap = await db.ref('social_posts').limitToLast(100).once('value');
+                    const spSnap = await db.ref('social_posts').limitToLast(25).once('value'); // COST: was 100
                     const existing = new Set(clipsAllPosts.map(p => p.postId));
                     spSnap.forEach(child => {
                         const p = child.val();
@@ -6534,14 +6572,8 @@
 
                     if (!players) {
                         // 2. Try direct userEconomy read (requires .read rule on collection)
-                        // If this fails with permission-denied, the outer catch will handle it silently.
-                        let econSnap;
-                        try {
-                            econSnap = await db.ref('userEconomy').orderByChild('points').limitToLast(10).once('value');
-                        } catch(e) {
-                            if (e.code === 'PERMISSION_DENIED') throw e; // let outer catch handle gracefully
-                            econSnap = await db.ref('userEconomy').once('value');
-                        }
+                        // COST: always use limitToLast(10) — never download the full collection
+                        const econSnap = await db.ref('userEconomy').orderByChild('points').limitToLast(10).once('value');
                         players = [];
                         econSnap.forEach(child => {
                             const pts = child.val()?.points;
@@ -9119,47 +9151,7 @@
         }
 
         // ===== PHASE 5C: FRIEND SYSTEM =====
-        function loadFriends() {
-            if (!currentUser) return;
-            db.ref(`users/${currentUser.uid}/friends`).on('value', snap => {
-                const friendIds = snap.val() || {};
-                const uids = Object.keys(friendIds);
-                if (uids.length === 0) {
-                    friendsList = [];
-                    renderFriendsPanel();
-                    rpRenderFriendsList();
-                    return;
-                }
-                Promise.all(
-                    uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))
-                ).then(friends => {
-                    friendsList = friends;
-                    renderFriendsPanel();
-                    rpRenderFriendsList();
-                    initFriendActivityListeners();
-                });
-            });
-        }
-
-        function renderFriendsPanel() {
-            const panel = document.getElementById('friends-panel');
-            if (!panel) return;
-            panel.innerHTML = friendsList.length > 0 ? friendsList.map(friend => `
-                <div class="flex items-center gap-3 p-3 glass rounded-2xl hover:bg-white/10 cursor-pointer" onclick="window.openKcProfile('${friend.uid}')">
-                    <div class="relative">
-                        <img src="${friend.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-10 h-10 rounded-full object-cover">
-                        <div class="absolute bottom-0 right-0 w-3 h-3 ${friend.online ? 'bg-green-500' : 'bg-gray-500'} rounded-full border-2 border-[#1e293b]"></div>
-                    </div>
-                    <div class="flex-1">
-                        <p class="font-bold text-sm">${friend.displayName || 'Unknown'}</p>
-                        <p class="text-xs text-gray-500">${friend.online ? 'Online' : 'Offline'}</p>
-                    </div>
-                    <button onclick="event.stopPropagation();removeFriend('${friend.uid}')" class="text-xs text-red-400 hover:text-red-300 p-2">
-                        <i class="fa-solid fa-user-minus"></i>
-                    </button>
-                </div>
-            `).join('') : '<p class="text-center text-gray-500 text-xs py-4">No friends yet. Search to add some!</p>';
-        }
+        // loadFriends() and renderFriendsPanel() are defined earlier in the file.
 
         function openFriendsList() {
             if (!currentUser) return openAuthModal();
@@ -9693,21 +9685,21 @@
                         Challenge an online friend — winner earns <span class="text-yellow-400 font-bold">15 pts</span>
                     </p>
                     ${onlineFriends.length ? `
-                        <div class="space-y-2 max-h-[50vh] overflow-y-auto custom-scroll">
-                            ${onlineFriends.map(f => `
-                                <button onclick="sendGameChallenge('${f.uid}','${f.displayName || 'Friend'}','${gameType}')"
-                                        class="w-full flex items-center gap-3 p-3 glass glass-hover rounded-2xl transition text-left">
-                                    <div class="relative flex-shrink-0">
+                        <div class="space-y-2 max-h-[50vh] overflow-y-auto custom-scroll" id="_fp-list">
+                            ${onlineFriends.map((f, i) => `
+                                <button data-fp-idx="${i}"
+                                        class="w-full flex items-center gap-3 p-3 glass glass-hover rounded-2xl transition text-left" style="cursor:pointer;">
+                                    <div class="relative flex-shrink-0 pointer-events-none">
                                         <img src="${f.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}"
                                              class="w-10 h-10 rounded-full object-cover">
                                         <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2"
                                              style="border-color:#080c14;"></div>
                                     </div>
-                                    <div class="flex-1 min-w-0">
+                                    <div class="flex-1 min-w-0 pointer-events-none">
                                         <p class="font-bold text-sm truncate">${escapeHtml(f.displayName || 'Unknown')}</p>
                                         <p class="text-[10px] text-green-400">On KC Now</p>
                                     </div>
-                                    <i class="fa-solid fa-chevron-right text-gray-600 text-xs"></i>
+                                    <i class="fa-solid fa-chevron-right text-gray-600 text-xs pointer-events-none"></i>
                                 </button>
                             `).join('')}
                         </div>
@@ -9720,30 +9712,51 @@
                     `}
                 </div>
             `);
+            // Attach listeners after innerHTML is set
+            const fpList = document.getElementById('_fp-list');
+            if (fpList) {
+                fpList.querySelectorAll('[data-fp-idx]').forEach(btn => {
+                    const idx = parseInt(btn.dataset.fpIdx, 10);
+                    const f = onlineFriends[idx];
+                    btn.addEventListener('click', () => sendGameChallenge(f.uid, f.displayName || 'Friend', gameType));
+                });
+            }
         }
 
         // ── Challenge a friend ────────────────────────────────────────
+        // Store pending challenge data to avoid inline onclick escaping issues
+        let _pendingChallenge = null;
+
         function challengeFriend(friendUid) {
             if (!currentUser) return openAuthModal();
             const friend = friendsList.find(f => f.uid === friendUid);
             const name = friend?.displayName || 'your friend';
+            _pendingChallenge = { friendUid, name };
             openModal(`Challenge ${escapeHtml(name)}`, `
                 <div class="space-y-3">
                     <p class="text-xs text-gray-400 text-center mb-4">Pick a game — winner earns <span class="text-yellow-400 font-bold">15 points</span>!</p>
-                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','rps')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
-                        <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400"><i class="fa-solid fa-hand-back-fist text-xl"></i></div>
-                        <div class="text-left"><p class="font-bold">Rock Paper Scissors</p><p class="text-xs text-gray-500">Classic — make your choice</p></div>
+                    <button id="_cg-rps" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition" style="cursor:pointer;">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400 pointer-events-none"><i class="fa-solid fa-hand-back-fist text-xl"></i></div>
+                        <div class="text-left pointer-events-none"><p class="font-bold">Rock Paper Scissors</p><p class="text-xs text-gray-500">Classic — make your choice</p></div>
                     </button>
-                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','coinflip')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
-                        <div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400"><i class="fa-solid fa-coins text-xl"></i></div>
-                        <div class="text-left"><p class="font-bold">Coin Flip</p><p class="text-xs text-gray-500">Heads or tails — 50/50 chance</p></div>
+                    <button id="_cg-coinflip" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition" style="cursor:pointer;">
+                        <div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400 pointer-events-none"><i class="fa-solid fa-coins text-xl"></i></div>
+                        <div class="text-left pointer-events-none"><p class="font-bold">Coin Flip</p><p class="text-xs text-gray-500">Heads or tails — 50/50 chance</p></div>
                     </button>
-                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','numberduel')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
-                        <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400"><i class="fa-solid fa-dice text-xl"></i></div>
-                        <div class="text-left"><p class="font-bold">Number Duel</p><p class="text-xs text-gray-500">Pick 1–10, closest wins</p></div>
+                    <button id="_cg-numberduel" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition" style="cursor:pointer;">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400 pointer-events-none"><i class="fa-solid fa-dice text-xl"></i></div>
+                        <div class="text-left pointer-events-none"><p class="font-bold">Number Duel</p><p class="text-xs text-gray-500">Pick 1–10, closest wins</p></div>
                     </button>
                 </div>
             `);
+            // Attach listeners after innerHTML is set — no inline onclick attribute escaping issues
+            ['rps','coinflip','numberduel'].forEach(game => {
+                const btn = document.getElementById(`_cg-${game}`);
+                if (btn) btn.addEventListener('click', () => {
+                    const c = _pendingChallenge;
+                    if (c) sendGameChallenge(c.friendUid, c.name, game);
+                });
+            });
         }
 
         function sendGameChallenge(friendUid, friendName, gameType) {
