@@ -1008,6 +1008,22 @@
     </div>
   </div>
 
+  <!-- Save Confirmation Modal -->
+  <div class="modal" id="save-confirm-modal">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 3em; margin-bottom: 15px;">✅</div>
+      <h2 id="save-confirm-title" style="font-size: 1.3em; font-weight: 700; margin-bottom: 12px; color: var(--success);"></h2>
+      <p id="save-confirm-message" style="color: var(--text-secondary); font-size: 0.95em; margin-bottom: 20px; line-height: 1.6;"></p>
+      <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px 20px; margin-bottom: 20px; font-size: 0.9em; color: var(--text-primary); display: flex; justify-content: space-around; gap: 10px;">
+        <div><div style="font-size: 1.4em; font-weight: 700; color: var(--accent);" id="sc-global">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">Global</div></div>
+        <div><div style="font-size: 1.4em; font-weight: 700; color: #ffaa00;" id="sc-east">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">East</div></div>
+        <div><div style="font-size: 1.4em; font-weight: 700; color: #00ff88;" id="sc-eu">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">EU</div></div>
+        <div><div style="font-size: 1.4em; font-weight: 700; color: var(--text-primary);" id="sc-total">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">Total</div></div>
+      </div>
+      <button onclick="closeModal('save-confirm-modal')" style="padding: 10px 32px; background: var(--success); border-color: var(--success); color: var(--bg-primary); font-weight: 700; font-size: 1em;">OK</button>
+    </div>
+  </div>
+
   <!-- Bulk Delete Modal -->
   <div class="modal" id="bulk-delete-modal">
     <div class="modal-content" style="max-width: 600px;">
@@ -1991,7 +2007,7 @@
           }
           await loadScoreStats();
           await loadScoresPage();
-          showToast('Score deleted successfully', 'success');
+          showSaveConfirm('Score Deleted', `${name} (${region}) has been permanently removed from the database.`);
         } catch (error) {
           console.error('Delete error:', error);
           showToast('Error deleting score: ' + error.message, 'error');
@@ -2063,7 +2079,7 @@
         await loadScoreStats();
         await loadScoresPage();
         closeModal('edit-modal');
-        showToast('Score updated successfully', 'success');
+        showSaveConfirm('Score Updated', `Changes for ${newName} (${region}) have been saved to the database.`);
       } catch (error) {
         console.error('Save error:', error);
         showToast('Error saving score: ' + error.message, 'error');
@@ -2099,7 +2115,7 @@
         await loadScoreStats();
         await loadScoresPage();
         closeModal('add-modal');
-        showToast('Score added successfully', 'success');
+        showSaveConfirm('Score Added', `${name} (${region}) has been saved to the database with a score of ${score.toLocaleString()}.`);
       } catch (error) {
         console.error('Add error:', error);
         showToast('Error adding score: ' + error.message, 'error');
@@ -2179,7 +2195,7 @@
 
           await loadScoreStats();
           await loadScoresPage();
-          showToast(`Successfully deleted ${count} score${count !== 1 ? 's' : ''}`, 'success');
+          showSaveConfirm('Scores Deleted', `${count} score${count !== 1 ? 's' : ''} permanently removed from the database.`);
         } catch (error) {
           console.error('Delete selected error:', error);
           showToast('Error deleting scores: ' + error.message, 'error');
@@ -2329,7 +2345,7 @@
         await loadScoresPage();
         
         closeModal('bulk-delete-modal');
-        showToast(`Successfully deleted ${deleteCount} score${deleteCount !== 1 ? 's' : ''}`, 'success');
+        showSaveConfirm('Bulk Delete Complete', `${deleteCount} score${deleteCount !== 1 ? 's' : ''} permanently removed from the database.`);
         
         deleteBtn.disabled = false;
         deleteBtn.textContent = '🗑️ Delete Scores';
@@ -2375,6 +2391,18 @@
         el.classList.remove('active');
       };
     }
+
+    window.showSaveConfirm = function(title, message) {
+      // Populate live counts from the stats already loaded into the DOM
+      document.getElementById('sc-global').textContent = document.getElementById('stat-global').textContent;
+      document.getElementById('sc-east').textContent   = document.getElementById('stat-east').textContent;
+      document.getElementById('sc-eu').textContent     = document.getElementById('stat-eu').textContent;
+      document.getElementById('sc-total').textContent  = document.getElementById('total-scores').textContent;
+
+      document.getElementById('save-confirm-title').textContent   = title;
+      document.getElementById('save-confirm-message').textContent = message;
+      document.getElementById('save-confirm-modal').classList.add('active');
+    };
 
     window.showToast = function(message, type = 'success') {
       const existingToast = document.querySelector('.toast');
