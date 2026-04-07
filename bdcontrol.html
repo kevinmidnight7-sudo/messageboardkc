@@ -1977,13 +1977,16 @@
       }
       bdConfirm(`Delete score for ${name} (${region})? This cannot be undone.`, async () => {
         try {
-          const encodedKey = toRtdbKey(name);
+          // Use the key exactly as stored in Firebase, not a re-encoded version
+          const scoreEntry = allScoresData.find(s => s.name === name && s.region === region);
+          const encodedKey = scoreEntry?.encodedKey || toRtdbKey(name);
           await remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`));
           if (region !== 'global') {
-            const scoreInRegion = allScoresData.find(s => s.name === name && s.region === region);
+            const globalEntry = allScoresData.find(s => s.name === name && s.region === 'global');
+            const globalKey = globalEntry?.encodedKey || encodedKey;
             const otherScores = allScoresData.filter(s => s.name === name && s.region !== region && s.region !== 'global');
-            if (otherScores.length === 0 || !otherScores.some(s => s.score >= scoreInRegion?.score)) {
-              await remove(ref(database, `config/bdTopScores/global/${encodedKey}`));
+            if (otherScores.length === 0 || !otherScores.some(s => s.score >= scoreEntry?.score)) {
+              await remove(ref(database, `config/bdTopScores/global/${globalKey}`));
             }
           }
           await loadScoreStats();
@@ -2026,14 +2029,18 @@
       const server = document.getElementById('edit-server').value;
       
       try {
-        const oldEncodedKey = toRtdbKey(originalName);
+        // Use the stored key for the old entry, not a re-encoded version
+        const oldEntry = allScoresData.find(s => s.name === originalName && s.region === originalRegion);
+        const oldEncodedKey = oldEntry?.encodedKey || toRtdbKey(originalName);
         const newEncodedKey = toRtdbKey(newName);
-        
+
         // If name or region changed, delete old entry
         if (originalName !== newName || originalRegion !== region) {
           await remove(ref(database, `config/bdTopScores/${originalRegion}/${oldEncodedKey}`));
           if (originalRegion !== 'global') {
-            await remove(ref(database, `config/bdTopScores/global/${oldEncodedKey}`));
+            const oldGlobalEntry = allScoresData.find(s => s.name === originalName && s.region === 'global');
+            const oldGlobalKey = oldGlobalEntry?.encodedKey || oldEncodedKey;
+            await remove(ref(database, `config/bdTopScores/global/${oldGlobalKey}`));
           }
         }
         
@@ -2154,11 +2161,15 @@
           const deletePromises = [];
           for (const key of selectedScores) {
             const [name, region] = key.split('||');
-            const encodedKey = toRtdbKey(name);
+            // Use the key exactly as stored in Firebase, not a re-encoded version
+            const scoreEntry = allScoresData.find(s => s.name === name && s.region === region);
+            const encodedKey = scoreEntry?.encodedKey || toRtdbKey(name);
             deletePromises.push(remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`)));
-            // If regional, also remove from global
+            // If regional, also remove from global using that entry's stored key
             if (region !== 'global') {
-              deletePromises.push(remove(ref(database, `config/bdTopScores/global/${encodedKey}`)));
+              const globalEntry = allScoresData.find(s => s.name === name && s.region === 'global');
+              const globalKey = globalEntry?.encodedKey || encodedKey;
+              deletePromises.push(remove(ref(database, `config/bdTopScores/global/${globalKey}`)));
             }
           }
 
