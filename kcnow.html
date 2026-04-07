@@ -9685,21 +9685,21 @@
                         Challenge an online friend — winner earns <span class="text-yellow-400 font-bold">15 pts</span>
                     </p>
                     ${onlineFriends.length ? `
-                        <div class="space-y-2 max-h-[50vh] overflow-y-auto custom-scroll">
-                            ${onlineFriends.map(f => `
-                                <button onclick="sendGameChallenge('${f.uid}','${f.displayName || 'Friend'}','${gameType}')"
-                                        class="w-full flex items-center gap-3 p-3 glass glass-hover rounded-2xl transition text-left">
-                                    <div class="relative flex-shrink-0">
+                        <div class="space-y-2 max-h-[50vh] overflow-y-auto custom-scroll" id="_fp-list">
+                            ${onlineFriends.map((f, i) => `
+                                <button data-fp-idx="${i}"
+                                        class="w-full flex items-center gap-3 p-3 glass glass-hover rounded-2xl transition text-left" style="cursor:pointer;">
+                                    <div class="relative flex-shrink-0 pointer-events-none">
                                         <img src="${f.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}"
                                              class="w-10 h-10 rounded-full object-cover">
                                         <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2"
                                              style="border-color:#080c14;"></div>
                                     </div>
-                                    <div class="flex-1 min-w-0">
+                                    <div class="flex-1 min-w-0 pointer-events-none">
                                         <p class="font-bold text-sm truncate">${escapeHtml(f.displayName || 'Unknown')}</p>
                                         <p class="text-[10px] text-green-400">On KC Now</p>
                                     </div>
-                                    <i class="fa-solid fa-chevron-right text-gray-600 text-xs"></i>
+                                    <i class="fa-solid fa-chevron-right text-gray-600 text-xs pointer-events-none"></i>
                                 </button>
                             `).join('')}
                         </div>
@@ -9712,30 +9712,51 @@
                     `}
                 </div>
             `);
+            // Attach listeners after innerHTML is set
+            const fpList = document.getElementById('_fp-list');
+            if (fpList) {
+                fpList.querySelectorAll('[data-fp-idx]').forEach(btn => {
+                    const idx = parseInt(btn.dataset.fpIdx, 10);
+                    const f = onlineFriends[idx];
+                    btn.addEventListener('click', () => sendGameChallenge(f.uid, f.displayName || 'Friend', gameType));
+                });
+            }
         }
 
         // ── Challenge a friend ────────────────────────────────────────
+        // Store pending challenge data to avoid inline onclick escaping issues
+        let _pendingChallenge = null;
+
         function challengeFriend(friendUid) {
             if (!currentUser) return openAuthModal();
             const friend = friendsList.find(f => f.uid === friendUid);
             const name = friend?.displayName || 'your friend';
+            _pendingChallenge = { friendUid, name };
             openModal(`Challenge ${escapeHtml(name)}`, `
                 <div class="space-y-3">
                     <p class="text-xs text-gray-400 text-center mb-4">Pick a game — winner earns <span class="text-yellow-400 font-bold">15 points</span>!</p>
-                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','rps')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
-                        <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400"><i class="fa-solid fa-hand-back-fist text-xl"></i></div>
-                        <div class="text-left"><p class="font-bold">Rock Paper Scissors</p><p class="text-xs text-gray-500">Classic — make your choice</p></div>
+                    <button id="_cg-rps" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition" style="cursor:pointer;">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400 pointer-events-none"><i class="fa-solid fa-hand-back-fist text-xl"></i></div>
+                        <div class="text-left pointer-events-none"><p class="font-bold">Rock Paper Scissors</p><p class="text-xs text-gray-500">Classic — make your choice</p></div>
                     </button>
-                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','coinflip')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
-                        <div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400"><i class="fa-solid fa-coins text-xl"></i></div>
-                        <div class="text-left"><p class="font-bold">Coin Flip</p><p class="text-xs text-gray-500">Heads or tails — 50/50 chance</p></div>
+                    <button id="_cg-coinflip" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition" style="cursor:pointer;">
+                        <div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400 pointer-events-none"><i class="fa-solid fa-coins text-xl"></i></div>
+                        <div class="text-left pointer-events-none"><p class="font-bold">Coin Flip</p><p class="text-xs text-gray-500">Heads or tails — 50/50 chance</p></div>
                     </button>
-                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','numberduel')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
-                        <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400"><i class="fa-solid fa-dice text-xl"></i></div>
-                        <div class="text-left"><p class="font-bold">Number Duel</p><p class="text-xs text-gray-500">Pick 1–10, closest wins</p></div>
+                    <button id="_cg-numberduel" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition" style="cursor:pointer;">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400 pointer-events-none"><i class="fa-solid fa-dice text-xl"></i></div>
+                        <div class="text-left pointer-events-none"><p class="font-bold">Number Duel</p><p class="text-xs text-gray-500">Pick 1–10, closest wins</p></div>
                     </button>
                 </div>
             `);
+            // Attach listeners after innerHTML is set — no inline onclick attribute escaping issues
+            ['rps','coinflip','numberduel'].forEach(game => {
+                const btn = document.getElementById(`_cg-${game}`);
+                if (btn) btn.addEventListener('click', () => {
+                    const c = _pendingChallenge;
+                    if (c) sendGameChallenge(c.friendUid, c.name, game);
+                });
+            });
         }
 
         function sendGameChallenge(friendUid, friendName, gameType) {
