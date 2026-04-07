@@ -3451,6 +3451,12 @@
             el.innerHTML = sorted.map(f => {
                 const isOnline = !!f.kcnowOnline;
                 const dotClass = isOnline ? 'bg-green-400 online-dot' : 'bg-gray-600';
+                const challengeBtn = isOnline
+                    ? `<button onclick="event.stopPropagation();challengeFriend('${f.uid}')"
+                               class="text-purple-400 hover:text-purple-300 transition p-1.5 rounded-lg hover:bg-purple-400/10 flex-shrink-0"
+                               style="touch-action:manipulation;" title="Challenge to a game">
+                           <i class="fa-solid fa-gamepad text-xs"></i>
+                       </button>` : '';
                 return `
                 <div class="rp-friend-row" onclick="window.openKcProfile('${f.uid}')">
                     <div class="relative flex-shrink-0">
@@ -3463,8 +3469,9 @@
                         <p class="text-sm font-bold truncate">${f.displayName || 'Unknown'}</p>
                         <p class="text-[10px] ${isOnline ? 'text-green-400' : 'text-gray-600'}">${isOnline ? 'On KC Now' : 'Offline'}</p>
                     </div>
+                    ${challengeBtn}
                     <button onclick="event.stopPropagation();removeFriend('${f.uid}')"
-                            class="text-gray-600 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10"
+                            class="text-gray-600 hover:text-red-400 transition p-1.5 rounded-lg hover:bg-red-400/10 flex-shrink-0"
                             style="touch-action:manipulation;" title="Remove friend">
                         <i class="fa-solid fa-user-minus text-xs"></i>
                     </button>
@@ -3598,8 +3605,6 @@
                     checkBoardNotifications();
                 });
             });
-                checkBoardNotifications();
-            });
         }
 
         function filterBoard(f) {
@@ -3614,11 +3619,12 @@
             });
             // Viewing My Posts clears the notification badge
             if (f === 'mine') {
-                const seen = boardPosts.filter(p => p.uid === currentUser?.uid).reduce((n, p) => {
-                    return n + Object.keys(p.replies || {}).length +
-                        Object.values(p.reactions || {}).reduce((rn, u) => rn + Object.keys(u).length, 0);
-                }, 0);
-                localStorage.setItem('kc_board_notif_seen', String(seen));
+                // Mark all own posts as seen when switching to My Posts view
+                const map = _getBoardSeenMap();
+                boardPosts.filter(p => p.uid === currentUser?.uid).forEach(p => {
+                    map[p.id] = _postInteractionCount(p);
+                });
+                _setBoardSeenMap(map);
                 document.getElementById('rp-board-notif-badge')?.classList.add('hidden');
                 document.getElementById('board-mine-badge')?.classList.add('hidden');
             }
@@ -3646,6 +3652,37 @@
             el.innerHTML = posts.map(p => _buildBoardPost(p)).join('');
         }
 
+        // Per-post notification tracking: localStorage key holds JSON {postId: countSeen}
+        function _getBoardSeenMap() {
+            try { return JSON.parse(localStorage.getItem('kc_board_notif_seen_v2') || '{}'); } catch(e) { return {}; }
+        }
+        function _setBoardSeenMap(map) {
+            try { localStorage.setItem('kc_board_notif_seen_v2', JSON.stringify(map)); } catch(e) {}
+        }
+        function _postInteractionCount(p) {
+            const myUid = currentUser?.uid;
+            let n = 0;
+            n += Object.keys(p.replies || {}).length;
+            Object.values(p.reactions || {}).forEach(users => {
+                n += Object.keys(users).filter(u => u !== myUid).length;
+            });
+            n += Object.keys(p.likedBy || {}).filter(u => u !== myUid).length;
+            return n;
+        }
+        function _postHasNew(p) {
+            if (!currentUser || p.uid !== currentUser.uid) return false;
+            const seen = _getBoardSeenMap();
+            return _postInteractionCount(p) > (seen[p.id] || 0);
+        }
+        function _markPostSeen(postId) {
+            const post = boardPosts.find(pp => pp.id === postId);
+            if (!post) return;
+            const map = _getBoardSeenMap();
+            map[postId] = _postInteractionCount(post);
+            _setBoardSeenMap(map);
+            checkBoardNotifications();
+        }
+
         function _buildBoardPost(p) {
             const myUid = currentUser?.uid;
             // Use per-UID cache (avoids downloading all users for avatars)
@@ -3654,8 +3691,6 @@
             // messages collection uses likedBy:{uid:true} for who liked, likes as numeric count
             const liked = myUid && p.likedBy && p.likedBy[myUid];
             const likeCount = p.likes || 0;
-            // replies = comments in messages schema
-            const commentCount = p.replies ? Object.keys(p.replies).length : 0;
             const reactions = p.reactions || {};
             const reactionHtml = Object.entries(reactions).map(([emo, users]) => {
                 const count = Object.keys(users).length;
@@ -3665,17 +3700,29 @@
             // messages uses p.user (not p.displayName), p.time (not p.timestamp)
             const authorName = p.user || p.displayName || 'Unknown';
             const ts = p.time || p.timestamp || 0;
-            // reply count — index.html stores replies as messages/{id}/replies/{rid}
             const replyCount = p.replies ? Object.keys(p.replies).length : 0;
+            // Notification dot: show on own posts with unseen activity
+            const hasNew = _postHasNew(p);
+            const newDot = hasNew
+                ? `<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-blue-400 rounded-full border border-[#080c14] animate-pulse z-10" title="New activity"></span>`
+                : '';
+            // Activity summary: show what's new on own post header
+            const activityLabel = hasNew && myUid === p.uid
+                ? `<span class="text-[9px] text-blue-400 font-bold ml-1.5"><i class="fa-solid fa-bell"></i> New activity</span>`
+                : '';
             return `
-            <div class="board-post">
+            <div class="board-post${hasNew ? ' ring-1 ring-blue-500/30' : ''}">
                 <div class="flex items-center gap-2 mb-2">
-                    <img src="${avatar}"
-                         class="w-7 h-7 rounded-full object-cover flex-shrink-0 cursor-pointer"
-                         onclick="window.openKcProfile('${p.uid}')">
+                    <div class="relative">
+                        <img src="${avatar}"
+                             class="w-7 h-7 rounded-full object-cover flex-shrink-0 cursor-pointer"
+                             onclick="window.openKcProfile('${p.uid}')">
+                        ${newDot}
+                    </div>
                     <div class="flex-1 min-w-0">
                         <span class="text-xs font-bold cursor-pointer hover:underline" onclick="window.openKcProfile('${p.uid}')">${escapeHtml(authorName)}</span>
                         <span class="text-[10px] text-gray-600 ml-1.5">${ts ? timeAgo(ts) : ''}</span>
+                        ${activityLabel}
                     </div>
                     ${myUid === p.uid ? `<button onclick="deleteBoardPost('${p.id}')" class="text-gray-600 hover:text-red-400 transition text-[10px] p-1" style="touch-action:manipulation;"><i class="fa-solid fa-trash"></i></button>` : ''}
                 </div>
@@ -3688,8 +3735,8 @@
                     <button onclick="pickBoardReaction('${p.id}')" class="board-reaction-btn" style="touch-action:manipulation;" title="React">
                         <i class="fa-regular fa-face-smile"></i>
                     </button>
-                    <button onclick="openBoardComments('${p.id}')" class="board-reaction-btn ml-auto" style="touch-action:manipulation;">
-                        <i class="fa-regular fa-comment"></i> ${replyCount || ''}
+                    <button onclick="openBoardComments('${p.id}')" class="board-reaction-btn ml-auto${replyCount && hasNew && myUid === p.uid ? ' text-blue-400' : ''}" style="touch-action:manipulation;">
+                        <i class="fa-${replyCount && hasNew && myUid === p.uid ? 'solid' : 'regular'} fa-comment"></i> ${replyCount || ''}
                     </button>
                 </div>
             </div>`;
@@ -3697,22 +3744,18 @@
 
         function checkBoardNotifications() {
             if (!currentUser) return;
-            // Count total interactions (replies + reactions/likes from others) on own posts
             const myPosts = boardPosts.filter(p => p.uid === currentUser.uid);
-            let total = 0;
+            const seenMap = _getBoardSeenMap();
+            let newCount = 0;
             myPosts.forEach(p => {
-                total += Object.keys(p.replies || {}).length;
-                Object.values(p.reactions || {}).forEach(users => {
-                    total += Object.keys(users).filter(u => u !== currentUser.uid).length;
-                });
-                total += Object.keys(p.likedBy || {}).filter(u => u !== currentUser.uid).length;
+                const current = _postInteractionCount(p);
+                const seen = seenMap[p.id] || 0;
+                if (current > seen) newCount += (current - seen);
             });
-            const lastSeen = parseInt(localStorage.getItem('kc_board_notif_seen') || '0', 10);
-            const newCount = Math.max(0, total - lastSeen);
             const tabBadge = document.getElementById('rp-board-notif-badge');
             const chipBadge = document.getElementById('board-mine-badge');
-            if (tabBadge) { tabBadge.textContent = newCount || '•'; tabBadge.classList.toggle('hidden', newCount === 0); }
-            if (chipBadge) { chipBadge.textContent = newCount || '•'; chipBadge.classList.toggle('hidden', newCount === 0); }
+            if (tabBadge) { tabBadge.textContent = newCount > 9 ? '9+' : (newCount || ''); tabBadge.classList.toggle('hidden', newCount === 0); }
+            if (chipBadge) { chipBadge.textContent = newCount > 9 ? '9+' : (newCount || ''); chipBadge.classList.toggle('hidden', newCount === 0); }
         }
 
         function escapeHtml(str) {
@@ -3749,6 +3792,16 @@
             const ta = document.getElementById('board-compose-text');
             const text = (ta?.value || '').trim();
             if (!text) { showToast('Write something first!', 'warning'); return; }
+            const btn = document.querySelector('[onclick="submitBoardPost()"]');
+            if (btn && btn.disabled) return; // already submitting
+            // Duplicate check: same text within 5 seconds
+            const now = Date.now();
+            if (text === _lastBoardPostText && now - _lastBoardPostTime < 5000) {
+                showToast('Already posted!', 'warning'); return;
+            }
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+            _lastBoardPostText = text;
+            _lastBoardPostTime = now;
             const post = {
                 uid: currentUser.uid,
                 user: currentUserData?.displayName || currentUser.displayName || 'Unknown',
@@ -3760,8 +3813,10 @@
             db.ref('messages').push(post).then(() => {
                 closeBoardCompose();
                 showToast('Posted!', 'success');
-            }).catch(() => showToast('Failed to post', 'error'));
+            }).catch(() => showToast('Failed to post', 'error'))
+              .finally(() => { if (btn) { btn.disabled = false; btn.style.opacity = ''; } });
         }
+        let _lastBoardPostText = '', _lastBoardPostTime = 0;
 
         function toggleBoardLike(postId) {
             if (!currentUser) { openAuthModal(); return; }
@@ -3823,40 +3878,73 @@
         function openBoardComments(postId) {
             const post = boardPosts.find(p => p.id === postId);
             if (!post) return;
-            // messages schema uses 'replies' for threaded responses
-            const replies = Object.entries(post.replies || {})
+            // Mark own post as seen when user opens it
+            if (currentUser && post.uid === currentUser.uid) _markPostSeen(postId);
+            _renderCommentsModal(postId, post.replies || {});
+        }
+
+        function _renderCommentsModal(postId, repliesObj) {
+            const myUid = currentUser?.uid;
+            const replies = Object.entries(repliesObj)
                 .sort((a,b) => (a[1].time||a[1].timestamp||0) - (b[1].time||b[1].timestamp||0));
             openModal(`Comments`, `
                 <div class="flex flex-col gap-3">
-                    <div class="space-y-3 max-h-[40vh] overflow-y-auto custom-scroll">
+                    <div class="space-y-3 max-h-[40vh] overflow-y-auto custom-scroll" id="comment-list">
                         ${replies.length ? replies.map(([rid, c]) => `
                             <div class="flex items-start gap-2">
                                 <img src="${c.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5">
                                 <div class="flex-1 glass p-2.5 rounded-xl">
-                                    <p class="text-xs font-bold">${escapeHtml(c.user || c.displayName || 'Unknown')}<span class="text-gray-600 font-normal ml-1.5">${timeAgo(c.time || c.timestamp)}</span></p>
-                                    <p class="text-xs text-gray-300 mt-0.5">${escapeHtml(c.text)}</p>
+                                    <div class="flex items-center justify-between mb-0.5">
+                                        <p class="text-xs font-bold">${escapeHtml(c.user || c.displayName || 'Unknown')}<span class="text-gray-600 font-normal ml-1.5">${timeAgo(c.time || c.timestamp)}</span></p>
+                                        ${myUid === c.uid ? `<button onclick="deleteBoardComment('${postId}','${rid}')" class="text-gray-600 hover:text-red-400 transition text-[10px] p-1 ml-1" style="touch-action:manipulation;" title="Delete"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    </div>
+                                    <p class="text-xs text-gray-300">${escapeHtml(c.text)}</p>
                                 </div>
                             </div>
                         `).join('') : '<p class="text-xs text-gray-500 text-center py-4">No comments yet</p>'}
                     </div>
-                    ${currentUser ? `
+                    ${myUid ? `
                     <div class="flex gap-2 mt-1">
                         <input id="board-comment-input" type="text" placeholder="Add a comment..."
                                class="flex-1 px-4 py-3 glass rounded-2xl focus:outline-none text-sm"
                                maxlength="200"
                                onkeydown="if(event.key==='Enter')submitBoardComment('${postId}')">
-                        <button onclick="submitBoardComment('${postId}')" class="px-5 py-3 font-bold rounded-2xl text-white transition"
+                        <button id="board-comment-btn" onclick="submitBoardComment('${postId}')" class="px-5 py-3 font-bold rounded-2xl text-white transition"
                                 style="background:var(--theme-accent,#3b82f6);touch-action:manipulation;">Post</button>
                     </div>` : '<p class="text-xs text-gray-500 text-center">Sign in to comment</p>'}
                 </div>
             `);
         }
 
+        function deleteBoardComment(postId, replyId) {
+            if (!currentUser) return;
+            db.ref(`messages/${postId}/replies/${replyId}`).remove().then(() => {
+                // Re-render comments modal with updated data
+                db.ref(`messages/${postId}/replies`).once('value').then(snap => {
+                    _renderCommentsModal(postId, snap.val() || {});
+                    // Also update local boardPosts cache
+                    const post = boardPosts.find(p => p.id === postId);
+                    if (post) { const rep = snap.val() || {}; post.replies = rep; renderBoardPosts(); }
+                });
+            }).catch(() => showToast('Failed to delete comment', 'error'));
+        }
+
         function submitBoardComment(postId) {
             if (!currentUser) return;
             const input = document.getElementById('board-comment-input');
+            const btn = document.getElementById('board-comment-btn');
             const text = (input?.value || '').trim();
             if (!text) return;
+            if (btn && btn.disabled) return;
+            // Duplicate check
+            const key = `${postId}:${text}`;
+            const now = Date.now();
+            if (key === _lastCommentKey && now - _lastCommentTime < 5000) {
+                showToast('Already commented!', 'warning'); return;
+            }
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+            _lastCommentKey = key;
+            _lastCommentTime = now;
             const comment = {
                 uid: currentUser.uid,
                 user: currentUserData?.displayName || currentUser.displayName || 'Unknown',
@@ -3865,10 +3953,18 @@
                 time: firebase.database.ServerValue.TIMESTAMP,
             };
             db.ref(`messages/${postId}/replies`).push(comment).then(() => {
-                closeModal();
-                showToast('Comment added!', 'success');
-            }).catch(() => showToast('Failed to comment', 'error'));
+                // Re-open with updated data instead of closing
+                db.ref(`messages/${postId}/replies`).once('value').then(snap => {
+                    _renderCommentsModal(postId, snap.val() || {});
+                    const post = boardPosts.find(p => p.id === postId);
+                    if (post) { post.replies = snap.val() || {}; renderBoardPosts(); checkBoardNotifications(); }
+                });
+            }).catch(() => {
+                showToast('Failed to comment', 'error');
+                if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+            });
         }
+        let _lastCommentKey = '', _lastCommentTime = 0;
 
         // ===== FRIEND ACTIVITY IN FEED (KC Now awareness) =====
         // COST NOTE: per-friend `orderByChild('uid').equalTo(uid)` queries each scan the entire
@@ -3878,6 +3974,8 @@
         function initFriendActivityListeners() {
             _friendActivityRefs.forEach(r => r.off());
             _friendActivityRefs = [];
+            // Also (re-)initialise game invite listener
+            initGameInviteListener();
             if (!currentUser || !friendsList.length) return;
             // Limit to first 3 friends to cap listener count
             friendsList.slice(0, 3).forEach(friend => {
@@ -7139,6 +7237,34 @@
                                     `}
                                 </div>
                             </div>
+                            <!-- ── 2-Player Friend Games ── -->
+                            <div class="mt-2">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <i class="fa-solid fa-user-group text-purple-400 text-xs"></i>
+                                    <p class="text-xs font-black uppercase tracking-widest text-purple-400">2-Player vs Friend</p>
+                                    <span class="text-[10px] text-gray-600 ml-1">Online friends only • ±15 pts</span>
+                                </div>
+                                <div class="grid grid-cols-3 gap-3">
+                                    <div class="game-card-3d glass p-4 rounded-3xl text-center cursor-pointer" onclick="openFriendPickerForGame('rps')">
+                                        <span class="gc-emoji"><i class="fa-solid fa-hand-back-fist text-red-400"></i></span>
+                                        <p class="font-bold text-sm">RPS</p>
+                                        <p class="text-xs text-gray-500 mt-1">Rock Paper Scissors</p>
+                                        <div class="gc-badge mt-3 py-2 bg-purple-600/30 rounded-xl text-xs font-bold text-purple-300"><i class="fa-solid fa-gamepad mr-1"></i>Challenge</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-4 rounded-3xl text-center cursor-pointer" onclick="openFriendPickerForGame('coinflip')">
+                                        <span class="gc-emoji"><i class="fa-solid fa-coins text-yellow-400"></i></span>
+                                        <p class="font-bold text-sm">Coin Flip</p>
+                                        <p class="text-xs text-gray-500 mt-1">Heads or tails</p>
+                                        <div class="gc-badge mt-3 py-2 bg-purple-600/30 rounded-xl text-xs font-bold text-purple-300"><i class="fa-solid fa-gamepad mr-1"></i>Challenge</div>
+                                    </div>
+                                    <div class="game-card-3d glass p-4 rounded-3xl text-center cursor-pointer" onclick="openFriendPickerForGame('numberduel')">
+                                        <span class="gc-emoji"><i class="fa-solid fa-dice text-blue-400"></i></span>
+                                        <p class="font-bold text-sm">Number Duel</p>
+                                        <p class="text-xs text-gray-500 mt-1">Pick 1–10</p>
+                                        <div class="gc-badge mt-3 py-2 bg-purple-600/30 rounded-xl text-xs font-bold text-purple-300"><i class="fa-solid fa-gamepad mr-1"></i>Challenge</div>
+                                    </div>
+                                </div>
+                            </div>
                             <p class="text-center text-xs text-gray-500">Shortcuts: <kbd class="glass px-1 rounded">J</kbd> Blackjack  <kbd class="glass px-1 rounded">M</kbd> Slots</p>
                         </div>
                     `);
@@ -8193,7 +8319,7 @@
                 // New achievements
                 db.ref(`userEconomy/${discordId}/badges`).on('child_added', snap => {
                     if (Date.now() - snap.val() < 10000) {
-                        showToast('Achievementnt Unlocked: ${snap.key}`, 'success', 5000);
+                        showToast(`Achievement Unlocked: ${snap.key}`, 'success', 5000);
                     }
                 });
                 // Points increases
@@ -8344,7 +8470,7 @@
                     custBadgeEl.classList.remove('hidden');
                     custBadgeEl.innerHTML =
                         `<div class="glass rounded-2xl p-4 flex items-center gap-3" style="border:1px solid rgba(255,255,255,0.06);">
-                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '<i class="fa-solid fa-star"></i>'</span>
+                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '<i class="fa-solid fa-star"></i>'}</span>
                             <div>
                                 <p class="font-black text-sm">${u.customBadge.name || 'Custom Badge'}</p>
                                 ${u.customBadge.description ? `<p class="text-xs text-gray-400 mt-0.5">${u.customBadge.description}</p>` : ''}
@@ -8473,7 +8599,7 @@
                 const badge = customData[key];
                 const bg = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
                 return `<div id="cbdg_${key}" onclick="_bdgEditCustom('${key}')" style="flex:1;min-width:100px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 8px;border-radius:14px;background:${bg};cursor:pointer;position:relative;${isHigh?'box-shadow:0 4px 16px rgba(0,0,0,0.4);':''}" class="${isHigh?'bdg-float':''}">
-                    <span style="font-size:2rem;line-height:1;">${badge.icon||'<i class="fa-solid fa-star"></i>'</span>
+                    <span style="font-size:2rem;line-height:1;">${badge.icon||'<i class="fa-solid fa-star"></i>'}</span>
                     <span style="font-size:0.65rem;font-weight:800;color:${badge.textColor||'#e5e7eb'};text-align:center;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${badge.name||'Badge'}</span>
                     <span style="position:absolute;top:5px;right:8px;font-size:0.75rem;opacity:0.7;"><i class="fa-solid fa-pen"></i></span>
                     <button onclick="event.stopPropagation();_bdgDeleteCustom('${key}')" style="position:absolute;top:5px;left:8px;font-size:0.65rem;background:rgba(0,0,0,0.35);border:none;color:#fff;border-radius:6px;padding:1px 5px;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
@@ -9514,6 +9640,394 @@
                 if (ind) ind.textContent = (localStorage.getItem('kc_graphics') || 'high') === 'low' ? 'Low' : 'High';
             })();
         };
+
+        // ============================================================
+        //  2-PLAYER FRIEND GAMES  (RPS · Coin Flip · Number Duel)
+        //  Firebase paths:
+        //    kcnow_invites/{toUid}/{inviteId}  — pending invite
+        //    kcnow_games/{gameId}              — live game state
+        // ============================================================
+        let _gameInviteRef = null;
+
+        // ── Start listening for incoming game invites ────────────────
+        function initGameInviteListener() {
+            if (!currentUser) return;
+            if (_gameInviteRef) _gameInviteRef.off();
+            _gameInviteRef = db.ref(`kcnow_invites/${currentUser.uid}`);
+            _gameInviteRef.on('child_added', snap => {
+                const inv = snap.val();
+                if (!inv || inv.status !== 'pending') return;
+                const inviteId = snap.key;
+                const gameLabels = { rps: 'Rock Paper Scissors', coinflip: 'Coin Flip', numberduel: 'Number Duel' };
+                const gameIcons = { rps: 'fa-hand-back-fist', coinflip: 'fa-coins', numberduel: 'fa-dice' };
+                const label = gameLabels[inv.gameType] || inv.gameType;
+                const icon = gameIcons[inv.gameType] || 'fa-gamepad';
+                addFeedItem({
+                    id: `gameinvite_${inviteId}`,
+                    type: 'game_invite',
+                    title: `Game Challenge!`,
+                    user: inv.challengerName || 'Someone',
+                    uid: inv.challengerUid,
+                    detail: `${inv.challengerName || 'A friend'} challenges you to ${label}! Win to earn 15 points.`,
+                    color: 'text-purple-400',
+                    icon,
+                    actionLabel: 'Accept',
+                    actionFn: `acceptGameChallenge('${inviteId}','${inv.gameType}','${inv.challengerUid}','${inv.challengerName||''}')`,
+                    actionLabel2: 'Decline',
+                    actionFn2: `declineGameChallenge('${inviteId}')`,
+                    timestamp: inv.sentAt || Date.now(),
+                });
+            });
+        }
+
+        // ── Pick a friend from Games Hub then challenge ───────────────
+        function openFriendPickerForGame(gameType) {
+            if (!currentUser) return openAuthModal();
+            const gameLabels = { rps: 'Rock Paper Scissors', coinflip: 'Coin Flip', numberduel: 'Number Duel' };
+            const gameIcons  = { rps: 'fa-hand-back-fist', coinflip: 'fa-coins', numberduel: 'fa-dice' };
+            const onlineFriends = friendsList.filter(f => !!f.kcnowOnline);
+            openModal(`${gameLabels[gameType]} — Pick Opponent`, `
+                <div class="space-y-3">
+                    <p class="text-xs text-gray-400 text-center">
+                        <i class="fa-solid ${gameIcons[gameType]} text-purple-400 mr-1"></i>
+                        Challenge an online friend — winner earns <span class="text-yellow-400 font-bold">15 pts</span>
+                    </p>
+                    ${onlineFriends.length ? `
+                        <div class="space-y-2 max-h-[50vh] overflow-y-auto custom-scroll">
+                            ${onlineFriends.map(f => `
+                                <button onclick="sendGameChallenge('${f.uid}','${f.displayName || 'Friend'}','${gameType}')"
+                                        class="w-full flex items-center gap-3 p-3 glass glass-hover rounded-2xl transition text-left">
+                                    <div class="relative flex-shrink-0">
+                                        <img src="${f.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}"
+                                             class="w-10 h-10 rounded-full object-cover">
+                                        <div class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 rounded-full border-2"
+                                             style="border-color:#080c14;"></div>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-bold text-sm truncate">${escapeHtml(f.displayName || 'Unknown')}</p>
+                                        <p class="text-[10px] text-green-400">On KC Now</p>
+                                    </div>
+                                    <i class="fa-solid fa-chevron-right text-gray-600 text-xs"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="text-center py-8">
+                            <i class="fa-solid fa-moon text-gray-600 text-3xl mb-3"></i>
+                            <p class="text-sm text-gray-500">No friends online right now</p>
+                            <p class="text-xs text-gray-600 mt-1">Come back when a friend is on KC Now!</p>
+                        </div>
+                    `}
+                </div>
+            `);
+        }
+
+        // ── Challenge a friend ────────────────────────────────────────
+        function challengeFriend(friendUid) {
+            if (!currentUser) return openAuthModal();
+            const friend = friendsList.find(f => f.uid === friendUid);
+            const name = friend?.displayName || 'your friend';
+            openModal(`Challenge ${escapeHtml(name)}`, `
+                <div class="space-y-3">
+                    <p class="text-xs text-gray-400 text-center mb-4">Pick a game — winner earns <span class="text-yellow-400 font-bold">15 points</span>!</p>
+                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','rps')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
+                        <div class="w-10 h-10 rounded-xl bg-red-500/15 flex items-center justify-center text-red-400"><i class="fa-solid fa-hand-back-fist text-xl"></i></div>
+                        <div class="text-left"><p class="font-bold">Rock Paper Scissors</p><p class="text-xs text-gray-500">Classic — make your choice</p></div>
+                    </button>
+                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','coinflip')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
+                        <div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400"><i class="fa-solid fa-coins text-xl"></i></div>
+                        <div class="text-left"><p class="font-bold">Coin Flip</p><p class="text-xs text-gray-500">Heads or tails — 50/50 chance</p></div>
+                    </button>
+                    <button onclick="sendGameChallenge('${friendUid}','${escapeHtml(name)}','numberduel')" class="w-full flex items-center gap-4 p-4 glass glass-hover rounded-2xl transition">
+                        <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center text-blue-400"><i class="fa-solid fa-dice text-xl"></i></div>
+                        <div class="text-left"><p class="font-bold">Number Duel</p><p class="text-xs text-gray-500">Pick 1–10, closest wins</p></div>
+                    </button>
+                </div>
+            `);
+        }
+
+        function sendGameChallenge(friendUid, friendName, gameType) {
+            if (!currentUser) return;
+            const invite = {
+                challengerUid: currentUser.uid,
+                challengerName: currentUserData?.displayName || currentUser.displayName || 'Someone',
+                challengerAvatar: currentUserData?.avatar || currentUser.photoURL || '',
+                gameType,
+                status: 'pending',
+                sentAt: firebase.database.ServerValue.TIMESTAMP,
+            };
+            db.ref(`kcnow_invites/${friendUid}`).push(invite).then(() => {
+                closeModal();
+                showToast(`Challenge sent to ${friendName}!`, 'success');
+            }).catch(() => showToast('Failed to send challenge', 'error'));
+        }
+
+        function declineGameChallenge(inviteId) {
+            if (!currentUser) return;
+            db.ref(`kcnow_invites/${currentUser.uid}/${inviteId}`).remove();
+            showToast('Challenge declined', 'info', 2000);
+        }
+
+        function acceptGameChallenge(inviteId, gameType, challengerUid, challengerName) {
+            if (!currentUser) return;
+            // Mark invite consumed
+            db.ref(`kcnow_invites/${currentUser.uid}/${inviteId}`).update({ status: 'accepted' });
+            // Create game record
+            const gameData = {
+                gameType,
+                player1: challengerUid,
+                player1Name: challengerName,
+                player2: currentUser.uid,
+                player2Name: currentUserData?.displayName || currentUser.displayName || 'Player',
+                status: 'waiting',  // → 'playing' once both have made a move
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+            };
+            const gameRef = db.ref('kcnow_games').push();
+            gameRef.set(gameData).then(() => {
+                closeModal();
+                openGameModal(gameRef.key, gameType, challengerUid, challengerName);
+            }).catch(() => showToast('Failed to start game', 'error'));
+        }
+
+        // ── Open the correct game UI ─────────────────────────────────
+        function openGameModal(gameId, gameType, opponentUid, opponentName) {
+            if (gameType === 'rps') openRPSGame(gameId, opponentUid, opponentName);
+            else if (gameType === 'coinflip') openCoinFlipGame(gameId, opponentUid, opponentName);
+            else if (gameType === 'numberduel') openNumberDuelGame(gameId, opponentUid, opponentName);
+        }
+
+        // ── Rock Paper Scissors ──────────────────────────────────────
+        function openRPSGame(gameId, opponentUid, opponentName) {
+            openModal('Rock Paper Scissors', `
+                <div class="space-y-4 text-center">
+                    <p class="text-xs text-gray-400">Playing vs <span class="text-white font-bold">${escapeHtml(opponentName)}</span></p>
+                    <p class="text-xs text-gray-500">Make your choice:</p>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="playRPS('${gameId}','rock')" class="glass glass-hover p-4 rounded-2xl flex flex-col items-center gap-2 transition hover:ring-2 hover:ring-blue-500/50">
+                            <span class="text-3xl">✊</span><span class="text-xs font-bold">Rock</span>
+                        </button>
+                        <button onclick="playRPS('${gameId}','paper')" class="glass glass-hover p-4 rounded-2xl flex flex-col items-center gap-2 transition hover:ring-2 hover:ring-blue-500/50">
+                            <span class="text-3xl">✋</span><span class="text-xs font-bold">Paper</span>
+                        </button>
+                        <button onclick="playRPS('${gameId}','scissors')" class="glass glass-hover p-4 rounded-2xl flex flex-col items-center gap-2 transition hover:ring-2 hover:ring-blue-500/50">
+                            <span class="text-3xl">✌️</span><span class="text-xs font-bold">Scissors</span>
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-gray-600" id="rps-status">Waiting for your move...</p>
+                </div>
+            `);
+        }
+
+        function playRPS(gameId, choice) {
+            if (!currentUser) return;
+            const myUid = currentUser.uid;
+            const statusEl = document.getElementById('rps-status');
+            if (statusEl) statusEl.textContent = `You chose ${choice}. Waiting for opponent...`;
+            // Write my move
+            db.ref(`kcnow_games/${gameId}`).once('value').then(snap => {
+                const g = snap.val();
+                if (!g) return;
+                const myKey = g.player1 === myUid ? 'move1' : 'move2';
+                const oppKey = g.player1 === myUid ? 'move2' : 'move1';
+                db.ref(`kcnow_games/${gameId}`).update({ [myKey]: choice, status: 'playing' }).then(() => {
+                    // Listen for opponent move
+                    const ref = db.ref(`kcnow_games/${gameId}`);
+                    ref.on('value', s => {
+                        const gs = s.val();
+                        if (!gs || !gs[oppKey]) return;
+                        ref.off();
+                        const myMove = gs[myKey], oppMove = gs[oppKey];
+                        const result = _rpsResult(myMove, oppMove);
+                        const opponentName = g.player1 === myUid ? g.player2Name : g.player1Name;
+                        const opponentUid = g.player1 === myUid ? g.player2 : g.player1;
+                        _showGameResult(gameId, result, myMove, oppMove, opponentName, opponentUid, 'rps');
+                    });
+                });
+            });
+        }
+
+        function _rpsResult(mine, opp) {
+            if (mine === opp) return 'draw';
+            if ((mine === 'rock' && opp === 'scissors') || (mine === 'paper' && opp === 'rock') || (mine === 'scissors' && opp === 'paper')) return 'win';
+            return 'lose';
+        }
+
+        // ── Coin Flip ────────────────────────────────────────────────
+        function openCoinFlipGame(gameId, opponentUid, opponentName) {
+            openModal('Coin Flip', `
+                <div class="space-y-4 text-center">
+                    <p class="text-xs text-gray-400">Playing vs <span class="text-white font-bold">${escapeHtml(opponentName)}</span></p>
+                    <p class="text-xs text-gray-500">Pick your side:</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button onclick="playCoinFlip('${gameId}','heads')" class="glass glass-hover p-6 rounded-2xl flex flex-col items-center gap-2 transition hover:ring-2 hover:ring-yellow-500/50">
+                            <i class="fa-solid fa-circle-dot text-4xl text-yellow-400"></i>
+                            <span class="text-sm font-bold">Heads</span>
+                        </button>
+                        <button onclick="playCoinFlip('${gameId}','tails')" class="glass glass-hover p-6 rounded-2xl flex flex-col items-center gap-2 transition hover:ring-2 hover:ring-yellow-500/50">
+                            <i class="fa-regular fa-circle text-4xl text-yellow-400"></i>
+                            <span class="text-sm font-bold">Tails</span>
+                        </button>
+                    </div>
+                </div>
+            `);
+        }
+
+        function playCoinFlip(gameId, choice) {
+            if (!currentUser) return;
+            const myUid = currentUser.uid;
+            db.ref(`kcnow_games/${gameId}`).once('value').then(snap => {
+                const g = snap.val();
+                if (!g) return;
+                const myKey = g.player1 === myUid ? 'move1' : 'move2';
+                const oppKey = g.player1 === myUid ? 'move2' : 'move1';
+                db.ref(`kcnow_games/${gameId}`).update({ [myKey]: choice, status: 'playing' }).then(() => {
+                    // If I'm player2, resolve immediately (coin flip = random, not skill-based)
+                    if (g.player2 === myUid) {
+                        const flip = Math.random() < 0.5 ? 'heads' : 'tails';
+                        const p1choice = g.move1 || choice; // challenger's choice
+                        const p2choice = choice;
+                        const winnerId = p1choice === flip ? g.player1 : (p2choice === flip ? g.player2 : null);
+                        db.ref(`kcnow_games/${gameId}`).update({ flip, winner: winnerId || 'draw', status: 'done' });
+                    }
+                    // Listen for result
+                    const ref = db.ref(`kcnow_games/${gameId}`);
+                    ref.on('value', s => {
+                        const gs = s.val();
+                        if (!gs || gs.status !== 'done') return;
+                        ref.off();
+                        const flip = gs.flip;
+                        const myChoice = gs[myKey];
+                        const oppChoice = gs[oppKey];
+                        const won = gs.winner === myUid;
+                        const draw = gs.winner === 'draw';
+                        const result = draw ? 'draw' : (won ? 'win' : 'lose');
+                        const opponentName = g.player1 === myUid ? g.player2Name : g.player1Name;
+                        const opponentUid = g.player1 === myUid ? g.player2 : g.player1;
+                        _showGameResult(gameId, result,
+                            `${myChoice} (coin: ${flip})`,
+                            `${oppChoice} (coin: ${flip})`,
+                            opponentName, opponentUid, 'coinflip');
+                    });
+                });
+            });
+        }
+
+        // ── Number Duel ──────────────────────────────────────────────
+        function openNumberDuelGame(gameId, opponentUid, opponentName) {
+            openModal('Number Duel', `
+                <div class="space-y-4 text-center">
+                    <p class="text-xs text-gray-400">Playing vs <span class="text-white font-bold">${escapeHtml(opponentName)}</span></p>
+                    <p class="text-xs text-gray-500">Pick a number between 1 and 10. The number furthest from a secret random number loses!</p>
+                    <div class="grid grid-cols-5 gap-2">
+                        ${[1,2,3,4,5,6,7,8,9,10].map(n => `
+                            <button onclick="playNumberDuel('${gameId}',${n})"
+                                    class="glass glass-hover p-3 rounded-xl font-black text-lg transition hover:ring-2 hover:ring-blue-500/50">${n}</button>
+                        `).join('')}
+                    </div>
+                </div>
+            `);
+        }
+
+        function playNumberDuel(gameId, number) {
+            if (!currentUser) return;
+            const myUid = currentUser.uid;
+            db.ref(`kcnow_games/${gameId}`).once('value').then(snap => {
+                const g = snap.val();
+                if (!g) return;
+                const myKey = g.player1 === myUid ? 'move1' : 'move2';
+                const oppKey = g.player1 === myUid ? 'move2' : 'move1';
+                db.ref(`kcnow_games/${gameId}`).update({ [myKey]: number, status: 'playing' }).then(() => {
+                    // If I'm player2, resolve with the secret number
+                    if (g.player2 === myUid) {
+                        const secret = Math.ceil(Math.random() * 10);
+                        const p1num = parseInt(g.move1 || number);
+                        const p2num = number;
+                        const d1 = Math.abs(p1num - secret);
+                        const d2 = Math.abs(p2num - secret);
+                        const winner = d1 < d2 ? g.player1 : (d2 < d1 ? g.player2 : 'draw');
+                        db.ref(`kcnow_games/${gameId}`).update({ secret, winner, status: 'done' });
+                    }
+                    const ref = db.ref(`kcnow_games/${gameId}`);
+                    ref.on('value', s => {
+                        const gs = s.val();
+                        if (!gs || gs.status !== 'done') return;
+                        ref.off();
+                        const myChoice = gs[myKey];
+                        const oppChoice = gs[oppKey];
+                        const won = gs.winner === myUid;
+                        const draw = gs.winner === 'draw';
+                        const result = draw ? 'draw' : (won ? 'win' : 'lose');
+                        const opponentName = g.player1 === myUid ? g.player2Name : g.player1Name;
+                        const opponentUid = g.player1 === myUid ? g.player2 : g.player1;
+                        _showGameResult(gameId, result,
+                            `You picked ${myChoice} (secret was ${gs.secret})`,
+                            `${opponentName} picked ${oppChoice}`,
+                            opponentName, opponentUid, 'numberduel');
+                    });
+                });
+            });
+        }
+
+        // ── Shared result handler ────────────────────────────────────
+        function _showGameResult(gameId, result, myMove, oppMove, opponentName, opponentUid, gameType) {
+            const pts = 15;
+            const icons = { win: 'fa-trophy', lose: 'fa-face-sad-tear', draw: 'fa-handshake' };
+            const colors = { win: 'text-yellow-400', lose: 'text-red-400', draw: 'text-gray-400' };
+            const labels = { win: `You won! +${pts} pts`, lose: `You lost! -${pts} pts`, draw: "It's a draw — no points exchanged" };
+            const gameName = { rps: 'Rock Paper Scissors', coinflip: 'Coin Flip', numberduel: 'Number Duel' }[gameType];
+            openModal(gameName, `
+                <div class="text-center space-y-4">
+                    <div class="flex flex-col items-center gap-2 py-2">
+                        <i class="fa-solid ${icons[result]} text-5xl ${colors[result]}"></i>
+                        <p class="font-black text-xl ${colors[result]}">${labels[result]}</p>
+                    </div>
+                    <div class="glass rounded-2xl p-4 text-xs space-y-1 text-left">
+                        <p><span class="text-gray-500">You:</span> <span class="font-bold">${escapeHtml(String(myMove))}</span></p>
+                        <p><span class="text-gray-500">${escapeHtml(opponentName)}:</span> <span class="font-bold">${escapeHtml(String(oppMove))}</span></p>
+                    </div>
+                    <button onclick="closeModal()" class="w-full py-3 font-bold rounded-2xl text-white" style="background:var(--theme-accent,#3b82f6);">Done</button>
+                </div>
+            `);
+            // Transfer points
+            if (result !== 'draw' && currentUser) {
+                _transferGamePoints(gameId, result === 'win' ? currentUser.uid : opponentUid,
+                                             result === 'win' ? opponentUid : currentUser.uid, pts);
+            }
+            // Feed item
+            addFeedItem({
+                id: `gameresult_${gameId}_${currentUser?.uid}`,
+                type: 'game_result',
+                title: result === 'win' ? `Won ${gameName}!` : result === 'draw' ? `${gameName} Draw` : `Lost ${gameName}`,
+                user: currentUser?.displayName || 'You',
+                uid: currentUser?.uid,
+                detail: result === 'win' ? `Beat ${opponentName} and earned ${pts} points!` : result === 'draw' ? `Tied with ${opponentName}` : `Lost to ${opponentName}`,
+                color: colors[result],
+                icon: icons[result],
+                timestamp: Date.now(),
+            });
+        }
+
+        // ── Points transfer via Firebase transaction ─────────────────
+        function _transferGamePoints(gameId, winnerUid, loserUid, pts) {
+            // Avoid double-transfer if already settled
+            const settledKey = `kc_game_settled_${gameId}`;
+            if (localStorage.getItem(settledKey)) return;
+            localStorage.setItem(settledKey, '1');
+            // Look up discordIds → userEconomy paths
+            Promise.all([
+                db.ref(`users/${winnerUid}/discordId`).once('value'),
+                db.ref(`users/${loserUid}/discordId`).once('value'),
+            ]).then(([ws, ls]) => {
+                const wDid = ws.val(), lDid = ls.val();
+                if (!wDid || !lDid) return;
+                const winRef = db.ref(`userEconomy/${wDid}/points`);
+                const loseRef = db.ref(`userEconomy/${lDid}/points`);
+                winRef.transaction(cur => (cur || 0) + pts);
+                loseRef.transaction(cur => Math.max(0, (cur || 0) - pts));
+            }).catch(() => {});
+        }
+
+        // ── initGameInviteListener is called from initFriendActivityListeners above ──
     </script>
 </body>
 </html>
