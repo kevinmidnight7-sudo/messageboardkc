@@ -2134,11 +2134,8 @@
                             <p id="pf-about" class="text-sm text-gray-400 italic mt-1.5 hidden"></p>
                         </div>
 
-                        <!-- KC Score pills (overall / offence / defence) -->
+                        <!-- Custom badges (Discord badge + in-app custom badges) -->
                         <div id="pf-kc-scores" class="flex gap-2 flex-wrap mt-3"></div>
-
-                        <!-- Custom badge (shown if user has one) -->
-                        <div id="pf-custom-badge" class="hidden mt-3"></div>
 
                         <!-- Official KC Badges visual row -->
                         <div id="pf-kc-badges" class="flex gap-3 flex-wrap mt-3"></div>
@@ -8479,35 +8476,28 @@
                     statusEl.innerHTML = html;
                 }
 
-                // ── KC Score pills (Overall / Offence / Defence) — read from badges/{uid}
+                // ── Custom badges (Discord-assigned + in-app created) ─────────────
                 const kcScoresEl = $('pf-kc-scores');
                 if (kcScoresEl) {
-                    const scores = [
-                        { label:'Overall Winner', val: b.overall||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png', fg:'#fbbf24', bg:'rgba(251,191,36,0.12)', br:'rgba(251,191,36,0.28)' },
-                        { label:'Best Offence',   val: b.offence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/red.png',      fg:'#f87171', bg:'rgba(239,68,68,0.12)',  br:'rgba(239,68,68,0.28)'  },
-                        { label:'Best Defence',   val: b.defence||0, img:'https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png',     fg:'#34d399', bg:'rgba(52,211,153,0.12)', br:'rgba(52,211,153,0.28)' },
-                    ];
-                    kcScoresEl.innerHTML = scores.filter(s => s.val > 0).map(s =>
-                        `<div style="display:inline-flex;align-items:center;gap:7px;padding:6px 14px;border-radius:14px;background:${s.bg};border:1px solid ${s.br};">
-                            <img src="${s.img}" style="width:14px;height:14px;object-fit:contain;">
-                            <span style="font-size:0.7rem;font-weight:700;color:${s.fg};">${s.label}</span>
-                            <span style="font-size:1.1rem;font-weight:900;color:#fff;line-height:1;">×${s.val}</span>
-                        </div>`
-                    ).join('');
-                }
-
-                // ── Custom badge ─────────────────────────────────────
-                const custBadgeEl = $('pf-custom-badge');
-                if (custBadgeEl && u.customBadge) {
-                    custBadgeEl.classList.remove('hidden');
-                    custBadgeEl.innerHTML =
-                        `<div class="glass rounded-2xl p-4 flex items-center gap-3" style="border:1px solid rgba(255,255,255,0.06);">
-                            <span style="font-size:2.2rem;line-height:1;">${u.customBadge.emoji || '<i class="fa-solid fa-star"></i>'}</span>
-                            <div>
-                                <p class="font-black text-sm">${u.customBadge.name || 'Custom Badge'}</p>
-                                ${u.customBadge.description ? `<p class="text-xs text-gray-400 mt-0.5">${u.customBadge.description}</p>` : ''}
-                            </div>
+                    let pillsHtml = '';
+                    // Discord-assigned custom badge
+                    if (u.customBadge) {
+                        const cb = u.customBadge;
+                        pillsHtml += `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:14px;background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);">
+                            <span style="font-size:1.05rem;line-height:1;">${cb.emoji || '⭐'}</span>
+                            <span style="font-size:0.7rem;font-weight:700;color:#a5b4fc;">${escapeHtml(cb.name || 'Custom Badge')}</span>
                         </div>`;
+                    }
+                    // In-app created custom badges
+                    const customBadges = u.customBadges || {};
+                    Object.values(customBadges).forEach(badge => {
+                        const bg = `linear-gradient(90deg,${badge.grad1||'#99f6e4'} 30%,${badge.grad2||'#e0aaff'} 100%)`;
+                        pillsHtml += `<div style="display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:14px;background:${bg};">
+                            <span style="font-size:1.05rem;line-height:1;">${badge.icon || '⭐'}</span>
+                            <span style="font-size:0.7rem;font-weight:700;color:${badge.textColor||'#fff'};">${escapeHtml(badge.name || 'Badge')}</span>
+                        </div>`;
+                    });
+                    kcScoresEl.innerHTML = pillsHtml;
                 }
 
                 // ── Official KC badge visuals — read from badges/{uid}
@@ -8547,12 +8537,18 @@
                     setText('pf-points', pts.toLocaleString());
                     const pfStreak = document.getElementById('pf-streak');
                     if (pfStreak) pfStreak.innerHTML = streak > 0 ? streak + ' <i class="fa-solid fa-fire text-orange-400"></i>' : '–';
-                    // Rank: use bot-written economy.rank field if present
+                    // Rank: use bot-written economy.rank if valid (>0), else compute from points
                     const rank = economy.rank;
-                    if (rank != null && rank !== '') {
+                    if (rank != null && rank !== '' && rank > 0) {
                         setText('pf-rank', '#' + rank);
+                    } else if (pts > 0) {
+                        // Count users with strictly more points to derive rank
+                        db.ref('userEconomy').orderByChild('points').startAt(pts + 1)
+                            .once('value').then(snap => {
+                                setText('pf-rank', '#' + (snap.numChildren() + 1));
+                            }).catch(() => setText('pf-rank', '#?'));
                     } else {
-                        setText('pf-rank', pts > 0 ? '#?' : '–');
+                        setText('pf-rank', '–');
                     }
                 });
 
