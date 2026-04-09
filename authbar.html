@@ -3,260 +3,527 @@
 <head>
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KC Modern Auth Bar</title>
-    <!-- Tailwind CSS CDN for styling consistency -->
+    <title>KC Auth Bar</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
-    <!-- Firebase SDKs - using compat versions as in your existing code -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <style>
-        /* A few custom styles to match the glass aesthetic */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --accent: #fbbf24;
+            --accent-rgb: 251, 191, 36;
+            --accent2: #f59e0b;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             background: transparent;
+            margin: 0;
+            height: 72px;
+        }
+
+        /* ── Main bar ── */
+        #kc-authbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 72px;
             display: flex;
-            justify-content: center;
             align-items: center;
-            min-height: 100vh;
-        }
-        
-        /* The main glass container for the auth bar */
-        .glass-container {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px) saturate(1.8);
-            -webkit-backdrop-filter: blur(10px) saturate(1.8);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        /* The animated skeleton loader */
-        .skeleton {
-            background: linear-gradient(90deg, #374151 0%, #4b5563 50%, #374151 100%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
+            padding: 0 20px;
+            gap: 0;
+            z-index: 9999;
+            background: rgba(8, 14, 24, 0.82);
+            backdrop-filter: blur(20px) saturate(1.6);
+            -webkit-backdrop-filter: blur(20px) saturate(1.6);
+            border-bottom: 1px solid rgba(var(--accent-rgb), 0.18);
+            box-shadow: 0 1px 40px rgba(0,0,0,0.45), 0 0 0 0 transparent;
+            transition: border-color 0.4s, box-shadow 0.4s;
         }
 
-        /* Keyframe animation for the shimmer effect */
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-            100% {
-                background-position: 200% 0;
-            }
-        }
-        
-        .brand-gradient {
-            background-image: linear-gradient(90deg, #1ee57c, #50b2fa);
-        }
-        
-        .brand-text {
-            background-image: linear-gradient(90deg, #1ee57c, #50b2fa);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        /* Gradient ring for the user avatar */
-        .gradient-ring {
-            border-radius: 50%;
-            background: linear-gradient(to bottom right, #1ee57c, #50b2fa);
-            padding: 2px;
-            display: inline-flex;
-            justify-content: center;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        /* Hover effect for the gradient ring */
-        .gradient-ring:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 15px rgba(80, 178, 250, 0.6);
-        }
-
-        /* Style for the presence dot */
-        .presence-dot {
+        /* Gradient bar theme overlay */
+        #kc-bar-accent-line {
             position: absolute;
-            bottom: -2px;
-            right: -2px;
-            width: 10px;
-            height: 10px;
+            bottom: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.7), transparent);
+            transition: background 0.4s;
+        }
+
+        /* ── Logo ── */
+        #kc-logo {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            text-decoration: none;
+            margin-right: 32px;
+        }
+        #kc-logo img {
+            width: 36px;
+            height: 36px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.65));
+            transition: filter 0.2s;
+        }
+        #kc-logo:hover img { filter: drop-shadow(0 0 14px rgba(var(--accent-rgb), 1)); }
+        #kc-logo-text {
+            font-size: 0.92rem;
+            font-weight: 900;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* ── Nav ── */
+        #kc-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .kc-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 8px 18px;
+            border-radius: 14px;
+            text-decoration: none;
+            color: #64748b;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: color 0.2s, background 0.2s, box-shadow 0.2s, transform 0.15s;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid transparent;
+        }
+        .kc-nav-item i {
+            font-size: 1.1rem;
+            transition: transform 0.2s;
+            pointer-events: none;
+        }
+        .kc-nav-item::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 14px;
+            background: radial-gradient(circle at 50% 120%, rgba(var(--accent-rgb), 0.18) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .kc-nav-item:hover {
+            color: var(--accent);
+            background: rgba(var(--accent-rgb), 0.08);
+            border-color: rgba(var(--accent-rgb), 0.2);
+            box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.22), inset 0 0 12px rgba(var(--accent-rgb), 0.06);
+            transform: translateY(-1px);
+        }
+        .kc-nav-item:hover::before { opacity: 1; }
+        .kc-nav-item:hover i { transform: scale(1.15); }
+        .kc-nav-item.active {
+            color: var(--accent);
+            background: rgba(var(--accent-rgb), 0.12);
+            border-color: rgba(var(--accent-rgb), 0.28);
+            box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.28);
+        }
+
+        /* ── Right: profile area ── */
+        #kc-profile-area {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: 32px;
+        }
+
+        /* Avatar wrapper */
+        #kc-avatar-ring {
+            width: 46px;
+            height: 46px;
             border-radius: 50%;
-            border: 2px solid rgba(0,0,0,0.5);
+            padding: 2px;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            flex-shrink: 0;
+            position: relative;
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.2s;
         }
-        .online {
-            background-color: #4ade80;
+        #kc-avatar-ring:hover {
+            box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.55);
+            transform: scale(1.06);
         }
-        .offline {
-            background-color: #ef4444;
+        #kc-avatar-ring img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            background: #0f172a;
+        }
+
+        /* Online dot */
+        #kc-online-dot {
+            position: absolute;
+            bottom: 1px;
+            right: 1px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            border: 2px solid rgba(8, 14, 24, 0.9);
+            box-shadow: 0 0 6px rgba(74, 222, 128, 0.7);
+        }
+
+        /* User info */
+        #kc-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }
+        #kc-greeting {
+            font-size: 0.6rem;
+            color: #475569;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+        }
+        #kc-username-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: nowrap;
+        }
+        #kc-username {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: var(--accent);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
+            letter-spacing: -0.01em;
+        }
+        .kc-badge-icon {
+            font-size: 0.7rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+        .kc-badge-icon.verified { color: #60a5fa; }
+        .kc-badge-icon.diamond  { color: #a5f3fc; filter: drop-shadow(0 0 4px rgba(165,243,252,0.6)); }
+
+        /* Streak */
+        #kc-streak {
+            font-size: 0.66rem;
+            font-weight: 800;
+            color: #fb923c;
+            display: none;
+            align-items: center;
+            gap: 3px;
+            background: rgba(251,146,60,0.12);
+            border: 1px solid rgba(251,146,60,0.25);
+            border-radius: 99px;
+            padding: 1px 7px;
+        }
+
+        /* Sign out */
+        #kc-signout {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #475569;
+            background: none;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+            letter-spacing: 0.04em;
+            flex-shrink: 0;
+        }
+        #kc-signout:hover {
+            color: #f87171;
+            border-color: rgba(248,113,113,0.3);
+            background: rgba(248,113,113,0.08);
+        }
+
+        /* Guest CTA */
+        #kc-guest-cta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+        .kc-cta-btn {
+            font-size: 0.8rem;
+            font-weight: 800;
+            border-radius: 12px;
+            padding: 8px 20px;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.2s;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 0.03em;
+        }
+        .kc-cta-btn.primary {
+            background: linear-gradient(135deg, #f59e0b, #fbbf24);
+            color: #1a1100;
+            box-shadow: 0 4px 18px rgba(251,191,36,0.4);
+        }
+        .kc-cta-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(251,191,36,0.65); }
+        .kc-cta-btn.secondary {
+            background: rgba(255,255,255,0.06);
+            color: #94a3b8;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .kc-cta-btn.secondary:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
+
+        /* Skeleton */
+        .kc-skeleton {
+            background: linear-gradient(90deg, #1e293b 0%, #334155 50%, #1e293b 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: 8px;
+        }
+        @keyframes shimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position:  200% 0; }
+        }
+
+        /* Gradient theme bar overlay */
+        #kc-authbar.themed {
+            border-bottom-color: transparent;
+        }
+        #kc-authbar.themed #kc-bar-accent-line {
+            height: 2px;
+        }
+
+        /* KC badge images (offence/defence/overall) */
+        .kc-badge-img {
+            width: 15px;
+            height: 15px;
+            object-fit: contain;
+            vertical-align: middle;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            #kc-logo-text { display: none; }
+            .kc-nav-item span { display: none; }
+            .kc-nav-item { padding: 8px 12px; }
+            #kc-greeting { display: none; }
+            #kc-username { max-width: 90px; font-size: 0.8rem; }
+        }
+        @media (max-width: 480px) {
+            #kc-logo { margin-right: 8px; }
+            #kc-profile-area { margin-left: 8px; gap: 8px; }
+            .kc-nav-item { padding: 8px 9px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Auth Bar Container -->
-    <div id="authBarContainer" class="fixed top-6 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl glass-container text-sm text-gray-200 shadow-xl z-50 transition-all duration-300 min-w-[360px] md:min-w-[400px]">
-        <!-- Initial skeleton loading state -->
-        <div id="loading" class="flex items-center justify-center gap-2">
-            <div class="h-6 w-24 rounded-full skeleton"></div>
-            <div class="h-6 w-24 rounded-full skeleton"></div>
-        </div>
-        <!-- This content will be replaced by JS when authenticated -->
-    </div>
-    
-    <!-- Login/Register Pop-up -->
-    <div id="authModal" class="fixed inset-0 hidden flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50">
-        <div class="w-full max-w-sm p-6 rounded-2xl glass-container shadow-xl">
-            <button id="closeAuthModal" class="absolute top-4 right-4 text-white text-2xl opacity-70 hover:opacity-100 transition-opacity">&times;</button>
-            <h2 class="text-2xl font-bold text-center mb-6 brand-text">Account</h2>
-            <div class="flex justify-center mb-6 gap-2">
-                <button id="showLoginBtn" class="px-4 py-2 text-white font-semibold relative transition-all hover:scale-105 active:scale-95">Log In<span class="absolute bottom-0 left-0 w-full h-[2px] brand-gradient rounded-full opacity-0 scale-x-0 transition-all duration-300"></span></button>
-                <button id="showRegisterBtn" class="px-4 py-2 text-white font-semibold relative transition-all hover:scale-105 active:scale-95">Sign Up<span class="absolute bottom-0 left-0 w-full h-[2px] brand-gradient rounded-full opacity-0 scale-x-0 transition-all duration-300"></span></button>
+<div id="kc-authbar">
+    <div id="kc-bar-accent-line"></div>
+
+    <!-- Logo -->
+    <a href="https://kcevents.uk/#" id="kc-logo" target="_top">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png" alt="KC">
+        <span id="kc-logo-text">KC NOW</span>
+    </a>
+
+    <!-- Nav -->
+    <nav id="kc-nav">
+        <a href="https://kcevents.uk/#" class="kc-nav-item" target="_top" data-page="">
+            <i class="fa-solid fa-house"></i>
+            <span>Home</span>
+        </a>
+        <a href="https://kcevents.uk/#clans" class="kc-nav-item" target="_top" data-page="clans">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Clans</span>
+        </a>
+        <a href="https://kcevents.uk/#socialfeed" class="kc-nav-item" target="_top" data-page="socialfeed">
+            <i class="fa-solid fa-clapperboard"></i>
+            <span>Clips</span>
+        </a>
+        <a href="https://kcevents.uk/#votingscroll" class="kc-nav-item" target="_top" data-page="votingscroll">
+            <i class="fa-solid fa-square-poll-vertical"></i>
+            <span>Vote</span>
+        </a>
+        <a href="https://kcevents.uk/#lastevent" class="kc-nav-item" target="_top" data-page="lastevent">
+            <i class="fa-solid fa-ranking-star"></i>
+            <span>Leaderboard</span>
+        </a>
+    </nav>
+
+    <!-- Right: auth state -->
+    <div id="kc-profile-area">
+        <!-- Skeleton -->
+        <div id="kc-loading" style="display:flex;gap:10px;align-items:center;">
+            <div class="kc-skeleton" style="width:42px;height:42px;border-radius:50%;"></div>
+            <div style="display:flex;flex-direction:column;gap:5px;">
+                <div class="kc-skeleton" style="width:70px;height:8px;"></div>
+                <div class="kc-skeleton" style="width:100px;height:10px;"></div>
             </div>
-            <form id="loginForm" class="flex flex-col gap-4">
-                <input id="loginEmail" type="email" placeholder="Email" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
-                <input id="loginPass" type="password" placeholder="Password" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
-                <button id="loginBtn" type="submit" class="p-4 rounded-xl text-white font-bold brand-gradient transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-500/30">Log In</button>
-            </form>
-            <form id="registerForm" class="hidden flex-col gap-4">
-                <input id="regName" placeholder="Display Name" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
-                <input id="regEmail" type="email" placeholder="Email" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
-                <input id="regPass" type="password" placeholder="Password" required class="p-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white/10 text-white placeholder-gray-300"/>
-                <button id="registerBtn" type="submit" class="p-4 rounded-xl text-white font-bold brand-gradient transition-all hover:scale-105 active:scale-95 shadow-lg shadow-green-500/30">Sign Up</button>
-            </form>
         </div>
     </div>
-    
-    <!-- This part of the code is not interactive and only for display -->
+</div>
 
-    <script>
-        // --- Init Firebase ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
-            authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
-            databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "kckillerscompany-ab1ec",
-            storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
-            messagingSenderId: "198711213988",
-            appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
-            measurementId: "G-4LKP2M3JXE"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(), db = firebase.database();
-        const authBarContainer = document.getElementById('authBarContainer');
-        const loadingSpinner = document.getElementById('loading');
-        
-        // --- Greeting function ---
-        function getGreeting() {
-            const hour = new Date().getHours();
-            if (hour < 12) return 'Good morning';
-            if (hour < 18) return 'Good afternoon';
-            return 'Good evening';
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBHKsULqmWPFaU7bNXDp6pBZHO4p9ZiUUo",
+        authDomain: "kckillerscompany-ab1ec.firebaseapp.com",
+        databaseURL: "https://kckillerscompany-ab1ec-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "kckillerscompany-ab1ec",
+        storageBucket: "kckillerscompany-ab1ec.firebasestorage.app",
+        messagingSenderId: "198711213988",
+        appId: "1:198711213988:web:f3cacc413ac9e80dd8cb31",
+        measurementId: "G-4LKP2M3JXE"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(), db = firebase.database();
+
+    const bar = document.getElementById('kc-authbar');
+    const profileArea = document.getElementById('kc-profile-area');
+
+    function getGreeting() {
+        const h = new Date().getHours();
+        if (h < 12) return 'Good morning';
+        if (h < 18) return 'Good afternoon';
+        return 'Good evening';
+    }
+
+    // Extract a hex/rgb color from a gradient string for accent
+    function extractAccentFromGradient(grad) {
+        if (!grad) return null;
+        const match = grad.match(/#[0-9a-fA-F]{6}|#[0-9a-fA-F]{3}|rgb\([^)]+\)/);
+        return match ? match[0] : null;
+    }
+
+    // Convert hex to "r,g,b" for CSS var
+    function hexToRgb(hex) {
+        const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+        return `${r},${g},${b}`;
+    }
+
+    function setAccent(color) {
+        if (!color) { color = '#fbbf24'; }
+        document.documentElement.style.setProperty('--accent', color);
+        document.documentElement.style.setProperty('--accent2', color);
+        if (color.startsWith('#') && color.length >= 7) {
+            document.documentElement.style.setProperty('--accent-rgb', hexToRgb(color));
         }
+    }
 
-        // --- Discord helper: get Discord ID from KC UID ---
-        async function getDiscordIdFromKcUid(kcUid) {
-            try {
-                const linksSnap = await db.ref('discordLinks').once('value');
-                const links = linksSnap.val() || {};
-                for (const [discordId, data] of Object.entries(links)) {
-                    if (data.uid === kcUid) return discordId;
-                }
-            } catch (e) {}
-            return null;
-        }
-
-        // --- Auth State Listener (main logic) ---
-        auth.onAuthStateChanged(user => {
-            // First, remove the loading skeleton
-            loadingSpinner.classList.add('hidden');
-
-            if (user) {
-                // Fetch the current user's data once, then listen for changes
-                db.ref(`users/${user.uid}`).on('value', async snap => {
-                    const userData = snap.val() || {};
-                    const name = userData.displayName || user.displayName || user.email;
-                    const avatarUrl = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                    const hasCustomization = userData.profileCustomizationUnlocked;
-                    const customGradient = hasCustomization && userData.profileCustomization?.gradient;
-                    const isVerified = !!user.emailVerified;
-
-                    // Apply custom gradient to the entire container if available
-                    if (customGradient) {
-                        authBarContainer.style.background = customGradient;
-                        authBarContainer.classList.remove('glass-container');
-                    } else {
-                        authBarContainer.style.background = '';
-                        authBarContainer.classList.add('glass-container');
-                    }
-
-                    const gradientRingStyle = customGradient ? `background: ${customGradient};` : `background: linear-gradient(to bottom right, #1ee57c, #50b2fa);`;
-                    const usernameColorStyle = hasCustomization && userData.profileCustomization?.nameColor ? `style="color: ${userData.profileCustomization.nameColor}"` : '';
-
-                    let badgesHtml = '';
-                    if(isVerified) badgesHtml += `<span class="text-xs ml-1" title="Verified">✔️</span>`;
-                    if(userData.codesUnlocked?.diamond) badgesHtml += `<span class="text-xs ml-1" title="Diamond User">💎</span>`;
-                    if(userData.badges?.offence > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" title="Best Offence" style="width:16px;height:16px;object-fit:contain;display:inline;vertical-align:middle;margin-left:4px;">`;
-                    if(userData.badges?.defence > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" title="Best Defence" style="width:16px;height:16px;object-fit:contain;display:inline;vertical-align:middle;margin-left:4px;">`;
-                    if(userData.badges?.overall > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" title="Overall Winner" style="width:16px;height:16px;object-fit:contain;display:inline;vertical-align:middle;margin-left:4px;">`;
-
-                    authBarContainer.innerHTML = `
-                        <div class="flex items-center gap-2">
-                            <a href="https://kcevents.uk/#loginpage" target="_blank" class="flex items-center gap-2">
-                                <span class="relative">
-                                    <span class="gradient-ring" style="${gradientRingStyle}">
-                                        <img src="${avatarUrl}" alt="User Avatar" class="w-8 h-8 rounded-full border-2 border-gray-800 object-cover">
-                                    </span>
-                                    <span class="presence-dot ${navigator.onLine ? 'online' : 'offline'}"></span>
-                                </span>
-                                <div class="flex flex-col items-start min-w-0">
-                                    <span class="text-white text-xs opacity-70">${getGreeting()},</span>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-white text-base font-semibold truncate max-w-xs" ${usernameColorStyle}>${name}</span>
-                                        ${badgesHtml}
-                                        <span id="authStreakBadge" class="text-xs text-yellow-300 hidden"></span>
-                                    </div>
-                                </div>
-                            </a>
-                            <a href="#" id="signOutLink" class="text-red-400 text-sm ml-auto">Sign Out</a>
-                        </div>
-                    `;
-                    document.getElementById('signOutLink').onclick = (e) => {
-                        e.preventDefault();
-                        auth.signOut();
-                    };
-
-                    // Async: load Discord streak and update badge
-                    try {
-                        const discordId = await getDiscordIdFromKcUid(user.uid);
-                        if (discordId) {
-                            const streakSnap = await db.ref(`userEconomy/${discordId}/streaks/login/current`).once('value');
-                            const streak = streakSnap.val() || 0;
-                            const streakEl = document.getElementById('authStreakBadge');
-                            if (streakEl && streak > 0) {
-                                streakEl.textContent = `🔥 ${streak}`;
-                                streakEl.title = `${streak} day login streak`;
-                                streakEl.classList.remove('hidden');
-                            }
-                        }
-                    } catch (e) {}
-                });
-            } else {
-                authBarContainer.innerHTML = `
-                    <a href="https://kcevents.uk/#loginpage" target="_blank" class="px-4 py-2 rounded-xl text-white font-semibold transition-all hover:scale-105 active:scale-95 brand-gradient shadow-lg mx-auto">
-                        Log In / Sign Up
-                    </a>
-                `;
-                // Ensure the container reverts to default styles when logged out
-                authBarContainer.style.background = '';
-                authBarContainer.classList.add('glass-container');
-            }
+    // Try to mark active nav item from parent page hash
+    try {
+        const hash = (window.top.location.hash || '').replace('#','');
+        document.querySelectorAll('.kc-nav-item').forEach(a => {
+            if (a.dataset.page === hash) a.classList.add('active');
         });
-    </script>
+    } catch(e) {}
+
+    async function getDiscordId(uid) {
+        try {
+            const s = await db.ref(`users/${uid}/discordId`).once('value');
+            if (s.val()) return s.val();
+        } catch(e) {}
+        return null;
+    }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            db.ref(`users/${user.uid}`).once('value').then(async snap => {
+                const u = snap.val() || {};
+                const name = u.displayName || user.displayName || user.email || 'KC Member';
+                const avatar = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
+                const hasCust = !!u.profileCustomizationUnlocked;
+                const gradient = hasCust && u.profileCustomization?.gradient || null;
+                const nameColor = hasCust && u.profileCustomization?.nameColor || null;
+                const isVerified = !!user.emailVerified;
+                const isDiamond = !!(u.codesUnlocked?.diamond);
+
+                // Set accent color
+                const accent = nameColor || extractAccentFromGradient(gradient) || '#fbbf24';
+                setAccent(accent);
+
+                // Apply gradient theme to bar if user has it
+                if (gradient) {
+                    bar.classList.add('themed');
+                    document.getElementById('kc-bar-accent-line').style.background = gradient;
+                }
+
+                // Avatar ring gradient
+                const ringGrad = gradient || `linear-gradient(135deg, ${accent}, #f59e0b)`;
+
+                // Build badges row
+                let badgesHtml = '';
+                if (isVerified) badgesHtml += `<i class="fa-solid fa-circle-check kc-badge-icon verified" title="Verified"></i>`;
+                if (isDiamond)  badgesHtml += `<i class="fa-solid fa-gem kc-badge-icon diamond" title="Diamond Member"></i>`;
+                if ((u.badges?.offence||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" class="kc-badge-img" title="Best Offence">`;
+                if ((u.badges?.defence||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" class="kc-badge-img" title="Best Defence">`;
+                if ((u.badges?.overall||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-badge-img" title="Overall Winner">`;
+
+                profileArea.innerHTML = `
+                    <a href="https://kcevents.uk/#loginpage" target="_top" style="display:flex;align-items:center;gap:12px;text-decoration:none;">
+                        <div id="kc-avatar-ring" style="background:${ringGrad};">
+                            <img src="${avatar}" alt="Avatar" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                            <div id="kc-online-dot"></div>
+                        </div>
+                        <div id="kc-user-info">
+                            <div id="kc-greeting">${getGreeting()}</div>
+                            <div id="kc-username-row">
+                                <span id="kc-username" style="${nameColor ? `color:${nameColor}` : ''}">${name}</span>
+                                ${badgesHtml}
+                                <div id="kc-streak" style="display:none;">
+                                    <i class="fa-solid fa-fire"></i><span id="kc-streak-val"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    <button id="kc-signout"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.7rem;"></i></button>
+                `;
+
+                document.getElementById('kc-signout').addEventListener('click', () => auth.signOut());
+
+                // Load streak async
+                try {
+                    const did = await getDiscordId(user.uid);
+                    if (did) {
+                        const ss = await db.ref(`userEconomy/${did}/streaks/login/current`).once('value');
+                        const streak = ss.val() || 0;
+                        if (streak > 0) {
+                            const el = document.getElementById('kc-streak');
+                            const val = document.getElementById('kc-streak-val');
+                            if (el && val) { val.textContent = streak; el.style.display = 'flex'; }
+                        }
+                    }
+                } catch(e) {}
+            });
+        } else {
+            setAccent('#fbbf24');
+            profileArea.innerHTML = `
+                <div id="kc-guest-cta">
+                    <a href="https://kcevents.uk/#loginpage" class="kc-cta-btn secondary" target="_top">Sign In</a>
+                    <a href="https://kcevents.uk/#loginpage" class="kc-cta-btn primary" target="_top">
+                        <i class="fa-solid fa-user-plus"></i> Sign Up
+                    </a>
+                </div>
+            `;
+        }
+    });
+</script>
 </body>
 </html>
