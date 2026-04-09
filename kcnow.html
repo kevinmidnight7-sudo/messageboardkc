@@ -8542,10 +8542,14 @@
                     if (rank != null && rank !== '' && rank > 0) {
                         setText('pf-rank', '#' + rank);
                     } else if (pts > 0) {
-                        // Count users with strictly more points to derive rank
-                        db.ref('userEconomy').orderByChild('points').startAt(pts + 1)
+                        // Compute rank: fetch top 500 by points, count those above current user
+                        db.ref('userEconomy').orderByChild('points').limitToLast(500)
                             .once('value').then(snap => {
-                                setText('pf-rank', '#' + (snap.numChildren() + 1));
+                                let above = 0;
+                                snap.forEach(child => {
+                                    if ((child.val().points || 0) > pts) above++;
+                                });
+                                setText('pf-rank', '#' + (above + 1));
                             }).catch(() => setText('pf-rank', '#?'));
                     } else {
                         setText('pf-rank', '–');
