@@ -1550,6 +1550,24 @@
         }
 
         /* Bottom nav — theme sheen */
+        /* ── Sign Up button glow ── */
+        @keyframes signupGlow {
+            0%, 100% { box-shadow: 0 4px 24px rgba(251,191,36,0.55), 0 0 0 0 rgba(251,191,36,0.3); }
+            50%       { box-shadow: 0 6px 36px rgba(251,191,36,0.85), 0 0 0 6px rgba(251,191,36,0); }
+        }
+        .signup-glow-btn { animation: signupGlow 2s ease-in-out infinite; }
+
+        /* ── Guest mode: sidebar hidden, center main content ── */
+        main.guest-mode { grid-template-columns: 1fr !important; }
+        main.guest-mode #content-viewport { max-width: 860px; margin: 0 auto; padding-right: 0; }
+
+        /* ── Theme logo: dark themes use white logo, light themes use coloured ── */
+        body:not(.theme-light) .kc-logo-themed { content: url('https://kevinmidnight7-sudo.github.io/messageboardkc/kclogowhite.png'); }
+        body.theme-light .kc-logo-themed { content: url('https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png'); }
+
+        /* ── Hide KC NOW corner button on mobile ── */
+        @media (max-width: 1023px) { #quick-actions-wrapper { display: none !important; } }
+
         /* KC NOW corner trigger — theme tint + pulse */
         @keyframes qaGlowPulse {
             0%, 100% { box-shadow: 0 0 18px rgba(var(--theme-accent-rgb), 0.28), 0 4px 16px rgba(0,0,0,0.35), inset 0 1px 0 rgba(var(--theme-accent-rgb), 0.22); }
@@ -1896,22 +1914,22 @@
                         <div class="p-8 relative" style="z-index:1;">
                             <!-- Brand -->
                             <div style="display:flex;align-items:center;gap:0.85rem;margin-bottom:1.4rem;">
-                                <div style="width:50px;height:50px;border-radius:16px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(59,130,246,0.45);flex-shrink:0;">
-                                    <i class="fa-solid fa-bolt" style="color:white;font-size:1.3rem;"></i>
+                                <div style="width:50px;height:50px;border-radius:16px;background:rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(251,191,36,0.35);flex-shrink:0;border:1px solid rgba(251,191,36,0.25);">
+                                    <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogowhite.png" class="kc-logo-themed" style="width:34px;height:34px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(251,191,36,0.6));">
                                 </div>
                                 <div>
-                                    <div style="font-size:1.5rem;font-weight:900;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.02em;line-height:1.1;">KC NOW</div>
-                                    <div style="font-size:0.63rem;color:#64748b;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">KC Events Community Hub</div>
+                                    <div style="font-size:1.5rem;font-weight:900;color:#fbbf24;letter-spacing:-0.02em;line-height:1.1;">KC NOW</div>
+                                    <div style="font-size:0.63rem;color:#94a3b8;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;">One Hub for Everything KC</div>
                                 </div>
                             </div>
 
                             <!-- Headline -->
                             <h2 style="font-size:clamp(1.5rem,5vw,2.4rem);font-weight:900;line-height:1.12;color:white;margin-bottom:0.65rem;letter-spacing:-0.025em;">
-                                Your stats. Your clan.<br>
+                                Your clan. Your scores.<br>
                                 <span style="background:linear-gradient(90deg,#60a5fa 0%,#a78bfa 55%,#f472b6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">All in one place.</span>
                             </h2>
                             <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;max-width:520px;line-height:1.65;">
-                                Track your economy, compete in the Battledome, manage your clan, and stay connected with the KC Events community — all in real time.
+                                Track your friends' scores, see who's active in the Battledome, explore all-time highs, and stay connected with the KC community — all in real time.
                             </p>
 
                             <!-- Live member count FOMO pill -->
@@ -1923,10 +1941,11 @@
                             <!-- CTA buttons -->
                             <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:1.75rem;">
                                 <button onclick="window.top.location.href='https://kcevents.uk/#loginpage'"
-                                    style="padding:0.8rem 2.2rem;background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);color:white;font-weight:800;font-size:0.9rem;border-radius:16px;border:none;cursor:pointer;box-shadow:0 4px 22px rgba(59,130,246,0.42);letter-spacing:0.03em;transition:all 0.2s;font-family:Poppins,sans-serif;"
-                                    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 32px rgba(59,130,246,0.58)'"
-                                    onmouseout="this.style.transform='';this.style.boxShadow='0 4px 22px rgba(59,130,246,0.42)'">
-                                    <i class="fa-solid fa-rocket mr-1"></i>Join KC NOW
+                                    class="signup-glow-btn"
+                                    style="padding:0.85rem 2.4rem;background:linear-gradient(135deg,#f59e0b 0%,#fbbf24 50%,#f59e0b 100%);color:#1a1a1a;font-weight:900;font-size:0.95rem;border-radius:16px;border:none;cursor:pointer;letter-spacing:0.04em;transition:transform 0.2s;font-family:Poppins,sans-serif;"
+                                    onmouseover="this.style.transform='translateY(-3px) scale(1.04)'"
+                                    onmouseout="this.style.transform=''">
+                                    <i class="fa-solid fa-user-plus mr-1.5"></i>Sign Up
                                 </button>
                                 <button onclick="openAuthModal()"
                                     style="padding:0.8rem 1.75rem;background:rgba(255,255,255,0.06);color:#cbd5e1;font-weight:700;font-size:0.88rem;border-radius:16px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:background 0.2s;font-family:Poppins,sans-serif;"
@@ -1936,35 +1955,15 @@
                                 </button>
                             </div>
 
-                            <!-- Feature tags -->
-                            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;padding-top:1.25rem;border-top:1px solid rgba(255,255,255,0.07);">
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#fbbf24;"><i class="fa-solid fa-trophy" style="font-size:0.62rem;"></i> Leaderboard</span>
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#f87171;"><i class="fa-solid fa-shield-halved" style="font-size:0.62rem;"></i> Battledome</span>
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#a78bfa;"><i class="fa-solid fa-users" style="font-size:0.62rem;"></i> Clans</span>
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#60a5fa;"><i class="fa-solid fa-coins" style="font-size:0.62rem;"></i> Economy</span>
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#34d399;"><i class="fa-solid fa-video" style="font-size:0.62rem;"></i> Clips</span>
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#fcd34d;"><i class="fa-solid fa-medal" style="font-size:0.62rem;"></i> Achievements</span>
-                                <span style="display:inline-flex;align-items:center;gap:0.35rem;padding:0.3rem 0.85rem;background:rgba(88,101,242,0.1);border:1px solid rgba(88,101,242,0.2);border-radius:99px;font-size:0.72rem;font-weight:700;color:#818cf8;"><i class="fa-brands fa-discord" style="font-size:0.62rem;"></i> Discord Link</span>
+                            <!-- Members carousel -->
+                            <div style="padding-top:1.25rem;border-top:1px solid rgba(255,255,255,0.07);">
+                                <p style="font-size:0.62rem;color:#475569;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.75rem;">Who's on KC right now</p>
+                                <div id="guest-members-carousel" style="display:flex;gap:0.85rem;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;">
+                                    <div class="animate-pulse bg-white/5 rounded-full h-11 w-11" style="flex-shrink:0;"></div>
+                                    <div class="animate-pulse bg-white/5 rounded-full h-11 w-11" style="flex-shrink:0;"></div>
+                                    <div class="animate-pulse bg-white/5 rounded-full h-11 w-11" style="flex-shrink:0;"></div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Feature preview row -->
-                    <div class="grid grid-cols-3 gap-3">
-                        <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
-                            <div style="font-size:1.4rem;"><i class="fa-solid fa-trophy text-yellow-400"></i></div>
-                            <div style="font-size:0.75rem;font-weight:800;color:#fbbf24;">Leaderboard</div>
-                            <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Compete for<br>the top spot</div>
-                        </div>
-                        <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
-                            <div style="font-size:1.4rem;"><i class="fa-solid fa-coins text-yellow-400"></i></div>
-                            <div style="font-size:0.75rem;font-weight:800;color:#60a5fa;">Economy</div>
-                            <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Earn, spend<br>and flex</div>
-                        </div>
-                        <div class="glass rounded-[22px] p-5 text-center border border-white/5 flex flex-col items-center gap-2">
-                            <div style="font-size:1.4rem;"><i class="fa-solid fa-swords text-red-400"></i></div>
-                            <div style="font-size:0.75rem;font-weight:800;color:#f87171;">Battledome</div>
-                            <div style="font-size:0.65rem;color:#64748b;line-height:1.4;">Climb the<br>arena ranks</div>
                         </div>
                     </div>
                 </div>
@@ -2023,8 +2022,8 @@
                     </button>
 
                     <button onclick="renderBattledome()" class="hub-btn glass glass-hover rounded-[24px] h-36 flex flex-col items-center justify-center gap-3 group transition">
-                        <div class="hub-icon w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center text-2xl group-hover:scale-110 transition">
-                            <i class="fa-solid fa-swords"></i>
+                        <div class="hub-icon w-12 h-12 rounded-2xl bg-red-500/20 flex items-center justify-center group-hover:scale-110 transition">
+                            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/bdicon%20(1).png" style="width:28px;height:28px;object-fit:contain;">
                         </div>
                         <span class="font-bold text-sm tracking-wide">Battledome</span>
                         <div id="bd-hub-counts" class="text-[10px] bg-red-500/15 text-red-300 px-3 py-0.5 rounded-full font-black" style="letter-spacing:0.02em">EU: – &nbsp; NA: –</div>
@@ -2064,7 +2063,7 @@
                 <!-- Trending Clips Preview — compact -->
                 <div class="glass p-5 rounded-[28px] border-white/5">
                     <h3 class="text-base font-bold mb-4 flex items-center gap-2">
-                        <i class="fa-solid fa-bolt text-blue-400"></i> Hot Community Clips
+                        <i class="fa-solid fa-clapperboard text-blue-400"></i> Hot Community Clips
                     </h3>
                     <div id="home-clips-preview" class="grid grid-cols-2 gap-4">
                         <div class="animate-pulse bg-white/5 rounded-2xl h-32"></div>
@@ -2202,7 +2201,7 @@
                         </button>
                         <button id="clans-subtab-battles" onclick="switchClansSubTab('battles')"
                             class="px-5 py-2 rounded-xl text-sm font-bold transition glass text-gray-400 hover:text-white">
-                            <i class="fa-solid fa-swords mr-1"></i> Battles
+                            <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/bdicon%20(1).png" style="width:13px;height:13px;object-fit:contain;vertical-align:middle;margin-right:4px;"> Battles
                         </button>
                     </div>
                     <!-- Clans panel -->
@@ -2673,7 +2672,7 @@
                             <span class="lp-label">Leaderboard</span>
                         </button>
                         <button class="lp-tile" onclick="lpGo(renderBattledome)">
-                            <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><i class="fa-solid fa-shield-halved" style="color:#f87171;font-size:1.1rem;"></i></div>
+                            <div class="lp-icon" style="background:rgba(239,68,68,0.15);"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/bdicon%20(1).png" style="width:22px;height:22px;object-fit:contain;"></div>
                             <span class="lp-label">Battledome</span>
                         </button>
                         <button class="lp-tile" onclick="lpGo(openGamesHub)">
@@ -3126,6 +3125,11 @@
                 if (statusBannersGrid) statusBannersGrid.style.display = '';
                 if (guestLanding) guestLanding.style.display = 'none';
                 if (sidebar) sidebar.style.display = '';
+                // Restore logged-in layout
+                const mainEl = document.querySelector('main.main-grid');
+                if (mainEl) mainEl.classList.remove('guest-mode');
+                const qaWrapper = document.getElementById('quick-actions-wrapper');
+                if (qaWrapper) qaWrapper.style.display = '';
 
                 const avatarUrl = data.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
                 const hasCustom = !!(data.profileCustomizationUnlocked && data.profileCustomization);
@@ -3321,6 +3325,13 @@
                 const existingAbout = document.getElementById('welcome-about');
                 if (existingAbout) existingAbout.remove();
 
+                // Center layout when logged out (sidebar hidden)
+                const mainEl = document.querySelector('main.main-grid');
+                if (mainEl) mainEl.classList.add('guest-mode');
+                // Hide KC NOW corner button when logged out
+                const qaWrapper = document.getElementById('quick-actions-wrapper');
+                if (qaWrapper) qaWrapper.style.display = 'none';
+
                 if (guestLanding) {
                     guestLanding.style.display = 'flex';
                     // Fetch live member count once per session
@@ -3331,13 +3342,46 @@
                             const textEl = document.getElementById('guest-member-text');
                             if (!textEl) return;
                             if (s && s.memberCount) {
-                                textEl.textContent = s.memberCount.toLocaleString() + ' members already inside';
+                                textEl.textContent = 'There are currently ' + s.memberCount.toLocaleString() + ' members signed up to KC!';
                             } else {
                                 textEl.textContent = 'Active community waiting for you';
                             }
                         }).catch(() => {
                             const textEl = document.getElementById('guest-member-text');
                             if (textEl) textEl.textContent = 'Active community waiting for you';
+                        });
+
+                        // Load members carousel (limitToFirst 50 to keep cost low)
+                        db.ref('users').limitToFirst(50).once('value').then(snap => {
+                            const carousel = document.getElementById('guest-members-carousel');
+                            if (!carousel) return;
+                            const users = [];
+                            snap.forEach(child => {
+                                const u = child.val();
+                                if (u && u.displayName && u.avatar) users.push({ uid: child.key, ...u });
+                            });
+                            // Shuffle
+                            for (let i = users.length - 1; i > 0; i--) {
+                                const j = Math.floor(Math.random() * (i + 1));
+                                [users[i], users[j]] = [users[j], users[i]];
+                            }
+                            carousel.innerHTML = users.slice(0, 20).map(u => {
+                                const nameColor = u.profileCustomization?.nameColor || '#94a3b8';
+                                const grad = u.profileCustomization?.gradient;
+                                const ring = grad
+                                    ? `box-shadow:0 0 0 2px ${grad.includes('gradient') ? 'rgba(251,191,36,0.6)' : grad};outline:2px solid transparent;`
+                                    : 'box-shadow:0 0 0 1px rgba(255,255,255,0.1);';
+                                const ringStyle = grad ? `background:${grad};padding:2px;border-radius:50%;` : '';
+                                return `<div style="display:flex;flex-direction:column;align-items:center;gap:0.35rem;flex-shrink:0;min-width:52px;max-width:52px;">
+                                    <div style="${ringStyle}border-radius:50%;flex-shrink:0;">
+                                        <img src="${escapeHtml(u.avatar)}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;display:block;${grad?'':'box-shadow:0 0 0 1px rgba(255,255,255,0.1);'}" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                                    </div>
+                                    <span style="font-size:0.58rem;font-weight:700;color:${nameColor};text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(u.displayName)}</span>
+                                </div>`;
+                            }).join('');
+                        }).catch(() => {
+                            const carousel = document.getElementById('guest-members-carousel');
+                            if (carousel) carousel.innerHTML = '';
                         });
                     }
                 }
@@ -6996,7 +7040,7 @@
                     <!-- User stats compact -->
                     <div class="glass p-4 rounded-2xl flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl glass flex items-center justify-center text-lg"><i class="fa-solid fa-swords"></i></div>
+                            <div class="w-10 h-10 rounded-xl glass flex items-center justify-center"><img src="https://kevinmidnight7-sudo.github.io/messageboardkc/bdicon%20(1).png" style="width:24px;height:24px;object-fit:contain;"></div>
                             <div>
                                 <p class="font-bold text-sm text-blue-400">${userBdName}</p>
                                 <p class="text-xs text-gray-500">Personal best: <span class="text-red-400 font-bold">${userBdScore.toLocaleString()}</span></p>
