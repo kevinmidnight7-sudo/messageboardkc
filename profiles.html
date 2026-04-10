@@ -555,6 +555,20 @@
         }
 /* === KC NOW Theme Sync === */
 :root { --theme-accent: #3b82f6; --theme-accent-rgb: 59,130,246; --theme-glow: #2dd4bf; }
+/* KC NOW dark glass alignment */
+.glass-card {
+  background: rgba(255,255,255,0.06) !important;
+  backdrop-filter: blur(20px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.8) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+.category-tab.active {
+  color: #fff !important;
+  background: var(--theme-accent) !important;
+  border-color: var(--theme-accent) !important;
+  box-shadow: 0 0 12px rgba(var(--theme-accent-rgb),0.35) !important;
+}
     </style>
 </head>
 <body class="p-3 md:p-6">
