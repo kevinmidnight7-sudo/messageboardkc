@@ -56,11 +56,12 @@
 
         /* ── Nav ── */
         #kc-nav {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
             align-items: center;
             gap: 4px;
-            flex: 1;
-            justify-content: center;
         }
 
         .kc-nav-item {
@@ -330,7 +331,7 @@
 
     <!-- Logo -->
     <a href="https://kcevents.uk/#" id="kc-logo" target="_top" style="flex-shrink:0;display:flex;align-items:center;margin-right:28px;text-decoration:none;">
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" alt="KC" style="width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(var(--accent-rgb),0.6));transition:filter 0.2s;">
+        <img id="kc-logo-img" src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" alt="KC" style="width:38px;height:38px;object-fit:contain;transition:opacity 0.3s;">
     </a>
 
     <!-- Nav -->
@@ -448,14 +449,20 @@
                 const accent = nameColor || extractAccentFromGradient(gradient) || '#fbbf24';
                 setAccent(accent);
 
-                // Apply gradient theme to bar if user has it
+                // Logo: white when user has gradient, normal otherwise
+                const logoImg = document.getElementById('kc-logo-img');
+                if (logoImg && gradient) {
+                    logoImg.src = 'https://kevinmidnight7-sudo.github.io/messageboardkc/kclogowhite.png';
+                }
+
+                // Apply gradient theme to bar
                 if (gradient) {
                     bar.classList.add('themed');
                     document.getElementById('kc-bar-accent-line').style.background = gradient;
-                    bar.style.boxShadow = `0 1px 40px rgba(0,0,0,0.6), 0 0 60px rgba(${hexToRgb(accent) || '251,191,36'}, 0.08)`;
-                    bar.style.borderBottomColor = `rgba(${hexToRgb(accent) || '251,191,36'}, 0.32)`;
+                    bar.style.background = gradient;
+                    bar.style.borderBottomColor = 'transparent';
                 } else if (nameColor && nameColor.startsWith('#')) {
-                    bar.style.borderBottomColor = `rgba(${hexToRgb(nameColor)}, 0.28)`;
+                    bar.style.borderBottomColor = `rgba(${hexToRgb(nameColor)},0.28)`;
                 }
 
                 // Avatar ring gradient
