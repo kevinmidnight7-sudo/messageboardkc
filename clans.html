@@ -20,14 +20,16 @@
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
-      color: #e5e7eb;
+      background: radial-gradient(circle at 30% 40%, rgba(59,130,246,0.10) 0%, transparent 40%),
+                  radial-gradient(circle at 70% 70%, rgba(45,212,191,0.07) 0%, transparent 40%),
+                  radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
+      color: #f8fafc;
     }
     .glass-bg {
-      background: rgba(30,32,42,0.78);
-      backdrop-filter: blur(20px) brightness(1.1);
-      -webkit-backdrop-filter: blur(20px) brightness(1.1);
-      box-shadow: 0 10px 48px 0 #10152044, 0 2px 8px #5a668133;
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(20px) saturate(1.8);
+      -webkit-backdrop-filter: blur(20px) saturate(1.8);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
       border-radius: 24px;
       border: 1.5px solid rgba(255,255,255,0.10);
     }
@@ -70,7 +72,7 @@
     @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
     .tab-btn.active {
-      background-color: #3b82f6;
+      background-color: var(--theme-accent, #3b82f6);
       color: white;
     }
     /* Toggle Switch */

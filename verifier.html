@@ -11,21 +11,84 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
   <style>
+    :root { --theme-accent: #3b82f6; --theme-accent-rgb: 59,130,246; --theme-glow: #2dd4bf; }
     body {
       font-family: 'Poppins', sans-serif;
+      background: radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%) !important;
+      color: #f8fafc !important;
+      min-height: 100vh;
     }
-    /* Custom scrollbar for logs modal */
-    #badgeLogsList::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+    /* Glass card replacement */
+    .bg-white {
+      background: rgba(255,255,255,0.06) !important;
+      border: 1px solid rgba(255,255,255,0.12) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
     }
+    .bg-gray-50 { background: rgba(255,255,255,0.04) !important; }
+    .bg-gray-100 { background: rgba(255,255,255,0.03) !important; }
+    .bg-gray-800 { background: rgba(10,14,28,0.95) !important; border: 1px solid rgba(255,255,255,0.1) !important; }
+    /* Text */
+    .text-gray-800, .text-gray-700 { color: #f8fafc !important; }
+    .text-gray-600, .text-gray-500 { color: #94a3b8 !important; }
+    .text-gray-100 { color: #f8fafc !important; }
+    .font-semibold.text-gray-800 { color: #f8fafc !important; }
+    /* Borders */
+    .border-gray-200 { border-color: rgba(255,255,255,0.08) !important; }
+    .border-gray-300 { border-color: rgba(255,255,255,0.12) !important; }
+    /* Inputs and selects */
+    input, select {
+      background: rgba(255,255,255,0.07) !important;
+      border-color: rgba(255,255,255,0.12) !important;
+      color: #f8fafc !important;
+      font-family: 'Poppins', sans-serif;
+    }
+    input::placeholder { color: rgba(255,255,255,0.35) !important; }
+    input:focus, select:focus {
+      outline: none !important;
+      border-color: var(--theme-accent) !important;
+      box-shadow: 0 0 0 2px rgba(var(--theme-accent-rgb),0.2) !important;
+    }
+    select option { background: #0f172a; color: #f8fafc; }
+    /* Hover rows */
+    .hover\:bg-gray-50:hover { background: rgba(255,255,255,0.07) !important; }
+    /* Divide lines */
+    .divide-y.divide-gray-200 > * + * { border-top-color: rgba(255,255,255,0.07) !important; }
+    /* Status badges */
+    .bg-green-100 { background: rgba(34,197,94,0.15) !important; }
+    .bg-red-100   { background: rgba(239,68,68,0.15)  !important; }
+    .text-green-600 { color: #4ade80 !important; }
+    .text-red-600   { color: #f87171 !important; }
+    /* Scrollbar */
+    #badgeLogsList::-webkit-scrollbar { width: 6px; }
     #badgeLogsList::-webkit-scrollbar-thumb {
-      background-color: rgba(100, 116, 139, 0.5);
+      background: rgba(255,255,255,0.15);
       border-radius: 4px;
     }
     #badgeLogsList::-webkit-scrollbar-thumb:hover {
-      background-color: rgba(71, 85, 105, 0.7);
+      background: rgba(255,255,255,0.28);
     }
+    /* Login overlay backdrop */
+    .bg-gray-900.bg-opacity-75 { background: rgba(8,12,20,0.85) !important; backdrop-filter: blur(8px); }
+    /* Heading gradient */
+    #admin-dashboard h1 {
+      background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-glow) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    /* Overlay login card */
+    #admin-login-container > div {
+      box-shadow: 0 8px 48px rgba(0,0,0,0.6) !important;
+    }
+    #admin-login-container h2 { color: #f8fafc !important; }
+    #admin-login-container p  { color: #94a3b8 !important; }
+    /* Modals */
+    #badgeAdminModal > div, #badgeLogsModal > div { box-shadow: 0 8px 48px rgba(0,0,0,0.6) !important; }
+    #badgeAdminModal h2, #badgeLogsModal h2 { color: #f8fafc !important; }
+    #badgeCounts { color: #94a3b8 !important; }
+    #badgeOffenceCount, #badgeDefenceCount, #badgeOverallCount { color: #f8fafc !important; }
+    #badgeLogsList li { color: #94a3b8 !important; }
+    #badgeLogsList li .font-semibold { color: #f8fafc !important; }
+    label { color: #94a3b8 !important; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -513,13 +576,13 @@
     });
     // Close modals when clicking outside content
     badgeAdminModal.addEventListener('mousedown', (e) => {
-      if (!e.target.closest('div.bg-white')) {
+      if (e.target === badgeAdminModal) {
         badgeAdminModal.classList.add('hidden');
         resetBadgeChanges();
       }
     });
     badgeLogsModal.addEventListener('mousedown', (e) => {
-      if (!e.target.closest('div.bg-white')) {
+      if (e.target === badgeLogsModal) {
         badgeLogsModal.classList.add('hidden');
       }
     });

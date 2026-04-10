@@ -4,20 +4,25 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>KC Events - FAQ Carousel</title>
+  <script>
+/* KC NOW Theme Sync */
+(function(){var T={default:['#3b82f6','59,130,246','#2dd4bf'],aurora:['#2dd4bf','45,212,191','#38bdf8'],void:['#6366f1','99,102,241','#818cf8'],prism:['#a855f7','168,85,247','#f472b6'],starlight:['#818cf8','129,140,248','#c4b5fd'],sunrise:['#f59e0b','245,158,11','#f97316'],deepsea:['#06b6d4','6,182,212','#8b5cf6'],snake:['#22c55e','34,197,94','#84cc16'],bloodmoon:['#ef4444','239,68,68','#dc2626'],cyber:['#22d3ee','34,211,238','#a855f7'],golden:['#fbbf24','251,191,36','#f59e0b'],sakura:['#f472b6','244,114,182','#fb7185'],lava:['#f97316','249,115,22','#ef4444'],arctic:['#7dd3fc','125,211,252','#bae6fd'],amethyst:['#a78bfa','167,139,250','#8b5cf6'],matrix:['#22c55e','34,197,94','#4ade80'],cosmos:['#8b5cf6','139,92,246','#10b981']};try{var p=JSON.parse(localStorage.getItem('kc-background-prefs')||'{}').preset||'default';var t=T[p]||T.default;var r=document.documentElement;r.style.setProperty('--theme-accent',t[0]);r.style.setProperty('--theme-accent-rgb',t[1]);r.style.setProperty('--theme-glow',t[2]);r.style.setProperty('--accent-blue',t[0]);}catch(e){}})();
+</script>
   <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --background-start: #1a1611;
-      --background-end: #0a0908;
-      --glass-bg: rgba(50, 42, 30, 0.5); 
-      --glass-border: rgba(255, 215, 0, 0.2);
-      --text-primary: #fefae0;
-      --text-secondary: #faedcd;
-      --accent-glow: rgba(255, 215, 0, 0.25); /* Reduced glow */
-      --accent-light: #FFD700; /* Gold */
-      --scrollbar-thumb: rgba(255, 215, 0, 0.3);
-      --scrollbar-thumb-hover: rgba(255, 215, 0, 0.5);
+      --theme-accent: #3b82f6;
+      --theme-accent-rgb: 59,130,246;
+      --theme-glow: #2dd4bf;
+      --glass-bg: rgba(255,255,255,0.06);
+      --glass-border: rgba(255,255,255,0.12);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --accent-glow: rgba(59,130,246,0.2);
+      --accent-light: var(--theme-accent);
+      --scrollbar-thumb: rgba(255,255,255,0.15);
+      --scrollbar-thumb-hover: rgba(255,255,255,0.28);
     }
 
     html, body {
@@ -52,9 +57,11 @@
       text-align: center;
       margin-bottom: 1rem;
       letter-spacing: 0.03em;
-      color: var(--text-primary);
-      /* Enhanced 3D Text Effect */
-      text-shadow: 0px 1px 0px rgba(255, 215, 0, 0.3), 0px 2px 0px rgba(0,0,0,0.7), 0px 6px 10px rgba(0,0,0,0.6);
+      background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-glow) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: none;
     }
 
     .swiper-container {
@@ -117,7 +124,7 @@
     }
 
     .faq-question:hover {
-      background: rgba(255, 215, 0, 0.05);
+      background: rgba(var(--theme-accent-rgb), 0.06);
     }
 
     .faq-question .icon {
@@ -217,7 +224,7 @@
     }
 
     #privacy-policy-btn:hover {
-        background: rgba(255, 215, 0, 0.1);
+        background: rgba(var(--theme-accent-rgb), 0.12);
         box-shadow: 0 0 15px var(--accent-glow);
     }
 
@@ -269,7 +276,7 @@ background: rgba(0, 0, 0, 0); /* fully transparent */
         text-align: center;
         margin-top: 0;
         margin-bottom: 1.5rem;
-        text-shadow: 0px 1px 0px rgba(255, 215, 0, 0.3), 0px 2px 0px rgba(0,0,0,0.7), 0px 6px 10px rgba(0,0,0,0.6);
+        color: var(--text-primary);
     }
 
     .privacy-text {

@@ -557,25 +557,25 @@
 :root { --theme-accent: #3b82f6; --theme-accent-rgb: 59,130,246; --theme-glow: #2dd4bf; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-3 md:p-6">
     <div class="max-w-6xl mx-auto">
         <!-- Category Tabs -->
-        <div class="flex flex-wrap justify-center gap-4 mb-8 text-lg md:text-xl font-medium">
-            <button class="category-tab active px-4 py-2" data-category="all">All Users</button>
-            <button class="category-tab px-4 py-2" data-category="verified">Verified Users</button>
-            <button class="category-tab px-4 py-2" data-category="skilled">Skilled Users</button>
-            <button class="category-tab px-4 py-2 flex items-center" data-category="diamond">
+        <div class="flex flex-nowrap overflow-x-auto gap-2 mb-6 text-sm font-semibold pb-1" style="scrollbar-width:none;-ms-overflow-style:none;">
+            <button class="category-tab active px-3 py-2 flex-shrink-0" data-category="all">All Users</button>
+            <button class="category-tab px-3 py-2 flex-shrink-0" data-category="verified">Verified Users</button>
+            <button class="category-tab px-3 py-2 flex-shrink-0" data-category="skilled">Skilled Users</button>
+            <button class="category-tab px-3 py-2 flex items-center flex-shrink-0" data-category="diamond">
                 <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/diamondicon.png" alt="Diamond Icon" class="category-tab-icon">
                 <span>Diamond Users</span>
             </button>
-            <button class="category-tab px-4 py-2 flex items-center" data-category="emerald">
+            <button class="category-tab px-3 py-2 flex items-center flex-shrink-0" data-category="emerald">
                 <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/emeraldicon.png" alt="Emerald Icon" class="category-tab-icon">
                 <span>Emerald Users</span>
             </button>
         </div>
 
         <!-- User Search and Sort Controls -->
-        <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-10">
+        <div class="flex flex-col md:flex-row justify-center items-center gap-3 mb-6">
             <input type="text" id="userSearch" placeholder="Search users..."
                    class="w-full md:w-1/2 px-4 py-3 rounded-full bg-white bg-opacity-10 text-white placeholder-gray-400
                           focus:outline-none focus:ring-2 focus:ring-yellow-400 border border-transparent focus:border-yellow-400
