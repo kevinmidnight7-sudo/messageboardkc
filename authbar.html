@@ -46,9 +46,12 @@
             backdrop-filter: blur(24px) saturate(1.8);
             -webkit-backdrop-filter: blur(24px) saturate(1.8);
             border-radius: 16px;
+            overflow: hidden;
             border: 1px solid rgba(var(--accent-rgb), 0.22);
             box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
             transition: border-color 0.4s, box-shadow 0.4s;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         /* Gradient bar theme overlay */
