@@ -46,9 +46,12 @@
             backdrop-filter: blur(24px) saturate(1.8);
             -webkit-backdrop-filter: blur(24px) saturate(1.8);
             border-radius: 16px;
+            overflow: hidden;
             border: 1px solid rgba(var(--accent-rgb), 0.22);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.22), 0 1px 6px rgba(0,0,0,0.12);
             transition: border-color 0.4s, box-shadow 0.4s;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         /* Gradient bar theme overlay */
@@ -333,10 +336,10 @@
             #kc-greeting { display: none; }
             #kc-username { max-width: 90px; font-size: 0.8rem; }
         }
-        @media (max-width: 480px) {
-            #kc-logo { margin-right: 8px; }
-            #kc-profile-area { margin-left: 8px; gap: 8px; }
-            .kc-nav-item { padding: 8px 9px; }
+        @media (max-width: 600px) {
+            #kc-logo { display: none; }
+            #kc-profile-area { display: none; }
+            .kc-nav-item { padding: 10px 14px; }
         }
     </style>
 </head>
@@ -352,7 +355,7 @@
 
     <!-- Nav -->
     <nav id="kc-nav">
-        <a href="https://kcevents.uk/#" class="kc-nav-item" target="_top" data-page="">
+        <a href="https://kcevents.uk/#home" class="kc-nav-item" target="_top" data-page="home">
             <i class="fa-solid fa-house"></i>
             <span>Home</span>
         </a>
