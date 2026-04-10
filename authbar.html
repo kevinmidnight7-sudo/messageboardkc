@@ -34,14 +34,14 @@
             height: 72px;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 24px;
             gap: 0;
             z-index: 9999;
-            background: rgba(8, 14, 24, 0.82);
-            backdrop-filter: blur(20px) saturate(1.6);
-            -webkit-backdrop-filter: blur(20px) saturate(1.6);
-            border-bottom: 1px solid rgba(var(--accent-rgb), 0.18);
-            box-shadow: 0 1px 40px rgba(0,0,0,0.45), 0 0 0 0 transparent;
+            background: rgba(4, 5, 12, 0.94);
+            backdrop-filter: blur(24px) saturate(1.8);
+            -webkit-backdrop-filter: blur(24px) saturate(1.8);
+            border-bottom: 1px solid rgba(var(--accent-rgb), 0.22);
+            box-shadow: 0 1px 40px rgba(0,0,0,0.6);
             transition: border-color 0.4s, box-shadow 0.4s;
         }
 
@@ -49,35 +49,9 @@
         #kc-bar-accent-line {
             position: absolute;
             bottom: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.7), transparent);
+            height: 2.5px;
+            background: linear-gradient(90deg, transparent 0%, rgba(var(--accent-rgb), 0.9) 50%, transparent 100%);
             transition: background 0.4s;
-        }
-
-        /* ── Logo ── */
-        #kc-logo {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 9px;
-            text-decoration: none;
-            margin-right: 32px;
-        }
-        #kc-logo img {
-            width: 36px;
-            height: 36px;
-            object-fit: contain;
-            filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.65));
-            transition: filter 0.2s;
-        }
-        #kc-logo:hover img { filter: drop-shadow(0 0 14px rgba(var(--accent-rgb), 1)); }
-        #kc-logo-text {
-            font-size: 0.92rem;
-            font-weight: 900;
-            color: var(--accent);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            line-height: 1;
         }
 
         /* ── Nav ── */
@@ -97,7 +71,7 @@
             padding: 8px 18px;
             border-radius: 14px;
             text-decoration: none;
-            color: #64748b;
+            color: #7a8fa8;
             font-size: 0.62rem;
             font-weight: 700;
             letter-spacing: 0.06em;
@@ -143,7 +117,23 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            margin-left: 32px;
+            margin-left: auto;
+        }
+
+        /* Profile pill container */
+        .kc-profile-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(var(--accent-rgb), 0.07);
+            border: 1px solid rgba(var(--accent-rgb), 0.22);
+            border-radius: 50px;
+            padding: 5px 14px 5px 6px;
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+        .kc-profile-pill:hover {
+            background: rgba(var(--accent-rgb), 0.11);
+            box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.18);
         }
 
         /* Avatar wrapper */
@@ -193,7 +183,7 @@
         }
         #kc-greeting {
             font-size: 0.6rem;
-            color: #475569;
+            color: #64748b;
             font-weight: 600;
             letter-spacing: 0.04em;
         }
@@ -339,9 +329,8 @@
     <div id="kc-bar-accent-line"></div>
 
     <!-- Logo -->
-    <a href="https://kcevents.uk/#" id="kc-logo" target="_top">
-        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kclogogold%20(1).png" alt="KC">
-        <span id="kc-logo-text">KC NOW</span>
+    <a href="https://kcevents.uk/#" id="kc-logo" target="_top" style="flex-shrink:0;display:flex;align-items:center;margin-right:28px;text-decoration:none;">
+        <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" alt="KC" style="width:38px;height:38px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(var(--accent-rgb),0.6));transition:filter 0.2s;">
     </a>
 
     <!-- Nav -->
@@ -371,11 +360,11 @@
     <!-- Right: auth state -->
     <div id="kc-profile-area">
         <!-- Skeleton -->
-        <div id="kc-loading" style="display:flex;gap:10px;align-items:center;">
-            <div class="kc-skeleton" style="width:42px;height:42px;border-radius:50%;"></div>
+        <div id="kc-loading" class="kc-profile-pill" style="gap:10px;">
+            <div class="kc-skeleton" style="width:42px;height:42px;border-radius:50%;flex-shrink:0;"></div>
             <div style="display:flex;flex-direction:column;gap:5px;">
-                <div class="kc-skeleton" style="width:70px;height:8px;"></div>
-                <div class="kc-skeleton" style="width:100px;height:10px;"></div>
+                <div class="kc-skeleton" style="width:60px;height:7px;border-radius:4px;"></div>
+                <div class="kc-skeleton" style="width:90px;height:10px;border-radius:4px;"></div>
             </div>
         </div>
     </div>
@@ -463,6 +452,10 @@
                 if (gradient) {
                     bar.classList.add('themed');
                     document.getElementById('kc-bar-accent-line').style.background = gradient;
+                    bar.style.boxShadow = `0 1px 40px rgba(0,0,0,0.6), 0 0 60px rgba(${hexToRgb(accent) || '251,191,36'}, 0.08)`;
+                    bar.style.borderBottomColor = `rgba(${hexToRgb(accent) || '251,191,36'}, 0.32)`;
+                } else if (nameColor && nameColor.startsWith('#')) {
+                    bar.style.borderBottomColor = `rgba(${hexToRgb(nameColor)}, 0.28)`;
                 }
 
                 // Avatar ring gradient
@@ -477,23 +470,25 @@
                 if ((u.badges?.overall||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-badge-img" title="Overall Winner">`;
 
                 profileArea.innerHTML = `
-                    <a href="https://kcevents.uk/#loginpage" target="_top" style="display:flex;align-items:center;gap:12px;text-decoration:none;">
-                        <div id="kc-avatar-ring" style="background:${ringGrad};">
-                            <img src="${avatar}" alt="Avatar" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
-                            <div id="kc-online-dot"></div>
-                        </div>
-                        <div id="kc-user-info">
-                            <div id="kc-greeting">${getGreeting()}</div>
-                            <div id="kc-username-row">
-                                <span id="kc-username" style="${nameColor ? `color:${nameColor}` : ''}">${name}</span>
-                                ${badgesHtml}
-                                <div id="kc-streak" style="display:none;">
-                                    <i class="fa-solid fa-fire"></i><span id="kc-streak-val"></span>
+                    <div class="kc-profile-pill">
+                        <a href="https://kcevents.uk/#loginpage" target="_top" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+                            <div id="kc-avatar-ring" style="background:${ringGrad};">
+                                <img src="${avatar}" alt="Avatar" onerror="this.src='https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'">
+                                <div id="kc-online-dot"></div>
+                            </div>
+                            <div id="kc-user-info">
+                                <div id="kc-greeting">${getGreeting()}</div>
+                                <div id="kc-username-row">
+                                    <span id="kc-username" style="${nameColor ? `color:${nameColor}` : ''}">${name}</span>
+                                    ${badgesHtml}
+                                    <div id="kc-streak" style="display:none;">
+                                        <i class="fa-solid fa-fire"></i><span id="kc-streak-val"></span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </a>
-                    <button id="kc-signout"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.7rem;"></i></button>
+                        </a>
+                        <button id="kc-signout"><i class="fa-solid fa-arrow-right-from-bracket" style="font-size:0.7rem;"></i></button>
+                    </div>
                 `;
 
                 document.getElementById('kc-signout').addEventListener('click', () => auth.signOut());
@@ -515,7 +510,7 @@
         } else {
             setAccent('#fbbf24');
             profileArea.innerHTML = `
-                <div id="kc-guest-cta">
+                <div id="kc-guest-cta" class="kc-profile-pill" style="gap:8px;">
                     <a href="https://kcevents.uk/#loginpage" class="kc-cta-btn secondary" target="_top">Sign In</a>
                     <a href="https://kcevents.uk/#loginpage" class="kc-cta-btn primary" target="_top">
                         <i class="fa-solid fa-user-plus"></i> Sign Up
