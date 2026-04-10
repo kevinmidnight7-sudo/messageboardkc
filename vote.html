@@ -109,6 +109,46 @@
       background-position: right .7rem center;
       background-size: .7rem;
     }
+    /* ── Player autocomplete widget ── */
+    .player-ac-wrap { position: relative; width: 100%; margin-top: .2rem; }
+    .player-ac-wrap input {
+      width: 100%; padding: .65rem .65rem .65rem 2.2rem;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      border-radius: 12px; box-sizing: border-box;
+      background: rgba(252,252,255,0.15); color: #fff;
+      font-size: 1.01em; outline: none; transition: border-color .15s, background .12s;
+    }
+    .player-ac-wrap input:focus { border-color: rgba(var(--theme-accent-rgb,59,130,246),0.6); background: rgba(252,252,255,0.2); }
+    .player-ac-wrap input::placeholder { color: rgba(255,255,255,0.45); }
+    .player-ac-icon {
+      position: absolute; left: .65rem; top: 50%; transform: translateY(-50%);
+      font-size: .95rem; color: rgba(255,255,255,0.4); pointer-events: none;
+    }
+    .player-ac-clear {
+      position: absolute; right: .6rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: rgba(255,255,255,0.45); font-size: 1.1rem;
+      cursor: pointer; padding: 0; width: auto; margin: 0; display: none; line-height: 1;
+    }
+    .player-ac-dropdown {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 999;
+      background: rgba(10,14,28,0.97);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 14px;
+      max-height: 220px; overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      backdrop-filter: blur(20px);
+      display: none;
+    }
+    .player-ac-dropdown.open { display: block; }
+    .player-ac-item {
+      padding: .55rem .85rem; cursor: pointer; font-size: .97em; color: #e2e8f0;
+      border-radius: 10px; margin: 3px 4px; transition: background .1s;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .player-ac-item:hover, .player-ac-item.highlighted { background: rgba(var(--theme-accent-rgb,59,130,246),0.25); color: #fff; }
+    .player-ac-item mark { background: none; color: var(--theme-accent,#3b82f6); font-weight: 700; }
+    .player-ac-item .ac-avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.1); }
+    .player-ac-none { padding: .55rem .85rem; color: rgba(255,255,255,0.35); font-size: .9em; text-align: center; }
     .stars {
       display: flex;
       gap: .3rem;
@@ -1010,9 +1050,6 @@
 
 /* === KC NOW Dark Glass Override === */
 html, body {
-  background: radial-gradient(circle at 30% 40%, rgba(59,130,246,0.12) 0%, transparent 40%),
-              radial-gradient(circle at 70% 70%, rgba(45,212,191,0.08) 0%, transparent 40%),
-              radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%) !important;
   color: #f8fafc !important;
 }
 .panel, .leaderboard {
@@ -1079,8 +1116,11 @@ button:disabled {
   animation: none !important;
 }
   </style>
+  <link rel="stylesheet" href="kc-bg.css"/>
+  <script src="kc-bg.js" defer></script>
 </head>
 <body>
+<div id="bg-canvas"></div>
   <!-- ALERT / CONFIRM OVERLAY -->
   <div id="alertModal">
     <div id="alertContent">
@@ -1730,26 +1770,37 @@ button:disabled {
     
     // Optimized: Pass the list of all users to renderForm to avoid another database read
     function renderForm(user, allUsers){
-      let opts='<option value="" disabled selected>– Select a player –</option>';
+
+      // Build sorted player name list for autocomplete
+      const playerNames = [];
       for (const uid in allUsers) {
-        const userVal = allUsers[uid];
-        if (userVal.emailVerified) {
-          const name = userVal.displayName || userVal.email || '(unknown)';
-          const esc = name.replace(/"/g, '&quot;');
-          opts += `<option value="${esc}">${esc}</option>`;
+        const userVal2 = allUsers[uid];
+        if (userVal2.emailVerified) {
+          playerNames.push(userVal2.displayName || userVal2.email || '(unknown)');
         }
       }
+      playerNames.sort((a,b)=>a.localeCompare(b));
 
       voteContainer.innerHTML=`
         <label>Your Username</label>
         <input readonly id="username" value="${user.displayName||user.email||''}"/>
         <div class="hint">Pick the name you played under.</div>
         <label>Best offence</label>
-        <select id="offence">${opts}</select>
-        <div class="hint">Choose from registered players.</div>
+        <div class="player-ac-wrap" id="offence-wrap">
+          <span class="player-ac-icon">⚔️</span>
+          <input type="text" id="offence-input" placeholder="Search or type a player name…" autocomplete="off"/>
+          <button class="player-ac-clear" id="offence-clear" type="button">×</button>
+          <div class="player-ac-dropdown" id="offence-drop"></div>
+        </div>
+        <div class="hint">Type to search or scroll the list of registered players.</div>
         <label>Best defence</label>
-        <select id="defence">${opts}</select>
-        <div class="hint">Choose from registered players.</div>
+        <div class="player-ac-wrap" id="defence-wrap">
+          <span class="player-ac-icon">🛡️</span>
+          <input type="text" id="defence-input" placeholder="Search or type a player name…" autocomplete="off"/>
+          <button class="player-ac-clear" id="defence-clear" type="button">×</button>
+          <div class="player-ac-dropdown" id="defence-drop"></div>
+        </div>
+        <div class="hint">Type to search or scroll the list of registered players.</div>
         <label>Rate today's event</label>
         <div class="stars" id="starContainer">
           <span data-value="1">★</span><span data-value="2">★</span>
@@ -1757,22 +1808,94 @@ button:disabled {
           <span data-value="5">★</span>
         </div>
         <button id="submitBtn" disabled>Submit Vote</button>`;
-      const off=document.getElementById('offence'),
-            def=document.getElementById('defence'),
-            stars=document.getElementById('starContainer').children,
-            sub=document.getElementById('submitBtn');
-      let rating=0;
-      function updateBtn(){ sub.disabled=!(off.value&&def.value&&rating>0); }
-      Array.from(stars).forEach(s=>{
-        s.onclick=()=>{
-          rating=+s.dataset.value;
-          Array.from(stars).forEach(x=>x.classList.toggle('filled',+x.dataset.value<=rating));
+
+      // ── Autocomplete helper ──
+      const offenceVal = { value: '' };
+      const defenceVal = { value: '' };
+
+      function buildAC(inputId, dropId, clearId, valueObj, onChangeCallback) {
+        const inp   = document.getElementById(inputId);
+        const drop  = document.getElementById(dropId);
+        const clear = document.getElementById(clearId);
+        let highlighted = -1;
+
+        function highlight(i) {
+          const items = drop.querySelectorAll('.player-ac-item');
+          items.forEach((el,idx) => el.classList.toggle('highlighted', idx === i));
+          highlighted = i;
+        }
+
+        function selectPlayer(name) {
+          inp.value = name;
+          valueObj.value = name;
+          clear.style.display = 'block';
+          drop.classList.remove('open');
+          onChangeCallback();
+        }
+
+        function renderDrop(query) {
+          const q = query.trim().toLowerCase();
+          const matches = q
+            ? playerNames.filter(n => n.toLowerCase().includes(q))
+            : playerNames;
+          if (matches.length === 0) {
+            drop.innerHTML = '<div class="player-ac-none">No players found</div>';
+          } else {
+            drop.innerHTML = matches.map(n => {
+              const escaped = n.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+              const label = q
+                ? escaped.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')','gi'), '<mark>$1</mark>')
+                : escaped;
+              return `<div class="player-ac-item" data-name="${escaped}">${label}</div>`;
+            }).join('');
+          }
+          drop.querySelectorAll('.player-ac-item').forEach(el => {
+            el.addEventListener('mousedown', e => { e.preventDefault(); selectPlayer(el.dataset.name); });
+          });
+          highlighted = -1;
+        }
+
+        inp.addEventListener('focus', () => {
+          renderDrop(inp.value);
+          drop.classList.add('open');
+        });
+        inp.addEventListener('input', () => {
+          valueObj.value = '';
+          clear.style.display = inp.value ? 'block' : 'none';
+          renderDrop(inp.value);
+          drop.classList.add('open');
+          onChangeCallback();
+        });
+        inp.addEventListener('blur', () => { setTimeout(() => drop.classList.remove('open'), 150); });
+        inp.addEventListener('keydown', e => {
+          const items = drop.querySelectorAll('.player-ac-item');
+          if (e.key === 'ArrowDown') { e.preventDefault(); highlight(Math.min(highlighted + 1, items.length - 1)); }
+          else if (e.key === 'ArrowUp') { e.preventDefault(); highlight(Math.max(highlighted - 1, 0)); }
+          else if (e.key === 'Enter' && highlighted >= 0 && items[highlighted]) { selectPlayer(items[highlighted].dataset.name); }
+          else if (e.key === 'Escape') { drop.classList.remove('open'); inp.blur(); }
+        });
+        clear.addEventListener('click', () => {
+          inp.value = ''; valueObj.value = ''; clear.style.display = 'none';
+          drop.classList.remove('open'); onChangeCallback();
+        });
+      }
+
+      const stars = document.getElementById('starContainer').children;
+      const sub   = document.getElementById('submitBtn');
+      let rating  = 0;
+      function updateBtn(){ sub.disabled = !(offenceVal.value && defenceVal.value && rating > 0); }
+
+      buildAC('offence-input','offence-drop','offence-clear', offenceVal, updateBtn);
+      buildAC('defence-input','defence-drop','defence-clear', defenceVal, updateBtn);
+
+      Array.from(stars).forEach(s => {
+        s.onclick = () => {
+          rating = +s.dataset.value;
+          Array.from(stars).forEach(x => x.classList.toggle('filled', +x.dataset.value <= rating));
           updateBtn();
         };
       });
-      off.onchange=updateBtn;
-      def.onchange=updateBtn;
-      
+
       // UPDATE: More efficient direct lookup for existing vote by UID
       votesRef.child(user.uid).once('value').then(snap=>{
         if(snap.exists()){
@@ -1782,20 +1905,15 @@ button:disabled {
 
       sub.onclick=()=>{
         sub.disabled=true;
-        // UPDATE: Use .child(user.uid).set() for a deterministic path.
-        // This ensures each user can only vote once, overwriting their previous vote.
         votesRef.child(user.uid).set({
-          uid:user.uid, // It's good practice to keep the uid in the object itself
+          uid:user.uid,
           username:user.displayName||user.email,
-          bestOffence:off.value,
-          bestDefence:def.value,
+          bestOffence:offenceVal.value,
+          bestDefence:defenceVal.value,
           rating,
           time:firebase.database.ServerValue.TIMESTAMP
         })
-        .then(()=> {
-            kcAlert('Thanks for voting!');
-            // The live listeners will automatically update the UI to show the profile card.
-        })
+        .then(()=> { kcAlert('Thanks for voting!'); })
         .catch(e=>kcAlert('Error submitting: '+e.message));
       };
     }
