@@ -1007,6 +1007,71 @@
 /* === KC NOW Theme Sync === */
 :root { --theme-accent: #3b82f6; --theme-accent-rgb: 59,130,246; --theme-glow: #2dd4bf; }
 .clip-selector-item.selected { background: rgba(var(--theme-accent-rgb),0.35) !important; border-color: rgba(var(--theme-accent-rgb),0.55) !important; }
+
+/* === KC NOW Dark Glass Override === */
+.panel, .leaderboard {
+  background: rgba(255,255,255,0.06) !important;
+  background-image: none !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+}
+#adminModalContent {
+  background: rgba(10,14,28,0.96) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: 0 8px 48px rgba(0,0,0,0.6) !important;
+}
+#adminModalContent h3 { color: #f8fafc !important; }
+#adminClose {
+  background: rgba(255,255,255,0.1) !important;
+  color: #94a3b8 !important;
+}
+#adminClose:hover { background: rgba(255,255,255,0.16) !important; color: #f8fafc !important; }
+#adminTableContainer {
+  background: rgba(255,255,255,0.04) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+}
+#adminTableContainer th {
+  background: rgba(255,255,255,0.06) !important;
+  color: #94a3b8 !important;
+}
+#adminTableContainer td {
+  color: #f8fafc !important;
+  border-bottom-color: rgba(255,255,255,0.07) !important;
+}
+#adminPass {
+  background: rgba(255,255,255,0.07) !important;
+  color: #f8fafc !important;
+  border-color: rgba(255,255,255,0.12) !important;
+}
+#alertContent {
+  background: rgba(10,14,28,0.96) !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+}
+#unlockBtn {
+  background: var(--theme-accent) !important;
+  color: #fff !important;
+}
+#unlockBtn:hover { opacity: 0.88 !important; }
+select, select option {
+  color: #f8fafc !important;
+  background: rgba(10,14,28,0.95) !important;
+}
+button {
+  background: var(--theme-accent) !important;
+  color: #fff !important;
+}
+button:disabled {
+  background: rgba(255,255,255,0.1) !important;
+  color: rgba(255,255,255,0.3) !important;
+}
+.glass-stat-block .stat-value { color: var(--theme-accent) !important; }
+.gradient-header {
+  background: linear-gradient(90deg, var(--theme-accent) 0%, var(--theme-glow) 100%) !important;
+  background-size: unset !important;
+  animation: none !important;
+}
   </style>
 </head>
 <body>

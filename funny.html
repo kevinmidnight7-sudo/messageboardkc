@@ -11,20 +11,38 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
     <script src="profile-popup.js"></script>
     <style>
+        :root { --theme-accent: #3b82f6; --theme-accent-rgb: 59,130,246; }
         body {
             font-family: 'Poppins', sans-serif;
-            background: url('https://kevinmidnight7-sudo.github.io/messageboardkc/silver.png') center/cover fixed;
+            background: radial-gradient(circle at 30% 40%, rgba(59,130,246,0.12) 0%, transparent 40%),
+                        radial-gradient(circle at 70% 70%, rgba(45,212,191,0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
+            min-height: 100vh; color: #f8fafc;
         }
         .glass-card {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         }
+        #formTitle { color: #f8fafc !important; }
+        #welcomeUser, .text-gray-800, .text-gray-600, .text-gray-700 { color: #f8fafc !important; }
+        input, select {
+            background: rgba(255,255,255,0.07) !important;
+            border-color: rgba(255,255,255,0.12) !important;
+            color: #f8fafc !important;
+        }
+        input::placeholder { color: rgba(255,255,255,0.35) !important; }
+        input:focus { background: rgba(255,255,255,0.1) !important; border-color: var(--theme-accent) !important; }
+        .bg-gray-100 { background: rgba(255,255,255,0.07) !important; }
+        .bg-white { background: rgba(255,255,255,0.06) !important; }
+        h3, h4 { color: #f8fafc !important; }
+        .text-center.text-sm { color: #94a3b8 !important; }
         .gradient-item.selected, .banner-item.selected {
-            border-color: #3b82f6;
+            border-color: var(--theme-accent);
             transform: scale(1.08);
-            box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+            box-shadow: 0 0 15px rgba(var(--theme-accent-rgb), 0.5);
         }
     </style>
 </head>
