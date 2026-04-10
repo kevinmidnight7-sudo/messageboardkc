@@ -459,12 +459,8 @@
                 if (gradient) {
                     bar.classList.add('themed');
                     document.getElementById('kc-bar-accent-line').style.background = gradient;
-                    const c1 = extractAccentFromGradient(gradient);
-                    if (c1 && c1.startsWith('#')) {
-                        const rgb = hexToRgb(c1);
-                        bar.style.background = `linear-gradient(90deg, rgba(${rgb},0.10) 0%, rgba(4,5,12,0.96) 35%, rgba(4,5,12,0.96) 65%, rgba(${rgb},0.07) 100%)`;
-                        bar.style.borderBottomColor = `rgba(${rgb},0.35)`;
-                    }
+                    bar.style.background = gradient;
+                    bar.style.borderBottomColor = 'transparent';
                 } else if (nameColor && nameColor.startsWith('#')) {
                     bar.style.borderBottomColor = `rgba(${hexToRgb(nameColor)},0.28)`;
                 }
