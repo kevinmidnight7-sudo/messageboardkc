@@ -12,12 +12,12 @@
   <style>
   /* ────── Global & Layout ────── */
   :root {
-    --glass-background: linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230, 236, 255, 0.38) 100%);
-    --glass-border: 1.5px solid rgba(255,255,255,0.22);
-    --glass-shadow: 0 8px 42px 0 #1e293b33, 0 2px 8px #b6c4ec29;
-    --glass-blur: blur(22px) saturate(1.5);
-    --button-glass-background: rgba(255,255,255,0.55);
-    --button-glass-border: 2.5px solid rgba(255,255,255,0.19);
+    --glass-background: rgba(10, 14, 28, 0.90);
+    --glass-border: 1.5px solid rgba(255,255,255,0.08);
+    --glass-shadow: 0 8px 48px rgba(0,0,0,0.55), 0 2px 12px rgba(0,0,0,0.3);
+    --glass-blur: blur(24px) saturate(1.8);
+    --button-glass-background: rgba(255,255,255,0.08);
+    --button-glass-border: 2px solid rgba(255,255,255,0.12);
   }
 
   html, body {
@@ -1683,6 +1683,135 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
+
+/* ======== DARK LIQUID THEME ======== */
+html, body { color: #e2e8f0; }
+.kc-title { color: #fff; }
+.profile-title { color: rgba(255,255,255,0.75); font-size:1rem; font-weight:700; letter-spacing:0.04em; }
+.profile-welcome { color: #94a3b8; }
+.profile-welcome .username-container .username-text { color: #60a5fa; }
+.profile-welcome .username-container .edit-icon { color: #60a5fa; }
+.profile-counter { display:none; } /* replaced by member-counter-wrap */
+.about-me-box {
+  background: rgba(255,255,255,0.05);
+  color: #cbd5e1;
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: none;
+}
+.about-me-box:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.badges-header { color: #fbbf24; }
+.badges-sub { color: rgba(255,255,255,0.4); }
+.badge-item {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.badge-item .badge-label { color: #e2e8f0; }
+.badge-item .badge-mult { background: rgba(255,255,255,0.15) !important; color: #fff !important; border-color: rgba(255,255,255,0.2) !important; }
+.badge-item.locked { background: rgba(255,255,255,0.03); }
+.kc-alert { background: rgba(12,16,32,0.97); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
+.close-btn { color: #94a3b8; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
+.close-btn:hover { background: #ef4444; color: #fff; }
+.sidebar h2 { color: #e2e8f0; }
+.sidebar label { color: #94a3b8; }
+.sidebar input, .sidebar select {
+  color: #e2e8f0;
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.1);
+}
+.sidebar input:focus { border-color: #3b82f6; }
+.admin-users-list { background: rgba(255,255,255,0.04); color: #cbd5e1; box-shadow: none; border: 1px solid rgba(255,255,255,0.06); }
+.admin-users-list li { border-bottom-color: rgba(255,255,255,0.06); }
+.admin-badge-count { background: rgba(255,255,255,0.1); color: #e2e8f0; box-shadow: none; }
+.form-section input {
+  color: #e2e8f0;
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.1);
+}
+.form-section input::placeholder { color: rgba(255,255,255,0.3); }
+.form-section input:focus { background: rgba(255,255,255,0.11); border-color: #3b82f6; }
+.switch-link { color: #60a5fa; }
+.confirm-box { color: #e2e8f0; }
+.carousel-content h3 { color: #e2e8f0 !important; }
+#codesModal h3 { color: #e2e8f0; }
+#codesModal #codeInput { background: rgba(255,255,255,0.08); color: #e2e8f0; border-color: rgba(255,255,255,0.12); box-shadow: none; }
+#codesModal #codeInput::placeholder { color: rgba(255,255,255,0.35); }
+#codesModal #codeInput:focus { background: rgba(255,255,255,0.12); border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+#codeInput.error { background: rgba(239,68,68,0.12); border-color: #ef4444; }
+#codeInput.success { background: rgba(34,197,94,0.12); border-color: #22c55e; }
+#codesModal #closeCodesModal { background: rgba(255,255,255,0.08); color: #94a3b8; }
+.profile-preview-area { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.07); }
+.customization-section h4 { color: #94a3b8; }
+.banner-grid, .gradient-grid, .color-grid { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.06); }
+.badge-step { color: #64748b; }
+.badge-step.active { color: #60a5fa; border-color: #60a5fa; }
+.badge-input { color: #e2e8f0; border-bottom-color: rgba(255,255,255,0.15); background: transparent; }
+.badge-input:focus { border-color: #60a5fa; }
+.arrow-btn { color: #fff; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.12); box-shadow: none; }
+.avatar-carousel { background: rgba(255,255,255,0.04); }
+.avatar-carousel .avatar-item { background: rgba(255,255,255,0.07); border-color: transparent; }
+.version { color: rgba(255,255,255,0.3); font-size:0.65rem; letter-spacing:0.05em; text-transform: uppercase; }
+.profile-icon-btn { background: rgba(255,255,255,0.08); box-shadow: 0 2px 12px rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); }
+#streakBtn { background: linear-gradient(135deg, rgba(251,191,36,0.2) 0%, rgba(251,191,36,0.08) 100%); border: 1.5px solid rgba(251,191,36,0.4); }
+
+/* ── Stat Pills ── */
+.pstat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0 10px;
+}
+.pstat-pill {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 14px;
+  padding: 10px 6px;
+  text-align: center;
+  transition: background 0.2s;
+}
+.pstat-pill:hover { background: rgba(255,255,255,0.09); }
+.pstat-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 4px;
+}
+.pstat-val {
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.1;
+}
+.pstat-sub {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.38);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ── Live Member Counter ── */
+.member-counter-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.4);
+  margin: 0 0 10px;
+  letter-spacing: 0.03em;
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74,222,128,0.9);
+  flex-shrink: 0;
+  animation: live-pulse 2s ease-in-out infinite;
+}
+@keyframes live-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   </style>
 </head>
 <body>
@@ -1714,17 +1843,39 @@
         <div id="profileUI" style="display:none">
           <div id="profileBanner" class="profile-banner"></div>
           <img id="avatarImg" src="" alt="Your Avatar"/>
-          <div class="profile-title">Profile:</div>
+          <div class="profile-title">Profile</div>
           <div class="profile-welcome" id="welcomeUser"></div>
-          <div class="profile-counter" id="userCounter"></div>
           <!-- About Me section -->
           <div id="aboutMeContainer" class="about-me-box">
             <span class="about-me-text" id="aboutMeDisplay">Click to add about me</span>
             <span class="edit-icon">✏️</span>
           </div>
-          <div class="profile-info">
+          <!-- Stats grid -->
+          <div class="pstat-grid" id="profile-stats-grid">
+            <div class="pstat-pill">
+              <div class="pstat-label">Points</div>
+              <div class="pstat-val" id="login-pts">–</div>
+              <div class="pstat-sub" id="login-rank">#–</div>
+            </div>
+            <div class="pstat-pill">
+              <div class="pstat-label">🔥 Streak</div>
+              <div class="pstat-val" id="login-econ-streak">–</div>
+              <div class="pstat-sub">days</div>
+            </div>
+            <div class="pstat-pill">
+              <div class="pstat-label">Battledome</div>
+              <div class="pstat-val" id="login-bd-score">–</div>
+              <div class="pstat-sub">highscore</div>
+            </div>
+          </div>
+          <!-- Live member counter -->
+          <div class="member-counter-wrap">
+            <span class="live-dot"></span>
+            <span id="memberCountDisplay">–</span> members registered
+          </div>
+          <div class="profile-info" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
             <div id="joinBadge" class="join-badge"></div>
-            <div class="version">KC Events V1.5</div>
+            <div class="version">KC Events V5</div>
           </div>
           <div class="profile-icon-bar">
             <button id="avatarBtn" class="profile-icon-btn" title="Choose Avatar">
@@ -2641,7 +2792,7 @@ function fetchUserDataAndListen(user) {
     displayUsername(nameToDisplay, custom.nameColor);
     // The line that automatically opened the modal has been removed.
     const profileCard = document.getElementById('profileCard');
-    profileCard.style.background = custom.gradient || 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+    profileCard.style.background = custom.gradient || 'linear-gradient(135deg,#0f172a 0%,#1e2a45 100%)';
     if (profileBanner) {
       profileBanner.style.backgroundImage = custom.banner ? `url('${custom.banner}')` : 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
     }
@@ -2683,15 +2834,60 @@ auth.onAuthStateChanged(async (u) => {
     // Optimized: Start a single listener for user data
     fetchUserDataAndListen(u);
     
-    // COST: reuse admin cache if already loaded, otherwise piggyback on meta/userCount if available
-    db.ref("meta/userCount").once("value").then(s => {
+    // Real-time member counter
+    db.ref("meta/userCount").on('value', s => {
       const count = s.val();
-      if (count) { userCounter.textContent = `There are now ${count} users registered!`; }
-      else {
-        // Fallback: count from users collection (only if meta path not maintained)
-        _getAdminData().then(([us]) => { userCounter.textContent = `There are now ${us.numChildren()} users registered!`; });
+      const el = document.getElementById('memberCountDisplay');
+      if (el) {
+        if (count) { el.textContent = Number(count).toLocaleString(); }
+        else {
+          _getAdminData().then(([us]) => { if (el) el.textContent = us.numChildren().toLocaleString(); });
+        }
       }
     });
+
+    // Economy + Battledome stats
+    (async () => {
+      try {
+        const didSnap = await db.ref(`users/${u.uid}/discordId`).once('value');
+        const discordId = didSnap.val();
+
+        // Battledome highscore (stored on users node)
+        const bdSnap = await db.ref(`users/${u.uid}/bdHighscore`).once('value');
+        const bdScore = bdSnap.val() || 0;
+        const bdEl = document.getElementById('login-bd-score');
+        if (bdEl) bdEl.textContent = bdScore > 0 ? bdScore.toLocaleString() : '–';
+
+        if (discordId) {
+          const econSnap = await db.ref(`userEconomy/${discordId}`).once('value');
+          const economy = econSnap.val() || {};
+          const pts = economy.points || 0;
+          const econStreak = economy.streaks?.login?.current || 0;
+
+          const ptsEl = document.getElementById('login-pts');
+          const streakEl = document.getElementById('login-econ-streak');
+          if (ptsEl) ptsEl.textContent = pts > 0 ? pts.toLocaleString() : '–';
+          if (streakEl) streakEl.textContent = econStreak > 0 ? econStreak : '–';
+
+          // Rank
+          if (pts > 0) {
+            db.ref('userEconomy').once('value').then(snap => {
+              const rankings = [];
+              snap.forEach(child => {
+                rankings.push({ userId: child.key, points: child.val().points || 0 });
+              });
+              rankings.sort((a, b) => b.points - a.points);
+              const myRank = rankings.findIndex(r => r.userId === discordId) + 1;
+              const rankEl = document.getElementById('login-rank');
+              if (rankEl) rankEl.textContent = myRank > 0 ? '#' + myRank : '#?';
+            }).catch(() => {
+              const rankEl = document.getElementById('login-rank');
+              if (rankEl) rankEl.textContent = '#?';
+            });
+          }
+        }
+      } catch(e) {}
+    })();
     
     badgesCard.style.display = "flex";
     document.querySelector(".kc-title").textContent = "KC Events";
@@ -2703,7 +2899,7 @@ auth.onAuthStateChanged(async (u) => {
     avatarImg.style.display = "none";
     document.querySelector(".kc-title").textContent = "KC Events";
     editProfileBtn.style.display = 'none';
-    document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#fff 65%,#e9ecf4 100%)';
+    document.getElementById('profileCard').style.background = 'linear-gradient(135deg,#0f172a 0%,#1e2a45 100%)';
     if(profileBanner) {
       profileBanner.style.backgroundImage = 'none';
     }
