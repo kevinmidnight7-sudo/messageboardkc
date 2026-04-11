@@ -4014,8 +4014,9 @@
         function initFriendActivityListeners() {
             _friendActivityRefs.forEach(r => r.off());
             _friendActivityRefs = [];
-            // Also (re-)initialise game invite listener
+            // Also (re-)initialise game invite + game-ready listeners
             initGameInviteListener();
+            initGameNotifyListener();
             if (!currentUser || !friendsList.length) return;
             // Limit to first 3 friends to cap listener count
             friendsList.slice(0, 3).forEach(friend => {
@@ -9676,16 +9677,18 @@
         // ============================================================
         //  2-PLAYER FRIEND GAMES  (RPS · Coin Flip · Number Duel)
         //  Firebase paths:
-        //    kcnow_invites/{toUid}/{inviteId}  — pending invite
-        //    kcnow_games/{gameId}              — live game state
+        //    users/{toUid}/kcnowInvites/{inviteId}           — pending invite
+        //    users/{challengerUid}/kcnowGames/{gameId}       — live game state
         // ============================================================
         let _gameInviteRef = null;
+        let _gameNotifyRef = null;
+        let _currentGameOwnerUid = null; // uid whose kcnowGames path holds the active game
 
         // ── Start listening for incoming game invites ────────────────
         function initGameInviteListener() {
             if (!currentUser) return;
             if (_gameInviteRef) _gameInviteRef.off();
-            _gameInviteRef = db.ref(`kcnow_invites/${currentUser.uid}`);
+            _gameInviteRef = db.ref(`users/${currentUser.uid}/kcnowInvites`);
             _gameInviteRef.on('child_added', snap => {
                 const inv = snap.val();
                 if (!inv || inv.status !== 'pending') return;
@@ -9708,6 +9711,37 @@
                     actionLabel2: 'Decline',
                     actionFn2: `declineGameChallenge('${inviteId}')`,
                     timestamp: inv.sentAt || Date.now(),
+                });
+            });
+        }
+
+        // ── Listen for games created under current user (challenger side) ──
+        function initGameNotifyListener() {
+            if (!currentUser) return;
+            if (_gameNotifyRef) _gameNotifyRef.off();
+            _gameNotifyRef = db.ref(`users/${currentUser.uid}/kcnowGames`);
+            _gameNotifyRef.on('child_added', snap => {
+                const game = snap.val();
+                if (!game || game.status === 'done') return;
+                // Only notify the challenger (player1) — accepter already opened modal directly
+                if (game.player1 !== currentUser.uid) return;
+                const gameId = snap.key;
+                const opponentName = game.player2Name || 'Opponent';
+                const opponentUid = game.player2;
+                const gameLabels = { rps: 'Rock Paper Scissors', coinflip: 'Coin Flip', numberduel: 'Number Duel' };
+                const gameIcons = { rps: 'fa-hand-back-fist', coinflip: 'fa-coins', numberduel: 'fa-dice' };
+                addFeedItem({
+                    id: `gameready_${gameId}`,
+                    type: 'game_ready',
+                    title: 'Challenge Accepted!',
+                    user: opponentName,
+                    uid: opponentUid,
+                    detail: `${opponentName} accepted your challenge! Play ${gameLabels[game.gameType] || game.gameType} now.`,
+                    color: 'text-green-400',
+                    icon: gameIcons[game.gameType] || 'fa-gamepad',
+                    actionLabel: 'Play Now',
+                    actionFn: `openGameModal('${gameId}','${game.gameType}','${opponentUid}','${escapeHtml(opponentName)}','${currentUser.uid}')`,
+                    timestamp: game.createdAt || Date.now(),
                 });
             });
         }
@@ -9809,41 +9843,50 @@
                 status: 'pending',
                 sentAt: firebase.database.ServerValue.TIMESTAMP,
             };
-            db.ref(`kcnow_invites/${friendUid}`).push(invite).then(() => {
+            db.ref(`users/${friendUid}/kcnowInvites`).push(invite).then(() => {
                 closeModal();
                 showToast(`Challenge sent to ${friendName}!`, 'success');
-            }).catch(() => showToast('Failed to send challenge', 'error'));
+            }).catch(err => {
+                console.error('sendGameChallenge error:', err);
+                showToast('Failed to send challenge', 'error');
+            });
         }
 
         function declineGameChallenge(inviteId) {
             if (!currentUser) return;
-            db.ref(`kcnow_invites/${currentUser.uid}/${inviteId}`).remove();
+            db.ref(`users/${currentUser.uid}/kcnowInvites/${inviteId}`).remove();
             showToast('Challenge declined', 'info', 2000);
         }
 
         function acceptGameChallenge(inviteId, gameType, challengerUid, challengerName) {
             if (!currentUser) return;
             // Mark invite consumed
-            db.ref(`kcnow_invites/${currentUser.uid}/${inviteId}`).update({ status: 'accepted' });
-            // Create game record
+            db.ref(`users/${currentUser.uid}/kcnowInvites/${inviteId}`).update({ status: 'accepted' });
+            // Store game under challenger's path so both players can reference it
             const gameData = {
                 gameType,
                 player1: challengerUid,
                 player1Name: challengerName,
                 player2: currentUser.uid,
                 player2Name: currentUserData?.displayName || currentUser.displayName || 'Player',
-                status: 'waiting',  // → 'playing' once both have made a move
+                status: 'waiting',
                 createdAt: firebase.database.ServerValue.TIMESTAMP,
             };
-            const gameRef = db.ref('kcnow_games').push();
+            const gameRef = db.ref(`users/${challengerUid}/kcnowGames`).push();
             gameRef.set(gameData).then(() => {
                 closeModal();
-                openGameModal(gameRef.key, gameType, challengerUid, challengerName);
-            }).catch(() => showToast('Failed to start game', 'error'));
+                // Accepter opens game; challenger is notified via initGameNotifyListener
+                openGameModal(gameRef.key, gameType, challengerUid, challengerName, challengerUid);
+            }).catch(err => {
+                console.error('acceptGameChallenge error:', err);
+                showToast('Failed to start game', 'error');
+            });
         }
 
         // ── Open the correct game UI ─────────────────────────────────
-        function openGameModal(gameId, gameType, opponentUid, opponentName) {
+        // gameOwnerUid: whose users/{uid}/kcnowGames path holds this game (= challenger/player1)
+        function openGameModal(gameId, gameType, opponentUid, opponentName, gameOwnerUid) {
+            _currentGameOwnerUid = gameOwnerUid || opponentUid; // fallback: opponent is challenger
             if (gameType === 'rps') openRPSGame(gameId, opponentUid, opponentName);
             else if (gameType === 'coinflip') openCoinFlipGame(gameId, opponentUid, opponentName);
             else if (gameType === 'numberduel') openNumberDuelGame(gameId, opponentUid, opponentName);
@@ -9877,14 +9920,14 @@
             const statusEl = document.getElementById('rps-status');
             if (statusEl) statusEl.textContent = `You chose ${choice}. Waiting for opponent...`;
             // Write my move
-            db.ref(`kcnow_games/${gameId}`).once('value').then(snap => {
+            db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).once('value').then(snap => {
                 const g = snap.val();
                 if (!g) return;
                 const myKey = g.player1 === myUid ? 'move1' : 'move2';
                 const oppKey = g.player1 === myUid ? 'move2' : 'move1';
-                db.ref(`kcnow_games/${gameId}`).update({ [myKey]: choice, status: 'playing' }).then(() => {
+                db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).update({ [myKey]: choice, status: 'playing' }).then(() => {
                     // Listen for opponent move
-                    const ref = db.ref(`kcnow_games/${gameId}`);
+                    const ref = db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`);
                     ref.on('value', s => {
                         const gs = s.val();
                         if (!gs || !gs[oppKey]) return;
@@ -9928,22 +9971,22 @@
         function playCoinFlip(gameId, choice) {
             if (!currentUser) return;
             const myUid = currentUser.uid;
-            db.ref(`kcnow_games/${gameId}`).once('value').then(snap => {
+            db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).once('value').then(snap => {
                 const g = snap.val();
                 if (!g) return;
                 const myKey = g.player1 === myUid ? 'move1' : 'move2';
                 const oppKey = g.player1 === myUid ? 'move2' : 'move1';
-                db.ref(`kcnow_games/${gameId}`).update({ [myKey]: choice, status: 'playing' }).then(() => {
+                db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).update({ [myKey]: choice, status: 'playing' }).then(() => {
                     // If I'm player2, resolve immediately (coin flip = random, not skill-based)
                     if (g.player2 === myUid) {
                         const flip = Math.random() < 0.5 ? 'heads' : 'tails';
                         const p1choice = g.move1 || choice; // challenger's choice
                         const p2choice = choice;
                         const winnerId = p1choice === flip ? g.player1 : (p2choice === flip ? g.player2 : null);
-                        db.ref(`kcnow_games/${gameId}`).update({ flip, winner: winnerId || 'draw', status: 'done' });
+                        db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).update({ flip, winner: winnerId || 'draw', status: 'done' });
                     }
                     // Listen for result
-                    const ref = db.ref(`kcnow_games/${gameId}`);
+                    const ref = db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`);
                     ref.on('value', s => {
                         const gs = s.val();
                         if (!gs || gs.status !== 'done') return;
@@ -9984,12 +10027,12 @@
         function playNumberDuel(gameId, number) {
             if (!currentUser) return;
             const myUid = currentUser.uid;
-            db.ref(`kcnow_games/${gameId}`).once('value').then(snap => {
+            db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).once('value').then(snap => {
                 const g = snap.val();
                 if (!g) return;
                 const myKey = g.player1 === myUid ? 'move1' : 'move2';
                 const oppKey = g.player1 === myUid ? 'move2' : 'move1';
-                db.ref(`kcnow_games/${gameId}`).update({ [myKey]: number, status: 'playing' }).then(() => {
+                db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).update({ [myKey]: number, status: 'playing' }).then(() => {
                     // If I'm player2, resolve with the secret number
                     if (g.player2 === myUid) {
                         const secret = Math.ceil(Math.random() * 10);
@@ -9998,9 +10041,9 @@
                         const d1 = Math.abs(p1num - secret);
                         const d2 = Math.abs(p2num - secret);
                         const winner = d1 < d2 ? g.player1 : (d2 < d1 ? g.player2 : 'draw');
-                        db.ref(`kcnow_games/${gameId}`).update({ secret, winner, status: 'done' });
+                        db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`).update({ secret, winner, status: 'done' });
                     }
-                    const ref = db.ref(`kcnow_games/${gameId}`);
+                    const ref = db.ref(`users/${_currentGameOwnerUid}/kcnowGames/${gameId}`);
                     ref.on('value', s => {
                         const gs = s.val();
                         if (!gs || gs.status !== 'done') return;

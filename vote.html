@@ -357,9 +357,9 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     }
     .leaderboard li.diamond-member-entry .list-item-content {
-        background: var(--custom-gradient-bg);
+        background: rgba(255,255,255,0.06);
         box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        border: none;
+        border: 1px solid rgba(255,255,255,0.12);
     }
     .leaderboard li.diamond-member-entry .background-banner {
         position: absolute;
@@ -1430,6 +1430,22 @@ button:disabled {
 
     const DEFAULT_AVATAR_URL = 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
 
+    // Returns true if the gradient's average colour is light (use dark text), false = use white text
+    function isGradientLight(gradient) {
+      const hexes = (gradient.match(/#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})\b/g) || []).map(h => {
+        h = h.slice(1);
+        if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+        return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+      });
+      const rgbs = (gradient.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g) || []).map(m => {
+        const p = m.match(/\d+/g); return [+p[0], +p[1], +p[2]];
+      });
+      const all = [...hexes, ...rgbs];
+      if (!all.length) return false;
+      const avg = all.reduce((s, [r,g,b]) => s + (0.299*r + 0.587*g + 0.114*b)/255, 0) / all.length;
+      return avg > 0.5;
+    }
+
     function renderList(id, entries){
       const ul=document.getElementById(id);
       ul.innerHTML='';
@@ -1484,16 +1500,25 @@ button:disabled {
 
         li.appendChild(listItemContent);
 
-        if (isDiamond) {  
+        if (isDiamond) {
             li.classList.add('diamond-member-entry');
-            if (customGradient) listItemContent.style.setProperty('--custom-gradient-bg', customGradient);
+            if (customGradient) {
+                // Show gradient as a pill around the name, not as the full item background
+                n.style.background = customGradient;
+                n.style.padding = '2px 10px';
+                n.style.borderRadius = '20px';
+                const pillText = isGradientLight(customGradient) ? '#111827' : '#ffffff';
+                n.style.color = pillText;
+                n.style.webkitTextFillColor = pillText;
+            } else if (customNameColor) {
+                n.style.color = customNameColor;
+            }
             if (customBanner) {
                 const bannerDiv = document.createElement('div');
                 bannerDiv.className = 'background-banner';
                 bannerDiv.style.backgroundImage = `url('${customBanner}')`;
                 listItemContent.appendChild(bannerDiv);
             }
-            if (customNameColor) n.style.color = customNameColor;
         } else {
             if(i===0) n.classList.add('first-place');
             else if(i===1) n.classList.add('second-place');
@@ -1605,22 +1630,22 @@ button:disabled {
         }
 
         let backgroundBannerHtml = '';
-        let gradientAreaHtml = '';
         let nameStyle = '';
 
-        if (isDiamond) {  
+        if (isDiamond) {
             if (customBanner) {
                 backgroundBannerHtml = `<div class="background-banner" style="background-image: url('${customBanner}');"></div>`;
             }
             if (customGradient) {
-                gradientAreaHtml = `<div class="gradient-area" style="background: ${customGradient};"></div>`;
+                const pillText = isGradientLight(customGradient) ? '#111827' : '#ffffff';
+                nameStyle = `background: ${customGradient}; padding: 3px 12px; border-radius: 20px; color: ${pillText}; display: inline-block;`;
+            } else if (customNameColor) {
+                nameStyle = `color: ${customNameColor};`;
             }
-            nameStyle = customNameColor ? `color: ${customNameColor};` : '';
-            
+
             return `
               <div class="tile-item diamond-member-entry">
                 ${backgroundBannerHtml}
-                ${gradientAreaHtml}
                 <div class="content-wrapper">
                     ${avatarHtml}
                     <div class="name" style="${nameStyle}">${name}</div>
@@ -1662,13 +1687,13 @@ button:disabled {
         let cardBgStyle = `background: rgba(255, 255, 255, 0.18);`; // Default glassmorphism background for the whole card
 
         let gradientStyle = '';
+        let usernameStyle = 'color: #fff;';
         if (isDiamond && profileCustomization.gradient) {
-            gradientStyle = `background: ${profileCustomization.gradient};`;
-        }
-
-        let usernameColor = '#fff';
-        if (isDiamond && profileCustomization.nameColor) {
-            usernameColor = profileCustomization.nameColor;
+            const grad = profileCustomization.gradient;
+            const pillText = isGradientLight(grad) ? '#111827' : '#ffffff';
+            usernameStyle = `background: ${grad}; padding: 4px 18px; border-radius: 24px; display: inline-block; color: ${pillText};`;
+        } else if (isDiamond && profileCustomization.nameColor) {
+            usernameStyle = `color: ${profileCustomization.nameColor};`;
         }
 
         let offenseRank = 'N/A';
@@ -1726,7 +1751,7 @@ button:disabled {
   <div class="voted-profile-gradient-area" style="${gradientStyle}">
     <img src="${avatarSrc}" alt="Your Avatar" class="voted-profile-avatar"/>
     <div class="voted-profile-content-wrapper">
-      <div class="voted-profile-username" style="color: ${usernameColor};">${username}</div>
+      <div class="voted-profile-username" style="${usernameStyle}">${username}</div>
       <div class="voted-profile-stats">
         <div class="glass-stat-block"> <!-- Applied glass-stat-block -->
             <span class="stat-title">Offence Rank</span>
