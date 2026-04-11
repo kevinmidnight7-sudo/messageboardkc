@@ -1638,7 +1638,7 @@ button:disabled {
             }
             if (customGradient) {
                 const pillText = isGradientLight(customGradient) ? '#111827' : '#ffffff';
-                nameStyle = `background: ${customGradient}; padding: 3px 12px; border-radius: 20px; color: ${pillText}; display: inline-block;`;
+                nameStyle = `background: ${customGradient}; padding: 3px 12px; border-radius: 20px; color: ${pillText}; -webkit-text-fill-color: ${pillText};`;
             } else if (customNameColor) {
                 nameStyle = `color: ${customNameColor};`;
             }
@@ -1648,7 +1648,7 @@ button:disabled {
                 ${backgroundBannerHtml}
                 <div class="content-wrapper">
                     ${avatarHtml}
-                    <div class="name" style="${nameStyle}">${name}</div>
+                    <div class="name"><span style="${nameStyle}">${name}</span></div>
                     <div class="count">${count}</div>
                 </div>
               </div>
@@ -1691,7 +1691,7 @@ button:disabled {
         if (isDiamond && profileCustomization.gradient) {
             const grad = profileCustomization.gradient;
             const pillText = isGradientLight(grad) ? '#111827' : '#ffffff';
-            usernameStyle = `background: ${grad}; padding: 4px 18px; border-radius: 24px; display: inline-block; color: ${pillText};`;
+            usernameStyle = `background: ${grad}; padding: 4px 18px; border-radius: 24px; color: ${pillText}; -webkit-text-fill-color: ${pillText};`;
         } else if (isDiamond && profileCustomization.nameColor) {
             usernameStyle = `color: ${profileCustomization.nameColor};`;
         }
@@ -1751,7 +1751,7 @@ button:disabled {
   <div class="voted-profile-gradient-area" style="${gradientStyle}">
     <img src="${avatarSrc}" alt="Your Avatar" class="voted-profile-avatar"/>
     <div class="voted-profile-content-wrapper">
-      <div class="voted-profile-username" style="${usernameStyle}">${username}</div>
+      <div class="voted-profile-username"><span style="${usernameStyle}">${username}</span></div>
       <div class="voted-profile-stats">
         <div class="glass-stat-block"> <!-- Applied glass-stat-block -->
             <span class="stat-title">Offence Rank</span>
