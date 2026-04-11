@@ -1702,13 +1702,21 @@ html, body { color: #e2e8f0; }
 .badges-header { color: #fbbf24; }
 .badges-sub { color: rgba(255,255,255,0.4); }
 .badge-item {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.09);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  background: rgba(255,255,255,0.10) !important;
+  backdrop-filter: blur(18px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.6) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
 }
 .badge-item .badge-label { color: #e2e8f0; }
 .badge-item .badge-mult { background: rgba(255,255,255,0.15) !important; color: #fff !important; border-color: rgba(255,255,255,0.2) !important; }
-.badge-item.locked { background: rgba(255,255,255,0.03); }
+.badge-item.locked { background: rgba(255,255,255,0.05) !important; border: 1px solid rgba(255,255,255,0.10) !important; }
+#badgesCard {
+  background: rgba(255,255,255,0.08) !important;
+  backdrop-filter: blur(24px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+}
 .kc-alert { background: rgba(12,16,32,0.97); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
 .close-btn { color: #94a3b8; background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.08); }
 .close-btn:hover { background: #ef4444; color: #fff; }
@@ -1762,14 +1770,16 @@ html, body { color: #e2e8f0; }
   margin: 12px 0 10px;
 }
 .pstat-pill {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.20);
   border-radius: 14px;
   padding: 10px 6px;
   text-align: center;
   transition: background 0.2s;
 }
-.pstat-pill:hover { background: rgba(255,255,255,0.09); }
+.pstat-pill:hover { background: rgba(255,255,255,0.18); }
 .pstat-label {
   font-size: 0.55rem;
   font-weight: 700;
@@ -1813,8 +1823,11 @@ html, body { color: #e2e8f0; }
 }
 @keyframes live-pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
   </style>
+  <link rel="stylesheet" href="kc-bg.css"/>
+  <script src="kc-bg.js" defer></script>
 </head>
 <body>
+<div id="bg-canvas"></div>
   <div id="main-wrapper">
     <img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-logo" alt="KC Events Logo"/>
     <div class="kc-title">KC Events</div>
