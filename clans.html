@@ -20,9 +20,7 @@
   <style>
     body {
       font-family: 'Poppins', sans-serif;
-      background: radial-gradient(circle at 30% 40%, rgba(59,130,246,0.10) 0%, transparent 40%),
-                  radial-gradient(circle at 70% 70%, rgba(45,212,191,0.07) 0%, transparent 40%),
-                  radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
+      background: transparent;
       color: #f8fafc;
     }
     .glass-bg {
@@ -236,8 +234,11 @@
 .rank-item.dragging { background: var(--theme-accent) !important; }
 .liquid-blue { --liquid-color: rgba(var(--theme-accent-rgb),0.30) !important; }
   </style>
+  <link rel="stylesheet" href="kc-bg.css"/>
+  <script src="kc-bg.js" defer></script>
 </head>
 <body class="min-h-screen p-4 md:p-8">
+<div id="bg-canvas"></div>
 
 <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
     <!-- Left Column: User Profile or Login -->

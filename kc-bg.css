@@ -1,0 +1,394 @@
+/* ===================================================================
+   kc-bg.css — Shared KC NOW animated background system
+   Include in every page: <link rel="stylesheet" href="kc-bg.css">
+   Then add <div id="bg-canvas"></div> as the first child of <body>.
+   =================================================================== */
+
+/* Dark base — prevents white flash before JS initialises */
+html {
+    background: radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
+    min-height: 100vh;
+}
+/* Body must be transparent so the fixed #bg-canvas shows through */
+body {
+    background: transparent !important;
+    background-image: none !important;
+    color: #f8fafc;
+}
+
+/* ── Fixed background container ── */
+#bg-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    overflow: hidden;
+    pointer-events: none;
+    perspective: 1200px;
+    /* Solid dark fallback before JS paints the gradient layers */
+    background: radial-gradient(circle at 50% 50%, #1e293b 0%, #080c14 100%);
+}
+
+/* ── 3-D parallax scene ── */
+.kc-bg-scene {
+    --mx: 0;
+    --my: 0;
+    --drift: 0;
+    position: absolute;
+    inset: -8%;
+    transform-style: preserve-3d;
+    filter: saturate(1.05);
+}
+
+/* ── Shared layer styles ── */
+.kc-bg-layer {
+    position: absolute;
+    inset: 0;
+    will-change: transform, opacity, filter;
+    transition: background 0.35s ease, opacity 0.35s ease;
+}
+
+/* Far / mid / near give 3D depth via translate3d; glow uses screen blend */
+.kc-bg-far {
+    transform: translate3d(calc(var(--mx) * -18px), calc(var(--my) * -18px), -120px) scale(1.15);
+    filter: blur(60px);
+}
+.kc-bg-mid {
+    transform: translate3d(calc(var(--mx) * -36px), calc(var(--my) * -36px), -40px) scale(1.08);
+    filter: blur(36px);
+}
+.kc-bg-near {
+    transform: translate3d(calc(var(--mx) * -58px), calc(var(--my) * -58px), 40px) scale(1.04);
+    filter: blur(24px);
+    opacity: 0.9;
+}
+.kc-bg-glow {
+    transform: translate3d(calc(var(--mx) * -26px), calc(var(--my) * -26px), 10px) scale(1.12);
+    mix-blend-mode: screen;
+    filter: blur(80px);
+    opacity: 0.6;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Per-preset gradient backgrounds
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Neon Nebula (default) ── */
+.kc-bg-scene.default .kc-bg-far {
+    background: radial-gradient(circle at 20% 30%, rgba(59,130,246,0.20), transparent 40%),
+                radial-gradient(circle at 75% 65%, rgba(45,212,191,0.14), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(15,23,42,0.85), rgba(8,12,20,1) 70%);
+}
+
+/* ── Northern Lights ── */
+.kc-bg-scene.aurora .kc-bg-far {
+    background: radial-gradient(circle at 50% 50%, rgba(6,20,30,0.98), rgba(2,8,18,1) 70%),
+                linear-gradient(180deg, rgba(45,212,191,0.08) 0%, transparent 40%);
+}
+.kc-bg-scene.aurora .kc-bg-mid {
+    background: linear-gradient(180deg, rgba(45,212,191,0.22) 0%, rgba(56,189,248,0.18) 20%, rgba(99,102,241,0.10) 45%, transparent 65%),
+                radial-gradient(circle at 30% 25%, rgba(45,212,191,0.18), transparent 40%),
+                radial-gradient(circle at 70% 35%, rgba(56,189,248,0.14), transparent 35%);
+    animation: auroraWave 8s ease-in-out infinite alternate;
+}
+@keyframes auroraWave {
+    0%   { filter: hue-rotate(0deg)   brightness(1);    }
+    50%  { filter: hue-rotate(15deg)  brightness(1.12); }
+    100% { filter: hue-rotate(-10deg) brightness(1.05); }
+}
+.kc-bg-scene.aurora .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 20%, rgba(45,212,191,0.18), rgba(56,189,248,0.10) 40%, transparent 65%);
+    animation: goldPulse 5s ease-in-out infinite alternate;
+}
+
+/* ── Solar Flare ── */
+.kc-bg-scene.sunrise .kc-bg-far {
+    background: radial-gradient(circle at 50% 10%, rgba(251,191,36,0.30), transparent 45%),
+                radial-gradient(circle at 20% 80%, rgba(249,115,22,0.20), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(30,14,4,0.96), rgba(14,5,0,1) 70%);
+}
+.kc-bg-scene.sunrise .kc-bg-mid {
+    background: radial-gradient(circle at 50% 20%, rgba(253,186,116,0.28), transparent 32%),
+                radial-gradient(circle at 80% 70%, rgba(251,113,133,0.18), transparent 35%),
+                radial-gradient(circle at 20% 60%, rgba(249,115,22,0.16), transparent 38%);
+}
+.kc-bg-scene.sunrise .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 5%, rgba(251,191,36,0.22), transparent 50%);
+    animation: lavaGlow 4s ease-in-out infinite alternate;
+}
+
+/* ── Abyssal Deep ── */
+.kc-bg-scene.deepsea .kc-bg-far {
+    background: radial-gradient(circle at 30% 70%, rgba(6,182,212,0.18), transparent 45%),
+                radial-gradient(circle at 70% 30%, rgba(8,145,178,0.12), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(0,8,20,0.98), rgba(0,4,14,1) 70%);
+}
+.kc-bg-scene.deepsea .kc-bg-mid {
+    background: radial-gradient(circle at 25% 50%, rgba(6,182,212,0.16), transparent 30%),
+                radial-gradient(circle at 70% 70%, rgba(56,189,248,0.10), transparent 28%),
+                radial-gradient(circle at 50% 20%, rgba(8,145,178,0.08), transparent 35%);
+}
+.kc-bg-scene.deepsea .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 90%, rgba(6,182,212,0.12), transparent 50%);
+}
+
+/* ── Viper Pit ── */
+.kc-bg-scene.snake .kc-bg-far {
+    background: radial-gradient(circle at 20% 70%, rgba(34,197,94,0.22), transparent 45%),
+                radial-gradient(circle at 80% 20%, rgba(22,163,74,0.16), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(5,46,22,0.95), rgba(2,4,12,1) 70%);
+}
+.kc-bg-scene.snake .kc-bg-mid {
+    background: radial-gradient(circle at 35% 45%, rgba(74,222,128,0.14), transparent 30%),
+                radial-gradient(circle at 72% 68%, rgba(21,128,61,0.10), transparent 28%),
+                radial-gradient(circle at 15% 25%, rgba(5,150,105,0.08), transparent 34%);
+}
+.kc-bg-scene.snake .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 60%, rgba(74,222,128,0.10), transparent 55%);
+}
+
+/* ── Crimson Eclipse ── */
+.kc-bg-scene.bloodmoon .kc-bg-far {
+    background: radial-gradient(circle at 50% 20%, rgba(239,68,68,0.25), transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(185,28,28,0.18), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(30,8,8,0.95), rgba(10,2,2,1) 70%);
+}
+.kc-bg-scene.bloodmoon .kc-bg-mid {
+    background: radial-gradient(circle at 30% 50%, rgba(220,38,38,0.16), transparent 32%),
+                radial-gradient(circle at 70% 35%, rgba(239,68,68,0.12), transparent 30%);
+}
+.kc-bg-scene.bloodmoon .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 15%, rgba(239,68,68,0.18), transparent 50%);
+}
+
+/* ── Neon Circuit ── */
+.kc-bg-scene.cyber .kc-bg-far {
+    background: radial-gradient(circle at 20% 80%, rgba(34,211,238,0.26), transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(168,85,247,0.22), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(4,4,20,0.97), rgba(2,2,14,1) 70%);
+}
+.kc-bg-scene.cyber .kc-bg-mid {
+    background: radial-gradient(circle at 15% 45%, rgba(34,211,238,0.22), transparent 28%),
+                radial-gradient(circle at 85% 55%, rgba(232,121,249,0.18), transparent 26%),
+                radial-gradient(circle at 50% 85%, rgba(6,182,212,0.12), transparent 32%);
+    animation: cyberFlicker 0.1s step-end infinite;
+}
+@keyframes cyberFlicker {
+    0%, 92% { opacity: 1;    }
+    93%      { opacity: 0.88; }
+    94%      { opacity: 1;    }
+    97%      { opacity: 0.92; }
+    100%     { opacity: 1;    }
+}
+.kc-bg-scene.cyber .kc-bg-glow {
+    background: radial-gradient(ellipse at 25% 55%, rgba(34,211,238,0.16), transparent 42%),
+                radial-gradient(ellipse at 75% 45%, rgba(168,85,247,0.14), transparent 42%);
+    animation: cyberFlicker 0.15s step-end infinite;
+}
+
+/* ── Gilded Throne ── */
+.kc-bg-scene.golden .kc-bg-far {
+    background: radial-gradient(circle at 30% 40%, rgba(251,191,36,0.18), transparent 40%),
+                radial-gradient(circle at 70% 65%, rgba(245,158,11,0.14), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(20,14,4,0.97), rgba(8,5,0,1) 70%);
+}
+.kc-bg-scene.golden .kc-bg-mid {
+    background: radial-gradient(circle at 25% 55%, rgba(251,191,36,0.16), transparent 32%),
+                radial-gradient(circle at 75% 40%, rgba(217,119,6,0.14), transparent 30%),
+                radial-gradient(circle at 50% 80%, rgba(251,211,84,0.08), transparent 38%);
+}
+.kc-bg-scene.golden .kc-bg-near {
+    background: linear-gradient(120deg, transparent 20%, rgba(251,191,36,0.04) 50%, transparent 80%);
+    animation: goldVeinShimmer 8s ease-in-out infinite alternate;
+}
+.kc-bg-scene.golden .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 40%, rgba(251,191,36,0.15), rgba(245,158,11,0.08) 40%, transparent 70%);
+    animation: goldPulse 4s ease-in-out infinite alternate;
+}
+@keyframes goldVeinShimmer {
+    0%   { background-position: -100% 0; opacity: 0.6; }
+    50%  { opacity: 1; }
+    100% { background-position: 200% 0; opacity: 0.7; }
+}
+@keyframes goldPulse {
+    0%   { opacity: 0.5; transform: scale(1); }
+    100% { opacity: 0.85; transform: scale(1.08); }
+}
+
+/* ── Blossom Rain ── */
+.kc-bg-scene.sakura .kc-bg-far {
+    background: radial-gradient(circle at 30% 30%, rgba(244,114,182,0.20), transparent 40%),
+                radial-gradient(circle at 70% 70%, rgba(251,207,232,0.14), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(22,10,20,0.94), rgba(12,4,14,1) 70%);
+}
+.kc-bg-scene.sakura .kc-bg-mid {
+    background: radial-gradient(circle at 25% 60%, rgba(236,72,153,0.16), transparent 32%),
+                radial-gradient(circle at 70% 35%, rgba(244,114,182,0.14), transparent 30%),
+                radial-gradient(circle at 50% 80%, rgba(251,113,133,0.10), transparent 36%);
+}
+.kc-bg-scene.sakura .kc-bg-glow {
+    background: radial-gradient(ellipse at 40% 30%, rgba(244,114,182,0.15), transparent 50%);
+}
+
+/* ── Magma Core ── */
+.kc-bg-scene.lava .kc-bg-far {
+    background: radial-gradient(circle at 20% 80%, rgba(249,115,22,0.28), transparent 42%),
+                radial-gradient(circle at 75% 30%, rgba(239,68,68,0.20), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(24,8,2,0.96), rgba(10,3,0,1) 70%);
+}
+.kc-bg-scene.lava .kc-bg-mid {
+    background: radial-gradient(circle at 35% 60%, rgba(251,146,60,0.18), transparent 30%),
+                radial-gradient(circle at 65% 40%, rgba(234,88,12,0.16), transparent 28%);
+}
+.kc-bg-scene.lava .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 80%, rgba(249,115,22,0.20), transparent 50%);
+    animation: lavaGlow 3s ease-in-out infinite alternate;
+}
+@keyframes lavaGlow {
+    0%   { opacity: 0.5; }
+    100% { opacity: 0.9; }
+}
+
+/* ── Frozen Tundra ── */
+.kc-bg-scene.arctic .kc-bg-far {
+    background: radial-gradient(circle at 25% 35%, rgba(186,230,253,0.22), transparent 40%),
+                radial-gradient(circle at 70% 65%, rgba(147,197,253,0.16), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(8,14,28,0.95), rgba(2,8,22,1) 70%);
+}
+.kc-bg-scene.arctic .kc-bg-mid {
+    background: radial-gradient(circle at 30% 55%, rgba(224,242,254,0.16), transparent 32%),
+                radial-gradient(circle at 72% 38%, rgba(56,189,248,0.14), transparent 30%),
+                radial-gradient(circle at 50% 75%, rgba(186,230,253,0.10), transparent 36%);
+}
+.kc-bg-scene.arctic .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 20%, rgba(224,242,254,0.18), transparent 50%);
+}
+
+/* ── Crystal Crown ── */
+.kc-bg-scene.amethyst .kc-bg-far {
+    background: radial-gradient(circle at 25% 35%, rgba(167,139,250,0.30), transparent 38%),
+                radial-gradient(circle at 75% 70%, rgba(124,58,237,0.24), transparent 36%),
+                radial-gradient(circle at 50% 50%, rgba(14,6,28,0.97), rgba(6,2,18,1) 70%);
+}
+.kc-bg-scene.amethyst .kc-bg-mid {
+    background: radial-gradient(circle at 35% 45%, rgba(216,180,254,0.22), transparent 30%),
+                radial-gradient(circle at 68% 30%, rgba(139,92,246,0.20), transparent 28%),
+                radial-gradient(circle at 20% 75%, rgba(232,121,249,0.14), transparent 34%);
+}
+.kc-bg-scene.amethyst .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 50%, rgba(167,139,250,0.18), rgba(232,121,249,0.08) 40%, transparent 65%);
+    animation: goldPulse 5s ease-in-out infinite alternate;
+}
+
+/* ── The Matrix ── */
+.kc-bg-scene.matrix .kc-bg-far {
+    background: radial-gradient(circle at 20% 50%, rgba(34,197,94,0.18), transparent 40%),
+                radial-gradient(circle at 80% 40%, rgba(16,185,129,0.12), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(2,10,4,0.97), rgba(0,4,2,1) 70%);
+}
+.kc-bg-scene.matrix .kc-bg-mid {
+    background: radial-gradient(circle at 40% 60%, rgba(74,222,128,0.14), transparent 28%),
+                radial-gradient(circle at 65% 35%, rgba(34,197,94,0.10), transparent 26%);
+}
+.kc-bg-scene.matrix .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 40%, rgba(74,222,128,0.10), transparent 50%);
+}
+
+/* ── Eldritch Void (cosmos) ── */
+.kc-bg-scene.cosmos .kc-bg-far {
+    background: radial-gradient(circle at 25% 65%, rgba(88,28,135,0.30), transparent 44%),
+                radial-gradient(circle at 75% 25%, rgba(6,95,70,0.22), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(6,2,18,0.98), rgba(2,0,6,1) 70%);
+}
+.kc-bg-scene.cosmos .kc-bg-mid {
+    background: radial-gradient(circle at 20% 40%, rgba(126,34,206,0.22), transparent 32%),
+                radial-gradient(circle at 78% 65%, rgba(6,95,70,0.18), transparent 30%),
+                radial-gradient(circle at 50% 85%, rgba(139,92,246,0.14), transparent 36%);
+    animation: cosmosWritheGrad 7s ease-in-out infinite alternate;
+}
+@keyframes cosmosWritheGrad {
+    0%   { filter: hue-rotate(0deg)  saturate(1);   }
+    100% { filter: hue-rotate(20deg) saturate(1.2); }
+}
+.kc-bg-scene.cosmos .kc-bg-glow {
+    background: radial-gradient(ellipse at 35% 65%, rgba(126,34,206,0.16), transparent 50%),
+                radial-gradient(ellipse at 70% 25%, rgba(16,185,129,0.12), transparent 45%);
+    animation: cosmosWritheGrad 8s ease-in-out infinite alternate-reverse;
+}
+
+/* ── Event Horizon (void) ── */
+.kc-bg-scene.void .kc-bg-far {
+    background: radial-gradient(circle at 50% 50%, rgba(2,0,10,1) 0%, rgba(10,6,30,0.98) 30%, rgba(4,4,18,1) 70%);
+}
+.kc-bg-scene.void .kc-bg-mid {
+    background: radial-gradient(circle at 50% 50%, transparent 15%, rgba(99,102,241,0.18) 25%, rgba(129,140,248,0.12) 35%, transparent 55%),
+                radial-gradient(circle at 50% 50%, transparent 8%, rgba(192,132,252,0.06) 18%, transparent 30%);
+    animation: voidRingPulse 5s ease-in-out infinite alternate;
+}
+@keyframes voidRingPulse {
+    0%   { opacity: 0.6; transform: scale(0.92); }
+    100% { opacity: 1;   transform: scale(1.08); }
+}
+.kc-bg-scene.void .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.14), rgba(76,29,149,0.06) 40%, transparent 65%);
+    animation: voidRingPulse 4s ease-in-out infinite alternate-reverse;
+}
+
+/* ── Shattered Glass (prism) ── */
+.kc-bg-scene.prism .kc-bg-far {
+    background: radial-gradient(circle at 15% 25%, rgba(168,85,247,0.28), transparent 38%),
+                radial-gradient(circle at 80% 55%, rgba(244,114,182,0.24), transparent 36%),
+                radial-gradient(circle at 50% 85%, rgba(34,211,238,0.16), transparent 32%),
+                radial-gradient(circle at 50% 50%, rgba(12,4,24,0.94), rgba(4,2,14,1) 70%);
+}
+.kc-bg-scene.prism .kc-bg-mid {
+    background: radial-gradient(circle at 40% 35%, rgba(251,191,36,0.16), transparent 28%),
+                radial-gradient(circle at 65% 60%, rgba(192,132,252,0.20), transparent 26%),
+                radial-gradient(circle at 25% 70%, rgba(34,211,238,0.12), transparent 30%);
+    animation: prismShift 6s ease-in-out infinite alternate;
+}
+@keyframes prismShift {
+    0%   { filter: hue-rotate(0deg);  }
+    100% { filter: hue-rotate(30deg); }
+}
+.kc-bg-scene.prism .kc-bg-glow {
+    background: radial-gradient(ellipse at 40% 60%, rgba(244,114,182,0.16), transparent 48%),
+                radial-gradient(ellipse at 65% 30%, rgba(168,85,247,0.12), transparent 42%);
+    animation: prismShift 8s ease-in-out infinite alternate-reverse;
+}
+
+/* ── Deep Space (starlight) ── */
+.kc-bg-scene.starlight .kc-bg-far {
+    background: radial-gradient(circle at 25% 35%, rgba(129,140,248,0.20), transparent 42%),
+                radial-gradient(circle at 72% 62%, rgba(196,181,253,0.14), transparent 38%),
+                radial-gradient(circle at 50% 50%, rgba(10,8,30,0.92), rgba(4,4,22,1) 70%);
+}
+.kc-bg-scene.starlight .kc-bg-mid {
+    background: radial-gradient(circle at 35% 50%, rgba(165,180,252,0.14), transparent 30%),
+                radial-gradient(circle at 68% 40%, rgba(224,231,255,0.07), transparent 26%);
+}
+.kc-bg-scene.starlight .kc-bg-glow {
+    background: radial-gradient(ellipse at 50% 50%, rgba(129,140,248,0.12), transparent 55%);
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   Graphics Quality Modes
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Low graphics: kill all animations and hide the shapes canvas */
+.graphics-low .kc-bg-layer {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+}
+.graphics-low .kc-bg-scene > * {
+    animation: none !important;
+    transition: none !important;
+}
+.graphics-low #bg-shapes-canvas { display: none !important; }
+
+/* Android/iOS mobile: disable parallax motion (keeps static blur) */
+.android-mobile .kc-bg-layer {
+    animation: none !important;
+    transform: none !important;
+}

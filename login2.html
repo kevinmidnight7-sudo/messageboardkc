@@ -1652,11 +1652,70 @@
     border-bottom: 1.5px solid rgba(255,255,255,0.22);
     box-shadow: inset 0 -4px 12px rgba(0,0,0,0.1);
 }
+/* ── Stats row (Points / Streak / Battledome) ── */
+.profile-stats {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0 8px;
+  justify-content: center;
+}
+.profile-stat-box {
+  flex: 1;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 16px;
+  padding: 10px 6px 8px;
+  text-align: center;
+  min-width: 0;
+}
+.profile-stat-num {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--theme-accent, #3b82f6);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.profile-stat-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-top: 3px;
+}
+/* ── Glassy badge items ── */
+.badge-item {
+  background: rgba(255,255,255,0.10) !important;
+  backdrop-filter: blur(18px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.6) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+}
+.badge-item.locked {
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+}
+.badge-item:not(.locked):hover {
+  background: rgba(255,255,255,0.18) !important;
+  box-shadow: 0 8px 32px rgba(var(--theme-accent-rgb,59,130,246),0.4) !important;
+}
+/* Badges outer card: match glassy feel */
+#badgesCard {
+  background: rgba(255,255,255,0.08) !important;
+  backdrop-filter: blur(24px) saturate(1.6) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.6) !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35) !important;
+}
 /* Ensure profile info and version are positioned correctly */
 .profile-info {
     text-align: center;
     margin-top: 10px; /* Adjust margin to prevent overlap with avatar */
-    color: #669;
+    color: rgba(255,255,255,0.45);
     font-size: 0.9rem;
 }
 .join-badge {
@@ -1706,8 +1765,11 @@
 }
 
   </style>
+  <link rel="stylesheet" href="kc-bg.css"/>
+  <script src="kc-bg.js" defer></script>
 </head>
 <body>
+<div id="bg-canvas"></div>
   <div class="back-button-container">
     <a href="https://kevinmidnight7-sudo.github.io/messageboardkc/profiles.html" class="back-button">
       <span class="back-arrow">←</span> Back
@@ -1741,6 +1803,21 @@
           <div class="profile-title">Profile:</div>
           <div class="profile-welcome" id="welcomeUser"></div>
           <div class="profile-counter" id="userCounter"></div>
+          <!-- Stats row -->
+          <div class="profile-stats" id="profileStatsRow">
+            <div class="profile-stat-box">
+              <div class="profile-stat-num" id="statPoints">–</div>
+              <div class="profile-stat-label">Points</div>
+            </div>
+            <div class="profile-stat-box">
+              <div class="profile-stat-num" id="statStreak">–</div>
+              <div class="profile-stat-label">🔥 Streak</div>
+            </div>
+            <div class="profile-stat-box">
+              <div class="profile-stat-num" id="statBattle">–</div>
+              <div class="profile-stat-label">Battledome</div>
+            </div>
+          </div>
           <!-- About Me section -->
           <div id="aboutMeContainer" class="about-me-box">
             <span class="about-me-text" id="aboutMeDisplay">Click to add about me</span>
@@ -2667,7 +2744,29 @@ auth.onAuthStateChanged(u => {
       else { _getAdminData().then(([us]) => { userCounter.textContent = `There are now ${us.numChildren()} users registered!`; }); }
     });
     loadBadges(u.uid, u.emailVerified);
-    
+
+    // ── Load profile stats (streak, battledome, points) ──
+    db.ref(`users/${u.uid}`).once('value').then(snap2 => {
+      const d = snap2.val() || {};
+      const streak = d.loginStreak || 0;
+      const battle = d.bdHighscore || 0;
+      const statS = document.getElementById('statStreak');
+      const statB = document.getElementById('statBattle');
+      if (statS) statS.textContent = streak > 0 ? streak + ' days' : '–';
+      if (statB) statB.textContent = battle > 0 ? battle.toLocaleString() : '–';
+      // Points: resolve discordId then read userEconomy
+      const statP = document.getElementById('statPoints');
+      const discordId = d.discordId;
+      if (discordId && statP) {
+        db.ref(`userEconomy/${discordId}/points`).once('value').then(ps => {
+          const pts = ps.val() || 0;
+          statP.textContent = pts > 0 ? pts.toLocaleString() : '–';
+        }).catch(() => {});
+      } else if (statP) {
+        statP.textContent = '–';
+      }
+    }).catch(() => {});
+
   } else {
     authForms.style.display = "flex";
     profileUI.style.display = "none";
