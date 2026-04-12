@@ -31,6 +31,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     <!-- Profile popup — deferred so it doesn't block app init -->
     <script src="profile-popup.js" defer></script>
+    <!-- KC World game -->
+    <link rel="stylesheet" href="kc-world.css">
 
     <style>
         :root {
@@ -7214,6 +7216,8 @@
                     const areaWins    = gs?.area?.wins || 0;
                     const c4Wins      = gs?.connectfour?.wins || 0;
                     const stockTrades = gs?.stocks?.trades || 0;
+                    const kcwWins     = gs?.kcworld?.wins  || 0;
+                    const kcwGames    = gs?.kcworld?.games || 0;
                     modal.update(`
                         <div class="space-y-5">
                             <div class="text-center gc-hologram p-4 rounded-2xl">
@@ -7223,6 +7227,15 @@
                             </div>
                             <div class="games-3d-stage">
                                 <div class="grid grid-cols-2 gap-3">
+                                    <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer col-span-2"
+                                         style="background:linear-gradient(135deg,rgba(34,197,94,.09) 0%,rgba(59,130,246,.09) 100%);border-color:rgba(34,197,94,.22)"
+                                         onclick="closeModal();setTimeout(()=>KCWorld.openLobby(),200)">
+                                        <span class="gc-emoji"><i class="fa-solid fa-earth-americas text-green-400"></i></span>
+                                        <p class="font-bold text-sm">KC WORLD</p>
+                                        <p class="text-xs text-gray-400 mt-1">${kcwWins}W / ${kcwGames} games</p>
+                                        <p class="text-xs text-gray-500">2–6 players &middot; Territory Conquest</p>
+                                        <div class="gc-badge mt-3 py-2 bg-green-600/30 rounded-xl text-xs font-bold text-green-300">🌍 Play Now</div>
+                                    </div>
                                     <div class="game-card-3d glass p-5 rounded-3xl text-center cursor-pointer" onclick="closeModal();setTimeout(openBlackjackGame,200)">
                                         <span class="gc-emoji"><i class="fa-solid fa-cards text-blue-400"></i></span>
                                         <p class="font-bold text-sm">Blackjack</p>
@@ -10131,5 +10144,6 @@
 
         // ── initGameInviteListener is called from initFriendActivityListeners above ──
     </script>
+    <script src="kc-world.js"></script>
 </body>
 </html>

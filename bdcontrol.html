@@ -662,6 +662,7 @@
               <button onclick="exportData()">📥 Export CSV</button>
               <button onclick="showAddModal()">➕ Add Score</button>
               <button onclick="showBulkDeleteModal()" class="danger">🗑️ Bulk Delete</button>
+              <button onclick="deleteSelectedScores()" class="danger" id="delete-selected-btn" style="display: none;">🗑️ Delete Selected (<span id="selected-count">0</span>)</button>
             </div>
           </div>
         </div>
@@ -706,6 +707,9 @@
           <table id="scores-table">
             <thead>
               <tr>
+                <th style="width: 40px; text-align: center;">
+                  <input type="checkbox" id="select-all-scores" title="Select all on this page" style="width: auto; cursor: pointer;">
+                </th>
                 <th class="sortable" data-sort="name">Player Name</th>
                 <th class="sortable" data-sort="score">Score</th>
                 <th class="sortable" data-sort="region">Region</th>
@@ -716,7 +720,7 @@
             </thead>
             <tbody id="scores-tbody">
               <tr>
-                <td colspan="6" class="loading">
+                <td colspan="7" class="loading">
                   <div class="spinner"></div>
                   Loading data...
                 </td>
@@ -1034,6 +1038,22 @@
     </div>
   </div>
 
+  <!-- Save Confirmation Modal -->
+  <div class="modal" id="save-confirm-modal">
+    <div class="modal-content" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 3em; margin-bottom: 15px;">✅</div>
+      <h2 id="save-confirm-title" style="font-size: 1.3em; font-weight: 700; margin-bottom: 12px; color: var(--success);"></h2>
+      <p id="save-confirm-message" style="color: var(--text-secondary); font-size: 0.95em; margin-bottom: 20px; line-height: 1.6;"></p>
+      <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 12px 20px; margin-bottom: 20px; font-size: 0.9em; color: var(--text-primary); display: flex; justify-content: space-around; gap: 10px;">
+        <div><div style="font-size: 1.4em; font-weight: 700; color: var(--accent);" id="sc-global">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">Global</div></div>
+        <div><div style="font-size: 1.4em; font-weight: 700; color: #ffaa00;" id="sc-east">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">East</div></div>
+        <div><div style="font-size: 1.4em; font-weight: 700; color: #00ff88;" id="sc-eu">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">EU</div></div>
+        <div><div style="font-size: 1.4em; font-weight: 700; color: var(--text-primary);" id="sc-total">-</div><div style="color: var(--text-secondary); font-size: 0.8em;">Total</div></div>
+      </div>
+      <button onclick="closeModal('save-confirm-modal')" style="padding: 10px 32px; background: var(--success); border-color: var(--success); color: var(--bg-primary); font-weight: 700; font-size: 1em;">OK</button>
+    </div>
+  </div>
+
   <!-- Bulk Delete Modal -->
   <div class="modal" id="bulk-delete-modal">
     <div class="modal-content" style="max-width: 600px;">
@@ -1116,6 +1136,17 @@
     let currentPage = 1;
     let pageSize = 50;
     let filteredScoresData = [];
+
+    // Selection — keys are "name||region"
+    let selectedScores = new Set();
+
+    function updateSelectionUI() {
+      const count = selectedScores.size;
+      const btn = document.getElementById('delete-selected-btn');
+      const counter = document.getElementById('selected-count');
+      if (btn) btn.style.display = count > 0 ? 'inline-block' : 'none';
+      if (counter) counter.textContent = count;
+    }
 
     // URL encoding function matching the bot's toRtdbKey
     function toRtdbKey(raw) {
@@ -1553,31 +1584,38 @@
       if (filteredScoresData.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" class="empty-state">
+            <td colspan="7" class="empty-state">
               <div class="empty-state-icon">🔍</div>
               <div>No scores found matching your filters</div>
             </td>
           </tr>
         `;
+        // Uncheck select-all when no rows
+        const selectAll = document.getElementById('select-all-scores');
+        if (selectAll) { selectAll.checked = false; selectAll.indeterminate = false; }
         return;
       }
-      
+
       const html = pageData.map((score, idx) => {
-        const badgeClass = score.region === 'East' ? 'region-east' : 
+        const badgeClass = score.region === 'East' ? 'region-east' :
                           score.region === 'EU' ? 'region-eu' : 'region-global';
-        const lastSeen = score.seenAt 
+        const lastSeen = score.seenAt
           ? new Date(score.seenAt).toLocaleString()
           : 'Unknown';
-        
-        const highlightedName = searchTerm 
+
+        const highlightedName = searchTerm
           ? score.name.replace(new RegExp(searchTerm, 'gi'), match => `<span class="search-highlight">${match}</span>`)
           : score.name;
-        
-        // Use data attributes instead of onclick to avoid escaping issues
+
         const rowId = `score-row-${startIdx + idx}`;
-        
+        const selKey = score.name + '||' + score.region;
+        const isChecked = selectedScores.has(selKey) ? 'checked' : '';
+
         return `
-          <tr id="${rowId}">
+          <tr id="${rowId}" ${selectedScores.has(selKey) ? 'style="background: rgba(0,212,255,0.08);"' : ''}>
+            <td style="text-align: center;">
+              <input type="checkbox" class="score-checkbox" data-name="${score.name}" data-region="${score.region}" ${isChecked} style="width: auto; cursor: pointer;">
+            </td>
             <td>${highlightedName}</td>
             <td><strong>${score.score.toLocaleString()}</strong></td>
             <td><span class="region-badge ${badgeClass}">${score.region}</span></td>
@@ -1592,21 +1630,50 @@
           </tr>
         `;
       }).join('');
-      
+
       tbody.innerHTML = html;
-      
-      // Add event listeners to the buttons
+
+      // Row checkbox listeners
+      tbody.querySelectorAll('.score-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const key = cb.dataset.name + '||' + cb.dataset.region;
+          if (cb.checked) {
+            selectedScores.add(key);
+            cb.closest('tr').style.background = 'rgba(0,212,255,0.08)';
+          } else {
+            selectedScores.delete(key);
+            cb.closest('tr').style.background = '';
+          }
+          updateSelectAllState();
+          updateSelectionUI();
+        });
+      });
+
+      // Edit / Delete button listeners
       tbody.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', () => {
           editScore(btn.dataset.name, btn.dataset.region);
         });
       });
-      
+
       tbody.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', () => {
           deleteScore(btn.dataset.name, btn.dataset.region);
         });
       });
+
+      // Sync select-all checkbox state
+      updateSelectAllState();
+    }
+
+    function updateSelectAllState() {
+      const selectAll = document.getElementById('select-all-scores');
+      if (!selectAll) return;
+      const checkboxes = document.querySelectorAll('.score-checkbox');
+      const total = checkboxes.length;
+      const checked = Array.from(checkboxes).filter(c => c.checked).length;
+      selectAll.checked = total > 0 && checked === total;
+      selectAll.indeterminate = checked > 0 && checked < total;
     }
 
     function updatePaginationUI(totalFiltered, totalPages, startIdx, endIdx) {
@@ -1646,6 +1713,12 @@
     window.goToLastPage = function() {
       const totalPages = Math.ceil(filteredScoresData.length / pageSize);
       currentPage = totalPages;
+      renderScoresTable();
+    };
+
+    window.clearSelection = function() {
+      selectedScores.clear();
+      updateSelectionUI();
       renderScoresTable();
     };
 
@@ -1950,18 +2023,31 @@
       }
       bdConfirm(`Delete score for ${name} (${region})? This cannot be undone.`, async () => {
         try {
-          const encodedKey = toRtdbKey(name);
+          // Use the key exactly as stored in Firebase, not a re-encoded version
+          const scoreEntry = allScoresData.find(s => s.name === name && s.region === region);
+          const encodedKey = scoreEntry?.encodedKey || toRtdbKey(name);
           await remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`));
           if (region !== 'global') {
-            const scoreInRegion = allScoresData.find(s => s.name === name && s.region === region);
+            const globalEntry = allScoresData.find(s => s.name === name && s.region === 'global');
+            const globalKey = globalEntry?.encodedKey || encodedKey;
             const otherScores = allScoresData.filter(s => s.name === name && s.region !== region && s.region !== 'global');
-            if (otherScores.length === 0 || !otherScores.some(s => s.score >= scoreInRegion?.score)) {
-              await remove(ref(database, `config/bdTopScores/global/${encodedKey}`));
+            if (otherScores.length === 0 || !otherScores.some(s => s.score >= scoreEntry?.score)) {
+              await remove(ref(database, `config/bdTopScores/global/${globalKey}`));
             }
           }
+
+          // Verify the deletion actually persisted in Firebase
+          const verifySnap = await get(ref(database, `config/bdTopScores/${region}/${encodedKey}`));
+          if (verifySnap.exists()) {
+            showToast(`⚠️ Delete failed — "${name}" is still in the database. This is likely a permissions issue or a bot is re-writing scores instantly.`, 'error');
+            await loadScoreStats();
+            await loadScoresPage();
+            return;
+          }
+
           await loadScoreStats();
           await loadScoresPage();
-          showToast('Score deleted successfully', 'success');
+          showSaveConfirm('Score Deleted', `${name} (${region}) has been permanently removed from the database.`);
         } catch (error) {
           console.error('Delete error:', error);
           showToast('Error deleting score: ' + error.message, 'error');
@@ -1999,14 +2085,18 @@
       const server = document.getElementById('edit-server').value;
       
       try {
-        const oldEncodedKey = toRtdbKey(originalName);
+        // Use the stored key for the old entry, not a re-encoded version
+        const oldEntry = allScoresData.find(s => s.name === originalName && s.region === originalRegion);
+        const oldEncodedKey = oldEntry?.encodedKey || toRtdbKey(originalName);
         const newEncodedKey = toRtdbKey(newName);
-        
+
         // If name or region changed, delete old entry
         if (originalName !== newName || originalRegion !== region) {
           await remove(ref(database, `config/bdTopScores/${originalRegion}/${oldEncodedKey}`));
           if (originalRegion !== 'global') {
-            await remove(ref(database, `config/bdTopScores/global/${oldEncodedKey}`));
+            const oldGlobalEntry = allScoresData.find(s => s.name === originalName && s.region === 'global');
+            const oldGlobalKey = oldGlobalEntry?.encodedKey || oldEncodedKey;
+            await remove(ref(database, `config/bdTopScores/global/${oldGlobalKey}`));
           }
         }
         
@@ -2029,7 +2119,7 @@
         await loadScoreStats();
         await loadScoresPage();
         closeModal('edit-modal');
-        showToast('Score updated successfully', 'success');
+        showSaveConfirm('Score Updated', `Changes for ${newName} (${region}) have been saved to the database.`);
       } catch (error) {
         console.error('Save error:', error);
         showToast('Error saving score: ' + error.message, 'error');
@@ -2065,7 +2155,7 @@
         await loadScoreStats();
         await loadScoresPage();
         closeModal('add-modal');
-        showToast('Score added successfully', 'success');
+        showSaveConfirm('Score Added', `${name} (${region}) has been saved to the database with a score of ${score.toLocaleString()}.`);
       } catch (error) {
         console.error('Add error:', error);
         showToast('Error adding score: ' + error.message, 'error');
@@ -2106,6 +2196,67 @@
         console.error('Save error:', error);
         showToast('Error saving vote: ' + error.message, 'error');
       }
+    };
+
+    window.deleteSelectedScores = async function() {
+      if (!isAdmin) {
+        showToast('You must be logged in as an admin to delete scores', 'error');
+        return;
+      }
+      if (selectedScores.size === 0) {
+        showToast('No scores selected', 'warning');
+        return;
+      }
+
+      const count = selectedScores.size;
+      bdConfirm(`Permanently delete ${count} selected score${count !== 1 ? 's' : ''}? This cannot be undone.`, async () => {
+        const btn = document.getElementById('delete-selected-btn');
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; }
+
+        try {
+          const deletePromises = [];
+          for (const key of selectedScores) {
+            const [name, region] = key.split('||');
+            // Use the key exactly as stored in Firebase, not a re-encoded version
+            const scoreEntry = allScoresData.find(s => s.name === name && s.region === region);
+            const encodedKey = scoreEntry?.encodedKey || toRtdbKey(name);
+            deletePromises.push(remove(ref(database, `config/bdTopScores/${region}/${encodedKey}`)));
+            // If regional, also remove from global using that entry's stored key
+            if (region !== 'global') {
+              const globalEntry = allScoresData.find(s => s.name === name && s.region === 'global');
+              const globalKey = globalEntry?.encodedKey || encodedKey;
+              deletePromises.push(remove(ref(database, `config/bdTopScores/global/${globalKey}`)));
+            }
+          }
+
+          await Promise.all(deletePromises);
+
+          // Spot-check the first deleted entry to verify it's actually gone
+          const [firstKey] = selectedScores;
+          const [firstName, firstRegion] = firstKey.split('||');
+          const firstEntry = allScoresData.find(s => s.name === firstName && s.region === firstRegion);
+          const firstEncodedKey = firstEntry?.encodedKey || toRtdbKey(firstName);
+          const verifySnap = await get(ref(database, `config/bdTopScores/${firstRegion}/${firstEncodedKey}`));
+          if (verifySnap.exists()) {
+            showToast('⚠️ Delete failed — scores are still in the database. This is likely a permissions issue or a bot is re-writing scores instantly.', 'error');
+            await loadScoreStats();
+            await loadScoresPage();
+            return;
+          }
+
+          selectedScores.clear();
+          updateSelectionUI();
+
+          await loadScoreStats();
+          await loadScoresPage();
+          showSaveConfirm('Scores Deleted', `${count} score${count !== 1 ? 's' : ''} permanently removed from the database.`);
+        } catch (error) {
+          console.error('Delete selected error:', error);
+          showToast('Error deleting scores: ' + error.message, 'error');
+        } finally {
+          if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        }
+      });
     };
 
     window.showBulkDeleteModal = async function() {
@@ -2248,7 +2399,7 @@
         await loadScoresPage();
         
         closeModal('bulk-delete-modal');
-        showToast(`Successfully deleted ${deleteCount} score${deleteCount !== 1 ? 's' : ''}`, 'success');
+        showSaveConfirm('Bulk Delete Complete', `${deleteCount} score${deleteCount !== 1 ? 's' : ''} permanently removed from the database.`);
         
         deleteBtn.disabled = false;
         deleteBtn.textContent = '🗑️ Delete Scores';
@@ -2295,6 +2446,18 @@
       };
     }
 
+    window.showSaveConfirm = function(title, message) {
+      // Populate live counts from the stats already loaded into the DOM
+      document.getElementById('sc-global').textContent = document.getElementById('stat-global').textContent;
+      document.getElementById('sc-east').textContent   = document.getElementById('stat-east').textContent;
+      document.getElementById('sc-eu').textContent     = document.getElementById('stat-eu').textContent;
+      document.getElementById('sc-total').textContent  = document.getElementById('total-scores').textContent;
+
+      document.getElementById('save-confirm-title').textContent   = title;
+      document.getElementById('save-confirm-message').textContent = message;
+      document.getElementById('save-confirm-modal').classList.add('active');
+    };
+
     window.showToast = function(message, type = 'success') {
       const existingToast = document.querySelector('.toast');
       if (existingToast) existingToast.remove();
@@ -2322,6 +2485,23 @@
           modal.classList.remove('active');
         }
       });
+    });
+
+    // Select-all checkbox for scores table
+    document.getElementById('select-all-scores')?.addEventListener('change', (e) => {
+      const checkboxes = document.querySelectorAll('.score-checkbox');
+      checkboxes.forEach(cb => {
+        cb.checked = e.target.checked;
+        const key = cb.dataset.name + '||' + cb.dataset.region;
+        if (e.target.checked) {
+          selectedScores.add(key);
+          cb.closest('tr').style.background = 'rgba(0,212,255,0.08)';
+        } else {
+          selectedScores.delete(key);
+          cb.closest('tr').style.background = '';
+        }
+      });
+      updateSelectionUI();
     });
 
     // Auto-preview on bulk delete threshold change
