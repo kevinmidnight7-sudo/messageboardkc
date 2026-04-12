@@ -695,27 +695,49 @@
         }
         
         // --- DATA FETCHING ---
+        // COST FIX: cache users + playlists in sessionStorage — only re-fetch when cache is stale
+        const _SF_USERS_KEY = 'kc-sf-users-v1';
+        const _SF_PLAYLISTS_KEY = 'kc-sf-playlists-v1';
         async function fetchAllData() {
             try {
                 postsContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="spinner"></div></div>';
-                const [usersSnap, playlistsSnap] = await Promise.all([
-                    db.ref('users').once('value'),
-                    db.ref('playlists').once('value')
-                ]);
-                userProfiles = usersSnap.val() || {};
+
+                let usersVal = null, playlistsVal = null;
+                try {
+                    const cu = sessionStorage.getItem(_SF_USERS_KEY);
+                    const cp = sessionStorage.getItem(_SF_PLAYLISTS_KEY);
+                    if (cu) usersVal = JSON.parse(cu);
+                    if (cp) playlistsVal = JSON.parse(cp);
+                } catch(e) {}
+
+                if (!usersVal || !playlistsVal) {
+                    const [usersSnap, playlistsSnap] = await Promise.all([
+                        usersVal ? Promise.resolve(null) : db.ref('users').once('value'),
+                        playlistsVal ? Promise.resolve(null) : db.ref('playlists').once('value')
+                    ]);
+                    if (usersSnap) {
+                        usersVal = usersSnap.val() || {};
+                        try { sessionStorage.setItem(_SF_USERS_KEY, JSON.stringify(usersVal)); } catch(e) {}
+                    }
+                    if (playlistsSnap) {
+                        playlistsVal = playlistsSnap.val() || {};
+                        try { sessionStorage.setItem(_SF_PLAYLISTS_KEY, JSON.stringify(playlistsVal)); } catch(e) {}
+                    }
+                }
+
+                userProfiles = usersVal || {};
                 
                 allPosts = [];
-                usersSnap.forEach(user => {
-                    const posts = user.child('posts').val();
-                    if(posts) {
+                for (const uid in userProfiles) {
+                    const posts = userProfiles[uid].posts;
+                    if (posts) {
                         for (const postId in posts) {
-                            allPosts.push({ postId, ...posts[postId], createdBy: user.key });
+                            allPosts.push({ postId, ...posts[postId], createdBy: uid });
                         }
                     }
-                });
+                }
 
-                const playlistsData = playlistsSnap.val() || {};
-                allPlaylists = Object.entries(playlistsData).map(([id, p]) => ({ playlistId: id, ...p }));
+                allPlaylists = Object.entries(playlistsVal || {}).map(([id, p]) => ({ playlistId: id, ...p }));
 
                 const trendingPosts = filterContent(allPosts, 'trending').slice(0, 5);
                 trendingRankMap = Object.fromEntries(trendingPosts.map((p, i) => [p.postId, i + 1]));

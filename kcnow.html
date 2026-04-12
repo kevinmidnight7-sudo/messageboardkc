@@ -3353,8 +3353,8 @@
                             if (textEl) textEl.textContent = 'Active community waiting for you';
                         });
 
-                        // Load members carousel (limitToFirst 50 to keep cost low)
-                        db.ref('users').limitToFirst(50).once('value').then(snap => {
+                        // COST FIX: 20 avatars is plenty for a carousel; was 50
+                        db.ref('users').limitToFirst(20).once('value').then(snap => {
                             const carousel = document.getElementById('guest-members-carousel');
                             if (!carousel) return;
                             const users = [];
@@ -4060,6 +4060,16 @@
                 addFeedItem({ type:'users', title:'New Player!', user:u.displayName, uid:snap.key, detail:'Just joined the KC community!', color:'text-green-400', icon:'fa-user-plus' });
             });
 
+            // COST FIX: cache display names so repeated activity-feed lookups hit local memory
+            const _activityNameCache = {};
+            function _getDisplayName(uid) {
+                if (_activityNameCache[uid]) return Promise.resolve(_activityNameCache[uid]);
+                return db.ref(`users/${uid}/displayName`).once('value').then(s => {
+                    _activityNameCache[uid] = s.val() || 'Unknown';
+                    return _activityNameCache[uid];
+                });
+            }
+
             db.ref('clans').off();
             db.ref('clans').on('child_changed', snap => {
                 const clan = snap.val();
@@ -4067,11 +4077,11 @@
                 const members = Object.keys(clan.members);
                 if (members.length === 0) return;
                 const latestMember = members[members.length - 1];
-                db.ref(`users/${latestMember}/displayName`).once('value').then(nameSnap => {
+                _getDisplayName(latestMember).then(name => {
                     addFeedItem({
                         type: 'clans',
                         title: 'Clan Join',
-                        user: nameSnap.val() || 'Unknown',
+                        user: name,
                         uid: latestMember,
                         detail: `Joined ${clan.name}`,
                         color: 'text-teal-400',
@@ -4088,12 +4098,12 @@
                 db.ref(`users/${currentUser.uid}/friends`).on('child_added', snap => {
                     if (!_friendsReady) return;
                     const friendUid = snap.key;
-                    db.ref(`users/${friendUid}`).once('value').then(uSnap => {
-                        const u = uSnap.val() || {};
+                    // COST FIX: only fetch displayName, not full user object
+                    _getDisplayName(friendUid).then(name => {
                         addFeedItem({
                             type: 'users',
                             title: 'New Friend!',
-                            user: u.displayName || 'Someone',
+                            user: name,
                             uid: friendUid,
                             detail: 'You are now friends.',
                             color: 'text-pink-400',
@@ -4108,13 +4118,13 @@
                 db.ref(`users/${currentUser.uid}/friendRequests`).on('child_added', snap => {
                     if (!_reqReady) return;
                     const fromUid = snap.key;
-                    db.ref(`users/${fromUid}`).once('value').then(uSnap => {
-                        const u = uSnap.val() || {};
+                    // COST FIX: only fetch displayName, not full user object
+                    _getDisplayName(fromUid).then(name => {
                         addFeedItem({
                             id: `friendreq_${fromUid}`,
                             type: 'users',
                             title: 'Friend Request!',
-                            user: u.displayName || 'Someone',
+                            user: name,
                             uid: fromUid,
                             detail: 'Wants to be your friend.',
                             color: 'text-pink-400',
@@ -8593,16 +8603,12 @@
                     setText('pf-points', pts.toLocaleString());
                     const pfStreak = document.getElementById('pf-streak');
                     if (pfStreak) pfStreak.innerHTML = streak > 0 ? streak + ' <i class="fa-solid fa-fire text-orange-400"></i>' : '–';
-                    // Rank: mirror exactly what the bot does — read all userEconomy, sort by points, find position
+                    // Rank: count only users with MORE points (avoids downloading full table)
                     if (pts > 0 && discordId) {
-                        db.ref('userEconomy').once('value').then(snap => {
-                            const rankings = [];
-                            snap.forEach(child => {
-                                rankings.push({ userId: child.key, points: child.val().points || 0 });
-                            });
-                            rankings.sort((a, b) => b.points - a.points);
-                            const myRank = rankings.findIndex(r => r.userId === discordId) + 1;
-                            setText('pf-rank', myRank > 0 ? '#' + myRank : '#?');
+                        db.ref('userEconomy').orderByChild('points').startAt(pts + 1).once('value').then(snap => {
+                            let above = 0;
+                            snap.forEach(() => above++);
+                            setText('pf-rank', '#' + (above + 1));
                         }).catch(() => setText('pf-rank', '#?'));
                     } else {
                         setText('pf-rank', pts > 0 ? '#?' : '–');

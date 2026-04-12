@@ -1669,7 +1669,8 @@
               const posts = [];
               content.innerHTML = `<p class="text-gray-400">Loading clips...</p>`;
               const readUserPosts = uid => new Promise(resolve => {
-                db.ref(`users/${uid}/posts`).once('value').then(s => {
+                // COST FIX: cap at 20 most recent posts per member, not unlimited
+                db.ref(`users/${uid}/posts`).orderByChild('createdAt').limitToLast(20).once('value').then(s => {
                   const v = s.val() || {};
                   Object.keys(v).forEach(postId => { const p = v[postId]; if (p && (p.video || p.image || p.ytId)) posts.push({ uid, postId, ...p }); });
                   resolve();
@@ -2160,8 +2161,9 @@
              let media = p.video ? `<video controls src="${p.video}" class="w-full"></video>` : (p.image ? `<img src="${p.image}" class="w-full">` : '');
              if(p.ytId) media = `<iframe class="w-full aspect-video" src="https://www.youtube.com/embed/${p.ytId}"></iframe>`;
              body.innerHTML = `<div>${media}<p class="mt-4">${escapeHtml(p.description||'')}</p><div id="poReactions" class="flex gap-2 mt-2"></div><ul id="poComments" class="mt-4 space-y-2"></ul><div class="flex mt-4 gap-2"><input id="newComment" class="flex-1 bg-gray-700 p-2 rounded"><button onclick="submitComment()" class="bg-blue-500 px-4 rounded">Send</button></div></div>`;
-             db.ref(`${currentPostPath}/reactions`).on('value', s => renderPostReactions(s, document.getElementById('poReactions')));
-             db.ref(`${currentPostPath}/comments`).on('value', s => renderPostComments(s, document.getElementById('poComments')));
+             // COST FIX: cap both listeners to avoid downloading unbounded reaction/comment trees
+             db.ref(`${currentPostPath}/reactions`).orderByKey().limitToLast(100).on('value', s => renderPostReactions(s, document.getElementById('poReactions')));
+             db.ref(`${currentPostPath}/comments`).orderByChild('time').limitToLast(50).on('value', s => renderPostComments(s, document.getElementById('poComments')));
          });
     };
     window.submitComment = () => {
