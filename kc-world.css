@@ -1,0 +1,847 @@
+/* ============================================================
+   KC WORLD — Territory Conquest Game
+   Full-screen overlay UI, lobby, canvas, HUD, chat, results
+   ============================================================ */
+
+/* ── Overlay ── */
+#kcworld-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    display: flex;
+    flex-direction: column;
+    background: radial-gradient(circle at 50% 30%, #0f1e2e 0%, #050c15 100%);
+    font-family: 'Poppins', sans-serif;
+    color: #f1f5f9;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#kcworld-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* ── Scrollable inner wrapper ── */
+#kcworld-inner {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 40px;
+    scroll-behavior: smooth;
+}
+
+/* ── Shared glass card ── */
+.kcw-card {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.13);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+/* ── Top bar ── */
+#kcworld-topbar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: rgba(0,0,0,0.35);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+#kcworld-topbar-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #34d399, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+#kcworld-topbar-title .kcw-globe {
+    font-size: 1.4rem;
+    -webkit-text-fill-color: initial;
+}
+
+#kcworld-close-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+#kcworld-close-btn:hover {
+    background: rgba(239,68,68,0.2);
+    color: #f87171;
+    border-color: rgba(239,68,68,0.3);
+}
+
+/* ── Screens ── */
+.kcw-screen {
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 16px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+.kcw-screen.active {
+    display: flex;
+}
+
+/* ── Home screen ── */
+#kcw-screen-home .kcw-hero {
+    font-size: clamp(2.5rem, 8vw, 4rem);
+    text-align: center;
+    margin: 8px 0 4px;
+}
+
+#kcw-screen-home h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, #34d399, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+#kcw-screen-home .kcw-tagline {
+    color: #64748b;
+    font-size: 0.85rem;
+    text-align: center;
+    margin: 0;
+}
+
+.kcw-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 14px;
+    border: none;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.kcw-btn:active { transform: scale(0.97); }
+
+.kcw-btn-primary {
+    background: linear-gradient(135deg, #059669 0%, #0284c7 100%);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(5,150,105,0.35);
+}
+
+.kcw-btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 28px rgba(5,150,105,0.5);
+}
+
+.kcw-btn-secondary {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #cbd5e1;
+}
+
+.kcw-btn-secondary:hover {
+    background: rgba(255,255,255,0.13);
+    color: #fff;
+}
+
+.kcw-btn-danger {
+    background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #f87171;
+}
+
+.kcw-btn-danger:hover {
+    background: rgba(239,68,68,0.25);
+}
+
+.kcw-btn-sm {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    width: auto;
+}
+
+/* ── Section label ── */
+.kcw-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #475569;
+    align-self: flex-start;
+    margin-bottom: -8px;
+}
+
+/* ── Join code input ── */
+.kcw-code-row {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+}
+
+.kcw-code-input {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #f1f5f9;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.kcw-code-input:focus {
+    border-color: rgba(52,211,153,0.5);
+}
+
+.kcw-code-input::placeholder {
+    color: #334155;
+    letter-spacing: 0.05em;
+    font-weight: 400;
+}
+
+/* ── Settings screen ── */
+.kcw-setting-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+}
+
+.kcw-setting-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.kcw-setting-label span:first-child {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.kcw-setting-label span:last-child {
+    font-size: 0.72rem;
+    color: #475569;
+}
+
+.kcw-select {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    outline: none;
+    cursor: pointer;
+}
+
+.kcw-select option {
+    background: #1e293b;
+}
+
+/* ── Lobby screen ── */
+#kcw-screen-lobby .kcw-room-code-display {
+    text-align: center;
+    padding: 16px 24px;
+}
+
+.kcw-room-code-display .code-hint {
+    font-size: 0.72rem;
+    color: #475569;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.kcw-room-code-display .code-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 0.25em;
+    background: linear-gradient(90deg, #34d399, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.kcw-room-code-display .code-copy {
+    font-size: 0.72rem;
+    color: #34d399;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.kcw-room-code-display .code-copy:hover { opacity: 1; }
+
+/* ── Player list ── */
+.kcw-player-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.kcw-player-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.kcw-player-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 6px currentColor;
+}
+
+.kcw-player-name {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.kcw-player-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.kcw-player-badge.host {
+    background: rgba(234,179,8,0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(234,179,8,0.25);
+}
+
+.kcw-player-badge.you {
+    background: rgba(52,211,153,0.12);
+    color: #34d399;
+    border: 1px solid rgba(52,211,153,0.2);
+}
+
+.kcw-waiting {
+    color: #334155;
+    font-size: 0.8rem;
+    text-align: center;
+    font-style: italic;
+    padding: 8px 0;
+}
+
+/* ── Divider ── */
+.kcw-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255,255,255,0.07);
+    margin: 4px 0;
+}
+
+/* ── Game screen ── */
+#kcworld-game-screen {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    overflow: hidden;
+}
+
+#kcworld-game-screen.active {
+    display: flex;
+}
+
+/* ── Game HUD ── */
+#kcw-hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    background: rgba(0,0,0,0.5);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    gap: 8px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+}
+
+#kcw-hud-players {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.kcw-hud-player {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    transition: opacity 0.3s;
+}
+
+.kcw-hud-player.eliminated {
+    opacity: 0.35;
+    text-decoration: line-through;
+}
+
+.kcw-hud-player .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.kcw-hud-player .pct {
+    font-size: 0.68rem;
+    color: #64748b;
+}
+
+#kcw-hud-tick {
+    font-size: 0.72rem;
+    color: #475569;
+    white-space: nowrap;
+}
+
+#kcw-hud-phase {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    background: rgba(52,211,153,0.12);
+    color: #34d399;
+    border: 1px solid rgba(52,211,153,0.2);
+    white-space: nowrap;
+}
+
+/* ── Canvas container ── */
+#kcw-canvas-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+}
+
+#kcw-canvas {
+    position: absolute;
+    top: 0; left: 0;
+    display: block;
+    image-rendering: pixelated;
+}
+
+/* ── Selected tile indicator ── */
+#kcw-selected-info {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 8px 16px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    pointer-events: none;
+    display: none;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+}
+
+/* ── Attack controls panel ── */
+#kcw-attack-panel {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.75);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 180px;
+    backdrop-filter: blur(12px);
+    z-index: 10;
+}
+
+#kcw-attack-panel.visible {
+    display: flex;
+}
+
+#kcw-attack-panel .panel-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #f87171;
+}
+
+.kcw-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+.kcw-slider-row label {
+    white-space: nowrap;
+    font-size: 0.72rem;
+}
+
+#kcw-attack-pct-slider {
+    flex: 1;
+    accent-color: #f87171;
+    cursor: pointer;
+}
+
+#kcw-attack-pct-val {
+    font-weight: 700;
+    color: #f87171;
+    min-width: 32px;
+    text-align: right;
+}
+
+#kcw-attack-confirm {
+    background: rgba(239,68,68,0.2);
+    border: 1px solid rgba(239,68,68,0.4);
+    color: #f87171;
+    border-radius: 8px;
+    padding: 7px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+#kcw-attack-confirm:hover {
+    background: rgba(239,68,68,0.35);
+}
+
+#kcw-attack-cancel {
+    background: none;
+    border: none;
+    color: #475569;
+    font-size: 0.72rem;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: 'Poppins', sans-serif;
+    padding: 0;
+}
+
+/* ── Chat ── */
+#kcw-chat {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    width: 220px;
+    background: rgba(0,0,0,0.65);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    transition: opacity 0.3s;
+}
+
+#kcw-chat-log {
+    flex: 1;
+    max-height: 100px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.kcw-chat-msg {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.kcw-chat-msg .sender {
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+#kcw-chat-row {
+    display: flex;
+    border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+#kcw-chat-input {
+    flex: 1;
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    color: #e2e8f0;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.72rem;
+    outline: none;
+}
+
+#kcw-chat-input::placeholder { color: #334155; }
+
+#kcw-chat-send {
+    background: none;
+    border: none;
+    padding: 6px 10px;
+    color: #34d399;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: color 0.15s;
+}
+
+#kcw-chat-send:hover { color: #6ee7b7; }
+
+/* ── Result screen ── */
+#kcw-result-screen {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(20px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 24px;
+    text-align: center;
+}
+
+#kcw-result-screen.visible {
+    display: flex;
+}
+
+.kcw-result-trophy {
+    font-size: 5rem;
+    line-height: 1;
+}
+
+.kcw-result-title {
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    font-weight: 900;
+    letter-spacing: 0.05em;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.kcw-result-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    max-width: 320px;
+}
+
+.kcw-result-pts {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    background: rgba(251,191,36,0.1);
+    border: 1px solid rgba(251,191,36,0.25);
+    border-radius: 14px;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #fbbf24;
+}
+
+.kcw-result-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+/* ── Eliminated banner ── */
+#kcw-eliminated-banner {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 40;
+    background: rgba(0,0,0,0.82);
+    border: 1px solid rgba(239,68,68,0.4);
+    border-radius: 18px;
+    padding: 28px 40px;
+    text-align: center;
+    backdrop-filter: blur(16px);
+}
+
+#kcw-eliminated-banner.visible { display: block; }
+
+#kcw-eliminated-banner h2 {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #f87171;
+    margin: 0 0 8px;
+}
+
+#kcw-eliminated-banner p {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0 0 16px;
+}
+
+/* ── Spectate badge ── */
+#kcw-spectate-badge {
+    display: none;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(251,191,36,0.15);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 8px;
+    padding: 4px 14px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fbbf24;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 20;
+}
+
+#kcw-spectate-badge.visible { display: block; }
+
+/* ── Loading state ── */
+.kcw-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #475569;
+    font-size: 0.85rem;
+    padding: 20px;
+}
+
+.kcw-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: #34d399;
+    border-radius: 50%;
+    animation: kcw-spin 0.7s linear infinite;
+}
+
+@keyframes kcw-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ── Error state ── */
+.kcw-error {
+    color: #f87171;
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 10px;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.18);
+    border-radius: 10px;
+    width: 100%;
+}
+
+/* ── Tooltip / mini info ── */
+.kcw-info-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: #334155;
+}
+
+.kcw-info-row i {
+    color: #475569;
+}
+
+/* ── Mobile tweaks ── */
+@media (max-width: 480px) {
+    #kcw-chat {
+        width: 160px;
+    }
+
+    #kcw-attack-panel {
+        min-width: 150px;
+    }
+
+    #kcw-hud {
+        padding: 6px 10px;
+    }
+
+    .kcw-screen {
+        padding: 16px 12px;
+    }
+}
