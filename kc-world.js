@@ -7,7 +7,7 @@
 
   /* ── Constants ───────────────────────────────── */
   var MAP_W = 40, MAP_H = 25;
-  var TICK_MS = 2000;
+  var TICK_MS = 3000;   /* 3 s ticks — 33% bandwidth reduction vs 2 s */
   var WIN_PCT = 0.75;
   var TROOP_CAP = 999;
   var PLAYER_COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899'];
@@ -386,9 +386,48 @@
   };
 
   var FBSync = {
-    pushState: function(gs) {
-      if (st.roomRef) st.roomRef.child('gameState').set(gs);
+    /* Host: push only changed tiles + small metadata — NOT the full tile map */
+    pushDelta: function(prevTiles, newGs) {
+      if (!st.roomRef) return;
+      var updates = {};
+      var newTiles = newGs.tiles;
+      /* diff tiles */
+      Object.keys(newTiles).forEach(function(k) {
+        var p = prevTiles[k], c = newTiles[k];
+        if (!p || p.o !== c.o || p.t !== c.t || (p.b||0) !== (c.b||0)) {
+          updates['gameState/tiles/' + k] = c;
+        }
+      });
+      /* always push lightweight metadata */
+      updates['gameState/tick']        = newGs.tick;
+      updates['gameState/playerStats'] = newGs.playerStats || null;
+      updates['gameState/winner']      = newGs.winner || null;
+      st.roomRef.update(updates);
     },
+
+    /* Clients: listen to tile diffs — only changed tiles arrive, not the full map */
+    listenTiles: function(cb) {
+      if (!st.roomRef) return;
+      var ref = st.roomRef.child('gameState/tiles');
+      var addFn = ref.on('child_added',   function(s) { cb(s.key, s.val()); });
+      var chgFn = ref.on('child_changed', function(s) { cb(s.key, s.val()); });
+      st.listeners.push(function() {
+        ref.off('child_added',   addFn);
+        ref.off('child_changed', chgFn);
+      });
+    },
+
+    /* Clients: listen to tick/playerStats/winner as separate tiny fields */
+    listenMeta: function(cb) {
+      if (!st.roomRef) return;
+      ['tick','playerStats','winner'].forEach(function(field) {
+        var ref = st.roomRef.child('gameState/' + field);
+        var fn  = ref.on('value', function(s) { cb(field, s.val()); });
+        st.listeners.push(function() { ref.off('value', fn); });
+      });
+    },
+
+    /* Lobby / status listeners (unchanged — small payloads) */
     listen: function(path, cb) {
       if (!st.roomRef) return;
       var ref = st.roomRef.child(path);
@@ -463,8 +502,11 @@
       var attacks = Object.values(raw).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
       if (Object.keys(raw).length) st.roomRef.child('attacks').remove();
 
-      var tiles = {};
       var srcTiles = st.gameState.tiles || {};
+      /* snapshot prev state for delta diff */
+      var prevTiles = {};
+      Object.keys(srcTiles).forEach(function(k) { prevTiles[k] = Object.assign({}, srcTiles[k]); });
+      var tiles = {};
       Object.keys(srcTiles).forEach(function(k) { tiles[k] = Object.assign({}, srcTiles[k]); });
 
       attacks.forEach(function(atk) {
@@ -497,7 +539,7 @@
         playerStats: stats
       };
       st.gameState = newGs;
-      FBSync.pushState(newGs);
+      FBSync.pushDelta(prevTiles, newGs);   /* send only changed tiles */
       if (winner) { clearInterval(st.tickTimer); st.tickTimer = null; }
     });
   }
@@ -645,11 +687,19 @@
     canvas.addEventListener('touchstart', st._touchHandler,    { passive: false });
     canvas.addEventListener('touchend',   st._touchEndHandler, { passive: true  });
 
-    FBSync.listen('gameState', function(gs) {
-      if (!gs) return;
-      st.gameState = gs;
-      updateHUD();
-      if (gs.winner && st.phase === 'playing') showResult(gs.winner);
+    /* tile diffs — only changed/added tiles arrive each tick (~0.5 KB vs 28 KB) */
+    FBSync.listenTiles(function(key, val) {
+      if (!st.gameState) st.gameState = { tiles: {}, tick: 0, winner: null, playerStats: {} };
+      if (!st.gameState.tiles) st.gameState.tiles = {};
+      st.gameState.tiles[key] = val;
+    });
+
+    /* tiny metadata — tick, playerStats, winner */
+    FBSync.listenMeta(function(field, val) {
+      if (!st.gameState) st.gameState = { tiles: {}, tick: 0, winner: null, playerStats: {} };
+      st.gameState[field] = val;
+      if (field === 'playerStats') updateHUD();
+      if (field === 'winner' && val && st.phase === 'playing') showResult(val);
     });
 
     if (st.isHost) st.tickTimer = setInterval(hostTick, TICK_MS);
