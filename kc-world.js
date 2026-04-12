@@ -7,7 +7,7 @@
 
   /* ── Constants ───────────────────────────────── */
   var MAP_W = 40, MAP_H = 25;
-  var TICK_MS = 2000;
+  var TICK_MS = 3000;   /* 3 s ticks — 33% bandwidth reduction vs 2 s */
   var WIN_PCT = 0.75;
   var TROOP_CAP = 999;
   var PLAYER_COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899'];
@@ -25,7 +25,8 @@
     listeners: [],
     phase: 'closed',
     bots: [], botCount: 1,
-    _clickHandler: null, _resizeHandler: null
+    spectating: false,
+    _clickHandler: null, _resizeHandler: null, _ctxHandler: null, _touchHandler: null
   };
 
   /* ── Helpers ─────────────────────────────────── */
@@ -217,6 +218,21 @@
             ctx.fillText('\u2605', px + ts*0.5, starY);
           }
 
+          /* fort shield */
+          if (dyn.b === 2 && dyn.o > 0 && ts >= 12) {
+            var fx = px + ts*0.5, fy = py + ts*0.26;
+            var fw = ts * 0.32, fh = ts * 0.42;
+            ctx.fillStyle = 'rgba(148,163,184,0.88)';
+            ctx.beginPath();
+            ctx.moveTo(fx - fw/2, fy);
+            ctx.lineTo(fx + fw/2, fy);
+            ctx.lineTo(fx + fw/2, fy + fh*0.58);
+            ctx.quadraticCurveTo(fx + fw/2, fy + fh, fx, fy + fh);
+            ctx.quadraticCurveTo(fx - fw/2, fy + fh, fx - fw/2, fy + fh*0.58);
+            ctx.closePath();
+            ctx.fill();
+          }
+
           /* troop count */
           if (t !== 'W' && t !== 'M' && dyn.t > 0 && ts >= 14) {
             ctx.fillStyle = dyn.o > 0 ? '#ffffff' : '#6b7280';
@@ -318,11 +334,14 @@
       if (to.o === 0 || to.o === attackerSlot) {
         tiles[toIdx] = { o: attackerSlot, t: (to.t || 0) + sending, b: to.b || 0 };
       } else {
-        if (sending > to.t) {
-          tiles[toIdx] = { o: attackerSlot, t: sending - to.t, b: to.b || 0 };
+        var defMul = (to.b === 2) ? 2 : 1;   /* fort doubles effective defense */
+        var effDef = to.t * defMul;
+        if (sending > effDef) {
+          /* attacker wins; fort is destroyed on capture */
+          tiles[toIdx] = { o: attackerSlot, t: Math.max(1, sending - to.t), b: 0 };
         } else {
           if (!tiles[toIdx]) tiles[toIdx] = { o: to.o, t: to.t, b: to.b || 0 };
-          tiles[toIdx].t = Math.max(1, to.t - sending);
+          tiles[toIdx].t = Math.max(1, to.t - Math.floor(sending / defMul));
         }
       }
       if (from.t < 0) from.t = 0;
@@ -357,6 +376,8 @@
       }
       var stats = this.getStats(tiles);
       var slots = Object.keys(stats);
+      /* last player standing wins outright */
+      if (slots.length === 1) return parseInt(slots[0]);
       for (var j = 0; j < slots.length; j++) {
         if (stats[slots[j]] / land >= WIN_PCT) return parseInt(slots[j]);
       }
@@ -365,9 +386,48 @@
   };
 
   var FBSync = {
-    pushState: function(gs) {
-      if (st.roomRef) st.roomRef.child('gameState').set(gs);
+    /* Host: push only changed tiles + small metadata — NOT the full tile map */
+    pushDelta: function(prevTiles, newGs) {
+      if (!st.roomRef) return;
+      var updates = {};
+      var newTiles = newGs.tiles;
+      /* diff tiles */
+      Object.keys(newTiles).forEach(function(k) {
+        var p = prevTiles[k], c = newTiles[k];
+        if (!p || p.o !== c.o || p.t !== c.t || (p.b||0) !== (c.b||0)) {
+          updates['gameState/tiles/' + k] = c;
+        }
+      });
+      /* always push lightweight metadata */
+      updates['gameState/tick']        = newGs.tick;
+      updates['gameState/playerStats'] = newGs.playerStats || null;
+      updates['gameState/winner']      = newGs.winner || null;
+      st.roomRef.update(updates);
     },
+
+    /* Clients: listen to tile diffs — only changed tiles arrive, not the full map */
+    listenTiles: function(cb) {
+      if (!st.roomRef) return;
+      var ref = st.roomRef.child('gameState/tiles');
+      var addFn = ref.on('child_added',   function(s) { cb(s.key, s.val()); });
+      var chgFn = ref.on('child_changed', function(s) { cb(s.key, s.val()); });
+      st.listeners.push(function() {
+        ref.off('child_added',   addFn);
+        ref.off('child_changed', chgFn);
+      });
+    },
+
+    /* Clients: listen to tick/playerStats/winner as separate tiny fields */
+    listenMeta: function(cb) {
+      if (!st.roomRef) return;
+      ['tick','playerStats','winner'].forEach(function(field) {
+        var ref = st.roomRef.child('gameState/' + field);
+        var fn  = ref.on('value', function(s) { cb(field, s.val()); });
+        st.listeners.push(function() { ref.off('value', fn); });
+      });
+    },
+
+    /* Lobby / status listeners (unchanged — small payloads) */
     listen: function(path, cb) {
       if (!st.roomRef) return;
       var ref = st.roomRef.child(path);
@@ -442,12 +502,24 @@
       var attacks = Object.values(raw).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
       if (Object.keys(raw).length) st.roomRef.child('attacks').remove();
 
-      var tiles = {};
       var srcTiles = st.gameState.tiles || {};
+      /* snapshot prev state for delta diff */
+      var prevTiles = {};
+      Object.keys(srcTiles).forEach(function(k) { prevTiles[k] = Object.assign({}, srcTiles[k]); });
+      var tiles = {};
       Object.keys(srcTiles).forEach(function(k) { tiles[k] = Object.assign({}, srcTiles[k]); });
 
       attacks.forEach(function(atk) {
-        Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker);
+        if (atk.type === 'fort') {
+          /* build fort: deduct troops, set b=2 */
+          var tile = tiles[atk.from];
+          if (tile && tile.o === atk.attacker && tile.t >= 15 && tile.b !== 2) {
+            tile.t -= 15;
+            tile.b  = 2;
+          }
+        } else {
+          Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker);
+        }
       });
       /* bot moves */
       st.bots.forEach(function(botSlot) {
@@ -467,7 +539,7 @@
         playerStats: stats
       };
       st.gameState = newGs;
-      FBSync.pushState(newGs);
+      FBSync.pushDelta(prevTiles, newGs);   /* send only changed tiles */
       if (winner) { clearInterval(st.tickTimer); st.tickTimer = null; }
     });
   }
@@ -475,12 +547,21 @@
   function cleanupGame() {
     Renderer.stopLoop();
     if (st.tickTimer) { clearInterval(st.tickTimer); st.tickTimer = null; }
-    if (st.canvas && st._clickHandler)   st.canvas.removeEventListener('click', st._clickHandler);
+    if (st.canvas) {
+      if (st._clickHandler)    st.canvas.removeEventListener('click',       st._clickHandler);
+      if (st._ctxHandler)      st.canvas.removeEventListener('contextmenu', st._ctxHandler);
+      if (st._touchHandler)    st.canvas.removeEventListener('touchstart',  st._touchHandler);
+      if (st._touchEndHandler) st.canvas.removeEventListener('touchend',    st._touchEndHandler);
+    }
     if (st._resizeHandler) window.removeEventListener('resize', st._resizeHandler);
+    /* dismiss any open build popup */
+    var pop = document.getElementById('kcw-build-popup');
+    if (pop) pop.remove();
     st.listeners.forEach(function(off){ off(); });
     st.listeners = [];
-    st.canvas = null; st.ctx = null; st.selectedTile = null;
-    st._clickHandler = null; st._resizeHandler = null;
+    st.canvas = null; st.ctx = null; st.selectedTile = null; st.spectating = false;
+    st._clickHandler = null; st._resizeHandler = null; st._ctxHandler = null;
+    st._touchHandler = null; st._touchEndHandler = null;
   }
 
   /* =================================================
@@ -583,11 +664,42 @@
     st._clickHandler = handleClick;
     canvas.addEventListener('click', st._clickHandler);
 
-    FBSync.listen('gameState', function(gs) {
-      if (!gs) return;
-      st.gameState = gs;
-      updateHUD();
-      if (gs.winner && st.phase === 'playing') showResult(gs.winner);
+    /* right-click → build fort popup */
+    st._ctxHandler = function(e) {
+      e.preventDefault();
+      if (st.spectating) return;
+      var hit = Renderer.getClickTile(e.clientX, e.clientY);
+      if (!hit) return;
+      var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[hit.idx]) || { o: 0, t: 0 };
+      if (tile.o !== st.mySlot || tile.t < 15 || tile.b === 2) return;
+      KCWorld._showBuildPopup(hit.idx, e.clientX, e.clientY);
+    };
+    canvas.addEventListener('contextmenu', st._ctxHandler);
+
+    /* touch → forward as click */
+    st._touchHandler = function(e) {
+      if (e.touches.length > 0) e.preventDefault();
+    };
+    st._touchEndHandler = function(e) {
+      var t = e.changedTouches[0];
+      if (t) handleClick({ clientX: t.clientX, clientY: t.clientY });
+    };
+    canvas.addEventListener('touchstart', st._touchHandler,    { passive: false });
+    canvas.addEventListener('touchend',   st._touchEndHandler, { passive: true  });
+
+    /* tile diffs — only changed/added tiles arrive each tick (~0.5 KB vs 28 KB) */
+    FBSync.listenTiles(function(key, val) {
+      if (!st.gameState) st.gameState = { tiles: {}, tick: 0, winner: null, playerStats: {} };
+      if (!st.gameState.tiles) st.gameState.tiles = {};
+      st.gameState.tiles[key] = val;
+    });
+
+    /* tiny metadata — tick, playerStats, winner */
+    FBSync.listenMeta(function(field, val) {
+      if (!st.gameState) st.gameState = { tiles: {}, tick: 0, winner: null, playerStats: {} };
+      st.gameState[field] = val;
+      if (field === 'playerStats') updateHUD();
+      if (field === 'winner' && val && st.phase === 'playing') showResult(val);
     });
 
     if (st.isHost) st.tickTimer = setInterval(hostTick, TICK_MS);
@@ -606,6 +718,13 @@
     for (var j = 0; j < keys.length; j++) {
       var tile = gs.tiles[keys[j]];
       if (tile.o === st.mySlot) myTroops += (tile.t || 0);
+    }
+    /* elimination check */
+    if (!st.spectating && myCount === 0 && (gs.tick || 0) > 4 && !gs.winner) {
+      st.spectating = true;
+      toast('You\'ve been eliminated \u2014 watching as spectator', 'error');
+      var tip = document.querySelector('.kcw-game-tip');
+      if (tip) tip.innerHTML = '<span style="color:#ef4444">\u2694\uFE0F Eliminated \u2014 Spectating</span>';
     }
     var el;
     el = document.getElementById('kcw-tick');    if (el) el.textContent = gs.tick || 0;
@@ -829,6 +948,44 @@
       });
     },
 
+    _showBuildPopup: function(tileIdx, cx, cy) {
+      var existing = document.getElementById('kcw-build-popup');
+      if (existing) existing.remove();
+      var wrap = document.querySelector('.kcw-canvas-wrap');
+      if (!wrap) return;
+      var rect = wrap.getBoundingClientRect();
+      var pop = document.createElement('div');
+      pop.id = 'kcw-build-popup';
+      pop.className = 'kcw-build-popup';
+      pop.style.left = Math.min(cx - rect.left, rect.width - 180) + 'px';
+      pop.style.top  = Math.max(cy - rect.top  - 110, 8) + 'px';
+      pop.innerHTML =
+        '<div class="kcw-build-title">\uD83D\uDEE1 Build Fort</div>' +
+        '<div class="kcw-build-sub">Doubles defense &middot; costs 15 troops</div>' +
+        '<button class="kcw-btn kcw-btn-primary kcw-btn-sm" style="width:100%" onclick="KCWorld._confirmBuild(' + tileIdx + ')">Build &minus;15 troops</button>' +
+        '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-top:6px" onclick="KCWorld._dismissBuild()">Cancel</button>';
+      wrap.appendChild(pop);
+      /* auto-dismiss on next click anywhere */
+      setTimeout(function() {
+        document.addEventListener('click', KCWorld._dismissBuild, { once: true });
+      }, 10);
+    },
+
+    _confirmBuild: function(tileIdx) {
+      this._dismissBuild();
+      if (!st.roomRef || st.phase !== 'playing') return;
+      st.roomRef.child('attacks').push({
+        type: 'fort', from: tileIdx,
+        attacker: st.mySlot, uid: st.myUid,
+        ts: window.firebase.database.ServerValue.TIMESTAMP
+      });
+    },
+
+    _dismissBuild: function() {
+      var pop = document.getElementById('kcw-build-popup');
+      if (pop) pop.remove();
+    },
+
     _playAgain: function() {
       if (st.roomRef) st.roomRef.child('players/' + st.myUid).remove();
       st.roomRef = null; st.roomCode = null;
@@ -847,8 +1004,8 @@
         isHost:false, mySlot:0, myUid:null, myName:'Player', discordId:null,
         players:{}, mapStatic:null, gameState:null, selectedTile:null,
         tickTimer:null, renderFrame:null, listeners:[], phase:'closed',
-        bots:[], botCount:1,
-        _clickHandler:null, _resizeHandler:null
+        bots:[], botCount:1, spectating:false,
+        _clickHandler:null, _resizeHandler:null, _ctxHandler:null, _touchHandler:null, _touchEndHandler:null
       };
     }
   };
