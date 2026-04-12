@@ -2882,17 +2882,13 @@ auth.onAuthStateChanged(async (u) => {
           if (ptsEl) ptsEl.textContent = pts > 0 ? pts.toLocaleString() : '–';
           if (streakEl) streakEl.textContent = econStreak > 0 ? econStreak : '–';
 
-          // Rank
+          // Rank: count only users with MORE points (avoids downloading full table)
           if (pts > 0) {
-            db.ref('userEconomy').once('value').then(snap => {
-              const rankings = [];
-              snap.forEach(child => {
-                rankings.push({ userId: child.key, points: child.val().points || 0 });
-              });
-              rankings.sort((a, b) => b.points - a.points);
-              const myRank = rankings.findIndex(r => r.userId === discordId) + 1;
+            db.ref('userEconomy').orderByChild('points').startAt(pts + 1).once('value').then(snap => {
+              let above = 0;
+              snap.forEach(() => above++);
               const rankEl = document.getElementById('login-rank');
-              if (rankEl) rankEl.textContent = myRank > 0 ? '#' + myRank : '#?';
+              if (rankEl) rankEl.textContent = '#' + (above + 1);
             }).catch(() => {
               const rankEl = document.getElementById('login-rank');
               if (rankEl) rankEl.textContent = '#?';
