@@ -513,26 +513,45 @@
         });
     }
 
-    // COST: was 3 separate db.ref('users').once('value') calls (3x full collection download).
-    // Now a single Promise.all fetches users + badges once and builds all three leaderboards.
+    // COST: sessionStorage-cache so re-opening the carousel doesn't re-download all users/badges
+    const _CAR_USERS_KEY = 'kc-car-users-v1';
+    const _CAR_BADGES_KEY = 'kc-car-badges-v1';
     const lbMembers = document.getElementById('lb-members');
     const lbStreaks = document.getElementById('lb-streaks');
     const lbBadges  = document.getElementById('lb-badges');
 
-    Promise.all([
-      db.ref('users').once('value'),
-      db.ref('badges').once('value')
-    ]).then(([userSnap, badgeSnap]) => {
+    async function loadCarouselData() {
+      let usersVal = null, badgesVal = null;
+      try {
+        const cu = sessionStorage.getItem(_CAR_USERS_KEY);
+        const cb = sessionStorage.getItem(_CAR_BADGES_KEY);
+        if (cu) usersVal = JSON.parse(cu);
+        if (cb) badgesVal = JSON.parse(cb);
+      } catch(e) {}
+      if (!usersVal || !badgesVal) {
+        const [userSnap, badgeSnap] = await Promise.all([
+          usersVal ? Promise.resolve(null) : db.ref('users').once('value'),
+          badgesVal ? Promise.resolve(null) : db.ref('badges').once('value')
+        ]);
+        if (userSnap) { usersVal = userSnap.val() || {}; try { sessionStorage.setItem(_CAR_USERS_KEY, JSON.stringify(usersVal)); } catch(e) {} }
+        if (badgeSnap) { badgesVal = badgeSnap.val() || {}; try { sessionStorage.setItem(_CAR_BADGES_KEY, JSON.stringify(badgesVal)); } catch(e) {} }
+      }
+      return [usersVal, badgesVal];
+    }
+
+    loadCarouselData().then(([usersVal, badgesVal]) => {
       const users = [];
-      userSnap.forEach(child => {
-        const v = child.val();
+      for (const uid in usersVal) {
+        const v = usersVal[uid];
         users.push({
-          uid: child.key,
-          name: v.displayName || v.email || child.key,
+          uid,
+          name: v.displayName || v.email || uid,
           streak: typeof v.loginStreak === 'number' ? v.loginStreak : (parseInt(v.loginStreak) || 0),
           avatar: getAvatarUrl(v)
         });
-      });
+      }
+      // wrap badgesVal so existing badgeSnap.child(uid).val() calls still work
+      const badgeSnap = { child: uid => ({ val: () => (badgesVal || {})[uid] || {} }) };
 
       // Members (alphabetical)
       const membersSorted = [...users].sort((a, b) => a.name.localeCompare(b.name));

@@ -336,19 +336,31 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // --- Fetch leaderboard data (session-cached: only one download per page load)
+  // --- Fetch leaderboard data (sessionStorage-cached: re-uses data within same browser session)
+  const _LB_USERS_KEY = 'kc-lb-users-v1';
+  const _LB_BADGES_KEY = 'kc-lb-badges-v1';
   let _lbDataLoaded = false;
   async function fetchData() {
     if (_lbDataLoaded) { renderAll(); return; }
-    const [usersSnap, badgesSnap] = await Promise.all([
-      db.ref('users').once('value'),
-      db.ref('badges').once('value')
-    ]);
-    const users = usersSnap.val() || {};
-    const badges = badgesSnap.val() || {};
+    let users = null, badges = null;
+    try {
+      const cu = sessionStorage.getItem(_LB_USERS_KEY);
+      const cb = sessionStorage.getItem(_LB_BADGES_KEY);
+      if (cu) users = JSON.parse(cu);
+      if (cb) badges = JSON.parse(cb);
+    } catch(e) {}
+
+    if (!users || !badges) {
+      const [usersSnap, badgesSnap] = await Promise.all([
+        users ? Promise.resolve(null) : db.ref('users').once('value'),
+        badges ? Promise.resolve(null) : db.ref('badges').once('value')
+      ]);
+      if (usersSnap) { users = usersSnap.val() || {}; try { sessionStorage.setItem(_LB_USERS_KEY, JSON.stringify(users)); } catch(e) {} }
+      if (badgesSnap) { badges = badgesSnap.val() || {}; try { sessionStorage.setItem(_LB_BADGES_KEY, JSON.stringify(badges)); } catch(e) {} }
+    }
 
     data = Object.entries(users).map(([uid, u]) => {
-      const b = badges[uid] || {};
+      const b = (badges || {})[uid] || {};
       return {
         uid: uid,
         name: u.displayName || u.email || '(unknown)',
