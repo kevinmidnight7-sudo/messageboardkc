@@ -1,0 +1,552 @@
+/* =============================================
+   KC WORLD — Territory Conquest Game
+   kc-world.css
+============================================= */
+
+/* === Overlay === */
+#kc-world-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60000;
+  background: rgba(8, 12, 20, 0.97);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Poppins', sans-serif;
+  color: #f8fafc;
+  overflow: hidden;
+  animation: kcwFadeIn 0.22s ease-out;
+}
+@keyframes kcwFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* === Header === */
+.kcw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.kcw-logo {
+  font-size: 1rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #22c55e 0%, #3b82f6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.1em;
+}
+
+.kcw-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(239, 68, 68, 0.13);
+  color: #ef4444;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.kcw-close:hover {
+  background: rgba(239, 68, 68, 0.3);
+  transform: scale(1.1);
+}
+
+/* === Content Area === */
+#kcw-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ─────────────────────────────────────────────
+   MAIN MENU
+───────────────────────────────────────────── */
+.kcw-menu {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.kcw-title-big {
+  font-size: 3.8rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #22c55e 0%, #3b82f6 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.kcw-subtitle {
+  font-size: 0.78rem;
+  color: #475569;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+/* === Buttons === */
+.kcw-btn {
+  padding: 13px 32px;
+  border-radius: 16px;
+  border: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+  min-width: 210px;
+  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.kcw-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.kcw-btn-primary {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(34, 197, 94, 0.28);
+}
+.kcw-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 28px rgba(34, 197, 94, 0.45);
+}
+
+.kcw-btn-secondary {
+  background: rgba(255, 255, 255, 0.07);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+}
+.kcw-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
+  transform: translateY(-2px);
+}
+
+.kcw-btn-sm {
+  padding: 9px 18px;
+  border-radius: 12px;
+  min-width: auto;
+  font-size: 0.78rem;
+}
+
+.kcw-btn-start {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(59, 130, 246, 0.28);
+  width: 100%;
+}
+.kcw-btn-start:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 28px rgba(59, 130, 246, 0.45);
+}
+
+/* === Join Row === */
+.kcw-join-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.kcw-input {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.kcw-input:focus {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+.kcw-input::placeholder {
+  color: #334155;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  font-size: 0.82rem;
+}
+
+/* === Rules box === */
+.kcw-rules {
+  max-width: 320px;
+  text-align: center;
+  font-size: 0.76rem;
+  color: #475569;
+  line-height: 1.8;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+}
+.kcw-rules b { color: #94a3b8; }
+
+/* ─────────────────────────────────────────────
+   LOBBY
+───────────────────────────────────────────── */
+.kcw-lobby {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px 24px;
+  overflow-y: auto;
+}
+
+.kcw-lobby-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kcw-lobby-code {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-weight: 500;
+}
+.kcw-code {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #22c55e;
+  letter-spacing: 0.25em;
+  margin-left: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.kcw-lobby-sub {
+  font-size: 0.72rem;
+  color: #334155;
+  margin-top: 4px;
+}
+
+/* === Player List === */
+.kcw-player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kcw-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left-width: 4px;
+  animation: kcwSlideIn 0.2s ease-out;
+}
+@keyframes kcwSlideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.kcw-player-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.kcw-player-ready {
+  font-size: 0.72rem;
+  color: #475569;
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+}
+.kcw-player-ready.ready {
+  color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+
+/* === Lobby Actions === */
+.kcw-lobby-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kcw-waiting {
+  text-align: center;
+  color: #475569;
+  font-size: 0.82rem;
+  padding: 10px;
+  animation: kcwPulse 1.8s ease-in-out infinite;
+}
+@keyframes kcwPulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+
+.kcw-map-label {
+  font-size: 0.72rem;
+  color: #334155;
+  text-align: center;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* ─────────────────────────────────────────────
+   GAME LAYOUT
+───────────────────────────────────────────── */
+.kcw-game {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* === HUD === */
+.kcw-hud {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.45);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+
+.kcw-hud-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.kcw-hud-item {
+  font-size: 0.72rem;
+  color: #64748b;
+  white-space: nowrap;
+}
+.kcw-hud-item span {
+  font-weight: 800;
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  margin-left: 3px;
+}
+
+.kcw-hud-players {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  justify-content: flex-end;
+  scrollbar-width: none;
+}
+.kcw-hud-players::-webkit-scrollbar { display: none; }
+
+.kcw-hud-player {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  transition: background 0.3s;
+}
+
+.kcw-hud-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* === Canvas === */
+.kcw-canvas-wrap {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  cursor: crosshair;
+  background: #080c14;
+}
+
+#kcw-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* === Tip bar === */
+.kcw-game-tip {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #334155;
+  background: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+/* ─────────────────────────────────────────────
+   RESULT SCREEN
+───────────────────────────────────────────── */
+.kcw-result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.kcw-result-icon {
+  font-size: 4.5rem;
+  line-height: 1;
+  animation: kcwBounceIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes kcwBounceIn {
+  from { opacity: 0; transform: scale(0.2) rotate(-10deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.kcw-result-title {
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: kcwFadeUp 0.4s 0.15s ease-out both;
+}
+
+.kcw-result-sub {
+  font-size: 0.92rem;
+  color: #94a3b8;
+  animation: kcwFadeUp 0.4s 0.25s ease-out both;
+}
+
+.kcw-result-pts {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #22c55e;
+  animation: kcwFadeUp 0.4s 0.35s ease-out both;
+}
+
+@keyframes kcwFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─────────────────────────────────────────────
+   MOBILE
+───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .kcw-title-big  { font-size: 2.6rem; }
+  .kcw-menu       { padding: 28px 16px; }
+  .kcw-lobby      { padding: 16px; }
+  .kcw-hud-left   { gap: 8px; }
+  .kcw-hud-item   { font-size: 0.65rem; }
+  .kcw-result-title { font-size: 2rem; }
+}
+
+/* ─────────────────────────────────────────────
+   BOT COUNT PICKER
+───────────────────────────────────────────── */
+.kcw-bot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.kcw-bot-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.kcw-bot-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kcw-bot-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.07);
+  color: #f8fafc;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.kcw-bot-btn:hover { background: rgba(255,255,255,0.15); }
+
+.kcw-bot-count {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #a855f7;
+  min-width: 20px;
+  text-align: center;
+}
