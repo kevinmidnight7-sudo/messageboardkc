@@ -579,3 +579,72 @@
   margin-bottom: 12px;
   line-height: 1.5;
 }
+
+/* ─────────────────────────────────────────────
+   TROOP % SELECTOR
+───────────────────────────────────────────── */
+.kcw-hud-sep {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+
+.kcw-pct-sel {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.kcw-pct-btn {
+  padding: 3px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: #64748b;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.kcw-pct-btn:hover { background: rgba(255,255,255,0.12); color: #e2e8f0; }
+.kcw-pct-btn.active {
+  background: rgba(59,130,246,0.3);
+  border-color: rgba(59,130,246,0.5);
+  color: #93c5fd;
+}
+
+/* ─────────────────────────────────────────────
+   HOVER TOOLTIP
+───────────────────────────────────────────── */
+.kcw-tile-tip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(15,20,30,0.92);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  white-space: nowrap;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+
+/* ─────────────────────────────────────────────
+   HUD player pill states
+───────────────────────────────────────────── */
+.kcw-hud-player {
+  cursor: pointer;
+}
+.kcw-hud-player:hover { background: rgba(255,255,255,0.1); }
+.kcw-hud-player.elim  { opacity: 0.4; }
+.kcw-hud-player.allied {
+  border-color: rgba(34,197,94,0.4) !important;
+  background: rgba(34,197,94,0.08);
+}

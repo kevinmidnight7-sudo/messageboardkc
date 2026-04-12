@@ -26,7 +26,12 @@
     phase: 'closed',
     bots: [], botCount: 1,
     spectating: false,
-    _clickHandler: null, _resizeHandler: null, _ctxHandler: null, _touchHandler: null
+    sendPercent: 60,
+    hoveredTile: null,
+    lastStats: {},
+    alliances: {},
+    _clickHandler: null, _resizeHandler: null, _ctxHandler: null,
+    _touchHandler: null, _touchEndHandler: null, _moveHandler: null
   };
 
   /* ── Helpers ─────────────────────────────────── */
@@ -289,6 +294,61 @@
           }
         }
       }
+
+      /* ── Attack preview arrow ────────────────── */
+      if (st.selectedTile !== null && st.hoveredTile !== null && st.hoveredTile !== st.selectedTile) {
+        var sp = tileXY(st.selectedTile), hp = tileXY(st.hoveredTile);
+        var sx = offX + sp.x*ts + ts/2, sy = offY + sp.y*ts + ts/2;
+        var hx = offX + hp.x*ts + ts/2, hy = offY + hp.y*ts + ts/2;
+        var ang = Math.atan2(hy-sy, hx-sx);
+        var hovTile = tiles[st.hoveredTile] || {o:0};
+        var isEnemy = hovTile.o > 0 && hovTile.o !== st.mySlot;
+        ctx.strokeStyle = isEnemy ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.7)';
+        ctx.fillStyle   = isEnemy ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(hx, hy); ctx.stroke();
+        ctx.setLineDash([]);
+        /* arrowhead */
+        ctx.beginPath();
+        ctx.moveTo(hx, hy);
+        ctx.lineTo(hx - 10*Math.cos(ang-0.4), hy - 10*Math.sin(ang-0.4));
+        ctx.lineTo(hx - 10*Math.cos(ang+0.4), hy - 10*Math.sin(ang+0.4));
+        ctx.closePath(); ctx.fill();
+      }
+
+      /* ── Minimap ────────────────────────────── */
+      var mmW = 160, mmH = 100, mmPad = 10;
+      var mmX = st.canvas.width  - mmW - mmPad;
+      var mmY = mmPad;
+      var mpx = mmW / MAP_W, mpy = mmH / MAP_H;
+      /* background */
+      ctx.fillStyle = 'rgba(8,12,20,0.82)';
+      ctx.fillRect(mmX-3, mmY-3, mmW+6, mmH+6);
+      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(mmX-3, mmY-3, mmW+6, mmH+6);
+      /* tiles */
+      for (var ry = 0; ry < MAP_H; ry++) {
+        for (var rx = 0; rx < MAP_W; rx++) {
+          var ridx = tileIdx(rx, ry);
+          var rt = terrain[ridx], rdyn = tiles[ridx] || {o:0};
+          var rf;
+          if (rt === 'W') rf = '#0d2240';
+          else if (rt === 'M') rf = '#2e3a4a';
+          else if (rdyn.o > 0) { var ro = playersBySlot[rdyn.o]; rf = ro ? ro.color : '#555'; }
+          else rf = rt === 'C' ? '#3a2a18' : '#18202e';
+          ctx.fillStyle = rf;
+          ctx.fillRect(mmX + rx*mpx, mmY + ry*mpy, Math.ceil(mpx)+0.5, Math.ceil(mpy)+0.5);
+        }
+      }
+      /* my territory highlight outline */
+      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.lineWidth = 0.5;
+      if (st.selectedTile !== null) {
+        var msp = tileXY(st.selectedTile);
+        ctx.strokeRect(mmX + msp.x*mpx - 1, mmY + msp.y*mpy - 1, mpx + 2, mpy + 2);
+      }
     },
 
     getClickTile: function(clientX, clientY) {
@@ -328,6 +388,12 @@
     resolveAttack: function(tiles, fromIdx, toIdx, percent, attackerSlot) {
       var from = tiles[fromIdx];
       if (!from || from.o !== attackerSlot || from.t < 2) return;
+      /* skip attacks between allies */
+      var to0 = tiles[toIdx] || { o: 0, t: 0 };
+      if (to0.o > 0 && to0.o !== attackerSlot) {
+        var allies = st.alliances[attackerSlot];
+        if (allies && allies[to0.o]) return;
+      }
       var sending = Math.max(1, Math.floor(from.t * percent / 100));
       from.t -= sending;
       var to = tiles[toIdx] || { o: 0, t: 0 };
@@ -427,6 +493,31 @@
       });
     },
 
+    /* Alliance: ~50 bytes per write */
+    pushAlliance: function(slotA, slotB, status) {
+      if (!st.roomRef) return;
+      var key = Math.min(slotA,slotB) + '_' + Math.max(slotA,slotB);
+      st.roomRef.child('alliances/' + key).set(status || null);
+    },
+    listenAlliances: function() {
+      if (!st.roomRef) return;
+      var ref = st.roomRef.child('alliances');
+      var fn = ref.on('value', function(snap) {
+        var data = snap.val() || {};
+        st.alliances = {};
+        Object.keys(data).forEach(function(key) {
+          if (data[key] !== 'active') return;
+          var parts = key.split('_');
+          var a = parseInt(parts[0]), b = parseInt(parts[1]);
+          if (!st.alliances[a]) st.alliances[a] = {};
+          if (!st.alliances[b]) st.alliances[b] = {};
+          st.alliances[a][b] = true;
+          st.alliances[b][a] = true;
+        });
+      });
+      st.listeners.push(function() { ref.off('value', fn); });
+    },
+
     /* Lobby / status listeners (unchanged — small payloads) */
     listen: function(path, cb) {
       if (!st.roomRef) return;
@@ -450,7 +541,7 @@
     } else if (st.selectedTile !== null) {
       var from = tileXY(st.selectedTile);
       if (Math.abs(hit.x - from.x) <= 1 && Math.abs(hit.y - from.y) <= 1) {
-        KCWorld._submitAttack(st.selectedTile, hit.idx, 60);
+        KCWorld._submitAttack(st.selectedTile, hit.idx, st.sendPercent);
         st.selectedTile = null;
       } else {
         st.selectedTile = null;
@@ -550,9 +641,12 @@
     if (st.canvas) {
       if (st._clickHandler)    st.canvas.removeEventListener('click',       st._clickHandler);
       if (st._ctxHandler)      st.canvas.removeEventListener('contextmenu', st._ctxHandler);
+      if (st._moveHandler)     st.canvas.removeEventListener('mousemove',   st._moveHandler);
       if (st._touchHandler)    st.canvas.removeEventListener('touchstart',  st._touchHandler);
       if (st._touchEndHandler) st.canvas.removeEventListener('touchend',    st._touchEndHandler);
     }
+    var tipEl = document.getElementById('kcw-tile-tip');
+    if (tipEl) tipEl.remove();
     if (st._resizeHandler) window.removeEventListener('resize', st._resizeHandler);
     /* dismiss any open build popup */
     var pop = document.getElementById('kcw-build-popup');
@@ -648,6 +742,13 @@
           '<div class="kcw-hud-item">Territory <span id="kcw-pct">0%</span></div>' +
           '<div class="kcw-hud-item">Troops <span id="kcw-troops">0</span></div>' +
         '</div>' +
+        '<div class="kcw-hud-sep"></div>' +
+        '<div class="kcw-pct-sel" id="kcw-pct-sel">' +
+          [25,50,75].map(function(p){
+            return '<button class="kcw-pct-btn' + (p===60?' active':'') + '" onclick="KCWorld._setSendPct(' + p + ')">' + p + '%</button>';
+          }).join('') +
+        '</div>' +
+        '<div class="kcw-hud-sep"></div>' +
         '<div class="kcw-hud-players" id="kcw-phud"></div>' +
       '</div>' +
       '<div class="kcw-canvas-wrap"><canvas id="kcw-canvas"></canvas></div>' +
@@ -663,6 +764,38 @@
     Renderer.startLoop();
     st._clickHandler = handleClick;
     canvas.addEventListener('click', st._clickHandler);
+
+    /* hover: tooltip + hovered tile for arrow */
+    var tipEl = document.createElement('div');
+    tipEl.id = 'kcw-tile-tip'; tipEl.className = 'kcw-tile-tip';
+    tipEl.style.display = 'none';
+    canvas.parentElement.appendChild(tipEl);
+    st._moveHandler = function(e) {
+      var hit = Renderer.getClickTile(e.clientX, e.clientY);
+      st.hoveredTile = hit ? hit.idx : null;
+      if (!hit || !st.gameState || !st.mapStatic) { tipEl.style.display = 'none'; return; }
+      var t = st.mapStatic.terrain[hit.idx];
+      if (t === 'W' || t === 'M') { tipEl.style.display = 'none'; return; }
+      var dyn = (st.gameState.tiles && st.gameState.tiles[hit.idx]) || {o:0,t:0};
+      var ow = null;
+      Object.keys(st.players).forEach(function(u) { if (st.players[u].slot === dyn.o) ow = st.players[u]; });
+      var rect = canvas.getBoundingClientRect();
+      tipEl.style.left = (e.clientX - rect.left + 14) + 'px';
+      tipEl.style.top  = (e.clientY - rect.top  - 44) + 'px';
+      tipEl.style.display = 'block';
+      var allied = ow && st.alliances[st.mySlot] && st.alliances[st.mySlot][ow.slot];
+      tipEl.innerHTML = ow
+        ? '<span style="color:' + ow.color + '">■</span> ' + esc(ow.name) +
+          (allied ? ' <span style="color:#22c55e">✦ Ally</span>' : '') +
+          ' · ' + dyn.t + ' troops' +
+          (t === 'C' ? ' · <span style="color:#fbbf24">★ City</span>' : '') +
+          (dyn.b === 2 ? ' · <span style="color:#94a3b8">🛡 Fort</span>' : '')
+        : (dyn.t > 0 ? dyn.t + ' troops · ' : '') + (t === 'C' ? '★ City · neutral' : 'Neutral');
+    };
+    canvas.addEventListener('mousemove', st._moveHandler);
+
+    /* start alliance listener */
+    FBSync.listenAlliances();
 
     /* right-click → build fort popup */
     st._ctxHandler = function(e) {
@@ -726,19 +859,50 @@
       var tip = document.querySelector('.kcw-game-tip');
       if (tip) tip.innerHTML = '<span style="color:#ef4444">\u2694\uFE0F Eliminated \u2014 Spectating</span>';
     }
+    /* elimination announcements */
+    var curStats = gs.playerStats || {};
+    Object.keys(st.players).forEach(function(uid) {
+      var p = st.players[uid];
+      if (p.slot === st.mySlot) return;
+      var prev = st.lastStats[p.slot] || 0;
+      var curr = curStats[p.slot] || 0;
+      if (prev > 0 && curr === 0) {
+        toast(esc(p.name) + ' has been eliminated!', 'info');
+      }
+    });
+    st.lastStats = Object.assign({}, curStats);
+
     var el;
     el = document.getElementById('kcw-tick');    if (el) el.textContent = gs.tick || 0;
     el = document.getElementById('kcw-pct');     if (el) el.textContent = pct + '%';
     el = document.getElementById('kcw-troops');  if (el) el.textContent = myTroops;
+
+    /* sync % selector button states */
+    var selEl = document.getElementById('kcw-pct-sel');
+    if (selEl) {
+      selEl.querySelectorAll('.kcw-pct-btn').forEach(function(btn) {
+        btn.classList.toggle('active', parseInt(btn.textContent) === st.sendPercent);
+      });
+    }
+
     var phud = document.getElementById('kcw-phud');
     if (phud) {
-      phud.innerHTML = Object.keys(st.players).map(function(uid) {
+      var sortedPlayers = Object.keys(st.players).sort(function(a,b) {
+        return (curStats[st.players[b].slot]||0) - (curStats[st.players[a].slot]||0);
+      });
+      phud.innerHTML = sortedPlayers.map(function(uid) {
         var p = st.players[uid];
-        var cnt  = (gs.playerStats && gs.playerStats[p.slot]) || 0;
+        var cnt  = curStats[p.slot] || 0;
         var pct2 = Math.round(cnt / landCount * 100);
-        return '<div class="kcw-hud-player">' +
+        var elim = cnt === 0 && (gs.tick || 0) > 4;
+        var allied = st.alliances[st.mySlot] && st.alliances[st.mySlot][p.slot];
+        return '<div class="kcw-hud-player' + (elim ? ' elim' : '') + (allied ? ' allied' : '') + '"' +
+          ' title="' + (allied ? 'Allied · ' : '') + 'Click to propose alliance"' +
+          ' onclick="KCWorld._proposeAlliance(' + p.slot + ')">' +
           '<span class="kcw-hud-dot" style="background:' + p.color + '"></span>' +
-          esc(p.name) + ' ' + pct2 + '%</div>';
+          esc(p.name) + ' ' + (elim ? '<span style="color:#ef4444">☠</span>' : pct2 + '%') +
+          (allied ? ' <span style="color:#22c55e;font-size:.65rem">✦</span>' : '') +
+          '</div>';
       }).join('');
     }
   }
@@ -932,6 +1096,41 @@
       if (st.roomRef) st.roomRef.child('players/' + st.myUid + '/ready').set(ready);
     },
 
+    _setSendPct: function(pct) {
+      st.sendPercent = pct;
+      var sel = document.getElementById('kcw-pct-sel');
+      if (sel) sel.querySelectorAll('.kcw-pct-btn').forEach(function(b) {
+        b.classList.toggle('active', parseInt(b.textContent) === pct);
+      });
+    },
+
+    _proposeAlliance: function(targetSlot) {
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      if (targetSlot === st.mySlot) return;
+      var allied = st.alliances[st.mySlot] && st.alliances[st.mySlot][targetSlot];
+      if (allied) {
+        /* break alliance */
+        FBSync.pushAlliance(st.mySlot, targetSlot, null);
+        toast('Alliance broken', 'info');
+        return;
+      }
+      var key = Math.min(st.mySlot,targetSlot) + '_' + Math.max(st.mySlot,targetSlot);
+      /* check if other side already proposed */
+      if (!st.roomRef) return;
+      st.roomRef.child('alliances/' + key).once('value').then(function(snap) {
+        var val = snap.val();
+        if (val === 'proposed_' + targetSlot) {
+          /* they proposed to us — accept */
+          FBSync.pushAlliance(st.mySlot, targetSlot, 'active');
+          toast('Alliance formed! \u2728', 'success');
+        } else {
+          /* we propose */
+          FBSync.pushAlliance(st.mySlot, targetSlot, 'proposed_' + st.mySlot);
+          toast('Alliance proposal sent', 'info');
+        }
+      });
+    },
+
     _setBots: function(n) {
       var humanCount = Object.keys(st.players).filter(function(k){ return !st.players[k].isBot; }).length;
       st.botCount = Math.max(0, Math.min(6 - humanCount, n));
@@ -1004,7 +1203,8 @@
         isHost:false, mySlot:0, myUid:null, myName:'Player', discordId:null,
         players:{}, mapStatic:null, gameState:null, selectedTile:null,
         tickTimer:null, renderFrame:null, listeners:[], phase:'closed',
-        bots:[], botCount:1, spectating:false,
+        bots:[], botCount:1, spectating:false, sendPercent:60,
+        hoveredTile:null, lastStats:{}, alliances:{},
         _clickHandler:null, _resizeHandler:null, _ctxHandler:null, _touchHandler:null, _touchEndHandler:null
       };
     }
