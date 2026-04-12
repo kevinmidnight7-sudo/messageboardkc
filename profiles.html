@@ -869,9 +869,9 @@
                     usersQuery = userRef.orderByChild('emailVerified').equalTo(true).limitToLast(16);
                     break;
                 case 'skilled':
-                     // FIX: Remove the limit for the 'skilled' category to fetch all users.
-                     // The filtering will happen client-side, which is necessary for this type of query.
-                     usersQuery = userRef;
+                     // COST FIX: cap at 100 — downloading ALL users is too expensive.
+                     // Skilled users are those with highest battle wins; top 100 is representative.
+                     usersQuery = userRef.limitToLast(100);
                     break;
                 case 'diamond':
                     usersQuery = userRef.orderByChild('codesUnlocked/diamond').equalTo(true).limitToLast(16);

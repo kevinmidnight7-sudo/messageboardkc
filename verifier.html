@@ -117,6 +117,7 @@
       </div>
       <!-- Controls: Manage Badges & Logs -->
       <div class="p-4 flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-3">
+        <button id="refreshUsersBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">↻ Refresh List</button>
         <button id="manageBadgesBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-200">Manage Badges</button>
         <button id="viewBadgeLogsBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-200">Recent Badge Changes</button>
       </div>
@@ -313,9 +314,19 @@
     });
 
     // --- User List Logic ---
+    // COST FIX: was .on('value') which re-streamed the entire users collection on every change.
+    // Now .once() — admin clicks Refresh to reload manually.
     function initUserListListener() {
       const usersRef = db.ref("users");
-      usersRef.on('value', (snapshot) => {
+      document.getElementById('refreshUsersBtn').addEventListener('click', () => loadUserList());
+      loadUserList();
+    }
+    function loadUserList() {
+      const usersRef = db.ref("users");
+      _cachedUsersSnap = null; // invalidate badge cache so next badge open re-fetches
+      userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">Loading…</div>';
+      usersRef.once('value', (snapshot) => {
+        _cachedUsersSnap = snapshot; // reuse for badge modal
         userListContainer.innerHTML = '';
         if (!snapshot.exists()) {
           userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">No users found in the database.</div>';
@@ -410,10 +421,13 @@
     let badgeUsers = [];
     let badgeChanges = { offence: 0, defence: 0, overall: 0 };
     let selectedUserId = null;
+    // COST FIX: cache users snap for badge modal — reuse the same data loaded by loadUserList()
+    let _cachedUsersSnap = null;
 
     // Load users into badge management modal
     async function loadBadgeUsers() {
-      const usersSnap = await db.ref('users').once('value');
+      if (!_cachedUsersSnap) _cachedUsersSnap = await db.ref('users').once('value');
+      const usersSnap = _cachedUsersSnap;
       badgeUsers = [];
       usersSnap.forEach(uSnap => {
         const val = uSnap.val() || {};
