@@ -24,6 +24,7 @@
     tickTimer: null, renderFrame: null,
     listeners: [],
     phase: 'closed',
+    bots: [], botCount: 1,
     _clickHandler: null, _resizeHandler: null
   };
 
@@ -238,6 +239,40 @@
           }
         }
       }
+
+      /* ── Territory border pass ───────────────── */
+      var playersBySlot = {};
+      Object.keys(st.players).forEach(function(uid) {
+        var p = st.players[uid]; playersBySlot[p.slot] = p;
+      });
+      ctx.lineWidth = 2;
+      for (var by = 0; by < MAP_H; by++) {
+        for (var bx = 0; bx < MAP_W; bx++) {
+          var bidx = tileIdx(bx, by);
+          var bdyn = tiles[bidx] || { o: 0, t: 0 };
+          if (bdyn.o <= 0) continue;
+          var bowner = playersBySlot[bdyn.o];
+          if (!bowner) continue;
+          ctx.strokeStyle = bowner.color;
+          var bpx = offX + bx * ts, bpy = offY + by * ts;
+          /* right edge */
+          if (bx + 1 < MAP_W && (tiles[tileIdx(bx+1,by)]||{o:0}).o !== bdyn.o) {
+            ctx.beginPath(); ctx.moveTo(bpx+ts-1,bpy); ctx.lineTo(bpx+ts-1,bpy+ts); ctx.stroke();
+          }
+          /* left edge */
+          if (bx > 0 && (tiles[tileIdx(bx-1,by)]||{o:0}).o !== bdyn.o) {
+            ctx.beginPath(); ctx.moveTo(bpx+1,bpy); ctx.lineTo(bpx+1,bpy+ts); ctx.stroke();
+          }
+          /* bottom edge */
+          if (by + 1 < MAP_H && (tiles[tileIdx(bx,by+1)]||{o:0}).o !== bdyn.o) {
+            ctx.beginPath(); ctx.moveTo(bpx,bpy+ts-1); ctx.lineTo(bpx+ts,bpy+ts-1); ctx.stroke();
+          }
+          /* top edge */
+          if (by > 0 && (tiles[tileIdx(bx,by-1)]||{o:0}).o !== bdyn.o) {
+            ctx.beginPath(); ctx.moveTo(bpx,bpy+1); ctx.lineTo(bpx+ts,bpy+1); ctx.stroke();
+          }
+        }
+      }
     },
 
     getClickTile: function(clientX, clientY) {
@@ -365,6 +400,41 @@
     }
   }
 
+  var BOT_NAMES = ['General Ryze','Commander Nova','Baron Kessler','Marshal Quinn','Captain Zeta'];
+
+  var Bot = {
+    think: function(tiles, terrain, botSlot) {
+      var attacks = [];
+      var keys = Object.keys(tiles).filter(function(k) {
+        return tiles[k].o === botSlot && tiles[k].t > 6;
+      });
+      keys.sort(function() { return Math.random() - 0.5; });
+      var found = 0;
+      for (var i = 0; i < keys.length && found < 2; i++) {
+        var fromIdx = parseInt(keys[i]);
+        var pos = tileXY(fromIdx);
+        var neighbors = [];
+        if (pos.x > 0)       neighbors.push(tileIdx(pos.x-1, pos.y));
+        if (pos.x < MAP_W-1) neighbors.push(tileIdx(pos.x+1, pos.y));
+        if (pos.y > 0)       neighbors.push(tileIdx(pos.x,   pos.y-1));
+        if (pos.y < MAP_H-1) neighbors.push(tileIdx(pos.x,   pos.y+1));
+        neighbors.sort(function() { return Math.random() - 0.5; });
+        for (var j = 0; j < neighbors.length; j++) {
+          var toIdx = neighbors[j];
+          var t = terrain[toIdx];
+          if (t === 'W' || t === 'M') continue;
+          var toTile = tiles[toIdx] || { o: 0, t: 0 };
+          if (toTile.o === botSlot) continue;
+          if (toTile.o === 0 || tiles[keys[i]].t > toTile.t * 1.3) {
+            attacks.push({ from: fromIdx, to: toIdx, percent: 70, attacker: botSlot });
+            found++; break;
+          }
+        }
+      }
+      return attacks;
+    }
+  };
+
   function hostTick() {
     if (!st.isHost || !st.gameState || !st.mapStatic) return;
     st.roomRef.child('attacks').once('value').then(function(snap) {
@@ -378,6 +448,12 @@
 
       attacks.forEach(function(atk) {
         Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker);
+      });
+      /* bot moves */
+      st.bots.forEach(function(botSlot) {
+        Bot.think(tiles, st.mapStatic.terrain, botSlot).forEach(function(atk) {
+          Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker);
+        });
       });
       Engine.genTroops(tiles, st.mapStatic.terrain);
 
@@ -466,6 +542,16 @@
       '</div>' +
       '<div class="kcw-player-list">' + (rows || '<div style="color:#334155;font-size:.8rem;padding:8px">No players yet&hellip;</div>') + '</div>' +
       '<div class="kcw-lobby-actions">' + actions + '</div>' +
+      (st.isHost
+        ? '<div class="kcw-bot-row">' +
+            '<span class="kcw-bot-label">\uD83E\uDD16 AI Bots</span>' +
+            '<div class="kcw-bot-controls">' +
+              '<button class="kcw-bot-btn" onclick="KCWorld._setBots(Math.max(0,st.botCount-1))">\u2212</button>' +
+              '<span class="kcw-bot-count">' + (st.botCount || 0) + '</span>' +
+              '<button class="kcw-bot-btn" onclick="KCWorld._setBots(' + (st.botCount||0) + '+1)">\u002b</button>' +
+            '</div>' +
+          '</div>'
+        : '')  +
       '<div class="kcw-map-label">\uD83D\uDDFA Map 40\xd725 &middot; Troops every 2s &middot; Win at 75%</div>' +
     '</div>';
   }
@@ -687,6 +773,20 @@
     startGame: function() {
       if (!st.isHost) return;
       var playerList = Object.keys(st.players).map(function(uid){ return [uid, st.players[uid]]; });
+      /* add bot players */
+      st.bots = [];
+      var botUpdates = {};
+      for (var bi = 0; bi < (st.botCount || 0) && playerList.length < 6; bi++) {
+        var usedSlots = playerList.map(function(e){ return e[1].slot; });
+        var botSlot = [1,2,3,4,5,6].find(function(s){ return usedSlots.indexOf(s) === -1; });
+        if (!botSlot) break;
+        var botUid = 'bot_' + botSlot;
+        var botP = { name: BOT_NAMES[bi % BOT_NAMES.length], color: PLAYER_COLORS[botSlot-1], slot: botSlot, ready: true, alive: true, isBot: true };
+        playerList.push([botUid, botP]);
+        st.players[botUid] = botP;
+        botUpdates['players/' + botUid] = botP;
+        st.bots.push(botSlot);
+      }
       var mapStatic  = MapGen.generate(playerList.length);
       var initTiles  = {};
       playerList.forEach(function(entry, i) {
@@ -702,7 +802,8 @@
         }
       });
       var initGs = { tick: 0, winner: null, tiles: initTiles, playerStats: {} };
-      st.roomRef.update({ status: 'playing', mapStatic: mapStatic, gameState: initGs }).then(function() {
+      var roomUpdate = Object.assign({ status: 'playing', mapStatic: mapStatic, gameState: initGs, bots: st.bots }, botUpdates);
+      st.roomRef.update(roomUpdate).then(function() {
         st.mapStatic = mapStatic; st.gameState = initGs;
         showGame();
       });
@@ -710,6 +811,12 @@
 
     _setReady: function(ready) {
       if (st.roomRef) st.roomRef.child('players/' + st.myUid + '/ready').set(ready);
+    },
+
+    _setBots: function(n) {
+      var humanCount = Object.keys(st.players).filter(function(k){ return !st.players[k].isBot; }).length;
+      st.botCount = Math.max(0, Math.min(6 - humanCount, n));
+      renderLobby();
     },
 
     _submitAttack: function(fromIdx, toIdx, percent) {
@@ -740,6 +847,7 @@
         isHost:false, mySlot:0, myUid:null, myName:'Player', discordId:null,
         players:{}, mapStatic:null, gameState:null, selectedTile:null,
         tickTimer:null, renderFrame:null, listeners:[], phase:'closed',
+        bots:[], botCount:1,
         _clickHandler:null, _resizeHandler:null
       };
     }
