@@ -177,8 +177,11 @@
       var offY = Math.floor((st.canvas.height - totalH) / 2);
 
       ctx.clearRect(0, 0, st.canvas.width, st.canvas.height);
-      ctx.fillStyle = '#080c14';
+      ctx.fillStyle = '#4a8db5';   /* deep ocean border */
       ctx.fillRect(0, 0, st.canvas.width, st.canvas.height);
+
+      /* centroid accumulators for territory labels */
+      var centroids = {};
 
       for (var y = 0; y < MAP_H; y++) {
         for (var x = 0; x < MAP_W; x++) {
@@ -188,60 +191,103 @@
           var px   = offX + x * ts;
           var py   = offY + y * ts;
 
-          /* base fill */
+          /* accumulate label data */
+          if (dyn.o > 0) {
+            if (!centroids[dyn.o]) centroids[dyn.o] = { sx:0, sy:0, n:0, troops:0 };
+            centroids[dyn.o].sx += x;
+            centroids[dyn.o].sy += y;
+            centroids[dyn.o].n++;
+            centroids[dyn.o].troops += (dyn.t || 0);
+          }
+
+          /* base fill — light / earthy OpenFront palette */
           var fill;
           if (t === 'W') {
-            fill = '#0d2240';
+            /* coastal water lighter than open ocean */
+            var isCoast = (
+              (x > 0       && terrain[tileIdx(x-1,y)] !== 'W' && terrain[tileIdx(x-1,y)] !== 'M') ||
+              (x < MAP_W-1 && terrain[tileIdx(x+1,y)] !== 'W' && terrain[tileIdx(x+1,y)] !== 'M') ||
+              (y > 0       && terrain[tileIdx(x,y-1)] !== 'W' && terrain[tileIdx(x,y-1)] !== 'M') ||
+              (y < MAP_H-1 && terrain[tileIdx(x,y+1)] !== 'W' && terrain[tileIdx(x,y+1)] !== 'M')
+            );
+            fill = isCoast ? '#7fc4e0' : '#5a9ec7';
           } else if (t === 'M') {
-            fill = '#1c2231';
+            fill = '#b0bdb8';   /* gray-green mountain base */
           } else if (dyn.o > 0) {
             var owner = null;
             var pkeys = Object.keys(st.players);
             for (var pi = 0; pi < pkeys.length; pi++) {
               if (st.players[pkeys[pi]].slot === dyn.o) { owner = st.players[pkeys[pi]]; break; }
             }
-            fill = owner ? owner.color + 'b0' : '#55555580';
+            fill = owner ? owner.color + 'a8' : 'rgba(120,120,120,0.65)';
           } else {
-            if (t === 'C')      fill = '#2a1f0e';
-            else if (t === 'H') fill = '#101e12';  /* highland — dark forest green */
-            else                fill = '#18202e';
+            if (t === 'C')      fill = '#d6c87a';  /* city — sandy gold */
+            else if (t === 'H') fill = '#9abb7e';  /* highland — soft green */
+            else                fill = '#cabb9e';  /* neutral land — parchment */
           }
 
           ctx.fillStyle = fill;
           ctx.fillRect(px, py, ts, ts);
+          /* no grid lines — cleaner OpenFront look */
 
-          /* grid line */
-          ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-          ctx.lineWidth = 0.5;
-          ctx.strokeRect(px + 0.25, py + 0.25, ts - 0.5, ts - 0.5);
-
-          /* mountain */
+          /* mountain — triangular peak with snow cap & shadow side */
           if (t === 'M') {
-            ctx.fillStyle = '#2e3a4a';
-            ctx.fillRect(px + ts*0.25, py + ts*0.2, ts*0.5, ts*0.3);
-            ctx.fillStyle = '#3d4f60';
-            ctx.fillRect(px + ts*0.35, py + ts*0.07, ts*0.3, ts*0.16);
+            if (ts >= 8) {
+              /* shadow side */
+              ctx.fillStyle = '#8c9c96';
+              ctx.beginPath();
+              ctx.moveTo(px + ts*0.5, py + ts*0.1);
+              ctx.lineTo(px + ts*0.88, py + ts*0.78);
+              ctx.lineTo(px + ts*0.5, py + ts*0.78);
+              ctx.closePath();
+              ctx.fill();
+              /* light side */
+              ctx.fillStyle = '#cad4cf';
+              ctx.beginPath();
+              ctx.moveTo(px + ts*0.5, py + ts*0.1);
+              ctx.lineTo(px + ts*0.12, py + ts*0.78);
+              ctx.lineTo(px + ts*0.5, py + ts*0.78);
+              ctx.closePath();
+              ctx.fill();
+              /* snow cap */
+              ctx.fillStyle = '#eef2f0';
+              ctx.beginPath();
+              ctx.moveTo(px + ts*0.5,  py + ts*0.1);
+              ctx.lineTo(px + ts*0.62, py + ts*0.32);
+              ctx.lineTo(px + ts*0.38, py + ts*0.32);
+              ctx.closePath();
+              ctx.fill();
+            } else {
+              ctx.fillStyle = '#b8c4be';
+              ctx.fillRect(px, py, ts, ts);
+            }
           }
-          /* highland — small green triangle marker */
-          if (t === 'H' && ts >= 10) {
-            ctx.fillStyle = dyn.o > 0 ? 'rgba(74,222,128,0.35)' : 'rgba(74,222,128,0.18)';
+
+          /* highland — soft rolling hill ellipse */
+          if (t === 'H' && ts >= 8) {
+            ctx.fillStyle = dyn.o > 0 ? 'rgba(80,140,50,0.28)' : 'rgba(80,140,50,0.45)';
             ctx.beginPath();
-            ctx.moveTo(px + ts*0.5, py + ts*0.15);
-            ctx.lineTo(px + ts*0.8, py + ts*0.75);
-            ctx.lineTo(px + ts*0.2, py + ts*0.75);
-            ctx.closePath();
+            ctx.ellipse(px + ts*0.5, py + ts*0.62, ts*0.4, ts*0.26, 0, 0, Math.PI * 2);
             ctx.fill();
           }
 
-          /* water glint */
+          /* water ripple */
           if (t === 'W' && ts >= 10) {
-            ctx.fillStyle = 'rgba(96,165,250,0.07)';
-            ctx.fillRect(px+2, py + Math.floor(ts*0.5)-1, ts-4, 2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            ctx.moveTo(px + ts*0.2, py + ts*0.5);
+            ctx.lineTo(px + ts*0.55, py + ts*0.5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(px + ts*0.45, py + ts*0.66);
+            ctx.lineTo(px + ts*0.78, py + ts*0.66);
+            ctx.stroke();
           }
 
           /* city star */
           if (t === 'C' && ts >= 10) {
-            ctx.fillStyle = dyn.o > 0 ? 'rgba(255,215,60,0.9)' : 'rgba(255,180,40,0.4)';
+            ctx.fillStyle = dyn.o > 0 ? 'rgba(160,110,10,0.95)' : 'rgba(140,100,10,0.65)';
             var fs = Math.max(7, Math.min(ts - 4, 13));
             ctx.font = 'bold ' + fs + 'px sans-serif';
             ctx.textAlign = 'center';
@@ -280,31 +326,33 @@
             }
           }
 
-          /* troop count */
+          /* troop count — dark text on light bg, small drop shadow */
           if (t !== 'W' && t !== 'M' && dyn.t > 0 && ts >= 14) {
-            /* colour: white normally, orange near cap, red at cap */
-            var troopColor = '#ffffff';
+            var troopColor = dyn.o > 0 ? '#1a140a' : 'rgba(70,55,35,0.7)';
             if (dyn.o === st.mySlot) {
-              if (dyn.t >= TROOP_CAP)  troopColor = '#ef4444';
-              else if (dyn.t >= TROOP_WARN) troopColor = '#f59e0b';
+              if (dyn.t >= TROOP_CAP)       troopColor = '#b91c1c';
+              else if (dyn.t >= TROOP_WARN) troopColor = '#92400e';
             }
-            ctx.fillStyle = dyn.o > 0 ? troopColor : '#6b7280';
             var tfs = Math.max(6, Math.min(ts - 5, 11));
             ctx.font = 'bold ' + tfs + 'px sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             var textY = (t === 'C' && ts >= 14) ? py + ts*0.72 : py + ts*0.5;
+            /* subtle light halo for readability */
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.fillText(dyn.t > 999 ? '999' : dyn.t, px + ts*0.5 + 0.5, textY + 0.5);
+            ctx.fillStyle = troopColor;
             ctx.fillText(dyn.t > 999 ? '999' : dyn.t, px + ts*0.5, textY);
           }
 
           /* selection */
           if (st.selectedTile === idx) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+            ctx.strokeStyle = 'rgba(0,0,0,0.7)';
             ctx.lineWidth = 2;
             ctx.strokeRect(px+1, py+1, ts-2, ts-2);
-            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-            ctx.lineWidth = 5;
-            ctx.strokeRect(px-1, py-1, ts+2, ts+2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(px, py, ts, ts);
           }
         }
       }
@@ -314,7 +362,6 @@
       Object.keys(st.players).forEach(function(uid) {
         var p = st.players[uid]; playersBySlot[p.slot] = p;
       });
-      ctx.lineWidth = 2;
       for (var by = 0; by < MAP_H; by++) {
         for (var bx = 0; bx < MAP_W; bx++) {
           var bidx = tileIdx(bx, by);
@@ -322,26 +369,69 @@
           if (bdyn.o <= 0) continue;
           var bowner = playersBySlot[bdyn.o];
           if (!bowner) continue;
-          ctx.strokeStyle = bowner.color;
           var bpx = offX + bx * ts, bpy = offY + by * ts;
-          /* right edge */
-          if (bx + 1 < MAP_W && (tiles[tileIdx(bx+1,by)]||{o:0}).o !== bdyn.o) {
-            ctx.beginPath(); ctx.moveTo(bpx+ts-1,bpy); ctx.lineTo(bpx+ts-1,bpy+ts); ctx.stroke();
-          }
-          /* left edge */
-          if (bx > 0 && (tiles[tileIdx(bx-1,by)]||{o:0}).o !== bdyn.o) {
-            ctx.beginPath(); ctx.moveTo(bpx+1,bpy); ctx.lineTo(bpx+1,bpy+ts); ctx.stroke();
-          }
-          /* bottom edge */
-          if (by + 1 < MAP_H && (tiles[tileIdx(bx,by+1)]||{o:0}).o !== bdyn.o) {
-            ctx.beginPath(); ctx.moveTo(bpx,bpy+ts-1); ctx.lineTo(bpx+ts,bpy+ts-1); ctx.stroke();
-          }
-          /* top edge */
-          if (by > 0 && (tiles[tileIdx(bx,by-1)]||{o:0}).o !== bdyn.o) {
-            ctx.beginPath(); ctx.moveTo(bpx,bpy+1); ctx.lineTo(bpx+ts,bpy+1); ctx.stroke();
+          var bEdges = [
+            /* right */  bx + 1 < MAP_W && (tiles[tileIdx(bx+1,by)]||{o:0}).o !== bdyn.o ? [bpx+ts,bpy,bpx+ts,bpy+ts] : null,
+            /* left  */  bx > 0         && (tiles[tileIdx(bx-1,by)]||{o:0}).o !== bdyn.o ? [bpx,bpy,bpx,bpy+ts]       : null,
+            /* bottom*/  by + 1 < MAP_H && (tiles[tileIdx(bx,by+1)]||{o:0}).o !== bdyn.o ? [bpx,bpy+ts,bpx+ts,bpy+ts] : null,
+            /* top   */  by > 0         && (tiles[tileIdx(bx,by-1)]||{o:0}).o !== bdyn.o ? [bpx,bpy,bpx+ts,bpy]       : null
+          ];
+          for (var ei = 0; ei < 4; ei++) {
+            if (!bEdges[ei]) continue;
+            var e = bEdges[ei];
+            /* outer glow */
+            ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(e[0],e[1]); ctx.lineTo(e[2],e[3]); ctx.stroke();
+            /* crisp coloured border */
+            ctx.strokeStyle = bowner.color;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(e[0],e[1]); ctx.lineTo(e[2],e[3]); ctx.stroke();
           }
         }
       }
+
+      /* ── Territory name labels ───────────────── */
+      ctx.save();
+      Object.keys(centroids).forEach(function(slotStr) {
+        var slot = parseInt(slotStr);
+        var c    = centroids[slotStr];
+        var pObj = playersBySlot[slot];
+        if (!c || !pObj || c.n === 0) return;
+        var lx = offX + (c.sx / c.n + 0.5) * ts;
+        var ly = offY + (c.sy / c.n + 0.5) * ts;
+        var name = pObj.name;
+        var troops = c.troops > 9999 ? (c.troops / 1000).toFixed(1) + 'K'
+                   : c.troops > 999  ? (c.troops / 1000).toFixed(1) + 'K'
+                   : String(c.troops);
+        var nameFSize = Math.max(9, Math.min(ts - 2, 13));
+        var numFSize  = Math.max(8, Math.min(ts - 3, 11));
+        /* pill background */
+        ctx.font = 'bold ' + nameFSize + 'px sans-serif';
+        var nameW = ctx.measureText(name).width;
+        ctx.font = nameFSize + 'px sans-serif';
+        var numW  = ctx.measureText(troops).width;
+        var pillW = Math.max(nameW, numW) + 14;
+        var pillH = nameFSize + numFSize + 10;
+        var pillX = lx - pillW / 2;
+        var pillY = ly - pillH / 2;
+        ctx.fillStyle = 'rgba(10,8,6,0.55)';
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(pillX, pillY, pillW, pillH, 5)
+                      : ctx.rect(pillX, pillY, pillW, pillH);
+        ctx.fill();
+        /* name */
+        ctx.fillStyle = '#f5f0e8';
+        ctx.font = 'bold ' + nameFSize + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText(name, lx, pillY + nameFSize + 3);
+        /* troop count */
+        ctx.fillStyle = 'rgba(220,210,195,0.9)';
+        ctx.font = numFSize + 'px sans-serif';
+        ctx.fillText(troops, lx, pillY + nameFSize + numFSize + 6);
+      });
+      ctx.restore();
 
       /* ── Fog of War pass ────────────────────── */
       if (st.fogOfWar && !st.spectating) {
@@ -376,8 +466,8 @@
         var ang = Math.atan2(hy-sy, hx-sx);
         var hovTile = tiles[st.hoveredTile] || {o:0};
         var isEnemy = hovTile.o > 0 && hovTile.o !== st.mySlot;
-        ctx.strokeStyle = isEnemy ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.7)';
-        ctx.fillStyle   = isEnemy ? 'rgba(239,68,68,0.8)' : 'rgba(255,255,255,0.7)';
+        ctx.strokeStyle = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
+        ctx.fillStyle   = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 3]);
         ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(hx, hy); ctx.stroke();
@@ -396,9 +486,9 @@
       var mmY = mmPad;
       var mpx = mmW / MAP_W, mpy = mmH / MAP_H;
       /* background */
-      ctx.fillStyle = 'rgba(8,12,20,0.82)';
+      ctx.fillStyle = 'rgba(40,55,65,0.88)';
       ctx.fillRect(mmX-3, mmY-3, mmW+6, mmH+6);
-      ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
       ctx.lineWidth = 1;
       ctx.strokeRect(mmX-3, mmY-3, mmW+6, mmH+6);
       /* tiles */
@@ -407,10 +497,10 @@
           var ridx = tileIdx(rx, ry);
           var rt = terrain[ridx], rdyn = tiles[ridx] || {o:0};
           var rf;
-          if (rt === 'W') rf = '#0d2240';
-          else if (rt === 'M') rf = '#2e3a4a';
-          else if (rdyn.o > 0) { var ro = playersBySlot[rdyn.o]; rf = ro ? ro.color : '#555'; }
-          else rf = rt === 'C' ? '#3a2a18' : (rt === 'H' ? '#101e12' : '#18202e');
+          if (rt === 'W') rf = '#5a9ec7';
+          else if (rt === 'M') rf = '#8c9c96';
+          else if (rdyn.o > 0) { var ro = playersBySlot[rdyn.o]; rf = ro ? ro.color : '#888'; }
+          else rf = rt === 'C' ? '#c8b860' : (rt === 'H' ? '#8aad6a' : '#b8a882');
           ctx.fillStyle = rf;
           ctx.fillRect(mmX + rx*mpx, mmY + ry*mpy, Math.ceil(mpx)+0.5, Math.ceil(mpy)+0.5);
         }
