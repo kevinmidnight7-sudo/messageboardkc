@@ -26,6 +26,7 @@
     mapStatic: null,
     gameState: null,
     selectedTile: null,
+    selectedTerritory: null,   /* array of tile indices for selected blob */
     tickTimer: null, renderFrame: null,
     listeners: [],
     phase: 'closed',
@@ -182,6 +183,14 @@
 
       /* centroid accumulators for territory labels */
       var centroids = {};
+
+      /* precompute selected territory set for O(1) lookup */
+      var selSet = {};
+      if (st.selectedTerritory) {
+        for (var si = 0; si < st.selectedTerritory.length; si++) {
+          selSet[st.selectedTerritory[si]] = true;
+        }
+      }
 
       for (var y = 0; y < MAP_H; y++) {
         for (var x = 0; x < MAP_W; x++) {
@@ -345,14 +354,13 @@
             ctx.fillText(dyn.t > 999 ? '999' : dyn.t, px + ts*0.5, textY);
           }
 
-          /* selection */
-          if (st.selectedTile === idx) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(px+1, py+1, ts-2, ts-2);
-            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(px, py, ts, ts);
+          /* selection highlight — whole territory blob */
+          if (selSet[idx]) {
+            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+            ctx.fillRect(px, py, ts, ts);
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(px + 0.5, py + 0.5, ts - 1, ts - 1);
           }
         }
       }
@@ -458,26 +466,35 @@
         }
       }
 
-      /* ── Attack preview arrow ────────────────── */
-      if (st.selectedTile !== null && st.hoveredTile !== null && st.hoveredTile !== st.selectedTile) {
-        var sp = tileXY(st.selectedTile), hp = tileXY(st.hoveredTile);
-        var sx = offX + sp.x*ts + ts/2, sy = offY + sp.y*ts + ts/2;
-        var hx = offX + hp.x*ts + ts/2, hy = offY + hp.y*ts + ts/2;
-        var ang = Math.atan2(hy-sy, hx-sx);
+      /* ── Attack preview arrow (from territory centroid to hovered target) ── */
+      if (st.selectedTerritory && st.selectedTerritory.length > 0 && st.hoveredTile !== null) {
         var hovTile = tiles[st.hoveredTile] || {o:0};
-        var isEnemy = hovTile.o > 0 && hovTile.o !== st.mySlot;
-        ctx.strokeStyle = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
-        ctx.fillStyle   = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 3]);
-        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(hx, hy); ctx.stroke();
-        ctx.setLineDash([]);
-        /* arrowhead */
-        ctx.beginPath();
-        ctx.moveTo(hx, hy);
-        ctx.lineTo(hx - 10*Math.cos(ang-0.4), hy - 10*Math.sin(ang-0.4));
-        ctx.lineTo(hx - 10*Math.cos(ang+0.4), hy - 10*Math.sin(ang+0.4));
-        ctx.closePath(); ctx.fill();
+        if (hovTile.o !== st.mySlot) {
+          /* centroid of selected territory */
+          var tcx = 0, tcy = 0;
+          for (var tci = 0; tci < st.selectedTerritory.length; tci++) {
+            var tcp = tileXY(st.selectedTerritory[tci]);
+            tcx += tcp.x; tcy += tcp.y;
+          }
+          tcx /= st.selectedTerritory.length;
+          tcy /= st.selectedTerritory.length;
+          var arsx = offX + tcx*ts + ts/2, arsy = offY + tcy*ts + ts/2;
+          var ahp  = tileXY(st.hoveredTile);
+          var arhx = offX + ahp.x*ts + ts/2, arhy = offY + ahp.y*ts + ts/2;
+          var ang  = Math.atan2(arhy - arsy, arhx - arsx);
+          var isEnemy = hovTile.o > 0 && hovTile.o !== st.mySlot;
+          ctx.strokeStyle = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
+          ctx.fillStyle   = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(arsx, arsy); ctx.lineTo(arhx, arhy); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(arhx, arhy);
+          ctx.lineTo(arhx - 10*Math.cos(ang-0.4), arhy - 10*Math.sin(ang-0.4));
+          ctx.lineTo(arhx - 10*Math.cos(ang+0.4), arhy - 10*Math.sin(ang+0.4));
+          ctx.closePath(); ctx.fill();
+        }
       }
 
       /* ── Minimap ────────────────────────────── */
@@ -505,12 +522,13 @@
           ctx.fillRect(mmX + rx*mpx, mmY + ry*mpy, Math.ceil(mpx)+0.5, Math.ceil(mpy)+0.5);
         }
       }
-      /* my territory highlight outline */
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 0.5;
-      if (st.selectedTile !== null) {
-        var msp = tileXY(st.selectedTile);
-        ctx.strokeRect(mmX + msp.x*mpx - 1, mmY + msp.y*mpy - 1, mpx + 2, mpy + 2);
+      /* selected territory highlight on minimap */
+      if (st.selectedTerritory && st.selectedTerritory.length > 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        for (var msi = 0; msi < st.selectedTerritory.length; msi++) {
+          var mstp = tileXY(st.selectedTerritory[msi]);
+          ctx.fillRect(mmX + mstp.x*mpx, mmY + mstp.y*mpy, Math.ceil(mpx), Math.ceil(mpy));
+        }
       }
 
       /* ── Pings (emoji markers, float + fade over 3.5 s) ─── */
@@ -851,6 +869,74 @@
     }
   };
 
+  /* BFS flood-fill: returns array of all tile indices connected to startIdx owned by slot */
+  function getConnectedTiles(startIdx, slot) {
+    var tiles = (st.gameState && st.gameState.tiles) || {};
+    var start = tiles[startIdx];
+    if (!start || start.o !== slot) return [];
+    var visited = {}, queue = [startIdx];
+    visited[startIdx] = true;
+    var dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+    for (var qi = 0; qi < queue.length; qi++) {
+      var cur = queue[qi], cp = tileXY(cur);
+      for (var di = 0; di < dirs.length; di++) {
+        var nx = cp.x + dirs[di][0], ny = cp.y + dirs[di][1];
+        if (nx < 0 || nx >= MAP_W || ny < 0 || ny >= MAP_H) continue;
+        var nIdx = tileIdx(nx, ny);
+        if (visited[nIdx]) continue;
+        if (((tiles[nIdx]) || {o:0}).o === slot) {
+          visited[nIdx] = true; queue.push(nIdx);
+        }
+      }
+    }
+    return queue;
+  }
+
+  /* Submit up to 5 attacks from territory border tiles toward targetIdx */
+  function submitTerritoryAttack(territory, targetIdx) {
+    if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+    var tiles   = (st.gameState && st.gameState.tiles) || {};
+    var terrain = st.mapStatic && st.mapStatic.terrain;
+    if (!terrain) return;
+    var tp = tileXY(targetIdx);
+    var dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+    /* build territory set for fast membership test */
+    var terSet = {};
+    for (var ti = 0; ti < territory.length; ti++) terSet[territory[ti]] = true;
+    /* collect border (from→to) pairs sorted by dist to target */
+    var candidates = [];
+    for (var ci = 0; ci < territory.length; ci++) {
+      var fromIdx = territory[ci];
+      var fromTile = tiles[fromIdx];
+      if (!fromTile || fromTile.t < 2) continue;
+      var fp = tileXY(fromIdx);
+      for (var di = 0; di < dirs.length; di++) {
+        var nx = fp.x + dirs[di][0], ny = fp.y + dirs[di][1];
+        if (nx < 0 || nx >= MAP_W || ny < 0 || ny >= MAP_H) continue;
+        var nIdx = tileIdx(nx, ny);
+        if (terSet[nIdx]) continue;             /* within own blob */
+        var nt = terrain[nIdx];
+        if (nt === 'W' || nt === 'M') continue;
+        var nTile = tiles[nIdx] || {o:0};
+        if (nTile.o === st.mySlot) continue;    /* another of our blobs — skip */
+        var dist = Math.abs(nx - tp.x) + Math.abs(ny - tp.y);
+        candidates.push({ from: fromIdx, to: nIdx, dist: dist });
+      }
+    }
+    if (!candidates.length) return;
+    candidates.sort(function(a, b) { return a.dist - b.dist; });
+    /* deduplicate: at most one attack per source tile, one per target tile */
+    var usedFrom = {}, usedTo = {}, sent = 0;
+    for (var ki = 0; ki < candidates.length && sent < 5; ki++) {
+      var c = candidates[ki];
+      if (usedFrom[c.from] || usedTo[c.to]) continue;
+      usedFrom[c.from] = true;
+      usedTo[c.to]     = true;
+      KCWorld._submitAttack(c.from, c.to, st.sendPercent);
+      sent++;
+    }
+  }
+
   function handleKeyboard(e) {
     if (st.phase !== 'playing') return;
     var k = e.key;
@@ -858,7 +944,11 @@
     else if (k === '2') KCWorld._setSendPct(50);
     else if (k === '3') KCWorld._setSendPct(75);
     else if (k === '4') KCWorld._setSendPct(100);
-    else if (k === ' ' || k === 'Escape') { e.preventDefault(); st.selectedTile = null; }
+    else if (k === ' ' || k === 'Escape') {
+      e.preventDefault();
+      st.selectedTile = null;
+      st.selectedTerritory = null;
+    }
     else if (k === 'f' || k === 'F') KCWorld._toggleFog();
     else if ((k === 'n' || k === 'N') && st.selectedTile !== null) KCWorld._launchNuke(st.selectedTile);
     else if ((k === 'p' || k === 'P') && st.selectedTile !== null) KCWorld._sendPing(st.selectedTile, '\u26A0\uFE0F');
@@ -874,16 +964,16 @@
     if (t === 'W' || t === 'M') return;
     var dyn = (st.gameState && st.gameState.tiles && st.gameState.tiles[hit.idx]) || { o: 0, t: 0 };
     if (dyn.o === st.mySlot) {
-      st.selectedTile = (st.selectedTile === hit.idx) ? null : hit.idx;
-    } else if (st.selectedTile !== null) {
-      var from = tileXY(st.selectedTile);
-      if (Math.abs(hit.x - from.x) <= 1 && Math.abs(hit.y - from.y) <= 1) {
-        KCWorld._submitAttack(st.selectedTile, hit.idx, st.sendPercent);
-        st.selectedTile = null;
-      } else {
-        st.selectedTile = null;
-      }
+      /* select entire connected territory blob */
+      st.selectedTerritory = getConnectedTiles(hit.idx, st.mySlot);
+      st.selectedTile = hit.idx;   /* kept so keyboard N/P know a tile */
+    } else if (st.selectedTerritory && st.selectedTerritory.length > 0) {
+      /* attack toward clicked tile from territory border */
+      submitTerritoryAttack(st.selectedTerritory, hit.idx);
+      st.selectedTerritory = null;
+      st.selectedTile = null;
     } else {
+      st.selectedTerritory = null;
       st.selectedTile = null;
     }
   }
@@ -1031,7 +1121,7 @@
     if (pop) pop.remove();
     st.listeners.forEach(function(off){ off(); });
     st.listeners = [];
-    st.canvas = null; st.ctx = null; st.selectedTile = null; st.spectating = false;
+    st.canvas = null; st.ctx = null; st.selectedTile = null; st.selectedTerritory = null; st.spectating = false;
     st._clickHandler = null; st._resizeHandler = null; st._ctxHandler = null;
     st._touchHandler = null; st._touchEndHandler = null;
     st.pings = {}; st.nukeFlash = null; st.betrayers = {};
@@ -1056,7 +1146,7 @@
           ' onclick="KCWorld.joinRoom(document.getElementById(\'kcw-code-in\').value)">Join</button>' +
       '</div>' +
       '<div class="kcw-rules"><b>How to play</b><br>' +
-        'Click <b>your territory</b> then an adjacent tile to attack.<br>' +
+        'Click <b>your territory</b> then <b>anywhere</b> to attack.<br>' +
         'Troops grow every 2s. Cities give bonus income.<br>' +
         'First to <b>75%</b> of the map wins!<br>' +
         'Win: <b>+75 pts</b> &nbsp;&middot;&nbsp; Participate: <b>+10 pts</b>' +
@@ -1133,7 +1223,7 @@
         '<div class="kcw-hud-players" id="kcw-phud"></div>' +
       '</div>' +
       '<div class="kcw-canvas-wrap"><canvas id="kcw-canvas"></canvas></div>' +
-      '<div class="kcw-game-tip">Click <span style="color:' + myColor + '">\u25a0 your tile</span> \u2192 adjacent to attack &nbsp;\u00b7&nbsp; Right-click to build/nuke/ping &nbsp;\u00b7&nbsp; Keys: 1-4 % \u00b7 F fog \u00b7 N nuke \u00b7 P ping</div>' +
+      '<div class="kcw-game-tip">Click <span style="color:' + myColor + '">\u25a0 your territory</span> \u2192 anywhere to attack &nbsp;\u00b7&nbsp; Right-click to build/nuke/ping &nbsp;\u00b7&nbsp; Keys: 1-4 % \u00b7 F fog \u00b7 N nuke \u00b7 P ping</div>' +
     '</div>';
 
     var canvas = document.getElementById('kcw-canvas');
@@ -1616,6 +1706,7 @@
       });
       toast('\u2622\uFE0F Nuke launched!', 'info');
       st.selectedTile = null;
+      st.selectedTerritory = null;
     },
 
     _sendPing: function(pingIdx, emoji) {
@@ -1647,7 +1738,7 @@
         overlay:null, canvas:null, ctx:null,
         roomRef:null, roomCode:null,
         isHost:false, mySlot:0, myUid:null, myName:'Player', discordId:null,
-        players:{}, mapStatic:null, gameState:null, selectedTile:null,
+        players:{}, mapStatic:null, gameState:null, selectedTile:null, selectedTerritory:null,
         tickTimer:null, renderFrame:null, listeners:[], phase:'closed',
         bots:[], botCount:1, spectating:false, sendPercent:60,
         hoveredTile:null, lastStats:{}, alliances:{},
