@@ -539,6 +539,11 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
+        // --- 5-min localStorage cache (shared key with kcnow.html)
+        const _SF_TTL = 5 * 60 * 1000;
+        function _sfGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _SF_TTL ? r.d : null; } catch(e) { return null; } }
+        function _sfSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
         // Global State
         let currentUserUid = null, currentUserProfile = null, allPosts = [], allPlaylists = [], currentTab = 'trending', userProfiles = {}, trendingRankMap = {}, atbRankMap = {}, openPlaylistCtx = null, openPostCtx = null;
         let adminMode = false;
@@ -698,18 +703,21 @@
         async function fetchAllData() {
             try {
                 postsContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="spinner"></div></div>';
+                const cachedUsers = _sfGet('_kcUsersCache_v3');
+                const usersFetch  = cachedUsers ? Promise.resolve(null) : db.ref('users').once('value');
                 const [usersSnap, playlistsSnap] = await Promise.all([
-                    db.ref('users').once('value'),
+                    usersFetch,
                     db.ref('playlists').once('value')
                 ]);
-                userProfiles = usersSnap.val() || {};
-                
+                if (usersSnap) { userProfiles = usersSnap.val() || {}; _sfSet('_kcUsersCache_v3', userProfiles); }
+                else             userProfiles = cachedUsers || {};
+
                 allPosts = [];
-                usersSnap.forEach(user => {
-                    const posts = user.child('posts').val();
+                Object.entries(userProfiles).forEach(([uid, u]) => {
+                    const posts = u && u.posts;
                     if(posts) {
                         for (const postId in posts) {
-                            allPosts.push({ postId, ...posts[postId], createdBy: user.key });
+                            allPosts.push({ postId, ...posts[postId], createdBy: uid });
                         }
                     }
                 });

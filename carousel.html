@@ -514,21 +514,29 @@
     }
 
     // COST: was 3 separate db.ref('users').once('value') calls (3x full collection download).
-    // Now a single Promise.all fetches users + badges once and builds all three leaderboards.
+    // Now uses localStorage 5-min TTL cache (shared key with kcnow.html) — zero Firebase reads on repeat visits.
     const lbMembers = document.getElementById('lb-members');
     const lbStreaks = document.getElementById('lb-streaks');
     const lbBadges  = document.getElementById('lb-badges');
 
-    Promise.all([
-      db.ref('users').once('value'),
-      db.ref('badges').once('value')
-    ]).then(([userSnap, badgeSnap]) => {
+    const _CR_TTL = 5 * 60 * 1000;
+    function _crGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _CR_TTL ? r.d : null; } catch(e) { return null; } }
+    function _crSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
+    ;(async function() {
+      let usersObj  = _crGet('_kcUsersCache_v3');
+      let badgesObj = _crGet('_kcBadgesCache_v1');
+      const needed = [];
+      if (!usersObj)  needed.push(db.ref('users').once('value').then(s  => { usersObj  = s.val()||{}; _crSet('_kcUsersCache_v3', usersObj);  }));
+      if (!badgesObj) needed.push(db.ref('badges').once('value').then(s => { badgesObj = s.val()||{}; _crSet('_kcBadgesCache_v1', badgesObj); }));
+      await Promise.all(needed);
+
       const users = [];
-      userSnap.forEach(child => {
-        const v = child.val();
+      Object.entries(usersObj||{}).forEach(([uid, v]) => {
+        if (!v) return;
         users.push({
-          uid: child.key,
-          name: v.displayName || v.email || child.key,
+          uid,
+          name: v.displayName || v.email || uid,
           streak: typeof v.loginStreak === 'number' ? v.loginStreak : (parseInt(v.loginStreak) || 0),
           avatar: getAvatarUrl(v)
         });
@@ -555,7 +563,7 @@
 
       // Badges
       const badgeTotals = users.map(user => {
-        const badgeObj = badgeSnap.child(user.uid).val() || {};
+        const badgeObj = (badgesObj||{})[user.uid] || {};
         let sum = 0;
         for (let k in badgeObj) sum += parseInt(badgeObj[k]) || 0;
         return { ...user, count: sum };
@@ -569,7 +577,7 @@
       `).join('') || `<div class="lb-row">No badges yet</div>`;
 
       attachClickListeners();
-    });
+    })();
   </script>
 </body>
 </html>

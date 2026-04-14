@@ -127,6 +127,9 @@
         <div class="w-2/5 text-right">Actions</div>
       </div>
       <!-- User List Container -->
+      <div class="px-4 pt-3 flex justify-end">
+        <button id="refreshUsersBtn" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200">↻ Refresh List</button>
+      </div>
       <div id="userList" class="divide-y divide-gray-200">
         <div class="p-8 text-center text-gray-500">Loading user list...</div>
       </div>
@@ -223,6 +226,11 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
+    // --- 5-min localStorage cache (shared key with kcnow.html) ---
+    const _VR_TTL = 5 * 60 * 1000;
+    function _vrGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _VR_TTL ? r.d : null; } catch(e) { return null; } }
+    function _vrSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
     // --- Custom Dialog Helpers ---
     function vConfirm(message, onYes) {
       const el = document.getElementById('v-confirm-modal');
@@ -291,6 +299,7 @@
             adminLoginContainer.classList.add('hidden');
             adminDashboard.classList.remove('hidden');
             initUserListListener();
+            document.getElementById('refreshUsersBtn').addEventListener('click', loadUserList);
             return;
           } else {
             loginError.textContent = "Access Denied. You are not an authorized admin.";
@@ -313,9 +322,11 @@
     });
 
     // --- User List Logic ---
-    function initUserListListener() {
-      const usersRef = db.ref("users");
-      usersRef.on('value', (snapshot) => {
+    // COST: was usersRef.on('value') — persistent listener re-downloaded ALL users on every change.
+    // Changed to .once() — admin clicks Refresh to reload. Saves continuous bandwidth.
+    function loadUserList() {
+      userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">Loading&hellip;</div>';
+      db.ref("users").once('value').then((snapshot) => {
         userListContainer.innerHTML = '';
         if (!snapshot.exists()) {
           userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">No users found in the database.</div>';
@@ -356,11 +367,12 @@
           userListContainer.appendChild(li);
         });
         addEventListenersToButtons();
-      }, (error) => {
+      }).catch((error) => {
         console.error(error);
         userListContainer.innerHTML = '<div class="p-8 text-center text-red-500">Error loading user list. Check console.</div>';
       });
     }
+    function initUserListListener() { loadUserList(); }
 
     function addEventListenersToButtons() {
       document.querySelectorAll('.verify-btn').forEach(button => {
@@ -411,14 +423,17 @@
     let badgeChanges = { offence: 0, defence: 0, overall: 0 };
     let selectedUserId = null;
 
-    // Load users into badge management modal
+    // Load users into badge management modal (cached — no Firebase read if fresh)
     async function loadBadgeUsers() {
-      const usersSnap = await db.ref('users').once('value');
-      badgeUsers = [];
-      usersSnap.forEach(uSnap => {
-        const val = uSnap.val() || {};
-        badgeUsers.push({ uid: uSnap.key, displayName: val.displayName || '', email: val.email || '' });
-      });
+      let usersObj = _vrGet('_kcUsersCache_v3');
+      if (!usersObj) {
+        const snap = await db.ref('users').once('value');
+        usersObj = snap.val() || {};
+        _vrSet('_kcUsersCache_v3', usersObj);
+      }
+      badgeUsers = Object.entries(usersObj).map(([uid, val]) => ({
+        uid, displayName: (val && val.displayName) || '', email: (val && val.email) || ''
+      }));
       renderBadgeUserOptions('');
     }
 
