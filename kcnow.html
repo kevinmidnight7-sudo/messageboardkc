@@ -2797,9 +2797,51 @@
         let _usersSnapPromise  = null; // Promise<DataSnapshot>  for db.ref('users')
         let _badgesSnapPromise = null; // Promise<DataSnapshot>  for db.ref('badges')
 
+        // Build a lightweight fake snapshot from a plain object so localStorage-cached
+        // data can be consumed identically to a real Firebase DataSnapshot.
+        function _makeFakeSnap(obj) {
+            return {
+                val: () => obj,
+                exists: () => !!obj,
+                forEach: function(cb) {
+                    if (!obj) return;
+                    const keys = Object.keys(obj);
+                    for (let i = 0; i < keys.length; i++) {
+                        const k = keys[i], v = obj[k];
+                        const stop = cb({ key: k, val: () => v, exists: () => !!v,
+                                          child: (p) => _makeFakeSnap(v && v[p]) });
+                        if (stop === true) break;
+                    }
+                }
+            };
+        }
+
+        const _USERS_CACHE_KEY = '_kcUsersCache_v3';
+        const _USERS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes — balances freshness vs. cost
+
         function _getUsersOnce() {
-            if (!_usersSnapPromise)
-                _usersSnapPromise = db.ref('users').once('value');
+            if (_usersSnapPromise) return _usersSnapPromise;
+            // --- localStorage cross-session cache ---
+            // Each page load that hits Firebase costs ~4 MB; a 5-min cache drops
+            // that to at most 1 download per user per 5 min instead of per page load.
+            try {
+                const raw = localStorage.getItem(_USERS_CACHE_KEY);
+                if (raw) {
+                    const cached = JSON.parse(raw);
+                    if (cached && (Date.now() - cached.ts) < _USERS_CACHE_TTL) {
+                        _usersSnapPromise = Promise.resolve(_makeFakeSnap(cached.d));
+                        return _usersSnapPromise;
+                    }
+                }
+            } catch(e) { /* localStorage unavailable / corrupt — fall through to Firebase */ }
+            // --- Live Firebase read, then cache result ---
+            _usersSnapPromise = db.ref('users').once('value').then(function(snap) {
+                try {
+                    const d = snap.val();
+                    if (d) localStorage.setItem(_USERS_CACHE_KEY, JSON.stringify({ d, ts: Date.now() }));
+                } catch(e) { /* quota exceeded or private browsing — ignore, still works */ }
+                return snap;
+            });
             return _usersSnapPromise;
         }
         function _getBadgesOnce() {
@@ -2815,6 +2857,7 @@
             allUsersData = []; allClansData = {}; allPostsData = [];
             clipsLoaded = false;
             discordIdCache.clear();
+            try { localStorage.removeItem(_USERS_CACHE_KEY); } catch(e) {}
         }
 
         // Phase 5 state variables
@@ -3001,16 +3044,27 @@
             }
 
             // 3. Fallback: scan discordLinks — bot writes here during /link OAuth
-            try {
-                const linksSnapshot = await db.ref('discordLinks').once('value');
-                const links = linksSnapshot.val() || {};
-                for (const [discordId, data] of Object.entries(links)) {
-                    if (data && data.uid === kcUid) {
-                        return _found(discordId, true);
+            // COST: guard with a sessionStorage flag so we only scan this collection
+            // once per session for any given UID that failed lookups 1 & 2.
+            const _dlScanKey = '_kcDLScanned';
+            const _dlScanned = JSON.parse(sessionStorage.getItem(_dlScanKey) || '{}');
+            if (!_dlScanned[kcUid]) {
+                try {
+                    const linksSnapshot = await db.ref('discordLinks').once('value');
+                    const links = linksSnapshot.val() || {};
+                    // Persist ALL found links so future calls use path 1, not this scan
+                    for (const [discordId, data] of Object.entries(links)) {
+                        if (data && data.uid) {
+                            if (data.uid === kcUid) _found(discordId, true);
+                            discordIdCache.set(data.uid, discordId);
+                        }
                     }
+                    _dlScanned[kcUid] = true;
+                    try { sessionStorage.setItem(_dlScanKey, JSON.stringify(_dlScanned)); } catch(e) {}
+                    if (discordIdCache.has(kcUid)) return discordIdCache.get(kcUid);
+                } catch(e) {
+                    console.warn('[getDiscordIdFromKcUid] discordLinks scan failed:', e.code || e.message);
                 }
-            } catch(e) {
-                console.warn('[getDiscordIdFromKcUid] discordLinks scan failed:', e.code || e.message);
             }
 
             return _found(null, false);
@@ -6180,7 +6234,7 @@
             }
             container.innerHTML = `<div class="p-10 text-center"><div class="inline-flex items-center gap-3 animate-pulse opacity-50"><div class="w-5 h-5 border-2 border-teal-400 border-t-transparent rounded-full animate-spin"></div><span class="text-sm">Loading clan registry...</span></div></div>`;
             Promise.all([
-                db.ref('clans').once('value'),
+                db.ref('clans').limitToLast(200).once('value'), /* COST: cap at 200 clans */
                 ensureSearchDataLoaded()
             ]).then(([snap]) => {
                 allClansData = snap.val() || {};
