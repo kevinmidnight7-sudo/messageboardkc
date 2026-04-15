@@ -4112,7 +4112,6 @@
         function initFeedListeners() {
             feedItems = [];
             db.ref('social_posts').off();
-            db.ref('users').off();
             db.ref('recentActivity').off();
 
             db.ref('social_posts').limitToLast(5).on('child_added', snap => {
@@ -4120,19 +4119,9 @@
                 addFeedItem({ type:'clips', title:'New Clip!', user:p.userName, uid:p.createdBy, detail:p.caption, time:'Just now', color:'text-blue-400', icon:'fa-clapperboard' });
             });
 
-            // New Player: only show users who joined in the last 14 days
-            let _newPlayerReady = false;
-            setTimeout(() => { _newPlayerReady = true; }, 2000);
-            db.ref('users').limitToLast(5).on('child_added', snap => {
-                if (!_newPlayerReady) return;
-                const u = snap.val();
-                if (!u || !u.displayName) return;
-                const joined = u.joined || 0;
-                const ageDays = (Date.now() - joined) / 86400000;
-                // Skip if no join date recorded or joined more than 14 days ago
-                if (joined === 0 || ageDays > 14) return;
-                addFeedItem({ type:'users', title:'New Player!', user:u.displayName, uid:snap.key, detail:'Just joined the KC community!', color:'text-green-400', icon:'fa-user-plus' });
-            });
+            // COST FIX: removed db.ref('users').limitToLast(5).on('child_added') — each user object
+            // includes all nested posts, making limitToLast(5) still very expensive. New player events
+            // are handled via recentActivity instead.
 
             // COST FIX: cache display names so repeated activity-feed lookups hit local memory
             const _activityNameCache = {};
@@ -4144,25 +4133,9 @@
                 });
             }
 
-            db.ref('clans').off();
-            db.ref('clans').on('child_changed', snap => {
-                const clan = snap.val();
-                if (!clan || !clan.members) return;
-                const members = Object.keys(clan.members);
-                if (members.length === 0) return;
-                const latestMember = members[members.length - 1];
-                _getDisplayName(latestMember).then(name => {
-                    addFeedItem({
-                        type: 'clans',
-                        title: 'Clan Join',
-                        user: name,
-                        uid: latestMember,
-                        detail: `Joined ${clan.name}`,
-                        color: 'text-teal-400',
-                        icon: 'fa-shield-halved'
-                    });
-                });
-            });
+            // COST FIX: removed db.ref('clans').on('child_changed') — fired on ANY clan field change
+            // (battle results, stats, etc.) and downloaded the entire clan object each time. Clan join
+            // events should be written to recentActivity by the backend instead.
 
             // Friend events — skip initial population, only show new events after attach
             if (currentUser) {
