@@ -2844,10 +2844,28 @@
             });
             return _usersSnapPromise;
         }
+        const _BADGES_CACHE_KEY = '_kcBadgesCache_v1';
+        const _BADGES_CACHE_TTL = 5 * 60 * 1000;
         function _getBadgesOnce() {
-            if (!_badgesSnapPromise)
-                _badgesSnapPromise = db.ref('badges').once('value')
-                    .catch(() => ({ val: () => ({}) }));
+            if (_badgesSnapPromise) return _badgesSnapPromise;
+            // localStorage TTL cache — shared key with leaderboard/carousel/etc for cross-page benefit
+            try {
+                const raw = localStorage.getItem(_BADGES_CACHE_KEY);
+                if (raw) {
+                    const cached = JSON.parse(raw);
+                    if (cached && (Date.now() - cached.ts) < _BADGES_CACHE_TTL) {
+                        _badgesSnapPromise = Promise.resolve(_makeFakeSnap(cached.d));
+                        return _badgesSnapPromise;
+                    }
+                }
+            } catch(e) { /* fall through */ }
+            _badgesSnapPromise = db.ref('badges').once('value').then(function(snap) {
+                try {
+                    const d = snap.val();
+                    if (d) localStorage.setItem(_BADGES_CACHE_KEY, JSON.stringify({ d, ts: Date.now() }));
+                } catch(e) { /* quota exceeded */ }
+                return snap;
+            }).catch(function() { return { val: function() { return {}; }, forEach: function() {}, child: function() { return { val: function() { return null; } }; } }; });
             return _badgesSnapPromise;
         }
         // Call when the user signs out so next sign-in gets fresh data
