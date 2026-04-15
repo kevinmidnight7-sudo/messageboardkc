@@ -730,6 +730,32 @@
         const pageInfo = document.getElementById('pageInfo');
 
         let currentCategory = 'all';
+        // COST FIX: cache badges for the whole session — was re-downloaded on every keypress
+        let _profilesBadgeCache = null; // plain object { uid: badgeObj }
+        async function _getBadges() {
+            if (_profilesBadgeCache) return _profilesBadgeCache;
+            try {
+                const s = sessionStorage.getItem('kc-profiles-badges-v1');
+                if (s) { _profilesBadgeCache = JSON.parse(s); return _profilesBadgeCache; }
+            } catch(e) {}
+            const snap = await db.ref('badges').once('value');
+            _profilesBadgeCache = snap.val() || {};
+            try { sessionStorage.setItem('kc-profiles-badges-v1', JSON.stringify(_profilesBadgeCache)); } catch(e) {}
+            return _profilesBadgeCache;
+        }
+        // COST FIX: cache discordLinks lookup per session — was re-downloading full collection on every profile popup
+        let _profilesLinksCache = null;
+        async function _getDiscordLinks() {
+            if (_profilesLinksCache) return _profilesLinksCache;
+            try {
+                const s = sessionStorage.getItem('kc-profiles-links-v1');
+                if (s) { _profilesLinksCache = JSON.parse(s); return _profilesLinksCache; }
+            } catch(e) {}
+            const snap = await db.ref('discordLinks').once('value');
+            _profilesLinksCache = snap.val() || {};
+            try { sessionStorage.setItem('kc-profiles-links-v1', JSON.stringify(_profilesLinksCache)); } catch(e) {}
+            return _profilesLinksCache;
+        }
         let currentSort = 'joinDate'; // Default sort order
         let allUsers = []; // Store the currently displayed users
         let lastUserKey = null; // Key for the last user on the current page, for pagination
@@ -869,9 +895,9 @@
                     usersQuery = userRef.orderByChild('emailVerified').equalTo(true).limitToLast(16);
                     break;
                 case 'skilled':
-                     // FIX: Remove the limit for the 'skilled' category to fetch all users.
-                     // The filtering will happen client-side, which is necessary for this type of query.
-                     usersQuery = userRef;
+                     // COST FIX: cap at 100 — downloading ALL users is too expensive.
+                     // Skilled users are those with highest battle wins; top 100 is representative.
+                     usersQuery = userRef.limitToLast(100);
                     break;
                 case 'diamond':
                     usersQuery = userRef.orderByChild('codesUnlocked/diamond').equalTo(true).limitToLast(16);
@@ -907,13 +933,13 @@
              
             try {
                 const userSnapshot = await usersQuery.once('value');
-                const badgeSnapshot = await db.ref('badges').once('value');
+                const badgeSnapshot = await _getBadges();
 
                 const users = [];
                 userSnapshot.forEach(userChild => {
                     const userData = userChild.val();
                     const userUid = userChild.key;
-                    const badgeData = badgeSnapshot.child(userUid).val() || {};
+                    const badgeData = badgeSnapshot[userUid] || {};
                     
                     // NEW PERMISSIVE CHECK FOR 'isVerified'
                     const isVerified = !!(userData.emailVerified === true || (userData.badges && userData.badges.verified === true));
@@ -994,9 +1020,14 @@
         });
 
         // Event listener for search input
+        // COST FIX: debounce — was firing a Firebase read on every single keystroke
+        let _searchDebounce = null;
         userSearch.addEventListener('input', () => {
-            lastUserKey = null; // Reset pagination
-            fetchAndRenderUsers();
+            clearTimeout(_searchDebounce);
+            _searchDebounce = setTimeout(() => {
+                lastUserKey = null;
+                fetchAndRenderUsers();
+            }, 350);
         });
 
         // Event listener for sorting dropdown
@@ -1310,8 +1341,7 @@
         // --- Discord Integration Helpers ---
         async function getDiscordIdFromKcUid(kcUid) {
             try {
-                const linksSnap = await db.ref('discordLinks').once('value');
-                const links = linksSnap.val() || {};
+                const links = await _getDiscordLinks();
                 for (const [discordId, data] of Object.entries(links)) {
                     if (data.uid === kcUid) return discordId;
                 }

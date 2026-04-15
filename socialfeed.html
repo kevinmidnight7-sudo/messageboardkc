@@ -700,30 +700,32 @@
         }
         
         // --- DATA FETCHING ---
+        // COST FIX: cache users + playlists in sessionStorage — only re-fetch when cache is stale
+        const _SF_USERS_KEY = 'kc-sf-users-v1';
+        const _SF_PLAYLISTS_KEY = 'kc-sf-playlists-v1';
         async function fetchAllData() {
             try {
                 postsContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="spinner"></div></div>';
                 const cachedUsers = _sfGet('_kcUsersCache_v3');
-                const usersFetch  = cachedUsers ? Promise.resolve(null) : db.ref('users').once('value');
                 const [usersSnap, playlistsSnap] = await Promise.all([
-                    usersFetch,
+                    cachedUsers ? Promise.resolve(null) : db.ref('users').once('value'),
                     db.ref('playlists').once('value')
                 ]);
                 if (usersSnap) { userProfiles = usersSnap.val() || {}; _sfSet('_kcUsersCache_v3', userProfiles); }
                 else             userProfiles = cachedUsers || {};
+                const playlistsVal = playlistsSnap ? playlistsSnap.val() || {} : {};
 
                 allPosts = [];
-                Object.entries(userProfiles).forEach(([uid, u]) => {
-                    const posts = u && u.posts;
-                    if(posts) {
+                for (const uid in userProfiles) {
+                    const posts = userProfiles[uid] && userProfiles[uid].posts;
+                    if (posts) {
                         for (const postId in posts) {
                             allPosts.push({ postId, ...posts[postId], createdBy: uid });
                         }
                     }
-                });
+                }
 
-                const playlistsData = playlistsSnap.val() || {};
-                allPlaylists = Object.entries(playlistsData).map(([id, p]) => ({ playlistId: id, ...p }));
+                allPlaylists = Object.entries(playlistsVal || {}).map(([id, p]) => ({ playlistId: id, ...p }));
 
                 const trendingPosts = filterContent(allPosts, 'trending').slice(0, 5);
                 trendingRankMap = Object.fromEntries(trendingPosts.map((p, i) => [p.postId, i + 1]));

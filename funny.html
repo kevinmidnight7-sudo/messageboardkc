@@ -208,7 +208,9 @@
             profileUI.classList.remove('hidden');
             
             const userRef = db.ref('users/' + user.uid);
-            userRef.on('value', snapshot => {
+            // COST FIX: was .on('value') — re-downloaded user object on every profile change.
+            // Profile data (diamond status, displayName) rarely changes; .once() is sufficient.
+            userRef.once('value', snapshot => {
                 const userData = snapshot.val() || {};
                 document.getElementById('welcomeUser').innerHTML = `Hello, <span class="cursor-pointer hover:underline text-blue-600" onclick="window.openKcProfile('${user.uid}')">${userData.displayName || 'User'}</span>!`;
 

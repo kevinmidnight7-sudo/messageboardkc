@@ -355,7 +355,7 @@
     const badges = badgesVal || {};
 
     data = Object.entries(users).map(([uid, u]) => {
-      const b = badges[uid] || {};
+      const b = (badges || {})[uid] || {};
       return {
         uid: uid,
         name: u.displayName || u.email || '(unknown)',

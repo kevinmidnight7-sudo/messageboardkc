@@ -524,15 +524,15 @@
     function _crSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 
     ;(async function() {
-      let usersObj  = _crGet('_kcUsersCache_v3');
-      let badgesObj = _crGet('_kcBadgesCache_v1');
+      let usersVal  = _crGet('_kcUsersCache_v3');
+      let badgesVal = _crGet('_kcBadgesCache_v1');
       const needed = [];
-      if (!usersObj)  needed.push(db.ref('users').once('value').then(s  => { usersObj  = s.val()||{}; _crSet('_kcUsersCache_v3', usersObj);  }));
-      if (!badgesObj) needed.push(db.ref('badges').once('value').then(s => { badgesObj = s.val()||{}; _crSet('_kcBadgesCache_v1', badgesObj); }));
+      if (!usersVal)  needed.push(db.ref('users').once('value').then(s  => { usersVal  = s.val()||{}; _crSet('_kcUsersCache_v3', usersVal);  }));
+      if (!badgesVal) needed.push(db.ref('badges').once('value').then(s => { badgesVal = s.val()||{}; _crSet('_kcBadgesCache_v1', badgesVal); }));
       await Promise.all(needed);
 
       const users = [];
-      Object.entries(usersObj||{}).forEach(([uid, v]) => {
+      Object.entries(usersVal||{}).forEach(([uid, v]) => {
         if (!v) return;
         users.push({
           uid,
@@ -540,7 +540,9 @@
           streak: typeof v.loginStreak === 'number' ? v.loginStreak : (parseInt(v.loginStreak) || 0),
           avatar: getAvatarUrl(v)
         });
-      });
+      }
+      // wrap badgesVal so existing badgeSnap.child(uid).val() calls still work
+      const badgeSnap = { child: uid => ({ val: () => (badgesVal || {})[uid] || {} }) };
 
       // Members (alphabetical)
       const membersSorted = [...users].sort((a, b) => a.name.localeCompare(b.name));
