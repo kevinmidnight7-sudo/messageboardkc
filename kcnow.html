@@ -2817,7 +2817,7 @@
         }
 
         const _USERS_CACHE_KEY = '_kcUsersCache_v3';
-        const _USERS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes — balances freshness vs. cost
+        const _USERS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes — balances freshness vs. cost
 
         function _getUsersOnce() {
             if (_usersSnapPromise) return _usersSnapPromise;
@@ -2845,7 +2845,7 @@
             return _usersSnapPromise;
         }
         const _BADGES_CACHE_KEY = '_kcBadgesCache_v1';
-        const _BADGES_CACHE_TTL = 5 * 60 * 1000;
+        const _BADGES_CACHE_TTL = 15 * 60 * 1000;
         function _getBadgesOnce() {
             if (_badgesSnapPromise) return _badgesSnapPromise;
             // localStorage TTL cache — shared key with leaderboard/carousel/etc for cross-page benefit
@@ -9192,8 +9192,9 @@
         }
 
         function loadClipsPreview() {
-            // Posts live at users/{uid}/posts/{postId}, not social_posts
-            return db.ref('users').limitToLast(30).once('value').then(snap => {
+            // COST FIX: reuse _getUsersOnce() (already cached in localStorage) instead of
+            // a separate limitToLast(30) call that downloads 30 full user profiles fresh.
+            return _getUsersOnce().then(snap => {
                 const allPosts = [];
                 snap.forEach(userSnap => {
                     const posts = userSnap.child('posts').val();

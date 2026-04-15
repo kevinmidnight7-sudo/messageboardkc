@@ -731,7 +731,7 @@
 
         let currentCategory = 'all';
         // COST FIX: cache badges with 5-min localStorage TTL — shared key benefits from any page that pre-warmed it
-        const _PR_TTL = 5 * 60 * 1000;
+        const _PR_TTL = 15 * 60 * 1000;
         function _prGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _PR_TTL ? r.d : null; } catch(e) { return null; } }
         function _prSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 

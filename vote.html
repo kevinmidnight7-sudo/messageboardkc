@@ -1411,7 +1411,7 @@ button:disabled {
     let _leaderboardListenersActive = false;
 
     // Shared 5-min localStorage cache (cross-page benefit, same keys used site-wide)
-    const _VT_TTL = 5 * 60 * 1000;
+    const _VT_TTL = 15 * 60 * 1000;
     function _vtGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _VT_TTL ? r.d : null; } catch(e) { return null; } }
     function _vtSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 

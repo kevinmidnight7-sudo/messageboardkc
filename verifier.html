@@ -228,7 +228,7 @@
     const db = firebase.database();
 
     // --- 5-min localStorage cache (shared key with kcnow.html) ---
-    const _VR_TTL = 5 * 60 * 1000;
+    const _VR_TTL = 15 * 60 * 1000;
     function _vrGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _VR_TTL ? r.d : null; } catch(e) { return null; } }
     function _vrSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 

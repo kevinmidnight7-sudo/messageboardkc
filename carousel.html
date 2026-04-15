@@ -519,7 +519,7 @@
     const lbStreaks = document.getElementById('lb-streaks');
     const lbBadges  = document.getElementById('lb-badges');
 
-    const _CR_TTL = 5 * 60 * 1000;
+    const _CR_TTL = 15 * 60 * 1000;
     function _crGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _CR_TTL ? r.d : null; } catch(e) { return null; } }
     function _crSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 

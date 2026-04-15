@@ -337,7 +337,7 @@
   const db = firebase.database();
 
   // --- Shared 5-min localStorage cache (same keys as kcnow.html for cross-page benefit)
-  const _LC_TTL = 5 * 60 * 1000;
+  const _LC_TTL = 15 * 60 * 1000;
   function _lcGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _LC_TTL ? r.d : null; } catch(e) { return null; } }
   function _lcSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 
