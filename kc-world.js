@@ -49,7 +49,8 @@
     relations: {},       /* "slotA_slotB" → score -100..100 */
     botDifficulty: 'medium',
     gameTimeLimit: 0,    /* max ticks, 0 = unlimited */
-    pendingMirv: null, pendingDonate: null,
+    pendingMirv: null, pendingDonate: null, pendingNuke: null,
+    queuedTargets: [],   /* Shift+click queued attack targets (tile indices) */
     _clickHandler: null, _resizeHandler: null, _ctxHandler: null,
     _touchHandler: null, _touchEndHandler: null, _moveHandler: null,
     keyHandler: null,
@@ -246,7 +247,14 @@
             for (var pi = 0; pi < pkeys.length; pi++) {
               if (st.players[pkeys[pi]].slot === dyn.o) { owner = st.players[pkeys[pi]]; break; }
             }
-            fill = owner ? owner.color + 'a8' : 'rgba(120,120,120,0.65)';
+            if (owner) {
+              /* gradient: dim (few troops) → rich color (many troops), log scale caps at 200 */
+              var ta = dyn.t > 0 ? 0.38 + 0.57 * Math.min(1, Math.log(dyn.t + 1) / Math.log(201)) : 0.38;
+              var taHex = ('0' + Math.round(ta * 255).toString(16)).slice(-2);
+              fill = owner.color + taHex;
+            } else {
+              fill = 'rgba(120,120,120,0.65)';
+            }
           } else {
             if (t === 'C')      fill = '#d6c87a';  /* city — sandy gold */
             else if (t === 'H') fill = '#9abb7e';  /* highland — soft green */
@@ -387,23 +395,13 @@
             }
           }
 
-          /* troop count — dark text on light bg, small drop shadow */
-          if (t !== 'W' && t !== 'M' && dyn.t > 0 && ts >= 14) {
-            var troopColor = dyn.o > 0 ? '#1a140a' : 'rgba(70,55,35,0.7)';
-            if (dyn.o === st.mySlot) {
-              if (dyn.t >= TROOP_CAP)       troopColor = '#b91c1c';
-              else if (dyn.t >= TROOP_WARN) troopColor = '#92400e';
-            }
-            var tfs = Math.max(6, Math.min(ts - 5, 11));
-            ctx.font = 'bold ' + tfs + 'px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            var textY = (t === 'C' && ts >= 14) ? py + ts*0.72 : py + ts*0.5;
-            /* subtle light halo for readability */
-            ctx.fillStyle = 'rgba(255,255,255,0.55)';
-            ctx.fillText(dyn.t > 999 ? '999' : dyn.t, px + ts*0.5 + 0.5, textY + 0.5);
-            ctx.fillStyle = troopColor;
-            ctx.fillText(dyn.t > 999 ? '999' : dyn.t, px + ts*0.5, textY);
+          /* per-tile troop numbers removed — gradient color communicates density */
+          /* cap-warning dot: red pulse on tiles that are nearly full (≥ TROOP_WARN) */
+          if (dyn.o === st.mySlot && dyn.t >= TROOP_WARN && ts >= 10) {
+            ctx.fillStyle = dyn.t >= TROOP_CAP ? 'rgba(185,28,28,0.85)' : 'rgba(146,64,14,0.75)';
+            ctx.beginPath();
+            ctx.arc(px + ts*0.5, py + ts*0.5, Math.max(2, ts * 0.15), 0, Math.PI * 2);
+            ctx.fill();
           }
 
           /* selection highlight — whole territory blob */
@@ -518,35 +516,78 @@
         }
       }
 
-      /* ── Attack preview arrow (from territory centroid to hovered target) ── */
-      if (st.selectedTerritory && st.selectedTerritory.length > 0 && st.hoveredTile !== null) {
-        var hovTile = tiles[st.hoveredTile] || {o:0};
-        if (hovTile.o !== st.mySlot) {
-          /* centroid of selected territory */
-          var tcx = 0, tcy = 0;
-          for (var tci = 0; tci < st.selectedTerritory.length; tci++) {
-            var tcp = tileXY(st.selectedTerritory[tci]);
-            tcx += tcp.x; tcy += tcp.y;
+      /* ── Attack arrows: from exact clicked tile ── */
+      if (st.selectedTerritory && st.selectedTerritory.length > 0 && st.selectedTile !== null) {
+        var srcPos = tileXY(st.selectedTile);
+        var arsx = offX + srcPos.x*ts + ts/2, arsy = offY + srcPos.y*ts + ts/2;
+
+        /* ── Queued orders (Shift+click) — gold arrows numbered ── */
+        if (st.queuedTargets && st.queuedTargets.length > 0) {
+          for (var qi = 0; qi < st.queuedTargets.length; qi++) {
+            var qp   = tileXY(st.queuedTargets[qi]);
+            var qhx  = offX + qp.x*ts + ts/2, qhy = offY + qp.y*ts + ts/2;
+            var qang = Math.atan2(qhy - arsy, qhx - arsx);
+            ctx.strokeStyle = 'rgba(251,191,36,0.88)';
+            ctx.fillStyle   = 'rgba(251,191,36,0.88)';
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([5, 3]);
+            ctx.beginPath(); ctx.moveTo(arsx, arsy); ctx.lineTo(qhx, qhy); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(qhx, qhy);
+            ctx.lineTo(qhx - 11*Math.cos(qang-0.4), qhy - 11*Math.sin(qang-0.4));
+            ctx.lineTo(qhx - 11*Math.cos(qang+0.4), qhy - 11*Math.sin(qang+0.4));
+            ctx.closePath(); ctx.fill();
+            /* order number badge */
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'rgba(251,191,36,0.95)';
+            var badgeX = offX + qp.x*ts + ts*0.5, badgeY = offY + qp.y*ts + ts*0.18;
+            ctx.fillRect(badgeX - 6, badgeY - 5, 12, 10);
+            ctx.fillStyle = '#1c1008';
+            ctx.fillText(qi + 1, badgeX, badgeY);
           }
-          tcx /= st.selectedTerritory.length;
-          tcy /= st.selectedTerritory.length;
-          var arsx = offX + tcx*ts + ts/2, arsy = offY + tcy*ts + ts/2;
-          var ahp  = tileXY(st.hoveredTile);
-          var arhx = offX + ahp.x*ts + ts/2, arhy = offY + ahp.y*ts + ts/2;
-          var ang  = Math.atan2(arhy - arsy, arhx - arsx);
-          var isEnemy = hovTile.o > 0 && hovTile.o !== st.mySlot;
-          ctx.strokeStyle = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
-          ctx.fillStyle   = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
-          ctx.lineWidth = 2;
-          ctx.setLineDash([4, 3]);
-          ctx.beginPath(); ctx.moveTo(arsx, arsy); ctx.lineTo(arhx, arhy); ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.beginPath();
-          ctx.moveTo(arhx, arhy);
-          ctx.lineTo(arhx - 10*Math.cos(ang-0.4), arhy - 10*Math.sin(ang-0.4));
-          ctx.lineTo(arhx - 10*Math.cos(ang+0.4), arhy - 10*Math.sin(ang+0.4));
-          ctx.closePath(); ctx.fill();
         }
+
+        /* ── Live hover arrow (red = enemy, grey = neutral) ── */
+        if (st.hoveredTile !== null) {
+          var hovTile2 = tiles[st.hoveredTile] || {o:0};
+          if (hovTile2.o !== st.mySlot) {
+            var ahp  = tileXY(st.hoveredTile);
+            var arhx = offX + ahp.x*ts + ts/2, arhy = offY + ahp.y*ts + ts/2;
+            var ang  = Math.atan2(arhy - arsy, arhx - arsx);
+            var isEnemy = hovTile2.o > 0 && hovTile2.o !== st.mySlot;
+            ctx.strokeStyle = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
+            ctx.fillStyle   = isEnemy ? 'rgba(200,30,30,0.9)' : 'rgba(30,30,30,0.75)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath(); ctx.moveTo(arsx, arsy); ctx.lineTo(arhx, arhy); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(arhx, arhy);
+            ctx.lineTo(arhx - 10*Math.cos(ang-0.4), arhy - 10*Math.sin(ang-0.4));
+            ctx.lineTo(arhx - 10*Math.cos(ang+0.4), arhy - 10*Math.sin(ang+0.4));
+            ctx.closePath(); ctx.fill();
+          }
+        }
+      }
+
+      /* ── Nuke targeting cursor (☢️ pulsing circle on hovered tile) ── */
+      if (st.pendingNuke !== null && st.hoveredTile !== null) {
+        var ntp = tileXY(st.hoveredTile);
+        var ntx2 = offX + ntp.x*ts + ts/2, nty2 = offY + ntp.y*ts + ts/2;
+        var pulse = 0.6 + 0.4 * Math.sin(Date.now() / 150);
+        ctx.strokeStyle = 'rgba(251,191,36,' + pulse + ')';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(ntx2, nty2, (NUKE_RADIUS + 0.5) * ts, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.font = 'bold ' + Math.max(10, ts - 2) + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(251,191,36,0.9)';
+        ctx.fillText('\u2622', ntx2, nty2);
       }
 
       /* ── Minimap ────────────────────────────── */
@@ -1081,13 +1122,32 @@
     else if (k === '2') KCWorld._setSendPct(50);
     else if (k === '3') KCWorld._setSendPct(75);
     else if (k === '4') KCWorld._setSendPct(100);
-    else if (k === ' ' || k === 'Escape') {
+    else if (k === ' ') {
       e.preventDefault();
+      if (st.queuedTargets && st.queuedTargets.length > 0) {
+        /* Space = fire all queued orders at once */
+        var targets = st.queuedTargets.slice();
+        st.queuedTargets = [];
+        targets.forEach(function(tIdx) {
+          if (st.selectedTerritory) submitTerritoryAttack(st.selectedTerritory, tIdx);
+        });
+        toast('\u2694\uFE0F Fired ' + targets.length + ' order' + (targets.length > 1 ? 's' : '') + '!', 'info');
+        st.selectedTile = null;
+        st.selectedTerritory = null;
+      } else {
+        st.selectedTile = null;
+        st.selectedTerritory = null;
+      }
+    }
+    else if (k === 'Escape') {
+      e.preventDefault();
+      st.queuedTargets = [];
+      st.pendingNuke = null;
       st.selectedTile = null;
       st.selectedTerritory = null;
     }
     else if (k === 'f' || k === 'F') KCWorld._toggleFog();
-    else if ((k === 'n' || k === 'N') && st.selectedTile !== null) KCWorld._launchNuke(st.selectedTile);
+    else if ((k === 'n' || k === 'N') && st.selectedTile !== null) KCWorld._startNukeTarget(st.selectedTile);
     else if ((k === 'p' || k === 'P') && st.selectedTile !== null) KCWorld._sendPing(st.selectedTile, '\u26A0\uFE0F');
   }
 
@@ -1100,6 +1160,18 @@
     var t = terrain[hit.idx];
     if (t === 'W' || t === 'M') return;
     var dyn = (st.gameState && st.gameState.tiles && st.gameState.tiles[hit.idx]) || { o: 0, t: 0 };
+
+    /* Nuke targeting mode — next non-own click = blast target */
+    if (st.pendingNuke !== null) {
+      if (dyn.o === st.mySlot) {
+        toast('\u2622\uFE0F Can\'t nuke your own territory \u2014 click an enemy tile', 'error');
+        return;
+      }
+      var nukeFrom = st.pendingNuke;
+      st.pendingNuke = null;
+      KCWorld._fireNuke(nukeFrom, hit.idx);
+      return;
+    }
 
     /* MIRV targeting mode — next click = target tile */
     if (st.pendingMirv !== null) {
@@ -1119,14 +1191,28 @@
 
     if (dyn.o === st.mySlot) {
       /* select entire connected territory blob */
+      st.queuedTargets = [];
       st.selectedTerritory = getConnectedTiles(hit.idx, st.mySlot);
-      st.selectedTile = hit.idx;   /* kept so keyboard N/P know a tile */
+      st.selectedTile = hit.idx;
     } else if (st.selectedTerritory && st.selectedTerritory.length > 0) {
-      /* attack toward clicked tile from territory border */
-      submitTerritoryAttack(st.selectedTerritory, hit.idx);
-      st.selectedTerritory = null;
-      st.selectedTile = null;
+      if (e.shiftKey) {
+        /* Shift+click — queue this target; show arrow but don't fire yet */
+        if (st.queuedTargets.indexOf(hit.idx) === -1) {
+          st.queuedTargets.push(hit.idx);
+          toast('\uD83D\uDCCB Order ' + st.queuedTargets.length + ' queued \u2014 Shift+click more or Space to fire', 'info');
+        }
+      } else {
+        /* Regular click — fire all queued targets + this one at once */
+        var allTargets = st.queuedTargets.concat([hit.idx]);
+        st.queuedTargets = [];
+        allTargets.forEach(function(tIdx) {
+          submitTerritoryAttack(st.selectedTerritory, tIdx);
+        });
+        st.selectedTerritory = null;
+        st.selectedTile = null;
+      }
     } else {
+      st.queuedTargets = [];
       st.selectedTerritory = null;
       st.selectedTile = null;
     }
@@ -1266,9 +1352,11 @@
           }
         } else if (atk.type === 'nuke') {
           var nTile = tiles[atk.from];
+          /* atk.to = targeted tile; atk.from = launch tile (deducts troops) */
+          var nTarget = (atk.to !== undefined && atk.to !== null) ? atk.to : atk.from;
           if (nTile && nTile.o === atk.attacker && nTile.t >= NUKE_COST) {
             nTile.t -= NUKE_COST;
-            var np = tileXY(atk.from);
+            var np = tileXY(nTarget);
             var res = applyBlast(tiles, terrain, np.x, np.y, NUKE_RADIUS, atk.attacker);
             nukeFlashes.push({ x: np.x, y: np.y, intercepted: res.intercepted });
           }
@@ -1277,7 +1365,9 @@
           if (mTile && mTile.o === atk.attacker && mTile.t >= MIRV_COST) {
             mTile.t -= MIRV_COST;
             var mp  = tileXY(atk.from);
-            var tgt = tileXY(atk.to);  /* MIRV target tile */
+            /* support both 'to' and legacy 'target' field names */
+            var mirvTgtIdx = (atk.to !== undefined && atk.to !== null) ? atk.to : atk.target;
+            var tgt = mirvTgtIdx !== undefined ? tileXY(mirvTgtIdx) : mp;
             for (var wi = 0; wi < MIRV_COUNT; wi++) {
               /* scatter sub-warheads within 4 tiles of target */
               var wx = Math.max(0, Math.min(MAP_W-1, tgt.x + Math.floor((Math.random()-0.5)*8)));
@@ -1394,6 +1484,7 @@
     st._touchHandler = null; st._touchEndHandler = null;
     st.pings = {}; st.nukeFlash = null; st.betrayers = {};
     st.allianceTicks = {}; st.relations = {};
+    st.queuedTargets = []; st.pendingNuke = null;
   }
 
   /* =================================================
@@ -1508,7 +1599,7 @@
         '<div class="kcw-hud-players" id="kcw-phud"></div>' +
       '</div>' +
       '<div class="kcw-canvas-wrap"><canvas id="kcw-canvas"></canvas></div>' +
-      '<div class="kcw-game-tip">Click <span style="color:' + myColor + '">\u25a0 your territory</span> \u2192 anywhere to attack &nbsp;\u00b7&nbsp; Right-click: build / nuke / MIRV / SAM / donate / chat &nbsp;\u00b7&nbsp; 1-4: send% &nbsp;\u00b7&nbsp; F fog &nbsp;\u00b7&nbsp; N nuke &nbsp;\u00b7&nbsp; P ping</div>' +
+      '<div class="kcw-game-tip">Click <span style="color:' + myColor + '">\u25a0 your territory</span> \u2192 click to attack &nbsp;\u00b7&nbsp; <b>Shift+click</b> = queue orders, <b>Space</b> = fire all &nbsp;\u00b7&nbsp; Right-click: build / nuke / MIRV &nbsp;\u00b7&nbsp; 1-4: send% &nbsp;\u00b7&nbsp; N nuke &nbsp;\u00b7&nbsp; Esc: cancel</div>' +
     '</div>';
 
     var canvas = document.getElementById('kcw-canvas');
@@ -1981,7 +2072,7 @@
       /* nuke */
       if (tile.t >= NUKE_COST) {
         rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-bottom:4px;color:#fbbf24" onclick="KCWorld._confirmBuild(' + idx + ',\'nuke\')">' +
-          '\u2622\uFE0F Nuke \u2014 r' + NUKE_RADIUS + ' blast \u00b7 \u2212' + NUKE_COST + ' troops</button>';
+          '\u2622\uFE0F Nuke \u2014 click target \u00b7 r' + NUKE_RADIUS + ' blast \u00b7 \u2212' + NUKE_COST + ' troops</button>';
       }
       /* MIRV */
       if (tile.t >= MIRV_COST) {
@@ -2021,7 +2112,7 @@
     _confirmBuild: function(idx, type) {
       this._dismissBuild();
       if (!st.roomRef || st.phase !== 'playing') return;
-      if (type === 'nuke') { this._launchNuke(idx); return; }
+      if (type === 'nuke') { this._startNukeTarget(idx); return; }
       if (type === 'sam')  { this._buildSam(idx);   return; }
       st.roomRef.child('attacks').push({
         type: type || 'fort', from: idx,
@@ -2035,21 +2126,35 @@
       if (pop) pop.remove();
     },
 
-    _launchNuke: function(fromIdx) {
+    _startNukeTarget: function(fromIdx) {
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[fromIdx]) || {o:0,t:0};
+      if (tile.o !== st.mySlot || tile.t < NUKE_COST) {
+        toast('Need ' + NUKE_COST + '+ troops to launch \u2622\uFE0F', 'error'); return;
+      }
+      this._dismissBuild();
+      st.pendingNuke = fromIdx;
+      toast('\u2622\uFE0F Nuke armed \u2014 click enemy territory to target (Esc to cancel)', 'info');
+    },
+
+    _fireNuke: function(fromIdx, toIdx) {
       if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
       var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[fromIdx]) || {o:0,t:0};
       if (tile.o !== st.mySlot || tile.t < NUKE_COST) {
         toast('Need ' + NUKE_COST + '+ troops to launch \u2622\uFE0F', 'error'); return;
       }
       st.roomRef.child('attacks').push({
-        type: 'nuke', from: fromIdx,
+        type: 'nuke', from: fromIdx, to: toIdx,
         attacker: st.mySlot, uid: st.myUid,
         ts: window.firebase.database.ServerValue.TIMESTAMP
       });
-      toast('\u2622\uFE0F Nuke launched!', 'info');
+      toast('\u2622\uFE0F Nuke inbound!', 'info');
       st.selectedTile = null;
       st.selectedTerritory = null;
     },
+
+    /* keep old name as alias for keyboard shortcut compatibility */
+    _launchNuke: function(fromIdx) { this._startNukeTarget(fromIdx); },
 
     _sendPing: function(pingIdx, emoji) {
       this._dismissBuild();
@@ -2173,7 +2278,8 @@
         bots:[], botCount:1, spectating:false, sendPercent:60,
         hoveredTile:null, lastStats:{}, alliances:{},
         allianceTicks:{}, relations:{}, botDifficulty:'medium', gameTimeLimit:0,
-        pendingMirv:null, pendingDonate:null,
+        pendingMirv:null, pendingDonate:null, pendingNuke:null,
+        queuedTargets:[],
         _clickHandler:null, _resizeHandler:null, _ctxHandler:null,
         _touchHandler:null, _touchEndHandler:null, _moveHandler:null,
         keyHandler:null, fogOfWar:false, nukeFlash:null, pings:{}, betrayers:{}
