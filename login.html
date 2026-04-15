@@ -2851,12 +2851,7 @@ auth.onAuthStateChanged(async (u) => {
     db.ref("meta/userCount").on('value', s => {
       const count = s.val();
       const el = document.getElementById('memberCountDisplay');
-      if (el) {
-        if (count) { el.textContent = Number(count).toLocaleString(); }
-        else {
-          _getAdminData().then(([us]) => { if (el) el.textContent = us.numChildren().toLocaleString(); });
-        }
-      }
+      if (el) el.textContent = count ? Number(count).toLocaleString() : '—';
     });
 
     // Economy + Battledome stats

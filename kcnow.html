@@ -2817,7 +2817,7 @@
         }
 
         const _USERS_CACHE_KEY = '_kcUsersCache_v3';
-        const _USERS_CACHE_TTL = 15 * 60 * 1000; // 15 minutes — balances freshness vs. cost
+        const _USERS_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — users collection is large, keep cache longer
 
         function _getUsersOnce() {
             if (_usersSnapPromise) return _usersSnapPromise;
@@ -2845,7 +2845,7 @@
             return _usersSnapPromise;
         }
         const _BADGES_CACHE_KEY = '_kcBadgesCache_v1';
-        const _BADGES_CACHE_TTL = 15 * 60 * 1000;
+        const _BADGES_CACHE_TTL = 30 * 60 * 1000;
         function _getBadgesOnce() {
             if (_badgesSnapPromise) return _badgesSnapPromise;
             // localStorage TTL cache — shared key with leaderboard/carousel/etc for cross-page benefit
@@ -2875,7 +2875,9 @@
             allUsersData = []; allClansData = {}; allPostsData = [];
             clipsLoaded = false;
             discordIdCache.clear();
-            try { localStorage.removeItem(_USERS_CACHE_KEY); } catch(e) {}
+            // NOTE: localStorage cache (_kcUsersCache_v3) intentionally NOT cleared on sign-out.
+            // It has a 15-min TTL already and is public profile data — keeping it means
+            // sign-out/sign-in cycles don't re-download the entire users collection.
         }
 
         // Phase 5 state variables
