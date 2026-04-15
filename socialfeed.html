@@ -673,9 +673,17 @@
             window.currentUser = user; // expose for profile-popup.js friend bar
             currentUserUid = user ? user.uid : null;
             if (user) {
-                // COST: .once() — profile (avatar, permissions) doesn't need live re-downloads
-                db.ref(`users/${user.uid}`).once('value').then(snap => {
-                    currentUserProfile = snap.val() || {};
+                // COST FIX: fetch only the sub-paths we need (codesUnlocked + saved).
+                // Reading the full users/${uid} node includes all nested posts, which can
+                // be hundreds of KB for active users. Two small reads are far cheaper.
+                Promise.all([
+                    db.ref(`users/${user.uid}/codesUnlocked`).once('value'),
+                    db.ref(`users/${user.uid}/saved`).once('value'),
+                ]).then(([cuSnap, savedSnap]) => {
+                    currentUserProfile = {
+                        codesUnlocked: cuSnap.val() || {},
+                        saved: savedSnap.val() || {}
+                    };
                     renderHeader();
                     fetchAllData();
                 });

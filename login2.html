@@ -2740,8 +2740,7 @@ auth.onAuthStateChanged(u => {
     // COST: try lightweight meta/userCount first, fall back to reusing admin cache
     db.ref("meta/userCount").once("value").then(s => {
       const count = s.val();
-      if (count) { userCounter.textContent = `There are now ${count} users registered!`; }
-      else { _getAdminData().then(([us]) => { userCounter.textContent = `There are now ${us.numChildren()} users registered!`; }); }
+      if (count) userCounter.textContent = `There are now ${count} users registered!`;
     });
     loadBadges(u.uid, u.emailVerified);
 

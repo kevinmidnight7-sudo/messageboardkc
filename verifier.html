@@ -427,38 +427,84 @@
     let badgeUsers = [];
     let badgeChanges = { offence: 0, defence: 0, overall: 0 };
     let selectedUserId = null;
-    // COST FIX: cache users snap for badge modal — reuse the same data loaded by loadUserList()
-    let _cachedUsersSnap = null;
+    // COST FIX: don't download all users at once. Use the shared localStorage cache if
+    // another page has already populated it; otherwise require a search query (≥3 chars)
+    // before hitting Firebase so we only fetch matching users.
+    let _badgeUsersLoaded = false;
 
-    // Load users into badge management modal (cached — no Firebase read if fresh)
     async function loadBadgeUsers() {
-      if (!_cachedUsersSnap) _cachedUsersSnap = await db.ref('users').once('value');
-      const usersSnap = _cachedUsersSnap;
       badgeUsers = [];
-      usersSnap.forEach(uSnap => {
-        const val = uSnap.val() || {};
-        badgeUsers.push({ uid: uSnap.key, displayName: val.displayName || '', email: val.email || '' });
-      });
+      _badgeUsersLoaded = false;
+      // Check the shared 15-min cache (set by kcnow, clans, leaderboard, etc.)
+      const cached = _vrGet('_kcUsersCache_v3');
+      if (cached) {
+        badgeUsers = Object.entries(cached).map(([uid, u]) => ({
+          uid, displayName: u.displayName || '', email: u.email || ''
+        }));
+        _badgeUsersLoaded = true;
+      }
+      // Show instructions or first page of results
       renderBadgeUserOptions('');
     }
 
-    // Render user options based on search
+    // Render user options — search-driven when no cache, paginated to 20 when cache is present
+    let _searchDebounce = null;
     function renderBadgeUserOptions(filter) {
+      const lower = (filter || '').toLowerCase().trim();
+
+      if (!_badgeUsersLoaded) {
+        // No cache available — require search input before fetching
+        if (lower.length < 3) {
+          badgeUserSelect.innerHTML = '<option disabled value="">— Type 3+ characters to search —</option>';
+          selectedUserId = null;
+          updateBadgeCountsDisplay();
+          return;
+        }
+        // Debounce Firebase query
+        clearTimeout(_searchDebounce);
+        badgeUserSelect.innerHTML = '<option disabled value="">Searching…</option>';
+        _searchDebounce = setTimeout(async () => {
+          // Prefix query on displayName
+          const snap = await db.ref('users')
+            .orderByChild('displayName')
+            .startAt(filter)
+            .endAt(filter + '\uf8ff')
+            .limitToFirst(20)
+            .once('value').catch(() => null);
+          badgeUsers = [];
+          if (snap) snap.forEach(c => {
+            const v = c.val() || {};
+            badgeUsers.push({ uid: c.key, displayName: v.displayName || '', email: v.email || '' });
+          });
+          _populateSelect(badgeUsers, lower);
+        }, 400);
+        return;
+      }
+
+      // Cache is available — filter client-side, show up to 20 results
+      const filtered = badgeUsers
+        .filter(u => !lower || u.displayName.toLowerCase().includes(lower) || u.email.toLowerCase().includes(lower))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email))
+        .slice(0, 20);
+      _populateSelect(filtered, lower);
+    }
+
+    function _populateSelect(list, lower) {
       badgeUserSelect.innerHTML = '';
-      const lower = filter.toLowerCase();
-      const filtered = badgeUsers.filter(u => {
-        return u.displayName.toLowerCase().includes(lower) || u.email.toLowerCase().includes(lower);
-      });
-      filtered.sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email));
-      filtered.forEach(u => {
+      if (list.length === 0) {
+        badgeUserSelect.innerHTML = '<option disabled value="">No users found</option>';
+        selectedUserId = null;
+        updateBadgeCountsDisplay();
+        return;
+      }
+      list.forEach(u => {
         const opt = document.createElement('option');
         opt.value = u.uid;
         opt.textContent = u.displayName ? `${u.displayName} (${u.email})` : u.email;
         badgeUserSelect.appendChild(opt);
       });
-      // If no selected user or selected user filtered out, select first
-      if (!selectedUserId || !filtered.some(u => u.uid === selectedUserId)) {
-        selectedUserId = filtered.length > 0 ? filtered[0].uid : null;
+      if (!selectedUserId || !list.some(u => u.uid === selectedUserId)) {
+        selectedUserId = list[0].uid;
       }
       badgeUserSelect.value = selectedUserId || '';
       updateBadgeCountsDisplay();
@@ -565,6 +611,9 @@
 
     // Event Listeners for badge management modal
     manageBadgesBtn.addEventListener('click', async () => {
+      badgeUserSearch.value = '';
+      selectedUserId = null;
+      resetBadgeChanges();
       await loadBadgeUsers();
       badgeAdminModal.classList.remove('hidden');
     });

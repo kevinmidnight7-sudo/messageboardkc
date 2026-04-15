@@ -1838,11 +1838,20 @@ const hasCustomization =
     window.currentUser = u; // expose for profile-popup.js friend bar
     if (u) {
       currentUserUid = u.uid;
-      // COST: .once() — profile (theme, diamond status) doesn't need live re-downloads
-      db.ref(`users/${u.uid}`).once('value').then(snap => {
-        currentUserProfile = snap.val() || {};
+      // COST FIX: fetch only the sub-paths we need (theme, codesUnlocked, profileCustomization).
+      // Reading users/${uid} includes all nested posts — can be hundreds of KB for active users.
+      Promise.all([
+        db.ref(`users/${u.uid}/theme`).once('value'),
+        db.ref(`users/${u.uid}/codesUnlocked`).once('value'),
+        db.ref(`users/${u.uid}/profileCustomization`).once('value'),
+      ]).then(([themeSnap, cuSnap, pcSnap]) => {
+        currentUserProfile = {
+          theme: themeSnap.val() || 'light',
+          codesUnlocked: cuSnap.val() || {},
+          profileCustomization: pcSnap.val() || null,
+        };
 
-        applyTheme(currentUserProfile.theme || 'light');
+        applyTheme(currentUserProfile.theme);
 
         const hasDiamond = currentUserProfile?.codesUnlocked?.diamond;
         loginBar.classList.add('hidden');
