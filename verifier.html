@@ -127,9 +127,9 @@
         <div class="w-1/5">Status</div>
         <div class="w-2/5 text-right">Actions</div>
       </div>
-      <!-- User List Container -->
-      <div class="px-4 pt-3 flex justify-end">
-        <button id="refreshUsersBtn" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200">↻ Refresh List</button>
+      <!-- User Search + List Container -->
+      <div class="px-4 pt-3 pb-2">
+        <input id="userSearchInput" type="text" placeholder="Search by email or display name…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
       </div>
       <div id="userList" class="divide-y divide-gray-200">
         <div class="p-8 text-center text-gray-500">Loading user list...</div>
@@ -322,62 +322,128 @@
       });
     });
 
-    // --- User List Logic ---
-    // COST FIX: was .on('value') which re-streamed the entire users collection on every change.
-    // Now .once() — admin clicks Refresh to reload manually. Snapshot reused for badge modal.
+    // --- User List Logic (paginated) ---
+    const _PAGE_SIZE = 25;
+    let _lastUserKey = null;
+    let _hasMoreUsers = false;
+    let _allUsersFlat = []; // all rows loaded so far (for client-side search)
+
     function initUserListListener() {
       loadUserList();
+      document.getElementById('userSearchInput').addEventListener('input', function() {
+        _renderFilteredUsers(this.value.trim().toLowerCase());
+      });
     }
+
     function loadUserList() {
-      const usersRef = db.ref("users");
-      _cachedUsersSnap = null; // invalidate badge cache so next badge open re-fetches
+      _lastUserKey = null;
+      _hasMoreUsers = false;
+      _allUsersFlat = [];
       userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">Loading…</div>';
-      usersRef.once('value', (snapshot) => {
-        _cachedUsersSnap = snapshot; // reuse for badge modal
-        userListContainer.innerHTML = '';
-        if (!snapshot.exists()) {
-          userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">No users found in the database.</div>';
-          return;
-        }
-        const userArray = [];
-        snapshot.forEach((childSnap) => {
-          const user = childSnap.val();
-          if (user && user.email) {
-            userArray.push({ uid: childSnap.key, ...user });
+      _fetchUserPage(true);
+    }
+
+    function _fetchUserPage(isFirst) {
+      let query = db.ref('users').orderByKey().limitToFirst(_PAGE_SIZE + 1);
+      if (!isFirst && _lastUserKey) {
+        query = db.ref('users').orderByKey().startAfter(_lastUserKey).limitToFirst(_PAGE_SIZE + 1);
+      }
+      query.once('value').then((snapshot) => {
+        const page = [];
+        snapshot.forEach((child) => {
+          const u = child.val();
+          if (u && u.email) page.push({ uid: child.key, ...u });
+        });
+        _hasMoreUsers = page.length > _PAGE_SIZE;
+        const rows = _hasMoreUsers ? page.slice(0, _PAGE_SIZE) : page;
+        if (rows.length > 0) _lastUserKey = rows[rows.length - 1].uid;
+
+        if (isFirst) {
+          _allUsersFlat = rows;
+          userListContainer.innerHTML = '';
+          if (rows.length === 0) {
+            userListContainer.innerHTML = '<div class="p-8 text-center text-gray-500">No users found.</div>';
+            return;
           }
-        });
-        userArray.sort((a, b) => a.email.localeCompare(b.email));
-        userArray.forEach((user) => {
-          const uid = user.uid;
-          const isVerified = user.emailVerified === true;
-          const li = document.createElement('div');
-          li.className = 'p-4 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition duration-150';
-          const statusClass = isVerified ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
-          const statusText = isVerified ? 'Verified' : 'Not Verified';
-          const verifyBtn = isVerified ?
-            `<button class="revoke-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 transition duration-200" data-uid="${uid}">Revoke</button>` :
-            `<button class="verify-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200" data-uid="${uid}">Verify</button>`;
-          const deleteBtn = `<button class="delete-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200" data-uid="${uid}">Delete</button>`;
-          li.innerHTML = `
-            <div class="w-full md:w-2/5 mb-2 md:mb-0">
-              <div class="font-semibold text-gray-800">${user.email}</div>
-              <div class="text-sm text-gray-500">${user.displayName || 'No name'}</div>
-            </div>
-            <div class="w-full md:w-1/5 mb-2 md:mb-0">
-              <span class="px-3 py-1 rounded-full text-xs font-bold ${statusClass}">${statusText}</span>
-            </div>
-            <div class="w-full md:w-2/5 flex md:justify-end space-x-2">
-              ${verifyBtn}
-              ${deleteBtn}
-            </div>
-          `;
-          userListContainer.appendChild(li);
-        });
+        } else {
+          _allUsersFlat = _allUsersFlat.concat(rows);
+          const existingBtn = document.getElementById('loadMoreUsersBtn');
+          if (existingBtn) existingBtn.remove();
+        }
+
+        rows.forEach(_appendUserRow);
+
+        if (_hasMoreUsers) {
+          const wrap = document.createElement('div');
+          wrap.id = 'loadMoreUsersBtn';
+          wrap.className = 'p-4 text-center';
+          wrap.innerHTML = `<button onclick="_fetchUserPage(false)" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200">Load More (${_PAGE_SIZE} at a time)</button>`;
+          userListContainer.appendChild(wrap);
+        }
         addEventListenersToButtons();
       }).catch((error) => {
-        console.error(error);
+        console.error('User list error:', error);
         userListContainer.innerHTML = '<div class="p-8 text-center text-red-500">Error loading user list. Check console.</div>';
       });
+    }
+
+    function _appendUserRow(user) {
+      const uid = user.uid;
+      const isVerified = user.emailVerified === true;
+      const li = document.createElement('div');
+      li.className = 'p-4 flex flex-col md:flex-row md:items-center md:justify-between hover:bg-gray-50 transition duration-150';
+      const statusClass = isVerified ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100';
+      const statusText = isVerified ? 'Verified' : 'Not Verified';
+      const verifyBtn = isVerified
+        ? `<button class="revoke-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 transition duration-200" data-uid="${uid}">Revoke</button>`
+        : `<button class="verify-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition duration-200" data-uid="${uid}">Verify</button>`;
+      const deleteBtn = `<button class="delete-btn w-full md:w-auto px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-200" data-uid="${uid}">Delete</button>`;
+      li.innerHTML = `
+        <div class="w-full md:w-2/5 mb-2 md:mb-0">
+          <div class="font-semibold text-gray-800">${user.email}</div>
+          <div class="text-sm text-gray-500">${user.displayName || 'No name'}</div>
+        </div>
+        <div class="w-full md:w-1/5 mb-2 md:mb-0">
+          <span class="px-3 py-1 rounded-full text-xs font-bold ${statusClass}">${statusText}</span>
+        </div>
+        <div class="w-full md:w-2/5 flex md:justify-end space-x-2">
+          ${verifyBtn}
+          ${deleteBtn}
+        </div>
+      `;
+      userListContainer.appendChild(li);
+    }
+
+    function _renderFilteredUsers(q) {
+      const rows = q
+        ? _allUsersFlat.filter(u =>
+            (u.email || '').toLowerCase().includes(q) ||
+            (u.displayName || '').toLowerCase().includes(q))
+        : _allUsersFlat;
+
+      // Clear all rendered rows (keep Load More button if no filter active)
+      userListContainer.innerHTML = '';
+
+      if (rows.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'p-4 text-center text-gray-500';
+        msg.textContent = q ? 'No users matched your search.' : 'No users loaded yet.';
+        userListContainer.appendChild(msg);
+        return;
+      }
+
+      rows.forEach(_appendUserRow);
+
+      // Restore Load More button when not filtering
+      if (!q && _hasMoreUsers) {
+        const wrap = document.createElement('div');
+        wrap.id = 'loadMoreUsersBtn';
+        wrap.className = 'p-4 text-center';
+        wrap.innerHTML = `<button onclick="_fetchUserPage(false)" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition duration-200">Load More (${_PAGE_SIZE} at a time)</button>`;
+        userListContainer.appendChild(wrap);
+      }
+
+      addEventListenersToButtons();
     }
     function addEventListenersToButtons() {
       document.querySelectorAll('.verify-btn').forEach(button => {
@@ -427,27 +493,39 @@
     let badgeUsers = [];
     let badgeChanges = { offence: 0, defence: 0, overall: 0 };
     let selectedUserId = null;
-    // Cache state: populated from shared localStorage or a one-time Firebase fetch.
-    // Verifier is admin-only so one full load per cold session is acceptable.
     let _badgeUsersLoaded = false;
+    // In-memory cache persists for the admin's entire session — no repeat fetches.
+    let _cachedAllBadgeUsers = null;
 
     async function loadBadgeUsers() {
       badgeUsers = [];
       _badgeUsersLoaded = false;
 
-      // Fast path: shared 15-min cache set by kcnow/clans/leaderboard etc.
-      const cached = _vrGet('_kcUsersCache_v3');
-      if (cached) {
-        badgeUsers = Object.entries(cached).map(([uid, u]) => ({
-          uid, displayName: u.displayName || '', email: u.email || ''
-        }));
+      // Priority 1: in-memory cache from a previous modal open this session.
+      if (_cachedAllBadgeUsers && _cachedAllBadgeUsers.length > 0) {
+        badgeUsers = _cachedAllBadgeUsers;
         _badgeUsersLoaded = true;
         renderBadgeUserOptions('');
         return;
       }
 
-      // Cold path: no cache — fetch once, then filter client-side.
-      // Firebase prefix queries are case-sensitive so we can't use orderByChild here.
+      // Priority 2: localStorage cache — only valid if it's a UID-keyed object
+      // (kcnow.html may store a different format, so guard against arrays).
+      const cached = _vrGet('_kcUsersCache_v3');
+      if (cached && typeof cached === 'object' && !Array.isArray(cached)) {
+        const fromCache = Object.entries(cached)
+          .map(([uid, u]) => ({ uid, displayName: u.displayName || '', email: u.email || '' }))
+          .filter(u => u.displayName || u.email);
+        if (fromCache.length > 0) {
+          badgeUsers = fromCache;
+          _cachedAllBadgeUsers = badgeUsers;
+          _badgeUsersLoaded = true;
+          renderBadgeUserOptions('');
+          return;
+        }
+      }
+
+      // Priority 3: fresh Firebase fetch (one-time per cold session).
       badgeUserSelect.innerHTML = '<option disabled value="">Loading users…</option>';
       try {
         const snap = await db.ref('users').once('value');
@@ -457,13 +535,15 @@
             badgeUsers.push({ uid: c.key, displayName: v.displayName || '', email: v.email || '' });
           }
         });
-        // Populate the shared cache so other pages benefit
+        _cachedAllBadgeUsers = badgeUsers;
+        // Save as UID-keyed object so verifier can reuse it next open.
         try {
           const raw = snap.val();
-          if (raw) _vrSet('_kcUsersCache_v3', raw);
+          if (raw && typeof raw === 'object') _vrSet('_kcUsersCache_v3', raw);
         } catch(e) {}
         _badgeUsersLoaded = true;
       } catch(e) {
+        console.error('loadBadgeUsers fetch error:', e);
         badgeUserSelect.innerHTML = '<option disabled value="">Failed to load users</option>';
         return;
       }
