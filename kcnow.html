@@ -2987,11 +2987,33 @@
                 }
 
                 try { await user.reload(); } catch (e) {}
-                // COST: .once() instead of .on() — profile data (avatar, name, badges) does not
-                // need live re-downloads during a session; presence is written by initPresence()
-                // separately and does not need to trigger a full profile re-download.
-                db.ref(`users/${user.uid}`).once('value').then(snap => {
-                    const data = snap.val() || {};
+                // COST FIX: fetch only the sub-paths currentUserData and renderUserHeader need.
+                // Reading the full users/${uid} node includes all nested posts — potentially
+                // hundreds of KB for active users — none of which the header/permissions use.
+                Promise.all([
+                    db.ref(`users/${user.uid}/displayName`).once('value'),
+                    db.ref(`users/${user.uid}/avatar`).once('value'),
+                    db.ref(`users/${user.uid}/isStaff`).once('value'),
+                    db.ref(`users/${user.uid}/codesUnlocked`).once('value'),
+                    db.ref(`users/${user.uid}/profileCustomizationUnlocked`).once('value'),
+                    db.ref(`users/${user.uid}/profileCustomization`).once('value'),
+                    db.ref(`users/${user.uid}/subscription`).once('value'),
+                    db.ref(`users/${user.uid}/membership`).once('value'),
+                    db.ref(`users/${user.uid}/badges`).once('value'),
+                    db.ref(`users/${user.uid}/roles`).once('value'),
+                ]).then(([dnS, avS, staffS, cuS, pcuS, pcS, subS, memS, badgesS, rolesS]) => {
+                    const data = {
+                        displayName:               dnS.val()    || '',
+                        avatar:                    avS.val()    || '',
+                        isStaff:                   staffS.val() || false,
+                        codesUnlocked:             cuS.val()    || {},
+                        profileCustomizationUnlocked: pcuS.val() || false,
+                        profileCustomization:      pcS.val()    || null,
+                        subscription:              subS.val()   || {},
+                        membership:                memS.val()   || {},
+                        badges:                    badgesS.val() || {},
+                        roles:                     rolesS.val() || {},
+                    };
                     currentUserData = data;
                     renderUserHeader(data, user);
                     renderDiamondCustomizationStatus();
@@ -3611,7 +3633,17 @@
                 }
                 if (uids.length === 0) { section.classList.add('hidden'); return; }
                 section.classList.remove('hidden');
-                Promise.all(uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val()||{}) })))).then(users => {
+                // COST FIX: use allUsersData in-memory cache; only fetch displayName+avatar
+                // for cache misses. Avoids downloading full user objects (with all posts) per requester.
+                Promise.all(uids.map(async uid => {
+                    const cached = allUsersData.find(u => u.uid === uid);
+                    if (cached) return { uid, displayName: cached.displayName, avatar: cached.avatar };
+                    const [dnSnap, avSnap] = await Promise.all([
+                        db.ref(`users/${uid}/displayName`).once('value'),
+                        db.ref(`users/${uid}/avatar`).once('value'),
+                    ]);
+                    return { uid, displayName: dnSnap.val() || 'Unknown', avatar: avSnap.val() || '' };
+                })).then(users => {
                     list.innerHTML = users.map(u => `
                         <div class="flex items-center gap-2 p-2 rounded-xl" style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.15);">
                             <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-8 h-8 rounded-full object-cover flex-shrink-0">
@@ -4660,8 +4692,21 @@
 
         function _getFriendProfile(uid) {
             if (_friendProfileCache[uid]) return Promise.resolve(_friendProfileCache[uid]);
-            return db.ref(`users/${uid}`).once('value').then(s => {
-                const data = { uid, ...(s.val() || {}) };
+            // COST FIX: fetch only the fields renderFriendsPanel/rpRenderFriendsList need.
+            // Downloading users/${uid} includes all nested posts — expensive per friend.
+            return Promise.all([
+                db.ref(`users/${uid}/displayName`).once('value'),
+                db.ref(`users/${uid}/avatar`).once('value'),
+                db.ref(`users/${uid}/online`).once('value'),
+                db.ref(`users/${uid}/kcnowOnline`).once('value'),
+            ]).then(([dnS, avS, onS, konS]) => {
+                const data = {
+                    uid,
+                    displayName: dnS.val() || '',
+                    avatar:      avS.val() || '',
+                    online:      onS.val() || false,
+                    kcnowOnline: konS.val() || false,
+                };
                 _friendProfileCache[uid] = data;
                 return data;
             });
@@ -7876,7 +7921,18 @@
                 const clan = clanSnap.val();
                 if(!clan){modal.update('<div class="text-center py-10 text-red-400">Clan not found</div>');return;}
                 const memberUids = Object.keys(clan.members||{});
-                const profiles = await Promise.all(memberUids.map(uid=>db.ref(`users/${uid}`).once('value').then(s=>({uid,...(s.val()||{})}))));
+                // COST FIX: look up members from the in-memory allUsersData cache first.
+                // Cache is populated by _getUsersOnce(). Only fall back to Firebase for
+                // cache misses, and even then fetch only displayName+avatar (not full user).
+                const profiles = await Promise.all(memberUids.map(async uid => {
+                    const cached = allUsersData.find(u => u.uid === uid);
+                    if (cached) return { uid, displayName: cached.displayName, photoURL: cached.avatar || cached.photoURL, overall: cached.overall };
+                    const [dnSnap, avSnap] = await Promise.all([
+                        db.ref(`users/${uid}/displayName`).once('value'),
+                        db.ref(`users/${uid}/avatar`).once('value'),
+                    ]);
+                    return { uid, displayName: dnSnap.val() || 'Unknown', photoURL: avSnap.val() || '' };
+                }));
                 const isLeader = currentUser && clan.leaderId===currentUser.uid;
                 const isMember = currentUser && memberUids.includes(currentUser.uid);
                 modal.update(`
@@ -8532,12 +8588,25 @@
             const idBlock = $('pf-identity-block');
             if (idBlock) idBlock.style.opacity = '0.4';
 
+            // COST FIX: reuse currentUserData (already fetched by auth handler) for most fields.
+            // Only fetch the extra profile-tab fields not in currentUserData, avoiding a full
+            // users/${uid} read that would include all nested posts.
+            const _base = currentUserData || {};
             Promise.all([
-                db.ref(`users/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
+                db.ref(`users/${currentUser.uid}/about`).once('value').catch(() => ({ val: () => null })),
+                db.ref(`users/${currentUser.uid}/customBadge`).once('value').catch(() => ({ val: () => null })),
+                db.ref(`users/${currentUser.uid}/customBadges`).once('value').catch(() => ({ val: () => ({}) })),
+                db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').catch(() => ({ val: () => 0 })),
                 db.ref(`badges/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 getDiscordIdFromKcUid(currentUser.uid)
-            ]).then(([userSnap, badgesSnap, discordId]) => {
-                const u = userSnap.val() || {};
+            ]).then(([aboutS, cbS, cbsS, bdS, badgesSnap, discordId]) => {
+                const u = {
+                    ..._base,
+                    about:        aboutS.val(),
+                    customBadge:  cbS.val(),
+                    customBadges: cbsS.val() || {},
+                    bdHighscore:  bdS.val() || 0,
+                };
                 const b = badgesSnap.val() || {};
                 if (idBlock) idBlock.style.opacity = '1';
 
@@ -8688,15 +8757,18 @@
             if (!M) return;
             const uid = currentUser.uid;
             try {
-                const [badgesSnap, userSnap] = await Promise.all([
+                // COST FIX: fetch only the sub-paths openBadgeManager needs.
+                const [badgesSnap, cbsSnap, streakSnap, codesSnap] = await Promise.all([
                     db.ref(`badges/${uid}`).once('value'),
-                    db.ref(`users/${uid}`).once('value'),
+                    db.ref(`users/${uid}/customBadges`).once('value'),
+                    db.ref(`users/${uid}/loginStreak`).once('value'),
+                    db.ref(`users/${uid}/codesUnlocked`).once('value'),
                 ]);
                 const bCounts = badgesSnap.val() || {};
-                const u = userSnap.val() || {};
-                const customData = u.customBadges || {};
-                const streak = u.loginStreak || 0;
-                const codes = u.codesUnlocked || {};
+                const u = {};
+                const customData = cbsSnap.val() || {};
+                const streak = streakSnap.val() || 0;
+                const codes = codesSnap.val() || {};
                 const bonus = (codes.diamond ? 2 : 0) + (codes.emerald ? 1 : 0);
                 const baseMax = streak >= 100 ? 2 : streak >= 50 ? 1 : 0;
                 const maxCustom = baseMax + bonus;
