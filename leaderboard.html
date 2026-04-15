@@ -336,28 +336,23 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // --- Fetch leaderboard data (sessionStorage-cached: re-uses data within same browser session)
-  const _LB_USERS_KEY = 'kc-lb-users-v1';
-  const _LB_BADGES_KEY = 'kc-lb-badges-v1';
+  // --- Shared 5-min localStorage cache (same keys as kcnow.html for cross-page benefit)
+  const _LC_TTL = 5 * 60 * 1000;
+  function _lcGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _LC_TTL ? r.d : null; } catch(e) { return null; } }
+  function _lcSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
+  // --- Fetch leaderboard data (session-cached: only one download per page load)
   let _lbDataLoaded = false;
   async function fetchData() {
     if (_lbDataLoaded) { renderAll(); return; }
-    let users = null, badges = null;
-    try {
-      const cu = sessionStorage.getItem(_LB_USERS_KEY);
-      const cb = sessionStorage.getItem(_LB_BADGES_KEY);
-      if (cu) users = JSON.parse(cu);
-      if (cb) badges = JSON.parse(cb);
-    } catch(e) {}
-
-    if (!users || !badges) {
-      const [usersSnap, badgesSnap] = await Promise.all([
-        users ? Promise.resolve(null) : db.ref('users').once('value'),
-        badges ? Promise.resolve(null) : db.ref('badges').once('value')
-      ]);
-      if (usersSnap) { users = usersSnap.val() || {}; try { sessionStorage.setItem(_LB_USERS_KEY, JSON.stringify(users)); } catch(e) {} }
-      if (badgesSnap) { badges = badgesSnap.val() || {}; try { sessionStorage.setItem(_LB_BADGES_KEY, JSON.stringify(badges)); } catch(e) {} }
-    }
+    let usersVal = _lcGet('_kcUsersCache_v3');
+    let badgesVal = _lcGet('_kcBadgesCache_v1');
+    const needed = [];
+    if (!usersVal)  needed.push(db.ref('users').once('value').then(s  => { usersVal  = s.val()||{}; _lcSet('_kcUsersCache_v3', usersVal);  }));
+    if (!badgesVal) needed.push(db.ref('badges').once('value').then(s => { badgesVal = s.val()||{}; _lcSet('_kcBadgesCache_v1', badgesVal); }));
+    await Promise.all(needed);
+    const users  = usersVal  || {};
+    const badges = badgesVal || {};
 
     data = Object.entries(users).map(([uid, u]) => {
       const b = (badges || {})[uid] || {};

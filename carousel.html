@@ -513,36 +513,27 @@
         });
     }
 
-    // COST: sessionStorage-cache so re-opening the carousel doesn't re-download all users/badges
-    const _CAR_USERS_KEY = 'kc-car-users-v1';
-    const _CAR_BADGES_KEY = 'kc-car-badges-v1';
+    // COST: was 3 separate db.ref('users').once('value') calls (3x full collection download).
+    // Now uses localStorage 5-min TTL cache (shared key with kcnow.html) — zero Firebase reads on repeat visits.
     const lbMembers = document.getElementById('lb-members');
     const lbStreaks = document.getElementById('lb-streaks');
     const lbBadges  = document.getElementById('lb-badges');
 
-    async function loadCarouselData() {
-      let usersVal = null, badgesVal = null;
-      try {
-        const cu = sessionStorage.getItem(_CAR_USERS_KEY);
-        const cb = sessionStorage.getItem(_CAR_BADGES_KEY);
-        if (cu) usersVal = JSON.parse(cu);
-        if (cb) badgesVal = JSON.parse(cb);
-      } catch(e) {}
-      if (!usersVal || !badgesVal) {
-        const [userSnap, badgeSnap] = await Promise.all([
-          usersVal ? Promise.resolve(null) : db.ref('users').once('value'),
-          badgesVal ? Promise.resolve(null) : db.ref('badges').once('value')
-        ]);
-        if (userSnap) { usersVal = userSnap.val() || {}; try { sessionStorage.setItem(_CAR_USERS_KEY, JSON.stringify(usersVal)); } catch(e) {} }
-        if (badgeSnap) { badgesVal = badgeSnap.val() || {}; try { sessionStorage.setItem(_CAR_BADGES_KEY, JSON.stringify(badgesVal)); } catch(e) {} }
-      }
-      return [usersVal, badgesVal];
-    }
+    const _CR_TTL = 5 * 60 * 1000;
+    function _crGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _CR_TTL ? r.d : null; } catch(e) { return null; } }
+    function _crSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 
-    loadCarouselData().then(([usersVal, badgesVal]) => {
+    ;(async function() {
+      let usersVal  = _crGet('_kcUsersCache_v3');
+      let badgesVal = _crGet('_kcBadgesCache_v1');
+      const needed = [];
+      if (!usersVal)  needed.push(db.ref('users').once('value').then(s  => { usersVal  = s.val()||{}; _crSet('_kcUsersCache_v3', usersVal);  }));
+      if (!badgesVal) needed.push(db.ref('badges').once('value').then(s => { badgesVal = s.val()||{}; _crSet('_kcBadgesCache_v1', badgesVal); }));
+      await Promise.all(needed);
+
       const users = [];
-      for (const uid in usersVal) {
-        const v = usersVal[uid];
+      Object.entries(usersVal||{}).forEach(([uid, v]) => {
+        if (!v) return;
         users.push({
           uid,
           name: v.displayName || v.email || uid,
@@ -574,7 +565,7 @@
 
       // Badges
       const badgeTotals = users.map(user => {
-        const badgeObj = badgeSnap.child(user.uid).val() || {};
+        const badgeObj = (badgesObj||{})[user.uid] || {};
         let sum = 0;
         for (let k in badgeObj) sum += parseInt(badgeObj[k]) || 0;
         return { ...user, count: sum };
@@ -588,7 +579,7 @@
       `).join('') || `<div class="lb-row">No badges yet</div>`;
 
       attachClickListeners();
-    });
+    })();
   </script>
 </body>
 </html>

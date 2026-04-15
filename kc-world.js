@@ -15,6 +15,15 @@
   var NUKE_COST    = 50;   /* troops deducted from launch tile */
   var NUKE_RADIUS  = 2;    /* tiles neutralised around impact */
   var BUNKER_COST  = 25;   /* troops to build a bunker (3× defense) */
+  var SAM_COST     = 30;   /* troops to build a SAM launcher (b=4) */
+  var SAM_INTERCEPT = 0.70; /* 70% chance to intercept incoming nuke/MIRV */
+  var MIRV_COST    = 80;   /* troops to launch MIRV */
+  var MIRV_COUNT   = 5;    /* number of MIRV sub-warheads */
+  var MIRV_RADIUS  = 1;    /* each sub-warhead blast radius */
+  var DONATE_MIN   = 5;    /* minimum troops to donate to an ally */
+  var ALLIANCE_TTL = 60;   /* alliance expires after 60 ticks (~3 min) */
+  var DEBUFF_START = 0.30; /* % land owned where large-defender debuff kicks in */
+  var QUICK_CHATS  = ['GG! \uD83C\uDFC6', 'Help! \uD83D\uDEA8', 'Attack! \u2694\uFE0F', 'Come here \uD83D\uDC46', 'Sorry! \uD83D\uDE05', 'Truce? \uD83E\uDD1D'];
   var PLAYER_COLORS = ['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899'];
 
   /* ── State ───────────────────────────────────── */
@@ -36,6 +45,11 @@
     hoveredTile: null,
     lastStats: {},
     alliances: {},
+    allianceTicks: {},   /* key → tick when alliance became active */
+    relations: {},       /* "slotA_slotB" → score -100..100 */
+    botDifficulty: 'medium',
+    gameTimeLimit: 0,    /* max ticks, 0 = unlimited */
+    pendingMirv: null, pendingDonate: null,
     _clickHandler: null, _resizeHandler: null, _ctxHandler: null,
     _touchHandler: null, _touchEndHandler: null, _moveHandler: null,
     keyHandler: null,
@@ -142,7 +156,11 @@
         if (terrain[hli] === 'L' && Math.random() < HIGHLAND_PCT) terrain[hli] = 'H';
       }
 
-      return { w: MAP_W, h: MAP_H, terrain: terrain.join(''), spawns: spawns };
+      var landCount = 0;
+      for (var lci = 0; lci < terrain.length; lci++) {
+        if (terrain[lci] !== 'W' && terrain[lci] !== 'M') landCount++;
+      }
+      return { w: MAP_W, h: MAP_H, terrain: terrain.join(''), spawns: spawns, landCount: landCount };
     }
   };
 
@@ -332,6 +350,40 @@
             var bmt = ts * 0.12, bmw = ts * 0.12;
             for (var bmi = 0; bmi < 3; bmi++) {
               ctx.fillRect(bkx + bmi*(bkw/3), bky - bmt, bmw, bmt);
+            }
+          }
+
+          /* SAM launcher (b=4) — cyan radar dish + upward arrow */
+          if (dyn.b === 4 && dyn.o > 0 && ts >= 10) {
+            var scx = px + ts*0.5, scy = py + ts*0.55;
+            ctx.strokeStyle = 'rgba(34,211,238,0.92)';
+            ctx.lineWidth = Math.max(1.5, ts * 0.08);
+            /* dish arc */
+            ctx.beginPath();
+            ctx.arc(scx, scy, ts*0.28, Math.PI, 0);
+            ctx.stroke();
+            /* mast */
+            ctx.beginPath(); ctx.moveTo(scx, scy); ctx.lineTo(scx, py + ts*0.18); ctx.stroke();
+            /* arrowhead */
+            ctx.fillStyle = 'rgba(34,211,238,0.9)';
+            ctx.beginPath();
+            ctx.moveTo(scx,        py + ts*0.12);
+            ctx.lineTo(scx - ts*0.1, py + ts*0.26);
+            ctx.lineTo(scx + ts*0.1, py + ts*0.26);
+            ctx.closePath(); ctx.fill();
+          }
+
+          /* fallout overlay — green-yellow radiation tint */
+          if (dyn.f && ts >= 6) {
+            ctx.fillStyle = 'rgba(132,204,22,0.28)';
+            ctx.fillRect(px, py, ts, ts);
+            if (ts >= 10) {
+              ctx.fillStyle = 'rgba(163,230,53,0.7)';
+              var rfs = Math.max(6, ts - 6);
+              ctx.font = rfs + 'px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('\u2622', px + ts*0.5, py + ts*0.5);
             }
           }
 
@@ -531,38 +583,78 @@
         }
       }
 
-      /* ── Pings (emoji markers, float + fade over 3.5 s) ─── */
+      /* ── Pings + quick-chat (float + fade over 3.5 s / 5 s) ─── */
       var nowP = Date.now();
       Object.keys(st.pings).forEach(function(pidx) {
         var ping = st.pings[pidx];
         if (!ping || nowP > ping.expiresAt) { delete st.pings[pidx]; return; }
-        var pp = tileXY(parseInt(pidx));
-        var age  = nowP - ping.startTime;
-        var alpha = Math.max(0, 1 - age / 3500);
-        var yBob  = -Math.min(age / 120, 14);
+        var age   = nowP - ping.startTime;
+        var dur   = ping.chat ? 5000 : 3500;
+        var alpha = Math.max(0, 1 - age / dur);
+        var yBob  = -Math.min(age / 120, ping.chat ? 22 : 14);
+        /* resolve display position — for chat, use territory centroid if available */
+        var dispX, dispY;
+        if (ping.chat && ping.slot > 0) {
+          var ccx = 0, ccy = 0, ccn = 0;
+          Object.keys(tiles).forEach(function(k) {
+            if ((tiles[k]||{o:0}).o === ping.slot) { var cp = tileXY(parseInt(k)); ccx+=cp.x; ccy+=cp.y; ccn++; }
+          });
+          dispX = ccn > 0 ? offX + (ccx/ccn)*ts + ts/2 : offX + parseInt(pidx)%MAP_W*ts + ts/2;
+          dispY = ccn > 0 ? offY + (ccy/ccn)*ts + ts/2 : offY + Math.floor(parseInt(pidx)/MAP_W)*ts + ts/2;
+        } else {
+          var pp = tileXY(parseInt(pidx));
+          dispX = offX + pp.x*ts + ts/2;
+          dispY = offY + pp.y*ts + ts/2;
+        }
         ctx.save();
         ctx.globalAlpha = alpha;
-        var pfs = Math.max(10, ts + 2);
-        ctx.font = 'bold ' + pfs + 'px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(ping.emoji, offX + pp.x*ts + ts/2, offY + pp.y*ts + ts/2 + yBob);
+        if (ping.chat) {
+          /* chat bubble */
+          var cfs = Math.max(9, Math.min(ts, 12));
+          ctx.font = 'bold ' + cfs + 'px sans-serif';
+          var cw = ctx.measureText(ping.chat).width + 10;
+          var ch = cfs + 8;
+          ctx.fillStyle = 'rgba(15,15,15,0.78)';
+          ctx.beginPath();
+          if (ctx.roundRect) ctx.roundRect(dispX - cw/2, dispY + yBob - ch/2, cw, ch, 4);
+          else ctx.rect(dispX - cw/2, dispY + yBob - ch/2, cw, ch);
+          ctx.fill();
+          ctx.fillStyle = '#f0ede6';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(ping.chat, dispX, dispY + yBob);
+        } else {
+          var pfs = Math.max(10, ts + 2);
+          ctx.font = 'bold ' + pfs + 'px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(ping.emoji, dispX, dispY + yBob);
+        }
         ctx.restore();
       });
 
-      /* ── Nuke flash (radial gradient, 0.9 s) ──────────── */
+      /* ── Nuke / SAM-intercept / MIRV flash ──────────── */
       if (st.nukeFlash) {
         var nfAge = Date.now() - st.nukeFlash.startTime;
-        if (nfAge < 900) {
-          var nfAlpha = 1 - nfAge / 900;
+        var nfDur = st.nukeFlash.intercepted ? 600 : 900;
+        if (nfAge < nfDur) {
+          var nfAlpha = 1 - nfAge / nfDur;
           var nfcx = offX + st.nukeFlash.x * ts + ts / 2;
           var nfcy = offY + st.nukeFlash.y * ts + ts / 2;
           var nfr  = (NUKE_RADIUS + 2) * ts;
           ctx.save();
           var nfGrad = ctx.createRadialGradient(nfcx, nfcy, 0, nfcx, nfcy, nfr);
-          nfGrad.addColorStop(0,   'rgba(255,220,60,'  + nfAlpha + ')');
-          nfGrad.addColorStop(0.45,'rgba(239,68,68,'   + (nfAlpha * 0.8) + ')');
-          nfGrad.addColorStop(1,   'rgba(0,0,0,0)');
+          if (st.nukeFlash.intercepted) {
+            /* SAM interception — blue-white burst */
+            nfGrad.addColorStop(0,   'rgba(255,255,255,' + nfAlpha + ')');
+            nfGrad.addColorStop(0.4, 'rgba(34,211,238,'  + (nfAlpha*0.85) + ')');
+            nfGrad.addColorStop(1,   'rgba(0,0,0,0)');
+          } else {
+            /* nuke / MIRV — gold-red */
+            nfGrad.addColorStop(0,   'rgba(255,220,60,'  + nfAlpha + ')');
+            nfGrad.addColorStop(0.45,'rgba(239,68,68,'   + (nfAlpha*0.8) + ')');
+            nfGrad.addColorStop(1,   'rgba(0,0,0,0)');
+          }
           ctx.fillStyle = nfGrad;
           ctx.beginPath();
           ctx.arc(nfcx, nfcy, nfr, 0, Math.PI * 2);
@@ -608,7 +700,8 @@
      Phase 3/4: Engine · FirebaseSync · Input
   ================================================= */
   var Engine = {
-    resolveAttack: function(tiles, fromIdx, toIdx, percent, attackerSlot, terrain) {
+    /* stats = previous-tick playerStats (optional) for large-defender debuff */
+    resolveAttack: function(tiles, fromIdx, toIdx, percent, attackerSlot, terrain, stats) {
       terrain = terrain || (st.mapStatic && st.mapStatic.terrain) || '';
       var from = tiles[fromIdx];
       if (!from || from.o !== attackerSlot || from.t < 2) return;
@@ -624,19 +717,31 @@
       from.t -= sending;
       var to = tiles[toIdx] || { o: 0, t: 0 };
       if (to.o === 0 || to.o === attackerSlot) {
-        tiles[toIdx] = { o: attackerSlot, t: (to.t || 0) + sending, b: to.b || 0 };
+        tiles[toIdx] = { o: attackerSlot, t: (to.t || 0) + sending, b: to.b || 0, f: to.f || 0 };
       } else {
         /* defense multipliers stack */
         var defMul = 1;
-        if (to.b === 2) defMul = 2;           /* fort: 2× */
-        if (to.b === 3) defMul = 3;           /* bunker: 3× */
+        if (to.b === 2) defMul = 2;              /* fort: 2× */
+        if (to.b === 3) defMul = 3;              /* bunker: 3× */
+        if (to.b === 4) defMul = 1.5;            /* SAM launcher: 1.5× */
         if (terrain[toIdx] === 'H') defMul *= 1.5; /* highland: 1.5× extra */
+        if (to.f)       defMul *= 1.2;           /* fallout: defenders dig in (+20%) */
+        /* large-defender debuff: owning >30% of map weakens your defense */
+        if (stats && to.o > 0) {
+          var landC = (st.mapStatic && st.mapStatic.landCount) || 500;
+          var ownerPct = (stats[to.o] || 0) / landC;
+          if (ownerPct > DEBUFF_START) {
+            var excess   = ownerPct - DEBUFF_START;
+            var debuffF  = 1 - 0.45 * (excess / (1 - DEBUFF_START));
+            defMul *= Math.max(0.55, debuffF);
+          }
+        }
         var effDef = to.t * defMul;
         if (sending > effDef) {
           /* attacker wins; building destroyed on capture */
-          tiles[toIdx] = { o: attackerSlot, t: Math.max(1, sending - to.t), b: 0 };
+          tiles[toIdx] = { o: attackerSlot, t: Math.max(1, sending - to.t), b: 0, f: to.f || 0 };
         } else {
-          if (!tiles[toIdx]) tiles[toIdx] = { o: to.o, t: to.t, b: to.b || 0 };
+          if (!tiles[toIdx]) tiles[toIdx] = { o: to.o, t: to.t, b: to.b || 0, f: to.f || 0 };
           tiles[toIdx].t = Math.max(1, to.t - Math.floor(sending / defMul));
         }
       }
@@ -680,17 +785,27 @@
       return stats;
     },
 
-    checkWin: function(tiles, terrain) {
+    checkWin: function(tiles, terrain, timeLimit, tick) {
       var land = 0;
       for (var i = 0; i < terrain.length; i++) {
-        if (terrain[i] !== 'W' && terrain[i] !== 'M') land++;
+        if (terrain[i] !== 'W' && terrain[i] !== 'M') {
+          /* exclude persistent fallout tiles from win threshold */
+          if (!(tiles[i] && tiles[i].f && tiles[i].o === 0)) land++;
+        }
       }
+      if (land < 1) land = 1;
       var stats = this.getStats(tiles);
       var slots = Object.keys(stats);
       /* last player standing wins outright */
       if (slots.length === 1) return parseInt(slots[0]);
       for (var j = 0; j < slots.length; j++) {
         if (stats[slots[j]] / land >= WIN_PCT) return parseInt(slots[j]);
+      }
+      /* time limit: winner = most territory */
+      if (timeLimit > 0 && tick >= timeLimit) {
+        var best = null, bestCount = 0;
+        slots.forEach(function(s) { if (stats[s] > bestCount) { bestCount = stats[s]; best = parseInt(s); } });
+        return best;
       }
       return null;
     },
@@ -756,10 +871,10 @@
       if (!st.roomRef) return;
       var updates = {};
       var newTiles = newGs.tiles;
-      /* diff tiles */
+      /* diff tiles — include fallout (f) field in comparison */
       Object.keys(newTiles).forEach(function(k) {
         var p = prevTiles[k], c = newTiles[k];
-        if (!p || p.o !== c.o || p.t !== c.t || (p.b||0) !== (c.b||0)) {
+        if (!p || p.o !== c.o || p.t !== c.t || (p.b||0) !== (c.b||0) || (p.f||0) !== (c.f||0)) {
           updates['gameState/tiles/' + k] = c;
         }
       });
@@ -767,6 +882,7 @@
       updates['gameState/tick']        = newGs.tick;
       updates['gameState/playerStats'] = newGs.playerStats || null;
       updates['gameState/winner']      = newGs.winner || null;
+      updates['gameState/relations']   = newGs.relations || null;
       st.roomRef.update(updates);
     },
 
@@ -782,36 +898,46 @@
       });
     },
 
-    /* Clients: listen to tick/playerStats/winner as separate tiny fields */
+    /* Clients: listen to tick/playerStats/winner/relations as separate tiny fields */
     listenMeta: function(cb) {
       if (!st.roomRef) return;
-      ['tick','playerStats','winner'].forEach(function(field) {
+      ['tick','playerStats','winner','relations'].forEach(function(field) {
         var ref = st.roomRef.child('gameState/' + field);
         var fn  = ref.on('value', function(s) { cb(field, s.val()); });
         st.listeners.push(function() { ref.off('value', fn); });
       });
     },
 
-    /* Alliance: ~50 bytes per write */
+    /* Alliance: store tick so host can expire it after ALLIANCE_TTL ticks */
     pushAlliance: function(slotA, slotB, status) {
       if (!st.roomRef) return;
       var key = Math.min(slotA,slotB) + '_' + Math.max(slotA,slotB);
-      st.roomRef.child('alliances/' + key).set(status || null);
+      if (status === 'active') {
+        var curTick = (st.gameState && st.gameState.tick) || 0;
+        st.roomRef.child('alliances/' + key).set({ s: 'active', t: curTick });
+      } else {
+        st.roomRef.child('alliances/' + key).set(status || null);
+      }
     },
     listenAlliances: function() {
       if (!st.roomRef) return;
       var ref = st.roomRef.child('alliances');
       var fn = ref.on('value', function(snap) {
         var data = snap.val() || {};
-        st.alliances = {};
+        st.alliances     = {};
+        st.allianceTicks = {};
         Object.keys(data).forEach(function(key) {
-          if (data[key] !== 'active') return;
+          var val = data[key];
+          /* support both old string 'active' and new object {s:'active',t:N} */
+          var isActive = val === 'active' || (val && val.s === 'active');
+          if (!isActive) return;
           var parts = key.split('_');
           var a = parseInt(parts[0]), b = parseInt(parts[1]);
           if (!st.alliances[a]) st.alliances[a] = {};
           if (!st.alliances[b]) st.alliances[b] = {};
           st.alliances[a][b] = true;
           st.alliances[b][a] = true;
+          st.allianceTicks[key] = (val && val.t) || 0;
         });
       });
       st.listeners.push(function() { ref.off('value', fn); });
@@ -826,20 +952,26 @@
     },
 
     /* Pings — ~50 bytes per ping, displayed for 3.5 s then expire client-side */
-    pushPing: function(pingIdx, emoji) {
+    pushPing: function(pingIdx, emoji, chatMsg) {
       if (!st.roomRef) return;
-      st.roomRef.child('pings/' + pingIdx).set({
-        slot: st.mySlot, emoji: emoji || '\uD83D\uDCCD',
-        ts: window.firebase.database.ServerValue.TIMESTAMP
-      });
+      var payload = { slot: st.mySlot, ts: window.firebase.database.ServerValue.TIMESTAMP };
+      if (chatMsg) { payload.chat = chatMsg; }
+      else { payload.emoji = emoji || '\uD83D\uDCCD'; }
+      st.roomRef.child('pings/' + pingIdx).set(payload);
     },
     listenPings: function() {
       if (!st.roomRef) return;
       var ref = st.roomRef.child('pings');
       var handle = function(s) {
         var v = s.val(); if (!v) return;
-        st.pings[s.key] = { emoji: v.emoji || '\uD83D\uDCCD', slot: v.slot,
-          startTime: Date.now(), expiresAt: Date.now() + 3500 };
+        var dur = v.chat ? 5000 : 3500;
+        st.pings[s.key] = {
+          emoji: v.emoji || '\uD83D\uDCCD',
+          chat: v.chat || null,
+          slot: v.slot || 0,
+          startTime: Date.now(),
+          expiresAt: Date.now() + dur
+        };
       };
       var fn1 = ref.on('child_added',   handle);
       var fn2 = ref.on('child_changed', handle);
@@ -855,7 +987,12 @@
       var ref = st.roomRef.child('gameState/nukeFlash');
       var fn = ref.on('value', function(s) {
         var v = s.val();
-        if (v) st.nukeFlash = { x: v.x, y: v.y, startTime: Date.now() };
+        if (v) st.nukeFlash = {
+          x: v.x, y: v.y,
+          startTime: Date.now(),
+          intercepted: v.intercepted || false,
+          count: v.count || 1
+        };
       });
       st.listeners.push(function() { ref.off('value', fn); });
     },
@@ -963,6 +1100,23 @@
     var t = terrain[hit.idx];
     if (t === 'W' || t === 'M') return;
     var dyn = (st.gameState && st.gameState.tiles && st.gameState.tiles[hit.idx]) || { o: 0, t: 0 };
+
+    /* MIRV targeting mode — next click = target tile */
+    if (st.pendingMirv !== null) {
+      var mirvFrom = st.pendingMirv;
+      st.pendingMirv = null;
+      KCWorld._launchMirv(mirvFrom, hit.idx);
+      return;
+    }
+
+    /* Donate targeting mode — next click = allied destination tile */
+    if (st.pendingDonate !== null) {
+      var donateFrom = st.pendingDonate;
+      st.pendingDonate = null;
+      KCWorld._donate(donateFrom, hit.idx);
+      return;
+    }
+
     if (dyn.o === st.mySlot) {
       /* select entire connected territory blob */
       st.selectedTerritory = getConnectedTiles(hit.idx, st.mySlot);
@@ -980,15 +1134,37 @@
 
   var BOT_NAMES = ['General Ryze','Commander Nova','Baron Kessler','Marshal Quinn','Captain Zeta'];
 
+  /* Difficulty profiles: {troop threshold multiplier, skip chance, max attacks} */
+  var BOT_DIFF = {
+    easy:   { thresh: 2.0, skip: 0.50, maxAtk: 1 },
+    medium: { thresh: 1.3, skip: 0.20, maxAtk: 2 },
+    hard:   { thresh: 0.9, skip: 0.00, maxAtk: 3 }
+  };
+
   var Bot = {
-    think: function(tiles, terrain, botSlot) {
+    think: function(tiles, terrain, botSlot, difficulty) {
+      var diff = BOT_DIFF[difficulty] || BOT_DIFF.medium;
+      /* skip turn chance (easy bots pause often) */
+      if (Math.random() < diff.skip) return [];
       var attacks = [];
       var keys = Object.keys(tiles).filter(function(k) {
         return tiles[k].o === botSlot && tiles[k].t > 6;
       });
-      keys.sort(function() { return Math.random() - 0.5; });
+      /* hard bots prefer border tiles (frontier first) */
+      if (difficulty === 'hard') {
+        keys.sort(function(a, b) {
+          var ap = tileXY(parseInt(a)), bp = tileXY(parseInt(b));
+          var aBorder = [[0,-1],[0,1],[-1,0],[1,0]].some(function(d) {
+            var ni = tileIdx(ap.x+d[0], ap.y+d[1]);
+            return (tiles[ni]||{o:0}).o !== botSlot && (tiles[ni]||{o:0}).o >= 0;
+          });
+          return aBorder ? -1 : 1;
+        });
+      } else {
+        keys.sort(function() { return Math.random() - 0.5; });
+      }
       var found = 0;
-      for (var i = 0; i < keys.length && found < 2; i++) {
+      for (var i = 0; i < keys.length && found < diff.maxAtk; i++) {
         var fromIdx = parseInt(keys[i]);
         var pos = tileXY(fromIdx);
         var neighbors = [];
@@ -1003,7 +1179,7 @@
           if (t === 'W' || t === 'M') continue;
           var toTile = tiles[toIdx] || { o: 0, t: 0 };
           if (toTile.o === botSlot) continue;
-          if (toTile.o === 0 || tiles[keys[i]].t > toTile.t * 1.3) {
+          if (toTile.o === 0 || tiles[keys[i]].t > toTile.t * diff.thresh) {
             attacks.push({ from: fromIdx, to: toIdx, percent: 70, attacker: botSlot });
             found++; break;
           }
@@ -1013,6 +1189,39 @@
     }
   };
 
+  /* Apply nuke/MIRV blast: neutralise tiles in radius, mark fallout */
+  function applyBlast(tiles, terrain, cx, cy, radius, attackerSlot) {
+    var intercepted = false;
+    /* SAM check: any SAM (b=4) within radius+2 not owned by attacker has SAM_INTERCEPT chance */
+    var samR = radius + 2;
+    for (var sy2 = -samR; sy2 <= samR && !intercepted; sy2++) {
+      for (var sx2 = -samR; sx2 <= samR && !intercepted; sx2++) {
+        var stx = cx + sx2, sty = cy + sy2;
+        if (stx < 0 || stx >= MAP_W || sty < 0 || sty >= MAP_H) continue;
+        var sTile = tiles[tileIdx(stx, sty)];
+        if (sTile && sTile.b === 4 && sTile.o !== attackerSlot) {
+          if (Math.random() < SAM_INTERCEPT) { intercepted = true; break; }
+        }
+      }
+    }
+    if (intercepted) return { intercepted: true };
+    for (var ndy = -radius; ndy <= radius; ndy++) {
+      for (var ndx = -radius; ndx <= radius; ndx++) {
+        if (Math.abs(ndx) + Math.abs(ndy) > radius * 1.6) continue;
+        var ntx = cx + ndx, nty = cy + ndy;
+        if (ntx < 0 || ntx >= MAP_W || nty < 0 || nty >= MAP_H) continue;
+        var ntIdx = tileIdx(ntx, nty);
+        var terr  = terrain[ntIdx];
+        if (terr === 'W' || terr === 'M') continue;
+        var ntile = tiles[ntIdx] || {o:0};
+        if (ntile.o !== attackerSlot) {
+          tiles[ntIdx] = { o: 0, t: 0, b: 0, f: 1 }; /* neutralise + fallout */
+        }
+      }
+    }
+    return { intercepted: false };
+  }
+
   function hostTick() {
     if (!st.isHost || !st.gameState || !st.mapStatic) return;
     st.roomRef.child('attacks').once('value').then(function(snap) {
@@ -1021,81 +1230,140 @@
       if (Object.keys(raw).length) st.roomRef.child('attacks').remove();
 
       var srcTiles = st.gameState.tiles || {};
-      /* snapshot prev state for delta diff */
       var prevTiles = {};
       Object.keys(srcTiles).forEach(function(k) { prevTiles[k] = Object.assign({}, srcTiles[k]); });
       var tiles = {};
       Object.keys(srcTiles).forEach(function(k) { tiles[k] = Object.assign({}, srcTiles[k]); });
 
-      var nukeX = -1, nukeY = -1, hadNuke = false;
+      var prevStats = st.gameState.playerStats || {};
+      var relations = Object.assign({}, st.gameState.relations || st.relations || {});
+
+      /* helper: update relation score (capped ±100) */
+      function adjustRelation(slotA, slotB, delta) {
+        if (slotA === slotB) return;
+        var key = Math.min(slotA,slotB) + '_' + Math.max(slotA,slotB);
+        relations[key] = Math.max(-100, Math.min(100, (relations[key] || 0) + delta));
+      }
+
+      var nukeFlashes = [];
+      var terrain = st.mapStatic.terrain;
+
       attacks.forEach(function(atk) {
         if (atk.type === 'fort') {
-          /* build fort: deduct troops, set b=2 */
           var tile = tiles[atk.from];
-          if (tile && tile.o === atk.attacker && tile.t >= 15 && (tile.b === 0 || !tile.b)) {
-            tile.t -= 15;
-            tile.b  = 2;
+          if (tile && tile.o === atk.attacker && tile.t >= 15 && !(tile.b)) {
+            tile.t -= 15; tile.b = 2;
           }
         } else if (atk.type === 'bunker') {
-          /* build bunker: deduct troops, set b=3 */
           var bTile = tiles[atk.from];
-          if (bTile && bTile.o === atk.attacker && bTile.t >= BUNKER_COST && (bTile.b === 0 || !bTile.b)) {
-            bTile.t -= BUNKER_COST;
-            bTile.b  = 3;
+          if (bTile && bTile.o === atk.attacker && bTile.t >= BUNKER_COST && !(bTile.b)) {
+            bTile.t -= BUNKER_COST; bTile.b = 3;
+          }
+        } else if (atk.type === 'sam') {
+          var sTile = tiles[atk.from];
+          if (sTile && sTile.o === atk.attacker && sTile.t >= SAM_COST && !(sTile.b)) {
+            sTile.t -= SAM_COST; sTile.b = 4;
           }
         } else if (atk.type === 'nuke') {
-          /* nuclear strike: cost NUKE_COST troops, neutralise radius around target */
           var nTile = tiles[atk.from];
           if (nTile && nTile.o === atk.attacker && nTile.t >= NUKE_COST) {
             nTile.t -= NUKE_COST;
             var np = tileXY(atk.from);
-            nukeX = np.x; nukeY = np.y; hadNuke = true;
-            for (var ndy = -NUKE_RADIUS; ndy <= NUKE_RADIUS; ndy++) {
-              for (var ndx = -NUKE_RADIUS; ndx <= NUKE_RADIUS; ndx++) {
-                if (Math.abs(ndx) + Math.abs(ndy) > NUKE_RADIUS * 1.6) continue; /* rough circle */
-                var ntx = np.x + ndx, nty = np.y + ndy;
-                if (ntx < 0 || ntx >= MAP_W || nty < 0 || nty >= MAP_H) continue;
-                var ntIdx = tileIdx(ntx, nty);
-                var terr  = st.mapStatic.terrain[ntIdx];
-                if (terr === 'W' || terr === 'M') continue;
-                var ntile = tiles[ntIdx] || {o:0};
-                if (ntile.o !== atk.attacker) {
-                  tiles[ntIdx] = { o: 0, t: 0, b: 0 }; /* neutralise */
-                }
+            var res = applyBlast(tiles, terrain, np.x, np.y, NUKE_RADIUS, atk.attacker);
+            nukeFlashes.push({ x: np.x, y: np.y, intercepted: res.intercepted });
+          }
+        } else if (atk.type === 'mirv') {
+          var mTile = tiles[atk.from];
+          if (mTile && mTile.o === atk.attacker && mTile.t >= MIRV_COST) {
+            mTile.t -= MIRV_COST;
+            var mp  = tileXY(atk.from);
+            var tgt = tileXY(atk.to);  /* MIRV target tile */
+            for (var wi = 0; wi < MIRV_COUNT; wi++) {
+              /* scatter sub-warheads within 4 tiles of target */
+              var wx = Math.max(0, Math.min(MAP_W-1, tgt.x + Math.floor((Math.random()-0.5)*8)));
+              var wy = Math.max(0, Math.min(MAP_H-1, tgt.y + Math.floor((Math.random()-0.5)*8)));
+              var wRes = applyBlast(tiles, terrain, wx, wy, MIRV_RADIUS, atk.attacker);
+              if (!wRes.intercepted) nukeFlashes.push({ x: wx, y: wy, intercepted: false });
+            }
+          }
+        } else if (atk.type === 'donate') {
+          var dFrom = tiles[atk.from];
+          var dTo   = tiles[atk.to];
+          if (dFrom && dTo && dFrom.o === atk.attacker && dTo.o > 0 && dTo.o !== atk.attacker) {
+            var allies = st.alliances[atk.attacker];
+            if (allies && allies[dTo.o]) {
+              var gift = Math.max(DONATE_MIN, Math.floor(dFrom.t * (atk.percent||50) / 100));
+              gift = Math.min(gift, dFrom.t - 1);
+              if (gift >= DONATE_MIN) {
+                dFrom.t -= gift;
+                dTo.t    = Math.min(TROOP_CAP, dTo.t + gift);
+                adjustRelation(atk.attacker, dTo.o, 8);
               }
             }
           }
         } else {
-          Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker, st.mapStatic.terrain);
+          /* regular attack — pass prevStats for large-defender debuff */
+          var prevTo = prevTiles[atk.to] || {o:0};
+          Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker, terrain, prevStats);
+          /* relation hit when taking an enemy tile */
+          var afterTo = tiles[atk.to] || {o:0};
+          if (prevTo.o > 0 && prevTo.o !== atk.attacker && afterTo.o === atk.attacker) {
+            adjustRelation(atk.attacker, prevTo.o, -3);
+          }
         }
       });
+
       /* bot moves */
+      var diff = (st.mapStatic && st.mapStatic.botDifficulty) || st.botDifficulty || 'medium';
       st.bots.forEach(function(botSlot) {
-        Bot.think(tiles, st.mapStatic.terrain, botSlot).forEach(function(atk) {
-          Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker, st.mapStatic.terrain);
+        Bot.think(tiles, terrain, botSlot, diff).forEach(function(atk) {
+          Engine.resolveAttack(tiles, atk.from, atk.to, atk.percent, atk.attacker, terrain, prevStats);
         });
       });
-      Engine.genTroops(tiles, st.mapStatic.terrain);
-      Engine.checkEnclosure(tiles, st.mapStatic.terrain); /* capture enclosed territory */
 
-      var stats  = Engine.getStats(tiles);
-      var winner = Engine.checkWin(tiles, st.mapStatic.terrain);
+      Engine.genTroops(tiles, terrain);
+      Engine.checkEnclosure(tiles, terrain);
+
       var nextTick = (st.gameState.tick || 0) + 1;
 
+      /* alliance expiry check */
+      Object.keys(st.allianceTicks).forEach(function(key) {
+        if (nextTick - st.allianceTicks[key] >= ALLIANCE_TTL) {
+          st.roomRef.child('alliances/' + key).remove();
+          /* notify via ping */
+          st.roomRef.child('pings/' + key + '_exp').set({
+            slot: 0, emoji: '\u23F0', chat: 'Alliance expired', ts: 0
+          });
+        }
+      });
+
+      var stats  = Engine.getStats(tiles);
+      var timeLimit = (st.mapStatic && st.mapStatic.timeLimit) || 0;
+      var winner = Engine.checkWin(tiles, terrain, timeLimit, nextTick);
+
       var newGs = {
-        tick: nextTick,
-        winner: winner || null,
-        tiles: tiles,
-        playerStats: stats
+        tick:        nextTick,
+        winner:      winner || null,
+        tiles:       tiles,
+        playerStats: stats,
+        relations:   relations
       };
       st.gameState = newGs;
-      FBSync.pushDelta(prevTiles, newGs);   /* send only changed tiles */
+      st.relations = relations;
+      FBSync.pushDelta(prevTiles, newGs);
 
-      /* broadcast nuke flash so all clients animate it */
-      if (hadNuke) {
-        st.roomRef.child('gameState/nukeFlash').set({ x: nukeX, y: nukeY, tick: nextTick });
+      /* broadcast nuke flashes */
+      if (nukeFlashes.length) {
+        /* push the last non-intercepted flash (or the last one if all intercepted) */
+        var flash = nukeFlashes[nukeFlashes.length - 1];
+        st.roomRef.child('gameState/nukeFlash').set({
+          x: flash.x, y: flash.y, tick: nextTick,
+          intercepted: flash.intercepted || false,
+          count: nukeFlashes.length
+        });
       }
-      /* clear pings every 5 ticks (they're ~50 bytes each; room deletes on game end anyway) */
+
+      /* clear pings every 5 ticks */
       if (nextTick % 5 === 0) st.roomRef.child('pings').remove();
 
       if (winner) { clearInterval(st.tickTimer); st.tickTimer = null; }
@@ -1125,6 +1393,7 @@
     st._clickHandler = null; st._resizeHandler = null; st._ctxHandler = null;
     st._touchHandler = null; st._touchEndHandler = null;
     st.pings = {}; st.nukeFlash = null; st.betrayers = {};
+    st.allianceTicks = {}; st.relations = {};
   }
 
   /* =================================================
@@ -1194,9 +1463,25 @@
               '<span class="kcw-bot-count">' + (st.botCount || 0) + '</span>' +
               '<button class="kcw-bot-btn" onclick="KCWorld._setBots(' + (st.botCount||0) + '+1)">\u002b</button>' +
             '</div>' +
+          '</div>' +
+          '<div class="kcw-bot-row">' +
+            '<span class="kcw-bot-label">\uD83E\uDDE0 Difficulty</span>' +
+            '<div class="kcw-bot-controls">' +
+              ['easy','medium','hard'].map(function(d){
+                return '<button class="kcw-pct-btn' + (st.botDifficulty===d?' active':'') + '" onclick="KCWorld._setDifficulty(\'' + d + '\')">' + d[0].toUpperCase()+d.slice(1) + '</button>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+          '<div class="kcw-bot-row">' +
+            '<span class="kcw-bot-label">\u23F1 Time Limit</span>' +
+            '<div class="kcw-bot-controls">' +
+              [[0,'\u221e'],[40,'40t'],[80,'80t'],[160,'160t']].map(function(opt){
+                return '<button class="kcw-pct-btn' + (st.gameTimeLimit===opt[0]?' active':'') + '" onclick="KCWorld._setTimeLimit(' + opt[0] + ')">' + opt[1] + '</button>';
+              }).join('') +
+            '</div>' +
           '</div>'
         : '')  +
-      '<div class="kcw-map-label">\uD83D\uDDFA Map 40\xd725 &middot; Troops every 2s &middot; Win at 75%</div>' +
+      '<div class="kcw-map-label">\uD83D\uDDFA Map 40\xd725 &middot; Troops every 3s &middot; Win at 75%</div>' +
     '</div>';
   }
 
@@ -1207,7 +1492,7 @@
     c.innerHTML = '<div class="kcw-game">' +
       '<div class="kcw-hud">' +
         '<div class="kcw-hud-left">' +
-          '<div class="kcw-hud-item">Tick <span id="kcw-tick">0</span></div>' +
+          '<div class="kcw-hud-item">Tick <span id="kcw-tick">0</span><span id="kcw-timelimit" style="color:#f59e0b;font-size:.65rem"></span></div>' +
           '<div class="kcw-hud-item">Terr <span id="kcw-pct">0%</span></div>' +
           '<div class="kcw-hud-item">Troops <span id="kcw-troops">0</span></div>' +
         '</div>' +
@@ -1223,7 +1508,7 @@
         '<div class="kcw-hud-players" id="kcw-phud"></div>' +
       '</div>' +
       '<div class="kcw-canvas-wrap"><canvas id="kcw-canvas"></canvas></div>' +
-      '<div class="kcw-game-tip">Click <span style="color:' + myColor + '">\u25a0 your territory</span> \u2192 anywhere to attack &nbsp;\u00b7&nbsp; Right-click to build/nuke/ping &nbsp;\u00b7&nbsp; Keys: 1-4 % \u00b7 F fog \u00b7 N nuke \u00b7 P ping</div>' +
+      '<div class="kcw-game-tip">Click <span style="color:' + myColor + '">\u25a0 your territory</span> \u2192 anywhere to attack &nbsp;\u00b7&nbsp; Right-click: build / nuke / MIRV / SAM / donate / chat &nbsp;\u00b7&nbsp; 1-4: send% &nbsp;\u00b7&nbsp; F fog &nbsp;\u00b7&nbsp; N nuke &nbsp;\u00b7&nbsp; P ping</div>' +
     '</div>';
 
     var canvas = document.getElementById('kcw-canvas');
@@ -1311,6 +1596,7 @@
       if (!st.gameState) st.gameState = { tiles: {}, tick: 0, winner: null, playerStats: {} };
       st.gameState[field] = val;
       if (field === 'playerStats') updateHUD();
+      if (field === 'relations')  { st.relations = val || {}; }
       if (field === 'winner' && val && st.phase === 'playing') showResult(val);
     });
 
@@ -1356,6 +1642,19 @@
     });
     st.lastStats = Object.assign({}, curStats);
 
+    /* time limit countdown */
+    var timeLimit = (st.mapStatic && st.mapStatic.timeLimit) || 0;
+    var tlEl = document.getElementById('kcw-timelimit');
+    if (tlEl) {
+      if (timeLimit > 0) {
+        var rem = timeLimit - (gs.tick || 0);
+        tlEl.textContent = ' /' + timeLimit + ' (' + Math.max(0, rem) + ' left)';
+        tlEl.style.color = rem <= 10 ? '#ef4444' : '#f59e0b';
+      } else {
+        tlEl.textContent = '';
+      }
+    }
+
     var el;
     el = document.getElementById('kcw-tick');    if (el) el.textContent = gs.tick || 0;
     el = document.getElementById('kcw-pct');     if (el) el.textContent = pct + '%';
@@ -1374,18 +1673,33 @@
       var sortedPlayers = Object.keys(st.players).sort(function(a,b) {
         return (curStats[st.players[b].slot]||0) - (curStats[st.players[a].slot]||0);
       });
+      var rels = gs.relations || st.relations || {};
       phud.innerHTML = sortedPlayers.map(function(uid) {
         var p = st.players[uid];
-        var cnt  = curStats[p.slot] || 0;
-        var pct2 = Math.round(cnt / landCount * 100);
-        var elim = cnt === 0 && (gs.tick || 0) > 4;
+        var cnt   = curStats[p.slot] || 0;
+        var pct2  = Math.round(cnt / landCount * 100);
+        var elim  = cnt === 0 && (gs.tick || 0) > 4;
         var allied = st.alliances[st.mySlot] && st.alliances[st.mySlot][p.slot];
+        /* alliance expiry warning */
+        var allianceLeft = '';
+        if (allied) {
+          var alKey = Math.min(st.mySlot,p.slot)+'_'+Math.max(st.mySlot,p.slot);
+          var aTick = st.allianceTicks[alKey] || 0;
+          var aRem  = ALLIANCE_TTL - ((gs.tick||0) - aTick);
+          if (aRem <= 10) allianceLeft = ' <span style="color:#f59e0b;font-size:.6rem">\u23F0' + aRem + 't</span>';
+        }
+        /* relation score */
+        var relKey   = Math.min(st.mySlot,p.slot)+'_'+Math.max(st.mySlot,p.slot);
+        var relScore = rels[relKey] || 0;
+        var relTip   = p.slot !== st.mySlot ? (relScore >= 0 ? '+' : '') + relScore : '';
+        var relColor = relScore >= 20 ? '#22c55e' : relScore <= -20 ? '#ef4444' : '#94a3b8';
         return '<div class="kcw-hud-player' + (elim ? ' elim' : '') + (allied ? ' allied' : '') + '"' +
-          ' title="' + (allied ? 'Allied · ' : '') + 'Click to propose alliance"' +
+          ' title="Relation: ' + relTip + ' · Click to propose alliance / donate"' +
           ' onclick="KCWorld._proposeAlliance(' + p.slot + ')">' +
           '<span class="kcw-hud-dot" style="background:' + p.color + '"></span>' +
-          esc(p.name) + ' ' + (elim ? '<span style="color:#ef4444">☠</span>' : pct2 + '%') +
-          (allied ? ' <span style="color:#22c55e;font-size:.65rem">✦</span>' : '') +
+          esc(p.name) + ' ' + (elim ? '<span style="color:#ef4444">\u2620</span>' : pct2 + '%') +
+          (allied ? ' <span style="color:#22c55e;font-size:.65rem">\u2726</span>' + allianceLeft : '') +
+          (relTip ? ' <span style="color:' + relColor + ';font-size:.6rem">' + relTip + '</span>' : '') +
           '</div>';
       }).join('');
     }
@@ -1556,6 +1870,8 @@
         st.bots.push(botSlot);
       }
       var mapStatic  = MapGen.generate(playerList.length);
+      mapStatic.botDifficulty = st.botDifficulty;
+      mapStatic.timeLimit = st.gameTimeLimit;
       var initTiles  = {};
       playerList.forEach(function(entry, i) {
         var player = entry[1];
@@ -1643,7 +1959,7 @@
       var pop = document.createElement('div');
       pop.id = 'kcw-build-popup';
       pop.className = 'kcw-build-popup';
-      pop.style.left = Math.min(cx - rect.left, rect.width - 190) + 'px';
+      pop.style.left = Math.min(cx - rect.left, rect.width - 210) + 'px';
       pop.style.top  = Math.max(cy - rect.top  - 10, 8) + 'px';
       var rows = '<div class="kcw-build-title">\uD83C\uDFF7 ' + tile.t + ' troops here</div>';
       var b = tile.b || 0;
@@ -1657,15 +1973,40 @@
         rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-bottom:4px" onclick="KCWorld._confirmBuild(' + idx + ',\'bunker\')">' +
           '\uD83C\uDFF0 Bunker \u2014 3\xd7 def \u00b7 \u2212' + BUNKER_COST + ' troops</button>';
       }
+      /* SAM launcher (b=4) */
+      if (b === 0 && tile.t >= SAM_COST) {
+        rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-bottom:4px;color:#22d3ee" onclick="KCWorld._confirmBuild(' + idx + ',\'sam\')">' +
+          '\uD83D\uDEF0 SAM \u2014 intercept nukes \u00b7 \u2212' + SAM_COST + ' troops</button>';
+      }
       /* nuke */
       if (tile.t >= NUKE_COST) {
         rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-bottom:4px;color:#fbbf24" onclick="KCWorld._confirmBuild(' + idx + ',\'nuke\')">' +
           '\u2622\uFE0F Nuke \u2014 r' + NUKE_RADIUS + ' blast \u00b7 \u2212' + NUKE_COST + ' troops</button>';
       }
-      /* pings */
+      /* MIRV */
+      if (tile.t >= MIRV_COST) {
+        rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-bottom:4px;color:#f97316" onclick="KCWorld._startMirvTarget(' + idx + ')">' +
+          '\uD83D\uDCA5 MIRV \u2014 ' + MIRV_COUNT + ' warheads \u00b7 \u2212' + MIRV_COST + ' troops</button>';
+      }
+      /* donate troops to ally */
+      var hasAlly = false;
+      if (st.alliances[st.mySlot]) {
+        Object.keys(st.alliances[st.mySlot]).forEach(function(k) { if (st.alliances[st.mySlot][k]) hasAlly = true; });
+      }
+      if (hasAlly && tile.t >= DONATE_MIN * 2) {
+        rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%;margin-bottom:4px;color:#4ade80" onclick="KCWorld._startDonateTarget(' + idx + ')">' +
+          '\uD83D\uDCB0 Donate troops \u2192 ally tile</button>';
+      }
+      /* emoji pings */
       rows += '<div style="display:flex;gap:4px;margin-bottom:4px">' +
         ['\uD83D\uDCCD','\u26A0\uFE0F','\u2694\uFE0F','\uD83D\uDEE1','\uD83D\uDCA5'].map(function(em) {
           return '<button class="kcw-bot-btn" style="flex:1;font-size:.9rem" onclick="KCWorld._sendPing(' + idx + ',\'' + em + '\')">' + em + '</button>';
+        }).join('') +
+      '</div>';
+      /* quick chat messages */
+      rows += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">' +
+        QUICK_CHATS.map(function(msg, i) {
+          return '<button class="kcw-bot-btn" style="flex:1 1 45%;font-size:.72rem;padding:3px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:96px" title="' + msg + '" onclick="KCWorld._quickChat(' + idx + ',' + i + ')">' + msg + '</button>';
         }).join('') +
       '</div>';
       rows += '<button class="kcw-btn kcw-btn-secondary kcw-btn-sm" style="width:100%" onclick="KCWorld._dismissBuild()">Cancel</button>';
@@ -1681,6 +2022,7 @@
       this._dismissBuild();
       if (!st.roomRef || st.phase !== 'playing') return;
       if (type === 'nuke') { this._launchNuke(idx); return; }
+      if (type === 'sam')  { this._buildSam(idx);   return; }
       st.roomRef.child('attacks').push({
         type: type || 'fort', from: idx,
         attacker: st.mySlot, uid: st.myUid,
@@ -1715,6 +2057,94 @@
       FBSync.pushPing(pingIdx, emoji || '\uD83D\uDCCD');
     },
 
+    _buildSam: function(fromIdx) {
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[fromIdx]) || {o:0,t:0,b:0};
+      if (tile.o !== st.mySlot || tile.t < SAM_COST) {
+        toast('Need ' + SAM_COST + '+ troops for SAM launcher', 'error'); return;
+      }
+      st.roomRef.child('attacks').push({
+        type: 'sam', from: fromIdx,
+        attacker: st.mySlot, uid: st.myUid,
+        ts: window.firebase.database.ServerValue.TIMESTAMP
+      });
+      toast('\uD83D\uDEF0 SAM launcher built!', 'info');
+    },
+
+    _startMirvTarget: function(fromIdx) {
+      this._dismissBuild();
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[fromIdx]) || {o:0,t:0};
+      if (tile.o !== st.mySlot || tile.t < MIRV_COST) {
+        toast('Need ' + MIRV_COST + '+ troops to launch MIRV \uD83D\uDCA5', 'error'); return;
+      }
+      st.pendingMirv = fromIdx;
+      toast('\uD83C\uDFAF MIRV armed \u2014 click any target tile', 'info');
+    },
+
+    _launchMirv: function(fromIdx, targetIdx) {
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[fromIdx]) || {o:0,t:0};
+      if (tile.o !== st.mySlot || tile.t < MIRV_COST) {
+        toast('Need ' + MIRV_COST + '+ troops to launch MIRV', 'error'); return;
+      }
+      st.roomRef.child('attacks').push({
+        type: 'mirv', from: fromIdx, target: targetIdx,
+        attacker: st.mySlot, uid: st.myUid,
+        ts: window.firebase.database.ServerValue.TIMESTAMP
+      });
+      toast('\uD83D\uDCA5 MIRV launched!', 'info');
+      st.selectedTile = null;
+      st.selectedTerritory = null;
+    },
+
+    _startDonateTarget: function(fromIdx) {
+      this._dismissBuild();
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      var hasAlly = false;
+      if (st.alliances[st.mySlot]) {
+        Object.keys(st.alliances[st.mySlot]).forEach(function(k) { if (st.alliances[st.mySlot][k]) hasAlly = true; });
+      }
+      if (!hasAlly) { toast('No active ally to donate to', 'error'); return; }
+      var tile = (st.gameState && st.gameState.tiles && st.gameState.tiles[fromIdx]) || {o:0,t:0};
+      if (tile.t < DONATE_MIN * 2) { toast('Not enough troops to donate', 'error'); return; }
+      st.pendingDonate = fromIdx;
+      toast('\uD83D\uDCB0 Donation ready \u2014 click an ally tile', 'info');
+    },
+
+    _donate: function(fromIdx, toIdx) {
+      if (!st.roomRef || st.phase !== 'playing' || st.spectating) return;
+      var toTile = (st.gameState && st.gameState.tiles && st.gameState.tiles[toIdx]) || {o:0,t:0};
+      var toSlot = toTile.o;
+      var isAlly = st.alliances[st.mySlot] && st.alliances[st.mySlot][toSlot];
+      if (!isAlly) { toast('Target must be an allied tile \uD83E\uDD1D', 'error'); return; }
+      st.roomRef.child('attacks').push({
+        type: 'donate', from: fromIdx, target: toIdx,
+        attacker: st.mySlot, uid: st.myUid,
+        ts: window.firebase.database.ServerValue.TIMESTAMP
+      });
+      toast('\uD83D\uDCB0 Troops donated to ally!', 'info');
+    },
+
+    _quickChat: function(tileIdx, msgIdx) {
+      this._dismissBuild();
+      if (!st.roomRef || st.phase !== 'playing') return;
+      var msg = QUICK_CHATS[msgIdx] || QUICK_CHATS[0];
+      FBSync.pushPing(tileIdx, null, msg);
+    },
+
+    _setDifficulty: function(d) {
+      if (!st.isHost) return;
+      st.botDifficulty = d;
+      renderLobby();
+    },
+
+    _setTimeLimit: function(n) {
+      if (!st.isHost) return;
+      st.gameTimeLimit = n;
+      renderLobby();
+    },
+
     _toggleFog: function() {
       st.fogOfWar = !st.fogOfWar;
       var fogBtn = document.getElementById('kcw-fog-btn');
@@ -1742,6 +2172,8 @@
         tickTimer:null, renderFrame:null, listeners:[], phase:'closed',
         bots:[], botCount:1, spectating:false, sendPercent:60,
         hoveredTile:null, lastStats:{}, alliances:{},
+        allianceTicks:{}, relations:{}, botDifficulty:'medium', gameTimeLimit:0,
+        pendingMirv:null, pendingDonate:null,
         _clickHandler:null, _resizeHandler:null, _ctxHandler:null,
         _touchHandler:null, _touchEndHandler:null, _moveHandler:null,
         keyHandler:null, fogOfWar:false, nukeFlash:null, pings:{}, betrayers:{}

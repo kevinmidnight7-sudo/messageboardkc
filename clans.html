@@ -471,6 +471,11 @@
     const auth = firebase.auth();
     const db = firebase.database();
 
+    // --- 5-min localStorage cache (shared key with kcnow.html / leaderboard.html)
+    const _CL_TTL = 5 * 60 * 1000;
+    function _clGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _CL_TTL ? r.d : null; } catch(e) { return null; } }
+    function _clSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
     // ========== CONSTANTS ==========
     const ADMIN_PASSWORD = "events2025KC";
     const REGIONS = ["North America","South America","Europe","Africa","Middle East","Asia","Oceania"];
@@ -771,17 +776,23 @@
     // listeners for clans only (the most frequently mutated collection).
     let _clansChangeRef = null;
     function attachDataListeners() {
-        // Load all 5 collections once upfront
+        // /users and /badges served from 5-min localStorage cache when available
+        const cachedUsers  = _clGet('_kcUsersCache_v3');
+        const cachedBadges = _clGet('_kcBadgesCache_v1');
+        const usersFetch   = cachedUsers  ? Promise.resolve(null) : db.ref('users').once('value');
+        const badgesFetch  = cachedBadges ? Promise.resolve(null) : db.ref('badges').once('value');
         Promise.all([
             db.ref('clans').once('value'),
-            db.ref('users').once('value'),
-            db.ref('badges').once('value'),
+            usersFetch,
+            badgesFetch,
             db.ref('admins').once('value'),
             db.ref('battles').once('value'),
         ]).then(([clansSnap, usersSnap, badgesSnap, adminsSnap, battlesSnap]) => {
             allClansData   = clansSnap.val()   || {};
-            allUsersData   = usersSnap.val()   || {};
-            allBadgesData  = badgesSnap.val()  || {};
+            if (usersSnap)  { allUsersData  = usersSnap.val()  || {}; _clSet('_kcUsersCache_v3',  allUsersData);  }
+            else              allUsersData  = cachedUsers  || {};
+            if (badgesSnap) { allBadgesData = badgesSnap.val() || {}; _clSet('_kcBadgesCache_v1', allBadgesData); }
+            else              allBadgesData = cachedBadges || {};
             allAdminsData  = adminsSnap.val()  || {};
             allBattlesData = battlesSnap.val() || {};
             renderPage();
@@ -2161,7 +2172,6 @@
              let media = p.video ? `<video controls src="${p.video}" class="w-full"></video>` : (p.image ? `<img src="${p.image}" class="w-full">` : '');
              if(p.ytId) media = `<iframe class="w-full aspect-video" src="https://www.youtube.com/embed/${p.ytId}"></iframe>`;
              body.innerHTML = `<div>${media}<p class="mt-4">${escapeHtml(p.description||'')}</p><div id="poReactions" class="flex gap-2 mt-2"></div><ul id="poComments" class="mt-4 space-y-2"></ul><div class="flex mt-4 gap-2"><input id="newComment" class="flex-1 bg-gray-700 p-2 rounded"><button onclick="submitComment()" class="bg-blue-500 px-4 rounded">Send</button></div></div>`;
-             // COST FIX: cap both listeners to avoid downloading unbounded reaction/comment trees
              db.ref(`${currentPostPath}/reactions`).orderByKey().limitToLast(100).on('value', s => renderPostReactions(s, document.getElementById('poReactions')));
              db.ref(`${currentPostPath}/comments`).orderByChild('time').limitToLast(50).on('value', s => renderPostComments(s, document.getElementById('poComments')));
          });

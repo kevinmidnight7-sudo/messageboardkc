@@ -539,6 +539,11 @@
         const db = firebase.database();
         const auth = firebase.auth();
 
+        // --- 5-min localStorage cache (shared key with kcnow.html)
+        const _SF_TTL = 5 * 60 * 1000;
+        function _sfGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _SF_TTL ? r.d : null; } catch(e) { return null; } }
+        function _sfSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
         // Global State
         let currentUserUid = null, currentUserProfile = null, allPosts = [], allPlaylists = [], currentTab = 'trending', userProfiles = {}, trendingRankMap = {}, atbRankMap = {}, openPlaylistCtx = null, openPostCtx = null;
         let adminMode = false;
@@ -701,35 +706,18 @@
         async function fetchAllData() {
             try {
                 postsContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="spinner"></div></div>';
+                const cachedUsers = _sfGet('_kcUsersCache_v3');
+                const [usersSnap, playlistsSnap] = await Promise.all([
+                    cachedUsers ? Promise.resolve(null) : db.ref('users').once('value'),
+                    db.ref('playlists').once('value')
+                ]);
+                if (usersSnap) { userProfiles = usersSnap.val() || {}; _sfSet('_kcUsersCache_v3', userProfiles); }
+                else             userProfiles = cachedUsers || {};
+                const playlistsVal = playlistsSnap ? playlistsSnap.val() || {} : {};
 
-                let usersVal = null, playlistsVal = null;
-                try {
-                    const cu = sessionStorage.getItem(_SF_USERS_KEY);
-                    const cp = sessionStorage.getItem(_SF_PLAYLISTS_KEY);
-                    if (cu) usersVal = JSON.parse(cu);
-                    if (cp) playlistsVal = JSON.parse(cp);
-                } catch(e) {}
-
-                if (!usersVal || !playlistsVal) {
-                    const [usersSnap, playlistsSnap] = await Promise.all([
-                        usersVal ? Promise.resolve(null) : db.ref('users').once('value'),
-                        playlistsVal ? Promise.resolve(null) : db.ref('playlists').once('value')
-                    ]);
-                    if (usersSnap) {
-                        usersVal = usersSnap.val() || {};
-                        try { sessionStorage.setItem(_SF_USERS_KEY, JSON.stringify(usersVal)); } catch(e) {}
-                    }
-                    if (playlistsSnap) {
-                        playlistsVal = playlistsSnap.val() || {};
-                        try { sessionStorage.setItem(_SF_PLAYLISTS_KEY, JSON.stringify(playlistsVal)); } catch(e) {}
-                    }
-                }
-
-                userProfiles = usersVal || {};
-                
                 allPosts = [];
                 for (const uid in userProfiles) {
-                    const posts = userProfiles[uid].posts;
+                    const posts = userProfiles[uid] && userProfiles[uid].posts;
                     if (posts) {
                         for (const postId in posts) {
                             allPosts.push({ postId, ...posts[postId], createdBy: uid });
