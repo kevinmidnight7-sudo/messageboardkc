@@ -427,69 +427,66 @@
     let badgeUsers = [];
     let badgeChanges = { offence: 0, defence: 0, overall: 0 };
     let selectedUserId = null;
-    // COST FIX: don't download all users at once. Use the shared localStorage cache if
-    // another page has already populated it; otherwise require a search query (≥3 chars)
-    // before hitting Firebase so we only fetch matching users.
+    // Cache state: populated from shared localStorage or a one-time Firebase fetch.
+    // Verifier is admin-only so one full load per cold session is acceptable.
     let _badgeUsersLoaded = false;
 
     async function loadBadgeUsers() {
       badgeUsers = [];
       _badgeUsersLoaded = false;
-      // Check the shared 15-min cache (set by kcnow, clans, leaderboard, etc.)
+
+      // Fast path: shared 15-min cache set by kcnow/clans/leaderboard etc.
       const cached = _vrGet('_kcUsersCache_v3');
       if (cached) {
         badgeUsers = Object.entries(cached).map(([uid, u]) => ({
           uid, displayName: u.displayName || '', email: u.email || ''
         }));
         _badgeUsersLoaded = true;
+        renderBadgeUserOptions('');
+        return;
       }
-      // Show instructions or first page of results
+
+      // Cold path: no cache — fetch once, then filter client-side.
+      // Firebase prefix queries are case-sensitive so we can't use orderByChild here.
+      badgeUserSelect.innerHTML = '<option disabled value="">Loading users…</option>';
+      try {
+        const snap = await db.ref('users').once('value');
+        snap.forEach(c => {
+          const v = c.val() || {};
+          if (v.displayName || v.email) {
+            badgeUsers.push({ uid: c.key, displayName: v.displayName || '', email: v.email || '' });
+          }
+        });
+        // Populate the shared cache so other pages benefit
+        try {
+          const raw = snap.val();
+          if (raw) _vrSet('_kcUsersCache_v3', raw);
+        } catch(e) {}
+        _badgeUsersLoaded = true;
+      } catch(e) {
+        badgeUserSelect.innerHTML = '<option disabled value="">Failed to load users</option>';
+        return;
+      }
       renderBadgeUserOptions('');
     }
 
-    // Render user options — search-driven when no cache, paginated to 20 when cache is present
-    let _searchDebounce = null;
+    // Filter client-side (case-insensitive substring), show up to 20 results.
     function renderBadgeUserOptions(filter) {
       const lower = (filter || '').toLowerCase().trim();
 
       if (!_badgeUsersLoaded) {
-        // No cache available — require search input before fetching
-        if (lower.length < 3) {
-          badgeUserSelect.innerHTML = '<option disabled value="">— Type 3+ characters to search —</option>';
-          selectedUserId = null;
-          updateBadgeCountsDisplay();
-          return;
-        }
-        // Debounce Firebase query
-        clearTimeout(_searchDebounce);
-        badgeUserSelect.innerHTML = '<option disabled value="">Searching…</option>';
-        _searchDebounce = setTimeout(async () => {
-          // Prefix query on displayName
-          const snap = await db.ref('users')
-            .orderByChild('displayName')
-            .startAt(filter)
-            .endAt(filter + '\uf8ff')
-            .limitToFirst(20)
-            .once('value').catch(() => null);
-          badgeUsers = [];
-          if (snap) snap.forEach(c => {
-            const v = c.val() || {};
-            badgeUsers.push({ uid: c.key, displayName: v.displayName || '', email: v.email || '' });
-          });
-          _populateSelect(badgeUsers, lower);
-        }, 400);
+        badgeUserSelect.innerHTML = '<option disabled value="">Loading…</option>';
         return;
       }
 
-      // Cache is available — filter client-side, show up to 20 results
       const filtered = badgeUsers
         .filter(u => !lower || u.displayName.toLowerCase().includes(lower) || u.email.toLowerCase().includes(lower))
         .sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email))
         .slice(0, 20);
-      _populateSelect(filtered, lower);
+      _populateSelect(filtered);
     }
 
-    function _populateSelect(list, lower) {
+    function _populateSelect(list) {
       badgeUserSelect.innerHTML = '';
       if (list.length === 0) {
         badgeUserSelect.innerHTML = '<option disabled value="">No users found</option>';
