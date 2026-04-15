@@ -1197,12 +1197,21 @@ a { color: var(--theme-accent); }
               _discordIdCache[kcUid] = directSnap.val();
               return _discordIdCache[kcUid];
           }
-          // Fallback: scan discordLinks (expensive — only reached if direct path missing)
-          const linksSnap = await db.ref('discordLinks').once('value');
-          const links = linksSnap.val() || {};
-          for (const [discordId, data] of Object.entries(links)) {
-              if (data.uid === kcUid) { _discordIdCache[kcUid] = discordId; return discordId; }
+          // Fallback: scan discordLinks — guarded per session so the full collection
+          // is only downloaded once regardless of how many profile popups are opened
+          const _dlKey = '_kcDLScanned_idx';
+          const _dlScanned = JSON.parse(sessionStorage.getItem(_dlKey) || '{}');
+          if (!_dlScanned[kcUid]) {
+            const linksSnap = await db.ref('discordLinks').once('value');
+            const links = linksSnap.val() || {};
+            // Cache all found mappings so future lookups use path 1
+            for (const [discordId, data] of Object.entries(links)) {
+              if (data && data.uid) _discordIdCache[data.uid] = discordId;
+            }
+            _dlScanned[kcUid] = true;
+            try { sessionStorage.setItem(_dlKey, JSON.stringify(_dlScanned)); } catch(e) {}
           }
+          if (_discordIdCache[kcUid]) return _discordIdCache[kcUid];
       } catch (e) {
           console.error('getDiscordIdFromKcUid error:', e);
       }

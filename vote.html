@@ -1393,16 +1393,27 @@ button:disabled {
         renderTiles('defenseTiles', defenseEntries);
 
         window.leaderboardData = { allVotes: allVotesCache, allUsers: allUsersCache, allBadges: allBadgesCache, normalizedNameToOriginalNameMap: normalizedNameToOriginalNameMapCache };
-        
+
+        // Update average rating from cached votes — no extra listener needed
+        let sum = 0, n = 0;
+        for (const vk in allVotesCache) { const r = allVotesCache[vk].rating; if (typeof r === 'number' && r > 0) { sum += r; n++; } }
+        const avgEl = document.getElementById('avgRatingNum');
+        if (avgEl) avgEl.textContent = n ? (sum / n).toFixed(2) : '–';
+
         // UPDATE: More efficient check to see if the current user has voted
         const user = auth.currentUser;
         if(user && allVotesCache[user.uid]) {
             renderVotedUserProfile(user, window.leaderboardData);
         }
     }
-    
+
     // Guard: only set up listeners once per page load to prevent duplicate downloads
     let _leaderboardListenersActive = false;
+
+    // Shared 5-min localStorage cache (cross-page benefit, same keys used site-wide)
+    const _VT_TTL = 15 * 60 * 1000;
+    function _vtGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _VT_TTL ? r.d : null; } catch(e) { return null; } }
+    function _vtSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 
     function setupLeaderboardListeners() {
         if (_leaderboardListenersActive) return;
@@ -1413,57 +1424,41 @@ button:disabled {
             processLeaderboardData();
         });
 
-        // Cache users in sessionStorage — re-use within same browser session
-        const _USERS_KEY = 'kc-vote-users-v1';
-        const _BADGES_KEY = 'kc-vote-badges-v1';
-        try {
-            const cachedUsers = sessionStorage.getItem(_USERS_KEY);
-            if (cachedUsers) {
-                allUsersCache = JSON.parse(cachedUsers);
+        // Shared 5-min localStorage cache — benefits from cross-page pre-warming
+        const cachedUsers  = _vtGet('_kcUsersCache_v3');
+        const cachedBadges = _vtGet('_kcBadgesCache_v1');
+        const needed = [];
+        if (cachedUsers) {
+            allUsersCache = cachedUsers;
+            normalizedNameToOriginalNameMapCache = {};
+            for (const uid in allUsersCache) {
+                const u = allUsersCache[uid];
+                const nameKey = normalize(u.displayName || u.email || '');
+                if (nameKey) normalizedNameToOriginalNameMapCache[nameKey] = u.displayName || u.email || '';
+            }
+            processLeaderboardData();
+        } else {
+            needed.push(usersRef.once('value').then(snap => {
+                allUsersCache = snap.val() || {};
                 normalizedNameToOriginalNameMapCache = {};
                 for (const uid in allUsersCache) {
                     const u = allUsersCache[uid];
                     const nameKey = normalize(u.displayName || u.email || '');
                     if (nameKey) normalizedNameToOriginalNameMapCache[nameKey] = u.displayName || u.email || '';
                 }
+                _vtSet('_kcUsersCache_v3', allUsersCache);
                 processLeaderboardData();
-            } else {
-                usersRef.once('value').then(snap => {
-                    allUsersCache = snap.val() || {};
-                    normalizedNameToOriginalNameMapCache = {};
-                    for (const uid in allUsersCache) {
-                        const u = allUsersCache[uid];
-                        const nameKey = normalize(u.displayName || u.email || '');
-                        if (nameKey) normalizedNameToOriginalNameMapCache[nameKey] = u.displayName || u.email || '';
-                    }
-                    try { sessionStorage.setItem(_USERS_KEY, JSON.stringify(allUsersCache)); } catch(e) {}
-                    processLeaderboardData();
-                });
-            }
-        } catch(e) {
-            usersRef.once('value').then(snap => {
-                allUsersCache = snap.val() || {};
-                processLeaderboardData();
-            });
+            }));
         }
-
-        try {
-            const cachedBadges = sessionStorage.getItem(_BADGES_KEY);
-            if (cachedBadges) {
-                allBadgesCache = JSON.parse(cachedBadges);
-                processLeaderboardData();
-            } else {
-                badgesRef.once('value').then(snap => {
-                    allBadgesCache = snap.val() || {};
-                    try { sessionStorage.setItem(_BADGES_KEY, JSON.stringify(allBadgesCache)); } catch(e) {}
-                    processLeaderboardData();
-                });
-            }
-        } catch(e) {
-            badgesRef.once('value').then(snap => {
+        if (cachedBadges) {
+            allBadgesCache = cachedBadges;
+            processLeaderboardData();
+        } else {
+            needed.push(badgesRef.once('value').then(snap => {
                 allBadgesCache = snap.val() || {};
+                _vtSet('_kcBadgesCache_v1', allBadgesCache);
                 processLeaderboardData();
-            });
+            }));
         }
     }
 
@@ -1819,19 +1814,8 @@ button:disabled {
         `;
     }
 
-    // Optimized: Use a single listener for average rating
-    function updateAverageRating(){
-      // Listen only to recent votes to compute the average rating
-      votesRef.orderByChild('time').limitToLast(100).on('value', snap => {
-        let sum = 0, n = 0;
-        snap.forEach(c => {
-          const r = c.val().rating;
-          if(typeof r === 'number' && r > 0){ sum += r; n++; }
-        });
-        document.getElementById('avgRatingNum').textContent = n ? (sum / n).toFixed(2) : '–';
-      });
-    }
-    
+    // Average rating is computed inside processLeaderboardData() from allVotesCache — no extra listener needed.
+
     // Optimized: Pass the list of all users to renderForm to avoid another database read
     function renderForm(user, allUsers){
 
@@ -2001,10 +1985,16 @@ button:disabled {
           `<p>Verify your email to vote. <a href="https://kcevents.uk/#loginpage" target="_blank" rel="noopener">Resend verification</a></p>`;
         return;
       }
-      // Optimized: Fetch all users once and pass to renderForm
-      usersRef.once('value').then(snap=>{
-        renderForm(u, snap.val() || {});
-      });
+      // Use cached users (populated by setupLeaderboardListeners) — avoids a second full-collection read
+      if (Object.keys(allUsersCache).length > 0) {
+        renderForm(u, allUsersCache);
+      } else {
+        usersRef.once('value').then(snap => {
+          allUsersCache = snap.val() || {};
+          _vtSet('_kcUsersCache_v3', allUsersCache);
+          renderForm(u, allUsersCache);
+        });
+      }
     });
     
     unlockBtn.onclick = async ()=>{

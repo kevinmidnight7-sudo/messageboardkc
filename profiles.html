@@ -730,30 +730,30 @@
         const pageInfo = document.getElementById('pageInfo');
 
         let currentCategory = 'all';
-        // COST FIX: cache badges for the whole session — was re-downloaded on every keypress
-        let _profilesBadgeCache = null; // plain object { uid: badgeObj }
+        // COST FIX: cache badges with 5-min localStorage TTL — shared key benefits from any page that pre-warmed it
+        const _PR_TTL = 15 * 60 * 1000;
+        function _prGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _PR_TTL ? r.d : null; } catch(e) { return null; } }
+        function _prSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
+
+        let _profilesBadgeCache = null;
         async function _getBadges() {
             if (_profilesBadgeCache) return _profilesBadgeCache;
-            try {
-                const s = sessionStorage.getItem('kc-profiles-badges-v1');
-                if (s) { _profilesBadgeCache = JSON.parse(s); return _profilesBadgeCache; }
-            } catch(e) {}
+            const cached = _prGet('_kcBadgesCache_v1');
+            if (cached) { _profilesBadgeCache = cached; return _profilesBadgeCache; }
             const snap = await db.ref('badges').once('value');
             _profilesBadgeCache = snap.val() || {};
-            try { sessionStorage.setItem('kc-profiles-badges-v1', JSON.stringify(_profilesBadgeCache)); } catch(e) {}
+            _prSet('_kcBadgesCache_v1', _profilesBadgeCache);
             return _profilesBadgeCache;
         }
-        // COST FIX: cache discordLinks lookup per session — was re-downloading full collection on every profile popup
+        // COST FIX: cache discordLinks with 5-min localStorage TTL
         let _profilesLinksCache = null;
         async function _getDiscordLinks() {
             if (_profilesLinksCache) return _profilesLinksCache;
-            try {
-                const s = sessionStorage.getItem('kc-profiles-links-v1');
-                if (s) { _profilesLinksCache = JSON.parse(s); return _profilesLinksCache; }
-            } catch(e) {}
+            const cached = _prGet('_kcDiscordLinksCache_v1');
+            if (cached) { _profilesLinksCache = cached; return _profilesLinksCache; }
             const snap = await db.ref('discordLinks').once('value');
             _profilesLinksCache = snap.val() || {};
-            try { sessionStorage.setItem('kc-profiles-links-v1', JSON.stringify(_profilesLinksCache)); } catch(e) {}
+            _prSet('_kcDiscordLinksCache_v1', _profilesLinksCache);
             return _profilesLinksCache;
         }
         let currentSort = 'joinDate'; // Default sort order
