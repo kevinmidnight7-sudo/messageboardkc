@@ -1316,7 +1316,7 @@ a { color: var(--theme-accent); }
     userPopup.classList.remove('hidden');
 
     // Fetch user root
-    db.ref(`users/${uid}`).once('value').then(snap => {
+    db.ref(`userProfiles/${uid}`).once('value').then(snap => {
         const userData = snap.val() || {};
 
         // === LAYOUT LOGIC ===
@@ -1405,7 +1405,7 @@ const hasCustomization =
         // Now fetch badges + custom badges
         Promise.all([
             db.ref(`badges/${uid}`).once('value'),
-            db.ref(`users/${uid}/customBadges`).once('value')
+            db.ref(`userProfiles/${uid}/customBadges`).once('value')
         ]).then(([bsnap, csnap]) => {
             badgesContainer.innerHTML = '';
             let hasAnyBadge = false;

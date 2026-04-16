@@ -3493,12 +3493,12 @@
                         // from whatever comes back so localStorage doesn't bloat with post content.
                         ((() => {
                             try {
-                                const _r = JSON.parse(localStorage.getItem('_kcUsersCache_v3') || 'null');
+                                const _r = JSON.parse(localStorage.getItem('_kcUserProfilesCache_v1') || 'null');
                                 if (_r && Date.now() - _r.ts < 30 * 60 * 1000 && _r.d && typeof _r.d === 'object') {
                                     return Promise.resolve({ val: () => _r.d, forEach: (cb) => { Object.entries(_r.d).forEach(([k,v]) => cb({ key: k, val: () => v })); } });
                                 }
                             } catch(e) {}
-                            return db.ref('users').limitToFirst(20).once('value');
+                            return db.ref('userProfiles').limitToFirst(20).once('value');
                         })()).then(snap => {
                             const carousel = document.getElementById('guest-members-carousel');
                             if (!carousel) return;
