@@ -472,7 +472,7 @@
     const db = firebase.database();
 
     // --- 5-min localStorage cache (shared key with kcnow.html / leaderboard.html)
-    const _CL_TTL = 5 * 60 * 1000;
+    const _CL_TTL = 30 * 60 * 1000;  /* 30-min TTL — was 5 min (re-downloaded every 5 min!) */
     function _clGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _CL_TTL ? r.d : null; } catch(e) { return null; } }
     function _clSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 
@@ -789,8 +789,17 @@
             db.ref('battles').once('value'),
         ]).then(([clansSnap, usersSnap, badgesSnap, adminsSnap, battlesSnap]) => {
             allClansData   = clansSnap.val()   || {};
-            if (usersSnap)  { allUsersData  = usersSnap.val()  || {}; _clSet('_kcUsersCache_v3',  allUsersData);  }
-            else              allUsersData  = cachedUsers  || {};
+            if (usersSnap) {
+                const rawUsers = usersSnap.val() || {};
+                // Strip posts from each user — posts nested under /users/{uid}/posts can be 100s of KB
+                // per user and are never needed by clans.html. Reduces localStorage + memory footprint.
+                allUsersData = {};
+                Object.keys(rawUsers).forEach(uid => {
+                    const { posts, ...lean } = rawUsers[uid] || {};
+                    allUsersData[uid] = lean;
+                });
+                _clSet('_kcUsersCache_v3', allUsersData);
+            } else allUsersData = cachedUsers || {};
             if (badgesSnap) { allBadgesData = badgesSnap.val() || {}; _clSet('_kcBadgesCache_v1', allBadgesData); }
             else              allBadgesData = cachedBadges || {};
             allAdminsData  = adminsSnap.val()  || {};

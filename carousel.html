@@ -392,9 +392,24 @@
   badgesContainer.innerHTML = 'Loading...';
   streakEl.style.display = 'none';
 
-  // Fetch user root
-  db.ref(`users/${uid}`).once('value').then(snap => {
-    const userData = snap.val() || {};
+  // COST FIX: was db.ref(`users/${uid}`) — downloaded ALL nested posts.
+  // Now reads only the 5 display fields needed for the popup.
+  Promise.all([
+    db.ref(`users/${uid}/displayName`).once('value'),
+    db.ref(`users/${uid}/avatar`).once('value'),
+    db.ref(`users/${uid}/aboutMe`).once('value'),
+    db.ref(`users/${uid}/loginStreak`).once('value'),
+    db.ref(`users/${uid}/profileCustomization`).once('value'),
+    db.ref(`users/${uid}/emailVerified`).once('value'),
+  ]).then(([dnS, avS, amS, lsS, pcS, evS]) => {
+    const userData = {
+      displayName: dnS.val() || '',
+      avatar: avS.val() || '',
+      aboutMe: amS.val() || null,
+      loginStreak: lsS.val() || 0,
+      profileCustomization: pcS.val() || {},
+      emailVerified: evS.val() || false,
+    };
 
     usernameEl.textContent = userData.displayName || 'Anonymous User';
     avatarEl.src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';

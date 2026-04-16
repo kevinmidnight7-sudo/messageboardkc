@@ -2868,6 +2868,9 @@
             }).catch(function() { return { val: function() { return {}; }, forEach: function() {}, child: function() { return { val: function() { return null; } }; } }; });
             return _badgesSnapPromise;
         }
+        // Tracked refs for initPersonalActivityListener — detached on sign-out
+        let _personalActivityRefs = [];
+
         // Call when the user signs out so next sign-in gets fresh data
         function _clearDataCaches() {
             _usersSnapPromise  = null;
@@ -2875,8 +2878,11 @@
             allUsersData = []; allClansData = {}; allPostsData = [];
             clipsLoaded = false;
             discordIdCache.clear();
+            // Detach personal economy listeners so they don't accumulate across sign-in/out cycles
+            _personalActivityRefs.forEach(r => r.ref ? r.ref.off(r.event, r.fn) : r.off());
+            _personalActivityRefs = [];
             // NOTE: localStorage cache (_kcUsersCache_v3) intentionally NOT cleared on sign-out.
-            // It has a 15-min TTL already and is public profile data — keeping it means
+            // It has a 30-min TTL and is public profile data — keeping it means
             // sign-out/sign-in cycles don't re-download the entire users collection.
         }
 
@@ -3449,14 +3455,25 @@
                             if (textEl) textEl.textContent = 'Active community waiting for you';
                         });
 
-                        // COST FIX: 20 avatars is plenty for a carousel; was 50
-                        db.ref('users').limitToFirst(20).once('value').then(snap => {
+                        // COST FIX: prefer the shared users cache so repeat guests pay zero reads.
+                        // Only falls back to limitToFirst(20) on a true cold load, and strips posts
+                        // from whatever comes back so localStorage doesn't bloat with post content.
+                        ((() => {
+                            try {
+                                const _r = JSON.parse(localStorage.getItem('_kcUsersCache_v3') || 'null');
+                                if (_r && Date.now() - _r.ts < 30 * 60 * 1000 && _r.d && typeof _r.d === 'object') {
+                                    return Promise.resolve({ val: () => _r.d, forEach: (cb) => { Object.entries(_r.d).forEach(([k,v]) => cb({ key: k, val: () => v })); } });
+                                }
+                            } catch(e) {}
+                            return db.ref('users').limitToFirst(20).once('value');
+                        })()).then(snap => {
                             const carousel = document.getElementById('guest-members-carousel');
                             if (!carousel) return;
                             const users = [];
                             snap.forEach(child => {
                                 const u = child.val();
-                                if (u && u.displayName && u.avatar) users.push({ uid: child.key, ...u });
+                                // strip posts to avoid caching them
+                                if (u && u.displayName && u.avatar) users.push({ uid: child.key, displayName: u.displayName, avatar: u.avatar, profileCustomization: u.profileCustomization || {} });
                             });
                             // Shuffle
                             for (let i = users.length - 1; i > 0; i--) {
@@ -3698,10 +3715,12 @@
                 _uidAvatarCache[uid] = cached.profilePicture || cached.avatar || '';
                 return _uidAvatarCache[uid];
             }
-            // Async fetch — fetch only this user's avatar fields, re-render when done
-            db.ref(`users/${uid}`).once('value').then(s => {
-                const u = s.val() || {};
-                _uidAvatarCache[uid] = u.profilePicture || u.avatar || '';
+            // COST FIX: read only the two avatar fields, not the full user node (which includes posts)
+            Promise.all([
+                db.ref(`users/${uid}/avatar`).once('value'),
+                db.ref(`users/${uid}/profilePicture`).once('value'),
+            ]).then(([avS, ppS]) => {
+                _uidAvatarCache[uid] = ppS.val() || avS.val() || '';
                 // Re-render so avatars appear once they arrive
                 if (document.getElementById('rightpanel-board') && !document.getElementById('rightpanel-board').classList.contains('hidden')) {
                     renderBoardPosts();
@@ -8512,23 +8531,30 @@
 
         function initPersonalActivityListener() {
             if (!currentUser) return;
+            // Detach any previously attached refs (prevents listener accumulation on re-login)
+            _personalActivityRefs.forEach(r => r.off());
+            _personalActivityRefs = [];
             getDiscordIdFromKcUid(currentUser.uid).then(discordId => {
                 if (!discordId) return;
                 // New achievements
-                db.ref(`userEconomy/${discordId}/badges`).on('child_added', snap => {
+                const badgesRef = db.ref(`userEconomy/${discordId}/badges`);
+                badgesRef.on('child_added', snap => {
                     if (Date.now() - snap.val() < 10000) {
                         showToast(`Achievement Unlocked: ${snap.key}`, 'success', 5000);
                     }
                 });
                 // Points increases
                 let lastPoints = null;
-                db.ref(`userEconomy/${discordId}/points`).on('value', snap => {
+                const pointsRef = db.ref(`userEconomy/${discordId}/points`);
+                pointsRef.on('value', snap => {
                     const newPoints = snap.val() || 0;
                     if (lastPoints !== null && newPoints > lastPoints) {
                         showToast(`+${(newPoints - lastPoints).toLocaleString()} points earned!`, 'success', 3000);
                     }
                     lastPoints = newPoints;
                 });
+                // Track for cleanup on sign-out
+                _personalActivityRefs.push(badgesRef, pointsRef);
             });
         }
 
@@ -9085,8 +9111,21 @@
 
         function previewCustomization() {
             if (!currentUser) return;
-            db.ref(`users/${currentUser.uid}`).once('value').then(snap => {
-                const u = snap.val() || {};
+            // COST FIX: was full user node — only needs 5 customization + display fields
+            Promise.all([
+                db.ref(`users/${currentUser.uid}/profileCustomization`).once('value'),
+                db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value'),
+                db.ref(`users/${currentUser.uid}/avatar`).once('value'),
+                db.ref(`users/${currentUser.uid}/displayName`).once('value'),
+                db.ref(`users/${currentUser.uid}/about`).once('value'),
+            ]).then(([pcS, pcuS, avS, dnS, abS]) => {
+                const u = {
+                    profileCustomization: pcS.val() || {},
+                    profileCustomizationUnlocked: pcuS.val() || false,
+                    avatar: avS.val() || '',
+                    displayName: dnS.val() || '',
+                    about: abS.val() || '',
+                };
                 // Seed state from existing customization
                 _custState.nameColor = u.profileCustomization?.nameColor || '#1992d4';
                 _custState.gradient  = u.profileCustomization?.gradient  || _CUST_GRADIENTS[0];
@@ -9151,11 +9190,22 @@
             if (!currentUser) return openAuthModal();
             const modal = openModalWithLoading('Your Analytics', 'Crunching your stats...');
             if (!modal) return;
+            // COST FIX: was full user node — only needs 4 stat fields (overall, offence, defence, bdHighscore)
+            const uid = currentUser.uid;
             Promise.all([
-                db.ref(`users/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
+                Promise.all([
+                    db.ref(`users/${uid}/overall`).once('value'),
+                    db.ref(`users/${uid}/offence`).once('value'),
+                    db.ref(`users/${uid}/defence`).once('value'),
+                    db.ref(`users/${uid}/bdHighscore`).once('value'),
+                ]).then(([ovS, ofS, dfS, bdS]) => ({
+                    overall: ovS.val() || 0,
+                    offence: ofS.val() || 0,
+                    defence: dfS.val() || 0,
+                    bdHighscore: bdS.val() || 0,
+                })).catch(() => ({ overall: 0, offence: 0, defence: 0, bdHighscore: 0 })),
                 getDiscordIdFromKcUid(currentUser.uid)
-            ]).then(([userSnap, discordId]) => {
-                const u = userSnap.val() || {};
+            ]).then(([u, discordId]) => {
                 const economyPromise = discordId
                     ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {}).catch(() => ({}))
                     : Promise.resolve({});
@@ -9373,7 +9423,13 @@
                 if (!panel || !list) return;
                 if (uids.length === 0) { panel.classList.add('hidden'); return; }
                 panel.classList.remove('hidden');
-                Promise.all(uids.map(uid => db.ref(`users/${uid}`).once('value').then(s => ({ uid, ...(s.val() || {}) })))).then(users => {
+                // COST FIX: only fetch displayName + avatar per user, not full node (which includes posts)
+                Promise.all(uids.map(uid =>
+                    Promise.all([
+                        db.ref(`users/${uid}/displayName`).once('value'),
+                        db.ref(`users/${uid}/avatar`).once('value'),
+                    ]).then(([dnS, avS]) => ({ uid, displayName: dnS.val() || '', avatar: avS.val() || '' }))
+                )).then(users => {
                     list.innerHTML = users.map(u => `
                         <div class="flex items-center gap-3 p-3 glass rounded-2xl">
                             <img src="${u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png'}" class="w-9 h-9 rounded-full object-cover">
