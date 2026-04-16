@@ -120,7 +120,8 @@
         <button id="refreshUsersBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">↻ Refresh List</button>
         <button id="manageBadgesBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-200">Manage Badges</button>
         <button id="viewBadgeLogsBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-200">Recent Badge Changes</button>
-        <button id="runMigrationBtn" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition duration-200" title="One-time: copy lean display fields to /userProfiles/ to eliminate post data from collection reads">⚡ Migrate to /userProfiles/</button>
+        <button id="runMigrationBtn" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition duration-200" title="One-time: copy lean display fields to /userProfiles/ to eliminate post data from collection reads">⚡ Migrate /userProfiles/</button>
+        <button id="runFeedMigrationBtn" class="bg-red-700 text-white px-4 py-2 rounded-lg hover:bg-red-800 transition duration-200" title="One-time: copy all nested posts to /feedPosts/ so socialfeed.html no longer needs the full users download">⚡ Migrate /feedPosts/</button>
       </div>
       <!-- Migration status banner (hidden until clicked) -->
       <div id="migrationStatus" class="hidden p-4 mx-4 mb-2 rounded-xl text-sm font-mono" style="background:rgba(234,88,12,0.15);border:1px solid rgba(234,88,12,0.4);color:#fdba74;"></div>
@@ -305,6 +306,7 @@
             initUserListListener();
             document.getElementById('refreshUsersBtn').addEventListener('click', loadUserList);
             document.getElementById('runMigrationBtn').addEventListener('click', runUserProfilesMigration);
+            document.getElementById('runFeedMigrationBtn').addEventListener('click', runFeedPostsMigration);
             return;
           } else {
             loginError.textContent = "Access Denied. You are not an authorized admin.";
@@ -754,7 +756,7 @@
 
       const LEAN_FIELDS = ['displayName','avatar','aboutMe','about','emailVerified',
         'loginStreak','profileCustomization','clanId','isStaff','online','kcnowOnline',
-        'overall','offence','defence','bdHighscore','customBadge','customBadges'];
+        'overall','offence','defence','bdHighscore','customBadge','customBadges','codesUnlocked'];
 
       let lastKey = null;
       let total = 0;
@@ -804,6 +806,74 @@
         status.style.background = 'rgba(239,68,68,0.1)';
         status.style.color = '#fca5a5';
         status.textContent = `Error after ${total} users: ${e.message}`;
+        btn.disabled = false;
+      }
+    }
+
+    // ── /feedPosts/ one-time migration ────────────────────────────────────────
+    // Reads nested /users/{uid}/posts/ in chunks, copies each post to /feedPosts/{postId}
+    // so socialfeed.html can query posts directly without downloading all users.
+    // After this runs, new posts written by profiles.html are automatically mirrored.
+    async function runFeedPostsMigration() {
+      const btn = document.getElementById('runFeedMigrationBtn');
+      const status = document.getElementById('migrationStatus');
+      btn.disabled = true;
+      status.classList.remove('hidden');
+      status.style.borderColor = 'rgba(234,88,12,0.4)';
+      status.style.background = 'rgba(234,88,12,0.15)';
+      status.style.color = '#fdba74';
+
+      const POST_FIELDS = ['type','ytId','videoId','caption','createdAt','draft','publishAt',
+                           'reactions','comments','views'];
+      let lastKey = null;
+      let totalUsers = 0, totalPosts = 0;
+      const PAGE = 20;
+
+      try {
+        while (true) {
+          status.textContent = `Migrating posts… ${totalUsers} users / ${totalPosts} posts done`;
+          let query = db.ref('users').orderByKey().limitToFirst(PAGE);
+          if (lastKey) query = query.startAfter(lastKey);
+
+          const snap = await query.once('value');
+          const page = snap.val();
+          if (!page) break;
+          const keys = Object.keys(page);
+          if (keys.length === 0) break;
+
+          const updates = {};
+          keys.forEach(uid => {
+            const user = page[uid] || {};
+            const posts = user.posts || {};
+            Object.entries(posts).forEach(([postId, post]) => {
+              if (!post) return;
+              const feedPost = { createdBy: uid };
+              POST_FIELDS.forEach(f => { if (post[f] !== undefined) feedPost[f] = post[f]; });
+              updates[`feedPosts/${postId}`] = feedPost;
+              totalPosts++;
+            });
+          });
+
+          if (Object.keys(updates).length > 0) {
+            await db.ref().update(updates);
+          }
+
+          totalUsers += keys.length;
+          lastKey = keys[keys.length - 1];
+          if (keys.length < PAGE) break;
+          await new Promise(r => setTimeout(r, 300));
+        }
+
+        status.style.borderColor = 'rgba(34,197,94,0.5)';
+        status.style.background = 'rgba(34,197,94,0.1)';
+        status.style.color = '#86efac';
+        status.textContent = `✓ Feed migration complete — ${totalPosts} posts written to /feedPosts/ from ${totalUsers} users. socialfeed.html will now query /feedPosts/ directly (no more full-users download).`;
+        btn.textContent = '✓ Migrated';
+      } catch(e) {
+        status.style.borderColor = 'rgba(239,68,68,0.5)';
+        status.style.background = 'rgba(239,68,68,0.1)';
+        status.style.color = '#fca5a5';
+        status.textContent = `Error after ${totalUsers} users / ${totalPosts} posts: ${e.message}`;
         btn.disabled = false;
       }
     }

@@ -708,38 +708,80 @@
         }
         
         // --- DATA FETCHING ---
-        // COST FIX: cache users + playlists in sessionStorage — only re-fetch when cache is stale
-        const _SF_USERS_KEY = 'kc-sf-users-v1';
-        const _SF_PLAYLISTS_KEY = 'kc-sf-playlists-v1';
+        // COST FIX: replaced full /users/ download (all users + ALL their posts = many MB)
+        // with two cheap reads:
+        //   1. /feedPosts/ limitToLast(150) — just the post records, no user data
+        //   2. /userProfiles/ (probe pattern, lean cache) — display fields only, no posts
+        // Run "Migrate posts to /feedPosts/" in verifier.html once to backfill existing posts.
+        // New posts are mirrored to /feedPosts/ by profiles.html on creation.
+        async function _fetchUserProfilesForFeed() {
+            const cachedLean = _sfGet('_kcUserProfilesCache_v1');
+            if (cachedLean) return cachedLean;
+            const cachedFull = _sfGet('_kcUsersCache_v3');
+            if (localStorage.getItem('_kcUpReady') === '1') {
+                const s = await db.ref('userProfiles').once('value');
+                const d = s.val() || {};
+                _sfSet('_kcUserProfilesCache_v1', d);
+                return d;
+            }
+            const probe = await db.ref('userProfiles').limitToFirst(1).once('value');
+            if (probe.exists()) {
+                localStorage.setItem('_kcUpReady', '1');
+                const s = await db.ref('userProfiles').once('value');
+                const d = s.val() || {};
+                _sfSet('_kcUserProfilesCache_v1', d);
+                return d;
+            }
+            // Not yet migrated — use full /users/ cache (strip posts from memory)
+            if (cachedFull) return cachedFull;
+            const s = await db.ref('users').once('value');
+            const raw = s.val() || {};
+            const lean = {};
+            Object.keys(raw).forEach(uid => { const { posts, ...rest } = raw[uid] || {}; lean[uid] = rest; });
+            _sfSet('_kcUsersCache_v3', lean);
+            return lean;
+        }
+
         async function fetchAllData() {
             try {
                 postsContainer.innerHTML = '<div class="col-span-full flex justify-center py-10"><div class="spinner"></div></div>';
-                const cachedUsers = _sfGet('_kcUsersCache_v3');
-                const [usersSnap, playlistsSnap] = await Promise.all([
-                    cachedUsers ? Promise.resolve(null) : db.ref('users').once('value'),
-                    db.ref('playlists').once('value')
-                ]);
-                if (usersSnap) { userProfiles = usersSnap.val() || {}; _sfSet('_kcUsersCache_v3', userProfiles); }
-                else             userProfiles = cachedUsers || {};
-                const playlistsVal = playlistsSnap ? playlistsSnap.val() || {} : {};
 
-                allPosts = [];
-                for (const uid in userProfiles) {
-                    const posts = userProfiles[uid] && userProfiles[uid].posts;
-                    if (posts) {
-                        for (const postId in posts) {
-                            allPosts.push({ postId, ...posts[postId], createdBy: uid });
+                // Check if /feedPosts/ migration has run (probe is a limitToFirst(1) — ~free)
+                const feedProbe = await db.ref('feedPosts').limitToFirst(1).once('value');
+                const useFeedPosts = feedProbe.exists();
+
+                let [profilesData, playlistsSnap] = await Promise.all([
+                    _fetchUserProfilesForFeed(),
+                    db.ref('playlists').once('value'),
+                ]);
+                userProfiles = profilesData || {};
+
+                if (useFeedPosts) {
+                    // Post-migration: read from flat /feedPosts/ (no user data mixed in)
+                    const feedSnap = await db.ref('feedPosts').orderByChild('createdAt').limitToLast(150).once('value');
+                    allPosts = [];
+                    feedSnap.forEach(c => allPosts.push({ postId: c.key, ...c.val() }));
+                } else {
+                    // Pre-migration fallback: build posts from /users/ cache (strip and use cached data)
+                    allPosts = [];
+                    for (const uid in userProfiles) {
+                        const posts = userProfiles[uid]?.posts;
+                        if (posts) {
+                            for (const postId in posts) {
+                                allPosts.push({ postId, ...posts[postId], createdBy: uid });
+                            }
                         }
                     }
                 }
 
+                const playlistsVal = playlistsSnap ? playlistsSnap.val() || {} : {};
                 allPlaylists = Object.entries(playlistsVal || {}).map(([id, p]) => ({ playlistId: id, ...p }));
 
                 const trendingPosts = filterContent(allPosts, 'trending').slice(0, 5);
                 trendingRankMap = Object.fromEntries(trendingPosts.map((p, i) => [p.postId, i + 1]));
                 const atbPosts = filterContent(allPosts, 'all-time-best').slice(0, 5);
                 atbRankMap = Object.fromEntries(atbPosts.map((p, i) => [p.postId, i + 1]));
-                
+
                 renderTopPlaylistsCarousel();
                 renderContent();
                 attachPlaylistsListener();
@@ -1140,8 +1182,8 @@
             const ok = await showMessageBox('Are you sure you want to delete your clip?', true);
             if (!ok) return;
 
-            const postPath = `users/${ownerUid}/posts/${postId}`;
-            await db.ref(postPath).remove();
+            await db.ref(`users/${ownerUid}/posts/${postId}`).remove();
+            db.ref(`feedPosts/${postId}`).remove().catch(() => {}); // mirror delete
 
             await showMessageBox('Your clip was deleted.');
             fetchAllData();

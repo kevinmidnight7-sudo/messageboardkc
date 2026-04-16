@@ -504,8 +504,13 @@
         ];
         const toLoad = sorted.slice(0, 30);
 
+        // COST FIX: was full users/${fuid} read (downloads all posts per friend).
+        // Now reads only displayName + avatar — the only two fields shown in the friends list.
         Promise.all(toLoad.map(fuid =>
-            database.ref(`users/${fuid}`).once('value').then(s => ({ uid: fuid, isMutual: mySet.has(fuid), ...(s.val() || {}) }))
+            Promise.all([
+                database.ref(`users/${fuid}/displayName`).once('value'),
+                database.ref(`users/${fuid}/avatar`).once('value'),
+            ]).then(([dn, av]) => ({ uid: fuid, isMutual: mySet.has(fuid), displayName: dn.val() || '', avatar: av.val() || '' }))
         )).then(users => {
             const container = document.getElementById('kcFriendsList');
             if (!container) return;
@@ -576,30 +581,15 @@
         const database = getDb();
         if (!database) return;
 
+        // clanId is stored in /userProfiles/ (populated after migration) or /users/{uid}/clanId.
+        // No longer scan all clans as a fallback — that costs a full clans download per popup open.
+        const clanId = userData.clanId || null;
+        if (!clanId) return;
+
         try {
-            let clanId = userData.clanId || null;
-            let clan = null;
-
-            if (clanId) {
-                const snap = await database.ref(`clans/${clanId}`).once('value');
-                clan = snap.val();
-                if (!clan || !clan.name) { clanId = null; clan = null; } // stale — fall through
-            }
-
-            // Fallback: scan clans for this member (handles users who joined before clanId was stored)
-            if (!clanId) {
-                const clansSnap = await database.ref('clans').once('value');
-                const all = clansSnap.val() || {};
-                for (const [id, c] of Object.entries(all)) {
-                    if (c.members && c.members[uid]) {
-                        clanId = id;
-                        clan = c;
-                        break;
-                    }
-                }
-            }
-
-            if (!clan || !clan.name) return;
+            const snap = await database.ref(`clans/${clanId}`).once('value');
+            const clan = snap.val();
+            if (!clan || !clan.name) return; // stale clanId — skip silently
 
             const memberCount = clan.members ? Object.keys(clan.members).length : 0;
             const iconHtml = clan.icon
@@ -634,18 +624,20 @@
     }
 
     // ── Discord helpers ──────────────────────────────────────────────────────
-    // Returns { id, username?, globalName?, tag?, ... } or null
+    // COST FIX: was scanning ALL of discordLinks (entire collection) to find one uid.
+    // Now reads discordId directly from /users/{uid}/discordId (single field),
+    // then fetches only that entry from /discordLinks/{discordId}.
     async function getDiscordIdFromKcUid(kcUid) {
         const database = getDb();
         if (!database) return null;
         try {
-            const snap = await database.ref('discordLinks').once('value');
-            const links = snap.val() || {};
-            for (const [id, data] of Object.entries(links)) {
-                if (data.uid === kcUid) return { id, ...data };
-            }
-        } catch (e) { /* silent – not every user has a Discord link */ }
-        return null;
+            const idSnap = await database.ref(`users/${kcUid}/discordId`).once('value');
+            const discordId = idSnap.val();
+            if (!discordId) return null;
+            const linkSnap = await database.ref(`discordLinks/${discordId}`).once('value');
+            const linkData = linkSnap.val() || {};
+            return { id: discordId, ...linkData };
+        } catch (e) { return null; }
     }
 
     async function loadDiscordStats(uid, userData) {
@@ -868,8 +860,22 @@
         overlay.style.display = 'flex';
 
         try {
-            const snap = await database.ref(`users/${uid}`).once('value');
-            const u = snap.val() || {};
+            // COST FIX: use /userProfiles/{uid} (lean, no posts) + codesUnlocked separately.
+            // /userProfiles/ is populated by the admin migration in verifier.html.
+            // Falls back to full /users/{uid} read only if not yet migrated.
+            const [profileSnap, codesSnap] = await Promise.all([
+                database.ref(`userProfiles/${uid}`).once('value'),
+                database.ref(`users/${uid}/codesUnlocked`).once('value'),
+            ]);
+            let u;
+            if (profileSnap.exists()) {
+                localStorage.setItem('_kcUpReady', '1');
+                u = { ...profileSnap.val(), codesUnlocked: codesSnap.val() || {} };
+            } else {
+                // Pre-migration fallback — full user read (includes posts, expensive)
+                const snap = await database.ref(`users/${uid}`).once('value');
+                u = snap.val() || {};
+            }
 
             // ── Basic info ──
             username.textContent = u.displayName || 'Anonymous';

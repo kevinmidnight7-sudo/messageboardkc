@@ -1247,6 +1247,8 @@
 
                 try {
                     await db.ref(`users/${ownerUid}/posts/${postId}`).set(postData);
+                    // Mirror to /feedPosts/ so socialfeed.html can read without downloading all users
+                    db.ref(`feedPosts/${postId}`).set({ ...postData, createdBy: ownerUid }).catch(() => {});
                     showUploadStatus('Post uploaded successfully!');
                 } catch (error) {
                     console.error('URL post failed:', error);
@@ -1286,7 +1288,7 @@
             }).finally(() => {
                 // Then, delete from the Realtime Database
                 db.ref(`users/${ownerUid}/posts/${postId}`).remove().then(() => {
-                    console.log("Post deleted from database.");
+                    db.ref(`feedPosts/${postId}`).remove().catch(() => {}); // mirror delete
                 }).catch(error => {
                     console.error("Error deleting post from database:", error);
                 });
