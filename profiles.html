@@ -1464,31 +1464,25 @@
             
             userPopup.style.display = 'flex';
 
-            // COST FIX: was db.ref('users/${uid}').once('value') — downloaded ALL nested posts
-            // Now reads only the 10 display fields needed; posts are loaded separately by loadPosts()
+            // Single userProfiles read for all display fields (lean node, no posts).
+            // badges lives under /users/ not userProfiles; profileCustomizationUnlocked likewise.
             Promise.all([
-                db.ref(`users/${uid}/displayName`).once('value'),
-                db.ref(`users/${uid}/avatar`).once('value'),
-                db.ref(`users/${uid}/about`).once('value'),
-                db.ref(`users/${uid}/aboutMe`).once('value'),
-                db.ref(`users/${uid}/loginStreak`).once('value'),
-                db.ref(`users/${uid}/profileCustomization`).once('value'),
-                db.ref(`users/${uid}/profileCustomizationUnlocked`).once('value'),
-                db.ref(`users/${uid}/emailVerified`).once('value'),
+                db.ref(`userProfiles/${uid}`).once('value'),
                 db.ref(`users/${uid}/badges`).once('value'),
-                db.ref(`users/${uid}/codesUnlocked`).once('value'),
-            ]).then(([dnS, avS, abS, amS, lsS, pcS, pcuS, evS, bdS, cuS]) => {
+                db.ref(`users/${uid}/profileCustomizationUnlocked`).once('value'),
+            ]).then(([profileSnap, bdS, pcuS]) => {
+                const p = profileSnap.val() || {};
                 const userData = {
-                    displayName: dnS.val() || '',
-                    avatar: avS.val() || '',
-                    about: abS.val() || null,
-                    aboutMe: amS.val() || null,
-                    loginStreak: lsS.val() || 0,
-                    profileCustomization: pcS.val() || {},
+                    displayName: p.displayName || '',
+                    avatar: p.avatar || '',
+                    about: p.about || null,
+                    aboutMe: p.aboutMe || null,
+                    loginStreak: p.loginStreak || 0,
+                    profileCustomization: p.profileCustomization || {},
                     profileCustomizationUnlocked: pcuS.val() || false,
-                    emailVerified: evS.val() || false,
+                    emailVerified: p.emailVerified || false,
                     badges: bdS.val() || {},
-                    codesUnlocked: cuS.val() || {},
+                    codesUnlocked: p.codesUnlocked || {},
                 };
 
                 // === LAYOUT LOGIC ===
@@ -1668,8 +1662,9 @@ const hasCustomization =
             postsContainer.innerHTML = '<div class="flex justify-center items-center py-8"><div class="spinner"></div></div>';
 
             try {
-                // Fetch all posts for the user once
-                const snapshot = await db.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+                // Cap at 30 most recent posts; use key order (push keys are chronological)
+                // to avoid orderByChild exclusion bug for posts without createdAt.
+                const snapshot = await db.ref(`users/${uid}/posts`).limitToLast(30).once('value');
                 const posts = [];
                 snapshot.forEach(childSnap => {
                     posts.push({
@@ -1679,7 +1674,7 @@ const hasCustomization =
                 });
 
                 // Sort posts in descending order by createdAt
-                allPosts = posts.sort((a, b) => b.createdAt - a.createdAt);
+                allPosts = posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 postPageIndex = 0; // Reset to the first page
                 renderPosts();
             } catch (error) {
