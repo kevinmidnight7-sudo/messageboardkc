@@ -757,10 +757,12 @@
                 userProfiles = profilesData || {};
 
                 if (useFeedPosts) {
-                    // Post-migration: read from flat /feedPosts/ (no user data mixed in)
-                    const feedSnap = await db.ref('feedPosts').orderByChild('createdAt').limitToLast(150).once('value');
+                    // Post-migration: read from flat /feedPosts/ by key order (push keys are chronological).
+                    // Avoids orderByChild('createdAt') which excludes posts without that field from the index.
+                    const feedSnap = await db.ref('feedPosts').limitToLast(150).once('value');
                     allPosts = [];
                     feedSnap.forEach(c => allPosts.push({ postId: c.key, ...c.val() }));
+                    allPosts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 } else {
                     // Pre-migration fallback: build posts from /users/ cache (strip and use cached data)
                     allPosts = [];
