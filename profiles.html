@@ -886,19 +886,18 @@
             const query = userSearch.value;
             const searchTerm = query ? query.toLowerCase() : '';
 
-            // This is the core logic to reduce downloads.
-            // We only fetch a limited number of users per request.
-            let userRef = db.ref('users');
+            // Use /userProfiles/ (lean node, no nested posts) instead of /users/.
+            // Each /users/ entry can include hundreds of posts; /userProfiles/ has only display fields.
+            let userRef = db.ref('userProfiles');
             let usersQuery;
-            
+
             switch (currentCategory) {
                 case 'verified':
                     usersQuery = userRef.orderByChild('emailVerified').equalTo(true).limitToLast(16);
                     break;
                 case 'skilled':
-                     // COST FIX: limited to 16 — same as other categories; each user object
-                     // includes nested posts so large limits are very expensive.
-                     usersQuery = userRef.orderByChild('score').limitToLast(16);
+                    // orderByChild('overall') — overall stat is in userProfiles, score is not
+                    usersQuery = userRef.orderByChild('overall').limitToLast(16);
                     break;
                 case 'diamond':
                     usersQuery = userRef.orderByChild('codesUnlocked/diamond').equalTo(true).limitToLast(16);

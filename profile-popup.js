@@ -794,7 +794,7 @@
         const database = getDb();
         if (!database) return;
         try {
-            const snap = await database.ref(`users/${uid}/posts`).orderByChild('createdAt').once('value');
+            const snap = await database.ref(`users/${uid}/posts`).orderByChild('createdAt').limitToLast(30).once('value');
             const tmp = [];
             snap.forEach(c => tmp.push({ postId: c.key, ...c.val() }));
             _posts = tmp.sort((a, b) => b.createdAt - a.createdAt);

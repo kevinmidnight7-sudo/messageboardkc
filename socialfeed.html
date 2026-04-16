@@ -1357,6 +1357,11 @@
           if (!context) return;
           const ref = db.ref(`${context.postPath}/reactions/${emo}/${u.uid}`);
           ref.transaction(curr => curr ? null : true);
+          // Mirror to /feedPosts/ so feed cards show live reaction counts
+          if (context.postId) {
+            db.ref(`feedPosts/${context.postId}/reactions/${emo}/${u.uid}`)
+              .transaction(curr => curr ? null : true).catch(() => {});
+          }
         }
 
         async function renderPostReactions(snap, targetEl){

@@ -3741,25 +3741,43 @@
         let _boardNewMsgRef = null; // listener for new messages (child_added after last key)
 
         function _resolveAvatar(uid) {
-            // 1. Check cache, 2. Check allUsersData (if already loaded), 3. Fetch specific user
+            // 1. Check cache, 2. Check allUsersData (if already loaded), 3. Fetch lean profile
             if (_uidAvatarCache[uid] !== undefined) return _uidAvatarCache[uid];
             const cached = allUsersData.find(u => u.uid === uid);
             if (cached) {
                 _uidAvatarCache[uid] = cached.profilePicture || cached.avatar || '';
                 return _uidAvatarCache[uid];
             }
-            // COST FIX: read only the two avatar fields, not the full user node (which includes posts)
-            Promise.all([
-                db.ref(`users/${uid}/avatar`).once('value'),
-                db.ref(`users/${uid}/profilePicture`).once('value'),
-            ]).then(([avS, ppS]) => {
-                _uidAvatarCache[uid] = ppS.val() || avS.val() || '';
-                // Re-render so avatars appear once they arrive
+            // Try userProfiles first (lean node, no posts), fall back to targeted users reads
+            db.ref(`userProfiles/${uid}/avatar`).once('value').then(avS => {
+                _uidAvatarCache[uid] = avS.val() || '';
                 if (document.getElementById('rightpanel-board') && !document.getElementById('rightpanel-board').classList.contains('hidden')) {
                     renderBoardPosts();
                 }
             }).catch(() => { _uidAvatarCache[uid] = ''; });
             return ''; // placeholder while loading
+        }
+
+        // Batch-populate _uidAvatarCache for a list of UIDs using one userProfiles fetch per unknown UID.
+        // Returns a Promise that resolves once all cache entries are filled.
+        async function _prefetchAvatars(uids) {
+            const missing = uids.filter(uid => _uidAvatarCache[uid] === undefined);
+            if (!missing.length) return;
+            // Use allUsersData if already populated (free)
+            if (allUsersData && allUsersData.length) {
+                const map = {};
+                allUsersData.forEach(u => { map[u.uid] = u.avatar || u.profilePicture || ''; });
+                missing.forEach(uid => { _uidAvatarCache[uid] = map[uid] !== undefined ? map[uid] : undefined; });
+            }
+            // Fetch remaining unknowns from userProfiles in parallel (one read each, lean node)
+            const stillMissing = missing.filter(uid => _uidAvatarCache[uid] === undefined);
+            if (stillMissing.length) {
+                await Promise.all(stillMissing.map(uid =>
+                    db.ref(`userProfiles/${uid}/avatar`).once('value')
+                        .then(s => { _uidAvatarCache[uid] = s.val() || ''; })
+                        .catch(() => { _uidAvatarCache[uid] = ''; })
+                ));
+            }
         }
 
         function loadBoardPanel() {
@@ -3770,7 +3788,7 @@
 
             // COST OPTIMISATION: .once() for initial batch (no re-download on every like/reaction).
             // A separate child_added listener then picks up genuinely new posts.
-            db.ref('messages').limitToLast(50).once('value').then(snap => {
+            db.ref('messages').limitToLast(50).once('value').then(async snap => {
                 boardPosts = [];
                 snap.forEach(child => {
                     const v = child.val();
@@ -3782,9 +3800,9 @@
                     if (tb !== ta) return tb - ta;
                     return b.id > a.id ? 1 : -1;
                 });
-                // Prefetch avatars for posts currently visible (async, no spinner)
+                // Batch-prefetch avatars — one read per unique poster, all parallel, lean node
                 const uids = [...new Set(boardPosts.map(p => p.uid).filter(Boolean))];
-                uids.forEach(uid => _resolveAvatar(uid));
+                await _prefetchAvatars(uids);
 
                 renderBoardPosts();
                 checkBoardNotifications();
