@@ -776,30 +776,46 @@
     // listeners for clans only (the most frequently mutated collection).
     let _clansChangeRef = null;
     function attachDataListeners() {
-        // /users and /badges served from 5-min localStorage cache when available
-        const cachedUsers  = _clGet('_kcUsersCache_v3');
+        // Fetch users from lean /userProfiles/ (no posts) if migrated, else fall back to /users/
+        async function _fetchUsersForDisplay() {
+            const cachedLean = _clGet('_kcUserProfilesCache_v1');
+            if (cachedLean) return cachedLean;
+            const cachedFull = _clGet('_kcUsersCache_v3');
+            if (localStorage.getItem('_kcUpReady') === '1') {
+                const s = await db.ref('userProfiles').once('value');
+                const d = s.val() || {};
+                _clSet('_kcUserProfilesCache_v1', d);
+                return d;
+            }
+            const probe = await db.ref('userProfiles').limitToFirst(1).once('value');
+            if (probe.exists()) {
+                localStorage.setItem('_kcUpReady', '1');
+                const s = await db.ref('userProfiles').once('value');
+                const d = s.val() || {};
+                _clSet('_kcUserProfilesCache_v1', d);
+                return d;
+            }
+            if (cachedFull) return cachedFull;
+            const s = await db.ref('users').once('value');
+            const raw = s.val() || {};
+            // Strip posts even on fallback — clans.html never needs them
+            const lean = {};
+            Object.keys(raw).forEach(uid => { const { posts, ...rest } = raw[uid] || {}; lean[uid] = rest; });
+            _clSet('_kcUsersCache_v3', lean);
+            return lean;
+        }
+
         const cachedBadges = _clGet('_kcBadgesCache_v1');
-        const usersFetch   = cachedUsers  ? Promise.resolve(null) : db.ref('users').once('value');
         const badgesFetch  = cachedBadges ? Promise.resolve(null) : db.ref('badges').once('value');
         Promise.all([
             db.ref('clans').once('value'),
-            usersFetch,
+            _fetchUsersForDisplay(),
             badgesFetch,
             db.ref('admins').once('value'),
             db.ref('battles').once('value'),
-        ]).then(([clansSnap, usersSnap, badgesSnap, adminsSnap, battlesSnap]) => {
+        ]).then(([clansSnap, usersData, badgesSnap, adminsSnap, battlesSnap]) => {
             allClansData   = clansSnap.val()   || {};
-            if (usersSnap) {
-                const rawUsers = usersSnap.val() || {};
-                // Strip posts from each user — posts nested under /users/{uid}/posts can be 100s of KB
-                // per user and are never needed by clans.html. Reduces localStorage + memory footprint.
-                allUsersData = {};
-                Object.keys(rawUsers).forEach(uid => {
-                    const { posts, ...lean } = rawUsers[uid] || {};
-                    allUsersData[uid] = lean;
-                });
-                _clSet('_kcUsersCache_v3', allUsersData);
-            } else allUsersData = cachedUsers || {};
+            allUsersData   = usersData || {};
             if (badgesSnap) { allBadgesData = badgesSnap.val() || {}; _clSet('_kcBadgesCache_v1', allBadgesData); }
             else              allBadgesData = cachedBadges || {};
             allAdminsData  = adminsSnap.val()  || {};

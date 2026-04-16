@@ -2391,7 +2391,10 @@ registerBtn.onclick = ()=>{
   if(!name||!email||!pass) return kcAlert("Fill all fields.");
   auth.createUserWithEmailAndPassword(email,pass)
     .then(u=>u.user.updateProfile({displayName:name}).then(()=>u.user))
-    .then(u=>db.ref(`users/${u.uid}`).set({displayName:name,email,joined:firebase.database.ServerValue.TIMESTAMP}).then(()=>u))
+    .then(u=>db.ref(`users/${u.uid}`).set({displayName:name,email,joined:firebase.database.ServerValue.TIMESTAMP}).then(()=>{
+        db.ref(`userProfiles/${u.uid}`).set({displayName:name}).catch(()=>{});
+        return u;
+    }))
     .then(u=>u.sendEmailVerification(actionCodeSettings))
     .then(()=>kcAlert("Verification email sent!"))
     .catch(e=>kcAlert(e.message));
@@ -2631,6 +2634,7 @@ function handleStreak(uid){
     }
     db.ref(`users/${uid}/lastLoginDate`).set(today);
     db.ref(`users/${uid}/loginStreak`).set(loginStreak);
+    db.ref(`userProfiles/${uid}/loginStreak`).set(loginStreak).catch(()=>{});
   });
 }
 
@@ -2688,6 +2692,7 @@ saveUsernameBtn.onclick = function(){
   }
   db.ref(`users/${u.uid}`).update({username: val, displayName: val}).then(()=>{
     u.updateProfile({displayName: val}).catch(()=>{});
+    db.ref(`userProfiles/${u.uid}/displayName`).set(val).catch(()=>{});
     db.ref(`users/${u.uid}/profileCustomization/nameColor`).once('value').then(snap => {
         displayUsername(val, snap.val() || '#1992d4');
     });
@@ -2798,6 +2803,7 @@ function renderAvatars(selectedUrl) {
       if(user) {
         db.ref(`users/${user.uid}/avatar`).set(url)
           .then(()=>{
+            db.ref(`userProfiles/${user.uid}/avatar`).set(url).catch(()=>{});
             avatarImg.src = url;
             avatarImg.style.display = "block";
             kcAlert("Avatar updated!");
@@ -2872,6 +2878,7 @@ document.getElementById("uploadAvatarBtn").onclick = function(){
   reader.onload = function(e){
     const url = e.target.result;
     db.ref(`users/${auth.currentUser.uid}/avatar`).set(url).then(()=>{
+      db.ref(`userProfiles/${auth.currentUser.uid}/avatar`).set(url).catch(()=>{});
       avatarImg.src = url;
       avatarImg.style.display = "block";
       document.getElementById("avatarUploadMsg").textContent = "Avatar uploaded!";
@@ -3405,6 +3412,7 @@ document.addEventListener('DOMContentLoaded', function(){
       return;
     }
     db.ref('users/' + user.uid + '/aboutMe').set(val).then(()=>{
+      db.ref(`userProfiles/${user.uid}/aboutMe`).set(val).catch(()=>{});
       displayAboutMe(val);
       closeAboutMeModal();
       kcAlert('About me updated!');
@@ -3619,6 +3627,7 @@ saveCustomizationBtn.onclick = () => {
     };
 
     db.ref(`users/${user.uid}/profileCustomization`).update(updates).then(() => {
+        db.ref(`userProfiles/${user.uid}/profileCustomization`).update(updates).catch(()=>{});
         kcAlert('Profile customization saved!');
         profileCustomizationModal.classList.remove('open');
         // The onAuthStateChanged listener will re-apply the saved styles automatically on next load,
