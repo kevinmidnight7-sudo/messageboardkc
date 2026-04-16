@@ -508,8 +508,8 @@
         // Now reads only displayName + avatar — the only two fields shown in the friends list.
         Promise.all(toLoad.map(fuid =>
             Promise.all([
-                database.ref(`users/${fuid}/displayName`).once('value'),
-                database.ref(`users/${fuid}/avatar`).once('value'),
+                database.ref(`userProfiles/${fuid}/displayName`).once('value'),
+                database.ref(`userProfiles/${fuid}/avatar`).once('value'),
             ]).then(([dn, av]) => ({ uid: fuid, isMutual: mySet.has(fuid), displayName: dn.val() || '', avatar: av.val() || '' }))
         )).then(users => {
             const container = document.getElementById('kcFriendsList');

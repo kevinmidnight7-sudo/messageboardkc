@@ -2620,9 +2620,12 @@ function renderStreakModal(streak){
 
 function handleStreak(uid){
   const today=getToday();
-  db.ref(`users/${uid}`).once("value").then(snap=>{
-    let {lastLoginDate,loginStreak} = snap.val() || {};
-    loginStreak = loginStreak || 0;
+  Promise.all([
+    db.ref(`users/${uid}/lastLoginDate`).once("value"),
+    db.ref(`users/${uid}/loginStreak`).once("value")
+  ]).then(([ldSnap, lsSnap])=>{
+    let lastLoginDate = ldSnap.val();
+    let loginStreak = lsSnap.val() || 0;
     if(lastLoginDate===today) return;
     let yesterday = new Date();
     yesterday.setDate(yesterday.getDate()-1);
@@ -2711,9 +2714,9 @@ auth.onAuthStateChanged(u => {
     handleStreak(u.uid);
     badgesCard.style.display = "flex";
     
-    db.ref(`users/${u.uid}`).once('value').then(snap => {
+    db.ref(`userProfiles/${u.uid}`).once('value').then(snap => {
       const userData = snap.val() || {};
-      const nameToDisplay = userData.username || u.displayName || u.email;
+      const nameToDisplay = userData.username || userData.displayName || u.displayName || u.email;
       const custom = userData.profileCustomization || {};
       
       displayUsername(nameToDisplay, custom.nameColor);
@@ -2750,8 +2753,11 @@ auth.onAuthStateChanged(u => {
     loadBadges(u.uid, u.emailVerified);
 
     // ── Load profile stats (streak, battledome, points) ──
-    db.ref(`users/${u.uid}`).once('value').then(snap2 => {
-      const d = snap2.val() || {};
+    Promise.all([
+      db.ref(`userProfiles/${u.uid}`).once('value'),
+      db.ref(`users/${u.uid}/discordId`).once('value')
+    ]).then(([profileSnap, discordSnap]) => {
+      const d = profileSnap.val() || {};
       const streak = d.loginStreak || 0;
       const battle = d.bdHighscore || 0;
       const statS = document.getElementById('statStreak');
@@ -2760,7 +2766,7 @@ auth.onAuthStateChanged(u => {
       if (statB) statB.textContent = battle > 0 ? battle.toLocaleString() : '–';
       // Points: resolve discordId then read userEconomy
       const statP = document.getElementById('statPoints');
-      const discordId = d.discordId;
+      const discordId = discordSnap.val();
       if (discordId && statP) {
         db.ref(`userEconomy/${discordId}/points`).once('value').then(ps => {
           const pts = ps.val() || 0;

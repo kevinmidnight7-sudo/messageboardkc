@@ -1285,7 +1285,7 @@ button:disabled {
     const auth        = firebase.auth(),
           votesRef    = firebase.database().ref('votes'),
           configRef   = firebase.database().ref('config/liveLeaderboardEnabled'),
-          usersRef    = firebase.database().ref('users'),
+          usersRef    = firebase.database().ref('userProfiles'),
           badgesRef   = firebase.database().ref('badges');
 
     // DOM refs for voting form
@@ -1425,7 +1425,7 @@ button:disabled {
         });
 
         // Shared 5-min localStorage cache — benefits from cross-page pre-warming
-        const cachedUsers  = _vtGet('_kcUsersCache_v3');
+        const cachedUsers  = _vtGet('_kcUserProfilesCache_v1');
         const cachedBadges = _vtGet('_kcBadgesCache_v1');
         const needed = [];
         if (cachedUsers) {
@@ -1446,7 +1446,7 @@ button:disabled {
                     const nameKey = normalize(u.displayName || u.email || '');
                     if (nameKey) normalizedNameToOriginalNameMapCache[nameKey] = u.displayName || u.email || '';
                 }
-                _vtSet('_kcUsersCache_v3', allUsersCache);
+                _vtSet('_kcUserProfilesCache_v1', allUsersCache);
                 processLeaderboardData();
             }));
         }
@@ -1991,7 +1991,7 @@ button:disabled {
       } else {
         usersRef.once('value').then(snap => {
           allUsersCache = snap.val() || {};
-          _vtSet('_kcUsersCache_v3', allUsersCache);
+          _vtSet('_kcUserProfilesCache_v1', allUsersCache);
           renderForm(u, allUsersCache);
         });
       }
