@@ -120,7 +120,10 @@
         <button id="refreshUsersBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">↻ Refresh List</button>
         <button id="manageBadgesBtn" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-200">Manage Badges</button>
         <button id="viewBadgeLogsBtn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition duration-200">Recent Badge Changes</button>
+        <button id="runMigrationBtn" class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition duration-200" title="One-time: copy lean display fields to /userProfiles/ to eliminate post data from collection reads">⚡ Migrate to /userProfiles/</button>
       </div>
+      <!-- Migration status banner (hidden until clicked) -->
+      <div id="migrationStatus" class="hidden p-4 mx-4 mb-2 rounded-xl text-sm font-mono" style="background:rgba(234,88,12,0.15);border:1px solid rgba(234,88,12,0.4);color:#fdba74;"></div>
       <!-- User List Header -->
       <div class="hidden md:flex bg-gray-50 p-4 font-semibold text-gray-600 text-sm">
         <div class="w-2/5">User Email</div>
@@ -301,6 +304,7 @@
             adminDashboard.classList.remove('hidden');
             initUserListListener();
             document.getElementById('refreshUsersBtn').addEventListener('click', loadUserList);
+            document.getElementById('runMigrationBtn').addEventListener('click', runUserProfilesMigration);
             return;
           } else {
             loginError.textContent = "Access Denied. You are not an authorized admin.";
@@ -481,6 +485,7 @@
       if (!uid) return;
       db.ref('users/' + uid + '/emailVerified').set(status)
         .then(() => {
+          db.ref('userProfiles/' + uid + '/emailVerified').set(status).catch(()=>{});
           console.log('User ' + uid + ' status set to ' + status);
         })
         .catch(err => {
@@ -735,6 +740,73 @@
         badgeLogsModal.classList.add('hidden');
       }
     });
+
+    // ── /userProfiles/ one-time migration ─────────────────────────────────────
+    // Reads /users/ in chunks of 25 (to avoid one massive download), strips
+    // posts + private fields, writes lean display profiles to /userProfiles/.
+    // After this runs once, all pages can read /userProfiles/ instead of /users/,
+    // reducing collection download size by ~100x (no nested posts).
+    async function runUserProfilesMigration() {
+      const btn = document.getElementById('runMigrationBtn');
+      const status = document.getElementById('migrationStatus');
+      btn.disabled = true;
+      status.classList.remove('hidden');
+
+      const LEAN_FIELDS = ['displayName','avatar','aboutMe','about','emailVerified',
+        'loginStreak','profileCustomization','clanId','isStaff','online','kcnowOnline',
+        'overall','offence','defence','bdHighscore','customBadge','customBadges'];
+
+      let lastKey = null;
+      let total = 0;
+      let errors = 0;
+      const PAGE = 25;
+
+      try {
+        while (true) {
+          status.textContent = `Migrating… ${total} users done so far`;
+          let query = db.ref('users').orderByKey().limitToFirst(PAGE);
+          if (lastKey) query = query.startAfter(lastKey);
+
+          const snap = await query.once('value');
+          const page = snap.val();
+          if (!page) break;
+
+          const keys = Object.keys(page);
+          if (keys.length === 0) break;
+
+          const updates = {};
+          keys.forEach(uid => {
+            const u = page[uid] || {};
+            const lean = {};
+            LEAN_FIELDS.forEach(f => { if (u[f] !== undefined && u[f] !== null) lean[f] = u[f]; });
+            if (Object.keys(lean).length > 0) updates[`userProfiles/${uid}`] = lean;
+          });
+
+          if (Object.keys(updates).length > 0) {
+            await db.ref().update(updates);
+          }
+
+          total += keys.length;
+          lastKey = keys[keys.length - 1];
+          if (keys.length < PAGE) break; // last page
+          await new Promise(r => setTimeout(r, 200)); // gentle throttle
+        }
+
+        // Signal all browsers to start using /userProfiles/ on next cold cache
+        localStorage.setItem('_kcUpReady', '1');
+        status.style.borderColor = 'rgba(34,197,94,0.5)';
+        status.style.background = 'rgba(34,197,94,0.1)';
+        status.style.color = '#86efac';
+        status.textContent = `✓ Migration complete — ${total} user profiles written to /userProfiles/. Pages will now use the lean node (no posts) on next cache refresh.`;
+        btn.textContent = '✓ Migrated';
+      } catch(e) {
+        status.style.borderColor = 'rgba(239,68,68,0.5)';
+        status.style.background = 'rgba(239,68,68,0.1)';
+        status.style.color = '#fca5a5';
+        status.textContent = `Error after ${total} users: ${e.message}`;
+        btn.disabled = false;
+      }
+    }
   </script>
 </body>
 </html>

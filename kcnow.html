@@ -2816,31 +2816,64 @@
             };
         }
 
-        const _USERS_CACHE_KEY = '_kcUsersCache_v3';
-        const _USERS_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — users collection is large, keep cache longer
+        const _USERS_CACHE_KEY    = '_kcUsersCache_v3';        // legacy — full users w/ posts
+        const _PROFILES_CACHE_KEY = '_kcUserProfilesCache_v1'; // lean — no posts (post-migration)
+        const _USERS_CACHE_TTL    = 30 * 60 * 1000;
 
+        // Self-healing users fetch:
+        //   1. Return lean /userProfiles/ cache if fresh (set after migration runs)
+        //   2. Return legacy /users/ cache if fresh (pre-migration fallback)
+        //   3. Probe /userProfiles/ — if it has data, use lean node + set _kcUpReady flag;
+        //      else fall back to full /users/ (with posts, expensive but necessary until migration)
+        // After admin runs "Migrate to /userProfiles/" in verifier.html once, this permanently
+        // switches to the lean node and costs drop by ~100x on collection reads.
         function _getUsersOnce() {
             if (_usersSnapPromise) return _usersSnapPromise;
-            // --- localStorage cross-session cache ---
-            // Each page load that hits Firebase costs ~4 MB; a 5-min cache drops
-            // that to at most 1 download per user per 5 min instead of per page load.
-            try {
-                const raw = localStorage.getItem(_USERS_CACHE_KEY);
-                if (raw) {
-                    const cached = JSON.parse(raw);
-                    if (cached && (Date.now() - cached.ts) < _USERS_CACHE_TTL) {
-                        _usersSnapPromise = Promise.resolve(_makeFakeSnap(cached.d));
-                        return _usersSnapPromise;
-                    }
+            const TTL = _USERS_CACHE_TTL;
+            const _lsGet = (k) => { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && (Date.now()-r.ts)<TTL ? r.d : null; } catch(e) { return null; } };
+            const _lsSet = (k, d) => { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} };
+
+            // 1. Lean profiles cache (populated after migration)
+            const cachedProfiles = _lsGet(_PROFILES_CACHE_KEY);
+            if (cachedProfiles) {
+                _usersSnapPromise = Promise.resolve(_makeFakeSnap(cachedProfiles));
+                return _usersSnapPromise;
+            }
+            // 2. Legacy full-users cache (pre-migration or browser that hasn't seen migration yet)
+            const cachedUsers = _lsGet(_USERS_CACHE_KEY);
+
+            // 3. Known-ready flag set by verifier.html migration button or previous probe
+            const upReady = localStorage.getItem('_kcUpReady') === '1';
+
+            if (upReady) {
+                _usersSnapPromise = db.ref('userProfiles').once('value').then(snap => {
+                    _lsSet(_PROFILES_CACHE_KEY, snap.val()); return snap;
+                });
+                return _usersSnapPromise;
+            }
+
+            if (cachedUsers) {
+                // Not yet migrated — serve stale users cache while probing in background
+                _usersSnapPromise = Promise.resolve(_makeFakeSnap(cachedUsers));
+                // Background probe: switch to lean node next cold load if migration has run
+                db.ref('userProfiles').limitToFirst(1).once('value').then(p => {
+                    if (p.exists()) localStorage.setItem('_kcUpReady', '1');
+                }).catch(() => {});
+                return _usersSnapPromise;
+            }
+
+            // Cold load — probe /userProfiles/ first (limitToFirst(1) ≈ free)
+            _usersSnapPromise = db.ref('userProfiles').limitToFirst(1).once('value').then(probe => {
+                if (probe.exists()) {
+                    localStorage.setItem('_kcUpReady', '1');
+                    return db.ref('userProfiles').once('value').then(snap => {
+                        _lsSet(_PROFILES_CACHE_KEY, snap.val()); return snap;
+                    });
                 }
-            } catch(e) { /* localStorage unavailable / corrupt — fall through to Firebase */ }
-            // --- Live Firebase read, then cache result ---
-            _usersSnapPromise = db.ref('users').once('value').then(function(snap) {
-                try {
-                    const d = snap.val();
-                    if (d) localStorage.setItem(_USERS_CACHE_KEY, JSON.stringify({ d, ts: Date.now() }));
-                } catch(e) { /* quota exceeded or private browsing — ignore, still works */ }
-                return snap;
+                // Not migrated yet — full /users/ download (expensive, one-off until migration runs)
+                return db.ref('users').once('value').then(snap => {
+                    _lsSet(_USERS_CACHE_KEY, snap.val()); return snap;
+                });
             });
             return _usersSnapPromise;
         }
@@ -6436,6 +6469,7 @@
             if(c.isOpen) {
                 db.ref(`clans/${id}/members/${currentUser.uid}`).set(true).then(() => {
                     db.ref(`users/${currentUser.uid}/clanId`).set(id);
+                    db.ref(`userProfiles/${currentUser.uid}/clanId`).set(id).catch(()=>{});
                     showToast(`Joined ${c.name}!`, 'success');
                     loadAllClans(true);
                 }).catch(() => showToast('Join failed — try again', 'error'));
@@ -7989,7 +8023,7 @@
         function clanJoin(clanId){
             if(!currentUser) return openAuthModal();
             db.ref(`clans/${clanId}/members/${currentUser.uid}`).set(true)
-                .then(()=>{db.ref(`users/${currentUser.uid}/clanId`).set(clanId);showToast('Joined clan!','success');openClanDetails(clanId);})
+                .then(()=>{db.ref(`users/${currentUser.uid}/clanId`).set(clanId);db.ref(`userProfiles/${currentUser.uid}/clanId`).set(clanId).catch(()=>{});showToast('Joined clan!','success');openClanDetails(clanId);})
                 .catch(()=>showToast('Failed to join clan','error'));
         }
 
@@ -8361,7 +8395,10 @@
                 }
                 await db.ref(`userEconomy/${discordId}`).update(updates);
                 // Write-back loginStreak to users node so other pages (carousel, profiles) stay in sync
-                if (currentUser) db.ref(`users/${currentUser.uid}/loginStreak`).set(newStreak).catch(() => {});
+                if (currentUser) {
+                    db.ref(`users/${currentUser.uid}/loginStreak`).set(newStreak).catch(() => {});
+                    db.ref(`userProfiles/${currentUser.uid}/loginStreak`).set(newStreak).catch(() => {});
+                }
                 // Update modal to success state
                 const modal = document.getElementById('global-modal');
                 if (modal) {
@@ -9090,11 +9127,9 @@
             const btn = document.getElementById('cust-save-btn');
             if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
             try {
-                await db.ref(`users/${currentUser.uid}/profileCustomization`).update({
-                    nameColor: _custState.nameColor,
-                    gradient:  _custState.gradient,
-                    banner:    _custState.banner || null
-                });
+                const custUpdates = { nameColor: _custState.nameColor, gradient: _custState.gradient, banner: _custState.banner || null };
+                await db.ref(`users/${currentUser.uid}/profileCustomization`).update(custUpdates);
+                db.ref(`userProfiles/${currentUser.uid}/profileCustomization`).update(custUpdates).catch(()=>{});
                 showToast('Profile customization saved!', 'success');
                 // Refresh welcome card name color live
                 const nameEl = document.getElementById('user-display-name');

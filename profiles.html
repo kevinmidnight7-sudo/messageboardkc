@@ -702,6 +702,7 @@
             try {
                 await user.reload(); // Pull fresh verification from server
                 await db.ref(`users/${user.uid}/emailVerified`).set(!!user.emailVerified);
+                db.ref(`userProfiles/${user.uid}/emailVerified`).set(!!user.emailVerified).catch(()=>{});
                 currentUserUid = user.uid;
                 window.currentUser = user; // expose for profile-popup.js friend bar
             } catch (e) {
