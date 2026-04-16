@@ -895,9 +895,9 @@
                     usersQuery = userRef.orderByChild('emailVerified').equalTo(true).limitToLast(16);
                     break;
                 case 'skilled':
-                     // COST FIX: cap at 100 — downloading ALL users is too expensive.
-                     // Skilled users are those with highest battle wins; top 100 is representative.
-                     usersQuery = userRef.limitToLast(100);
+                     // COST FIX: limited to 16 — same as other categories; each user object
+                     // includes nested posts so large limits are very expensive.
+                     usersQuery = userRef.orderByChild('score').limitToLast(16);
                     break;
                 case 'diamond':
                     usersQuery = userRef.orderByChild('codesUnlocked/diamond').equalTo(true).limitToLast(16);
@@ -1462,9 +1462,32 @@
             
             userPopup.style.display = 'flex';
 
-            // Fetch user root
-            db.ref(`users/${uid}`).once('value').then(snap => {
-                const userData = snap.val() || {};
+            // COST FIX: was db.ref('users/${uid}').once('value') — downloaded ALL nested posts
+            // Now reads only the 10 display fields needed; posts are loaded separately by loadPosts()
+            Promise.all([
+                db.ref(`users/${uid}/displayName`).once('value'),
+                db.ref(`users/${uid}/avatar`).once('value'),
+                db.ref(`users/${uid}/about`).once('value'),
+                db.ref(`users/${uid}/aboutMe`).once('value'),
+                db.ref(`users/${uid}/loginStreak`).once('value'),
+                db.ref(`users/${uid}/profileCustomization`).once('value'),
+                db.ref(`users/${uid}/profileCustomizationUnlocked`).once('value'),
+                db.ref(`users/${uid}/emailVerified`).once('value'),
+                db.ref(`users/${uid}/badges`).once('value'),
+                db.ref(`users/${uid}/codesUnlocked`).once('value'),
+            ]).then(([dnS, avS, abS, amS, lsS, pcS, pcuS, evS, bdS, cuS]) => {
+                const userData = {
+                    displayName: dnS.val() || '',
+                    avatar: avS.val() || '',
+                    about: abS.val() || null,
+                    aboutMe: amS.val() || null,
+                    loginStreak: lsS.val() || 0,
+                    profileCustomization: pcS.val() || {},
+                    profileCustomizationUnlocked: pcuS.val() || false,
+                    emailVerified: evS.val() || false,
+                    badges: bdS.val() || {},
+                    codesUnlocked: cuS.val() || {},
+                };
 
                 // === LAYOUT LOGIC ===
                const isEligible = !!(

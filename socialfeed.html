@@ -540,7 +540,7 @@
         const auth = firebase.auth();
 
         // --- 5-min localStorage cache (shared key with kcnow.html)
-        const _SF_TTL = 15 * 60 * 1000;
+        const _SF_TTL = 30 * 60 * 1000;
         function _sfGet(k) { try { const r = JSON.parse(localStorage.getItem(k)||'null'); return r && Date.now()-r.ts < _SF_TTL ? r.d : null; } catch(e) { return null; } }
         function _sfSet(k, d) { try { localStorage.setItem(k, JSON.stringify({d, ts:Date.now()})); } catch(e) {} }
 
