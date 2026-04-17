@@ -3026,32 +3026,29 @@
                 }
 
                 try { await user.reload(); } catch (e) {}
-                // COST FIX: fetch only the sub-paths currentUserData and renderUserHeader need.
-                // Reading the full users/${uid} node includes all nested posts — potentially
-                // hundreds of KB for active users — none of which the header/permissions use.
+                // COST FIX: single userProfiles read for all LEAN fields; only keep targeted
+                // reads for fields not copied to userProfiles (subscription, membership, badges, roles,
+                // profileCustomizationUnlocked).
                 Promise.all([
-                    db.ref(`users/${user.uid}/displayName`).once('value'),
-                    db.ref(`users/${user.uid}/avatar`).once('value'),
-                    db.ref(`users/${user.uid}/isStaff`).once('value'),
-                    db.ref(`users/${user.uid}/codesUnlocked`).once('value'),
+                    db.ref(`userProfiles/${user.uid}`).once('value'),
                     db.ref(`users/${user.uid}/profileCustomizationUnlocked`).once('value'),
-                    db.ref(`users/${user.uid}/profileCustomization`).once('value'),
                     db.ref(`users/${user.uid}/subscription`).once('value'),
                     db.ref(`users/${user.uid}/membership`).once('value'),
                     db.ref(`users/${user.uid}/badges`).once('value'),
                     db.ref(`users/${user.uid}/roles`).once('value'),
-                ]).then(([dnS, avS, staffS, cuS, pcuS, pcS, subS, memS, badgesS, rolesS]) => {
+                ]).then(([profileSnap, pcuS, subS, memS, badgesS, rolesS]) => {
+                    const p = profileSnap.val() || {};
                     const data = {
-                        displayName:               dnS.val()    || '',
-                        avatar:                    avS.val()    || '',
-                        isStaff:                   staffS.val() || false,
-                        codesUnlocked:             cuS.val()    || {},
-                        profileCustomizationUnlocked: pcuS.val() || false,
-                        profileCustomization:      pcS.val()    || null,
-                        subscription:              subS.val()   || {},
-                        membership:                memS.val()   || {},
-                        badges:                    badgesS.val() || {},
-                        roles:                     rolesS.val() || {},
+                        displayName:               p.displayName    || '',
+                        avatar:                    p.avatar         || '',
+                        isStaff:                   p.isStaff        || false,
+                        codesUnlocked:             p.codesUnlocked  || {},
+                        profileCustomizationUnlocked: pcuS.val()    || false,
+                        profileCustomization:      p.profileCustomization || null,
+                        subscription:              subS.val()        || {},
+                        membership:                memS.val()        || {},
+                        badges:                    badgesS.val()     || {},
+                        roles:                     rolesS.val()      || {},
                     };
                     currentUserData = data;
                     renderUserHeader(data, user);
@@ -3438,7 +3435,7 @@
                     });
 
                     // BD high score stat pill
-                    db.ref(`users/${user.uid}/bdHighscore`).once('value').then(bdSnap => {
+                    db.ref(`userProfiles/${user.uid}/bdHighscore`).once('value').then(bdSnap => {
                         const bdScore = bdSnap.val() || 0;
                         if (bdScore > 0) {
                             const pills = document.getElementById('wc-stat-pills');
@@ -3602,8 +3599,11 @@
             const presRef = db.ref(`users/${currentUser.uid}/kcnowOnline`);
             presRef.set(true);
             presRef.onDisconnect().remove();
-            // Also update on window unload as a fallback
-            window.addEventListener('beforeunload', () => presRef.remove(), { once: true });
+            // Mirror to userProfiles so other pages reading from there see live presence
+            const presRefUp = db.ref(`userProfiles/${currentUser.uid}/kcnowOnline`);
+            presRefUp.set(true);
+            presRefUp.onDisconnect().remove();
+            window.addEventListener('beforeunload', () => { presRef.remove(); presRefUp.remove(); }, { once: true });
         }
 
         // ===== FRIENDS SIDEBAR PANEL =====
@@ -3689,8 +3689,8 @@
                     const cached = allUsersData.find(u => u.uid === uid);
                     if (cached) return { uid, displayName: cached.displayName, avatar: cached.avatar };
                     const [dnSnap, avSnap] = await Promise.all([
-                        db.ref(`users/${uid}/displayName`).once('value'),
-                        db.ref(`users/${uid}/avatar`).once('value'),
+                        db.ref(`userProfiles/${uid}/displayName`).once('value'),
+                        db.ref(`userProfiles/${uid}/avatar`).once('value'),
                     ]);
                     return { uid, displayName: dnSnap.val() || 'Unknown', avatar: avSnap.val() || '' };
                 })).then(users => {
@@ -4229,7 +4229,7 @@
             const _activityNameCache = {};
             function _getDisplayName(uid) {
                 if (_activityNameCache[uid]) return Promise.resolve(_activityNameCache[uid]);
-                return db.ref(`users/${uid}/displayName`).once('value').then(s => {
+                return db.ref(`userProfiles/${uid}/displayName`).once('value').then(s => {
                     _activityNameCache[uid] = s.val() || 'Unknown';
                     return _activityNameCache[uid];
                 });
@@ -4765,10 +4765,10 @@
             // COST FIX: fetch only the fields renderFriendsPanel/rpRenderFriendsList need.
             // Downloading users/${uid} includes all nested posts — expensive per friend.
             return Promise.all([
-                db.ref(`users/${uid}/displayName`).once('value'),
-                db.ref(`users/${uid}/avatar`).once('value'),
-                db.ref(`users/${uid}/online`).once('value'),
-                db.ref(`users/${uid}/kcnowOnline`).once('value'),
+                db.ref(`userProfiles/${uid}/displayName`).once('value'),
+                db.ref(`userProfiles/${uid}/avatar`).once('value'),
+                db.ref(`userProfiles/${uid}/online`).once('value'),
+                db.ref(`userProfiles/${uid}/kcnowOnline`).once('value'),
             ]).then(([dnS, avS, onS, konS]) => {
                 const data = {
                     uid,
@@ -6501,6 +6501,7 @@
             const c = allClansData[id];
             db.ref(`clans/${id}/members/${currentUser.uid}`).remove().then(() => {
                 db.ref(`users/${currentUser.uid}/clanId`).remove();
+                db.ref(`userProfiles/${currentUser.uid}/clanId`).remove().catch(() => {});
                 showToast(`Left ${c ? c.name : 'clan'}`, 'info');
                 loadAllClans(true);
             }).catch(() => showToast('Failed to leave — try again', 'error'));
@@ -6755,7 +6756,7 @@
                         let name = p.name || null;
                         if (!name && kcUid) {
                             const cached = allUsersData.find(u => u.uid === kcUid);
-                            name = cached?.displayName || (await db.ref(`users/${kcUid}/displayName`).once('value').catch(() => null))?.val();
+                            name = cached?.displayName || (await db.ref(`userProfiles/${kcUid}/displayName`).once('value').catch(() => null))?.val();
                         }
                         return { name: name || `User#${p.discordId.slice(-4)}`, points: p.points, uid: kcUid };
                     }));
@@ -7276,7 +7277,7 @@
             try {
                 const [status, userBdScore, userBdName] = await Promise.all([
                     db.ref('battledome/status').once('value').then(s => s.val() || {}).catch(() => ({})),
-                    db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
+                    db.ref(`userProfiles/${currentUser.uid}/bdHighscore`).once('value').then(s => s.val() || 0).catch(() => 0),
                     (async () => {
                         const direct = await db.ref(`users/${currentUser.uid}/bdUsername`).once('value').catch(() => null);
                         const dv = direct && direct.val();
@@ -7999,8 +8000,8 @@
                     const cached = allUsersData.find(u => u.uid === uid);
                     if (cached) return { uid, displayName: cached.displayName, photoURL: cached.avatar || cached.photoURL, overall: cached.overall };
                     const [dnSnap, avSnap] = await Promise.all([
-                        db.ref(`users/${uid}/displayName`).once('value'),
-                        db.ref(`users/${uid}/avatar`).once('value'),
+                        db.ref(`userProfiles/${uid}/displayName`).once('value'),
+                        db.ref(`userProfiles/${uid}/avatar`).once('value'),
                     ]);
                     return { uid, displayName: dnSnap.val() || 'Unknown', photoURL: avSnap.val() || '' };
                 }));
@@ -8092,7 +8093,7 @@
                 const economyPromise = discordId
                     ? db.ref(`userEconomy/${discordId}`).once('value').then(s => s.val() || {}).catch(() => ({}))
                     : Promise.resolve({});
-                const badgePromise = db.ref(`users/${currentUser.uid}/customBadge`).once('value').catch(() => ({ exists: () => false }));
+                const badgePromise = db.ref(`userProfiles/${currentUser.uid}/customBadge`).once('value').catch(() => ({ exists: () => false }));
                 return Promise.all([economyPromise, badgePromise]);
             }).then(([economy, customBadgeSnap]) => {
                     const points = economy.points || 0;
@@ -8674,13 +8675,15 @@
             // users/${uid} read that would include all nested posts.
             const _base = currentUserData || {};
             Promise.all([
-                db.ref(`users/${currentUser.uid}/about`).once('value').catch(() => ({ val: () => null })),
-                db.ref(`users/${currentUser.uid}/customBadge`).once('value').catch(() => ({ val: () => null })),
-                db.ref(`users/${currentUser.uid}/customBadges`).once('value').catch(() => ({ val: () => ({}) })),
-                db.ref(`users/${currentUser.uid}/bdHighscore`).once('value').catch(() => ({ val: () => 0 })),
+                db.ref(`userProfiles/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 db.ref(`badges/${currentUser.uid}`).once('value').catch(() => ({ val: () => ({}) })),
                 getDiscordIdFromKcUid(currentUser.uid)
-            ]).then(([aboutS, cbS, cbsS, bdS, badgesSnap, discordId]) => {
+            ]).then(([profileSnap, badgesSnap, discordId]) => {
+                const _p = profileSnap.val() || {};
+                const aboutS   = { val: () => _p.about       ?? null };
+                const cbS      = { val: () => _p.customBadge ?? null };
+                const cbsS     = { val: () => _p.customBadges ?? {} };
+                const bdS      = { val: () => _p.bdHighscore  ?? 0  };
                 const u = {
                     ..._base,
                     about:        aboutS.val(),
@@ -8838,18 +8841,17 @@
             if (!M) return;
             const uid = currentUser.uid;
             try {
-                // COST FIX: fetch only the sub-paths openBadgeManager needs.
-                const [badgesSnap, cbsSnap, streakSnap, codesSnap] = await Promise.all([
+                // COST FIX: single userProfiles read covers customBadges, loginStreak, codesUnlocked.
+                const [badgesSnap, profileSnap] = await Promise.all([
                     db.ref(`badges/${uid}`).once('value'),
-                    db.ref(`users/${uid}/customBadges`).once('value'),
-                    db.ref(`users/${uid}/loginStreak`).once('value'),
-                    db.ref(`users/${uid}/codesUnlocked`).once('value'),
+                    db.ref(`userProfiles/${uid}`).once('value'),
                 ]);
                 const bCounts = badgesSnap.val() || {};
                 const u = {};
-                const customData = cbsSnap.val() || {};
-                const streak = streakSnap.val() || 0;
-                const codes = codesSnap.val() || {};
+                const _bp = profileSnap.val() || {};
+                const customData = _bp.customBadges || {};
+                const streak = _bp.loginStreak || 0;
+                const codes = _bp.codesUnlocked || {};
                 const bonus = (codes.diamond ? 2 : 0) + (codes.emerald ? 1 : 0);
                 const baseMax = streak >= 100 ? 2 : streak >= 50 ? 1 : 0;
                 const maxCustom = baseMax + bonus;
@@ -8941,6 +8943,7 @@
             if (!_bdgMgrCache) return;
             kcConfirm('Delete this badge?', async () => {
                 await db.ref(`users/${_bdgMgrCache.uid}/customBadges/${key}`).remove();
+                db.ref(`userProfiles/${_bdgMgrCache.uid}/customBadges/${key}`).remove().catch(() => {});
                 showToast('Badge deleted', 'info');
                 delete _bdgMgrCache.customData[key];
                 _bdgMgrCache.canCreate = _bdgMgrCache.allowCreate && Object.keys(_bdgMgrCache.customData).length < _bdgMgrCache.maxCustom;
@@ -9038,11 +9041,13 @@
                 const uid = _bdgMgrCache.uid;
                 if (_bdgEditingKey) {
                     await db.ref(`users/${uid}/customBadges/${_bdgEditingKey}`).set(badgeData);
+                    db.ref(`userProfiles/${uid}/customBadges/${_bdgEditingKey}`).set(badgeData).catch(() => {});
                     _bdgMgrCache.customData[_bdgEditingKey] = badgeData;
                     showToast('Badge updated!', 'success');
                 } else {
                     const newRef = db.ref(`users/${uid}/customBadges`).push();
                     await newRef.set(badgeData);
+                    db.ref(`userProfiles/${uid}/customBadges/${newRef.key}`).set(badgeData).catch(() => {});
                     _bdgMgrCache.customData[newRef.key] = badgeData;
                     showToast('Badge created!', 'success');
                 }
@@ -9164,20 +9169,19 @@
 
         function previewCustomization() {
             if (!currentUser) return;
-            // COST FIX: was full user node — only needs 5 customization + display fields
+            // COST FIX: single userProfiles read for all LEAN fields; only keep targeted
+            // read for profileCustomizationUnlocked which is not in userProfiles.
             Promise.all([
-                db.ref(`users/${currentUser.uid}/profileCustomization`).once('value'),
+                db.ref(`userProfiles/${currentUser.uid}`).once('value'),
                 db.ref(`users/${currentUser.uid}/profileCustomizationUnlocked`).once('value'),
-                db.ref(`users/${currentUser.uid}/avatar`).once('value'),
-                db.ref(`users/${currentUser.uid}/displayName`).once('value'),
-                db.ref(`users/${currentUser.uid}/about`).once('value'),
-            ]).then(([pcS, pcuS, avS, dnS, abS]) => {
+            ]).then(([profileSnap, pcuS]) => {
+                const _pp = profileSnap.val() || {};
                 const u = {
-                    profileCustomization: pcS.val() || {},
+                    profileCustomization: _pp.profileCustomization || {},
                     profileCustomizationUnlocked: pcuS.val() || false,
-                    avatar: avS.val() || '',
-                    displayName: dnS.val() || '',
-                    about: abS.val() || '',
+                    avatar: _pp.avatar || '',
+                    displayName: _pp.displayName || '',
+                    about: _pp.about || '',
                 };
                 // Seed state from existing customization
                 _custState.nameColor = u.profileCustomization?.nameColor || '#1992d4';
@@ -9243,20 +9247,13 @@
             if (!currentUser) return openAuthModal();
             const modal = openModalWithLoading('Your Analytics', 'Crunching your stats...');
             if (!modal) return;
-            // COST FIX: was full user node — only needs 4 stat fields (overall, offence, defence, bdHighscore)
+            // COST FIX: single userProfiles read covers overall, offence, defence, bdHighscore.
             const uid = currentUser.uid;
             Promise.all([
-                Promise.all([
-                    db.ref(`users/${uid}/overall`).once('value'),
-                    db.ref(`users/${uid}/offence`).once('value'),
-                    db.ref(`users/${uid}/defence`).once('value'),
-                    db.ref(`users/${uid}/bdHighscore`).once('value'),
-                ]).then(([ovS, ofS, dfS, bdS]) => ({
-                    overall: ovS.val() || 0,
-                    offence: ofS.val() || 0,
-                    defence: dfS.val() || 0,
-                    bdHighscore: bdS.val() || 0,
-                })).catch(() => ({ overall: 0, offence: 0, defence: 0, bdHighscore: 0 })),
+                db.ref(`userProfiles/${uid}`).once('value').then(s => {
+                    const p = s.val() || {};
+                    return { overall: p.overall || 0, offence: p.offence || 0, defence: p.defence || 0, bdHighscore: p.bdHighscore || 0 };
+                }).catch(() => ({ overall: 0, offence: 0, defence: 0, bdHighscore: 0 })),
                 getDiscordIdFromKcUid(currentUser.uid)
             ]).then(([u, discordId]) => {
                 const economyPromise = discordId
@@ -9479,8 +9476,8 @@
                 // COST FIX: only fetch displayName + avatar per user, not full node (which includes posts)
                 Promise.all(uids.map(uid =>
                     Promise.all([
-                        db.ref(`users/${uid}/displayName`).once('value'),
-                        db.ref(`users/${uid}/avatar`).once('value'),
+                        db.ref(`userProfiles/${uid}/displayName`).once('value'),
+                        db.ref(`userProfiles/${uid}/avatar`).once('value'),
                     ]).then(([dnS, avS]) => ({ uid, displayName: dnS.val() || '', avatar: avS.val() || '' }))
                 )).then(users => {
                     list.innerHTML = users.map(u => `
