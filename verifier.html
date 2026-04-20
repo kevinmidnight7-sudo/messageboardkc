@@ -526,21 +526,21 @@
         }
       }
 
-      // Priority 3: fresh Firebase fetch (one-time per cold session).
+      // Priority 3: fresh Firebase fetch — use userProfiles (lean, no posts).
       badgeUserSelect.innerHTML = '<option disabled value="">Loading users…</option>';
       try {
-        const snap = await db.ref('users').once('value');
+        const snap = await db.ref('userProfiles').once('value');
         snap.forEach(c => {
           const v = c.val() || {};
-          if (v.displayName || v.email) {
-            badgeUsers.push({ uid: c.key, displayName: v.displayName || '', email: v.email || '' });
+          if (v.displayName) {
+            badgeUsers.push({ uid: c.key, displayName: v.displayName || '', email: '' });
           }
         });
         _cachedAllBadgeUsers = badgeUsers;
         // Save as UID-keyed object so verifier can reuse it next open.
         try {
           const raw = snap.val();
-          if (raw && typeof raw === 'object') _vrSet('_kcUsersCache_v3', raw);
+          if (raw && typeof raw === 'object') _vrSet('_kcUserProfilesCache_v1', raw);
         } catch(e) {}
         _badgeUsersLoaded = true;
       } catch(e) {
