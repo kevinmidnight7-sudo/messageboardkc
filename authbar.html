@@ -454,15 +454,19 @@
 
     auth.onAuthStateChanged(user => {
         if (user) {
-            db.ref(`users/${user.uid}`).once('value').then(async snap => {
-                const u = snap.val() || {};
-                const name = u.displayName || user.displayName || user.email || 'KC Member';
+            Promise.all([
+                db.ref(`userProfiles/${user.uid}`).once('value'),
+                db.ref(`badges/${user.uid}`).once('value'),
+            ]).then(async ([profileSnap, badgesSnap]) => {
+                const u      = profileSnap.val() || {};
+                const badges = badgesSnap.val()  || {};
+                const name   = u.displayName || user.displayName || user.email || 'KC Member';
                 const avatar = u.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-                const hasCust = !!u.profileCustomizationUnlocked;
-                const gradient = hasCust && u.profileCustomization?.gradient || null;
-                const nameColor = hasCust && u.profileCustomization?.nameColor || null;
+                const custom  = u.profileCustomization || {};
+                const gradient  = custom.gradient  || null;
+                const nameColor = custom.nameColor  || null;
                 const isVerified = !!user.emailVerified;
-                const isDiamond = !!(u.codesUnlocked?.diamond);
+                const isDiamond  = !!(u.codesUnlocked?.diamond);
 
                 // Set accent color
                 const accent = nameColor || extractAccentFromGradient(gradient) || '#fbbf24';
@@ -491,9 +495,9 @@
                 let badgesHtml = '';
                 if (isVerified) badgesHtml += `<i class="fa-solid fa-circle-check kc-badge-icon verified" title="Verified"></i>`;
                 if (isDiamond)  badgesHtml += `<i class="fa-solid fa-gem kc-badge-icon diamond" title="Diamond Member"></i>`;
-                if ((u.badges?.offence||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" class="kc-badge-img" title="Best Offence">`;
-                if ((u.badges?.defence||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" class="kc-badge-img" title="Best Defence">`;
-                if ((u.badges?.overall||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-badge-img" title="Overall Winner">`;
+                if ((badges.offence||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/red.png" class="kc-badge-img" title="Best Offence">`;
+                if ((badges.defence||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/blue.png" class="kc-badge-img" title="Best Defence">`;
+                if ((badges.overall||0) > 0) badgesHtml += `<img src="https://kevinmidnight7-sudo.github.io/messageboardkc/kcevents.png" class="kc-badge-img" title="Overall Winner">`;
 
                 profileArea.innerHTML = `
                     <div class="kc-profile-pill">

@@ -2408,7 +2408,7 @@ submitCodeBtn.onclick = async () => {
     }
     const uid = user.uid;
     // Optimized: Use once() to get the current code status
-    const redeemedSnap = await db.ref(`users/${uid}/codesUnlocked/${conf.key}`).once('value');
+    const redeemedSnap = await db.ref(`userProfiles/${uid}/codesUnlocked/${conf.key}`).once('value');
     if (redeemedSnap.val()) {
         codeMsg.textContent = "Code already redeemed!";
         codeInput.classList.add('error');
@@ -2644,7 +2644,7 @@ const streakMilestones = [
 ];
 
 streakBtn.onclick = ()=>{
-  db.ref(`users/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
+  db.ref(`userProfiles/${auth.currentUser.uid}/loginStreak`).once("value").then(snap=>{
     const streak = snap.val()||0;
     renderStreakModal(streak);
     streakRewardsModal.classList.add('open');
@@ -2787,6 +2787,7 @@ saveUsernameBtn.onclick = function(){
 
 // ========== HELPER FUNCTION TO SYNC VERIFIED STATUS ==========
 function writeEmailVerified(uid, emailVerified) {
+  firebase.database().ref(`userProfiles/${uid}/emailVerified`).set(!!emailVerified).catch(() => {});
   return firebase.database()
     .ref(`users/${uid}/emailVerified`)
     .set(!!emailVerified)
@@ -2794,16 +2795,19 @@ function writeEmailVerified(uid, emailVerified) {
 }
 
 function fetchUserDataAndListen(user) {
-  // Optimized: Use a single on() listener instead of multiple once() calls
-  // This reduces reads and provides real-time updates to the UI
-  db.ref(`users/${user.uid}`).on('value', snap => {
+  // Switch to userProfiles (lean node, no posts) for the real-time listener.
+  // profileCustomizationUnlocked is not in userProfiles — read it once on login.
+  db.ref(`users/${user.uid}/profileCustomizationUnlocked`).once('value').then(pcuSnap => {
+    const profileCustomizationUnlocked = pcuSnap.val() || false;
+    editProfileBtn.style.display = profileCustomizationUnlocked ? 'flex' : 'none';
+  });
+  db.ref(`userProfiles/${user.uid}`).on('value', snap => {
     const userData = snap.val() || {};
-    const nameToDisplay = userData.username || user.displayName || user.email;
+    const nameToDisplay = userData.username || userData.displayName || user.displayName || user.email;
     const custom = userData.profileCustomization || {};
-    
+
     // UI updates
     displayUsername(nameToDisplay, custom.nameColor);
-    // The line that automatically opened the modal has been removed.
     const profileCard = document.getElementById('profileCard');
     profileCard.style.background = custom.gradient || 'linear-gradient(135deg,#0f172a 0%,#1e2a45 100%)';
     if (profileBanner) {
@@ -2812,12 +2816,9 @@ function fetchUserDataAndListen(user) {
     avatarImg.src = userData.avatar || "https://kevinmidnight7-sudo.github.io/messageboardkc/1.png";
     avatarImg.style.display = "block";
     displayAboutMe(userData.aboutMe || '');
-    
+
     // Badges
     loadBadges(user.uid, user.emailVerified, userData.codesUnlocked, userData.loginStreak, userData.customBadges);
-    
-    // Profile customization unlock
-    editProfileBtn.style.display = (userData.profileCustomizationUnlocked) ? 'flex' : 'none';
   });
 }
 
@@ -2861,7 +2862,7 @@ auth.onAuthStateChanged(async (u) => {
         const discordId = didSnap.val();
 
         // Battledome highscore (stored on users node)
-        const bdSnap = await db.ref(`users/${u.uid}/bdHighscore`).once('value');
+        const bdSnap = await db.ref(`userProfiles/${u.uid}/bdHighscore`).once('value');
         const bdScore = bdSnap.val() || 0;
         const bdEl = document.getElementById('login-bd-score');
         if (bdEl) bdEl.textContent = bdScore > 0 ? bdScore.toLocaleString() : '–';
@@ -2951,6 +2952,7 @@ function renderAvatars(selectedUrl) {
       if(user) {
         db.ref(`users/${user.uid}/avatar`).set(url)
           .then(()=>{
+            db.ref(`userProfiles/${user.uid}/avatar`).set(url).catch(() => {});
             avatarImg.src = url;
             avatarImg.style.display = "block";
             kcAlert("Avatar updated!");
@@ -2981,6 +2983,7 @@ function renderAvatarsWithUpload(user, currentAvatarUrl){
       adiv.classList.add('selected');
       db.ref(`users/${user.uid}/avatar`).set(url)
         .then(()=>{
+          db.ref(`userProfiles/${user.uid}/avatar`).set(url).catch(() => {});
           avatarImg.src = url;
           avatarImg.style.display = "block";
           kcAlert("Avatar updated!");
@@ -2994,12 +2997,15 @@ avatarBtn.onclick = ()=> {
   const user = auth.currentUser;
   if(!user) return;
   const uid = user.uid;
-  // Optimized: Get all necessary user data with one call
-  db.ref(`users/${uid}`).once('value').then(snap => {
-    const userData = snap.val() || {};
-    const streak  = userData.loginStreak || 0;
-    const unlocked = !!userData.avatarUnlocked;
-    const currentAvatar = userData.avatar;
+  Promise.all([
+    db.ref(`userProfiles/${uid}/loginStreak`).once('value'),
+    db.ref(`userProfiles/${uid}/avatar`).once('value'),
+    db.ref(`users/${uid}/avatarUnlocked`).once('value'),
+  ]).then(([streakSnap, avatarSnap, unlockedSnap]) => {
+    const userData = {};
+    const streak   = streakSnap.val() || 0;
+    const unlocked = !!unlockedSnap.val();
+    const currentAvatar = avatarSnap.val();
     if(streak >= 10 || unlocked){
       renderAvatarsWithUpload(user, currentAvatar);
     } else {
@@ -3023,6 +3029,7 @@ document.getElementById("uploadAvatarBtn").onclick = function(){
   reader.onload = function(e){
     const url = e.target.result;
     db.ref(`users/${auth.currentUser.uid}/avatar`).set(url).then(()=>{
+      db.ref(`userProfiles/${auth.currentUser.uid}/avatar`).set(url).catch(() => {});
       avatarImg.src = url;
       avatarImg.style.display = "block";
       document.getElementById("avatarUploadMsg").textContent = "Avatar uploaded!";
@@ -3147,7 +3154,7 @@ async function loadBadges(uid, verified, codesUnlocked, loginStreak, customBadge
     }
   });
 
-  const customBadgesSnap = await db.ref(`users/${uid}/customBadges`).once('value');
+  const customBadgesSnap = await db.ref(`userProfiles/${uid}/customBadges`).once('value');
   const customBadgesData = customBadgesSnap.val() || {};
   const customKeys = Object.keys(customBadgesData);
   const customCount = customKeys.length;
@@ -3480,6 +3487,7 @@ document.getElementById("saveBadgeFancyBtn").onclick = function(){
   } else {
     const newRef = db.ref(`users/${uid}/customBadges`).push();
     newRef.set(badgeData).then(()=>{
+      db.ref(`userProfiles/${uid}/customBadges/${newRef.key}`).set(badgeData).catch(() => {});
       document.getElementById("badgeCreateMsgFancy").textContent = "Badge saved!";
       setTimeout(()=>{
         document.getElementById("badgeCreatorModalFancy").classList.remove("open");
@@ -3748,7 +3756,7 @@ closeCustomizationModal.onclick = () => {
     const user = auth.currentUser;
     if(user) {
       // Optimized: Fetch and re-apply styles from a single DB read
-        db.ref(`users/${user.uid}/profileCustomization`).once('value').then(snap => {
+        db.ref(`userProfiles/${user.uid}/profileCustomization`).once('value').then(snap => {
             const custom = snap.val() || {};
             if(custom.banner) profileBanner.style.backgroundImage = `url('${custom.banner}')`;
             else profileBanner.style.backgroundImage = 'linear-gradient(135deg, rgba(255,255,255,0.55) 65%, rgba(230,236,255,0.38) 100%)';
@@ -3787,6 +3795,7 @@ saveCustomizationBtn.onclick = () => {
 
     // Optimized: Use a single update call to save changes
     db.ref(`users/${user.uid}/profileCustomization`).update(updates).then(() => {
+        db.ref(`userProfiles/${user.uid}/profileCustomization`).update(updates).catch(() => {});
         kcAlert('Profile customization saved!');
         profileCustomizationModal.classList.remove('open');
     }).catch(err => {
