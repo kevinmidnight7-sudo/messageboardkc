@@ -3735,13 +3735,13 @@ function populateCustomizationModal(current) {
 editProfileBtn.onclick = () => {
     const user = auth.currentUser;
     if (!user) return;
-    db.ref(`users/${user.uid}`).once('value').then(snap => {
+    db.ref(`userProfiles/${user.uid}`).once('value').then(snap => {
         const userData = snap.val() || {};
         const current = userData.profileCustomization || {};
-        
+
         // Populate preview with current user data
         document.getElementById('avatarPreview').src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-        document.getElementById('usernamePreview').textContent = userData.username || 'Username';
+        document.getElementById('usernamePreview').textContent = userData.displayName || 'Username';
 
         populateCustomizationModal(current);
         updateProfilePreview();

@@ -2986,25 +2986,26 @@ async function loadBadges(uid, verified){
     }
     badgeList.appendChild(el);
   }
-  const userSnap = await db.ref(`users/${uid}`).once('value');
+  const userSnap = await db.ref(`userProfiles/${uid}`).once('value');
   const userData = userSnap.val() || {};
   const streak = userData.loginStreak || 0;
   const customBadges = userData.customBadges || {};
   const customKeys = Object.keys(customBadges);
   const customCount = customKeys.length;
-  
+
   const baseMax = streak >= 100 ? 2 : (streak >= 50 ? 1 : 0);
-  
+
   const codesUnlocked = userData.codesUnlocked || {};
   let bonus = 0;
   if(codesUnlocked.diamond) bonus += 2;
   if(codesUnlocked.emerald) bonus += 1;
   const maxCustom = baseMax + bonus;
-  
+
   const allowCustom = (streak >= 50) || (bonus > 0);
-  
-  // Check if profile customization is unlocked and show the button
-  const profileCustomizationUnlocked = userData.profileCustomizationUnlocked || false;
+
+  // profileCustomizationUnlocked is not a LEAN field; check users/ for it
+  const pcuSnap = await db.ref(`users/${uid}/profileCustomizationUnlocked`).once('value');
+  const profileCustomizationUnlocked = pcuSnap.val() || false;
   
   if (profileCustomizationUnlocked) {
     editProfileBtn.style.display = 'flex';
@@ -3575,13 +3576,13 @@ function populateCustomizationModal(current) {
 editProfileBtn.onclick = () => {
     const user = auth.currentUser;
     if (!user) return;
-    db.ref(`users/${user.uid}`).once('value').then(snap => {
+    db.ref(`userProfiles/${user.uid}`).once('value').then(snap => {
         const userData = snap.val() || {};
         const current = userData.profileCustomization || {};
-        
+
         // Populate preview with current user data
         document.getElementById('avatarPreview').src = userData.avatar || 'https://kevinmidnight7-sudo.github.io/messageboardkc/1.png';
-        document.getElementById('usernamePreview').textContent = userData.username || 'Username';
+        document.getElementById('usernamePreview').textContent = userData.displayName || 'Username';
 
         populateCustomizationModal(current);
         updateProfilePreview();

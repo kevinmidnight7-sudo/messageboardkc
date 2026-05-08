@@ -860,22 +860,9 @@
         overlay.style.display = 'flex';
 
         try {
-            // COST FIX: use /userProfiles/{uid} (lean, no posts) + codesUnlocked separately.
-            // /userProfiles/ is populated by the admin migration in verifier.html.
-            // Falls back to full /users/{uid} read only if not yet migrated.
-            const [profileSnap, codesSnap] = await Promise.all([
-                database.ref(`userProfiles/${uid}`).once('value'),
-                database.ref(`users/${uid}/codesUnlocked`).once('value'),
-            ]);
-            let u;
-            if (profileSnap.exists()) {
-                localStorage.setItem('_kcUpReady', '1');
-                u = { ...profileSnap.val(), codesUnlocked: codesSnap.val() || {} };
-            } else {
-                // Pre-migration fallback — full user read (includes posts, expensive)
-                const snap = await database.ref(`users/${uid}`).once('value');
-                u = snap.val() || {};
-            }
+            // codesUnlocked is a LEAN field mirrored to /userProfiles/ — no separate read needed.
+            const profileSnap = await database.ref(`userProfiles/${uid}`).once('value');
+            const u = profileSnap.val() || {};
 
             // ── Basic info ──
             username.textContent = u.displayName || 'Anonymous';
